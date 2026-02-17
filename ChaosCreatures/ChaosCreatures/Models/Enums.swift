@@ -600,14 +600,6 @@ enum FactionShortName: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// Convert to Faction enum (used by SpriteKit nodes for color lookup)
-    var asFaction: Faction {
-        switch self {
-        case .ironwright: return .ironwright
-        case .feyCourts: return .feyCourts
-        case .demonicKingdoms: return .demonicKingdoms
-        }
-    }
 }
 
 // MARK: - Unlock Condition (Section 9)

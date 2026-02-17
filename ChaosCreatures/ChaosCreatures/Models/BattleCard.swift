@@ -42,8 +42,9 @@ struct BattleCardData: Codable, Identifiable {
         FactionShortName(rawValue: factionId)
     }
 
-    var faction: Faction {
-        factionShortName?.asFaction ?? .ironwright
+    /// Faction UIColor for SpriteKit rendering
+    var factionPrimaryColor: UIColor {
+        factionShortName?.primaryUIColor ?? UIColor(hex: "#C9A84C")
     }
 }
 
@@ -107,6 +108,11 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
 
     var factionShortName: FactionShortName? {
         FactionShortName(rawValue: factionId)
+    }
+
+    /// Faction UIColor for SpriteKit rendering
+    var factionPrimaryColor: UIColor {
+        factionShortName?.primaryUIColor ?? UIColor(hex: "#C9A84C")
     }
 
     var hasTaunt: Bool {
