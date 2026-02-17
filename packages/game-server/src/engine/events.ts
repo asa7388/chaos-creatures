@@ -209,12 +209,8 @@ const CHAOS_EVENTS: EventDefinition[] = [
       effect_type: 'DAMAGE',
       target: 'RANDOM_FRIENDLY',
       value: 2,
-      secondary_effect: {
-        effect_type: 'STAT_MODIFY_ATTACK',
-        target: 'RANDOM_FRIENDLY',
-        value: 3,
-        duration: 'PERMANENT',
-      },
+      // secondary_effect intentionally removed — handled in resolveEventPhase
+      // to ensure same creature gets both damage and buff
     },
     description: 'Deal 2 damage to a random friendly creature. That creature gets +3 ATK permanently. If the damage kills it, the buff is wasted.',
     design_notes: 'High risk, high reward.',
@@ -292,6 +288,29 @@ export function resolveEventPhase(
   // Resolve event effect
   const effectResults = resolveEffect(state, selectedEvent.effect, activePlayer);
 
+  // Handle Chaos Siphon (C6) special case: same creature gets damage + ATK buff
+  if (selectedEvent.id === 'C6') {
+    // The damage was already applied to a random friendly via resolveEffect.
+    // Now apply the +3 ATK buff to the SAME creature (identified from effectResults).
+    if (effectResults.length > 0 && effectResults[0].target_ids.length > 0) {
+      const targetId = effectResults[0].target_ids[0];
+      // Find the creature that was damaged
+      const targetCreature = activePlayer.board.find(
+        c => c && c.instance_id === targetId
+      );
+      // Only buff if the creature survived the damage
+      if (targetCreature && targetCreature.is_alive) {
+        targetCreature.attack += 3;
+        effectResults.push({
+          effect_type: 'STAT_MODIFY_ATTACK',
+          target_ids: [targetId],
+          value: 3,
+          description: '+3 ATK to the siphoned creature',
+        });
+      }
+    }
+  }
+
   // Handle Harmonize (O8) special case: creatures at full HP get +0/+1 instead
   if (selectedEvent.id === 'O8') {
     for (const creature of activePlayer.board) {
@@ -303,11 +322,42 @@ export function resolveEventPhase(
     }
   }
 
-  // Handle Overcharge (C8) special case: if already has Piercing, +4 ATK instead
+  // Handle Overcharge (C8) special case: if already has Piercing, +4 ATK instead of +2 ATK + Piercing
   if (selectedEvent.id === 'C8') {
-    // The effect already targeted a random friendly. Check if that creature had Piercing.
-    // This is a simplification — in practice the effect resolution already happened.
-    // We'll let the basic effect apply and note this for future refinement.
+    // The base effect already applied +2 ATK and Piercing to a random friendly.
+    // Check if the targeted creature already had Piercing BEFORE the event.
+    // If so, we need to give +4 ATK total instead of +2 ATK + Piercing.
+    if (effectResults.length > 0 && effectResults[0].target_ids.length > 0) {
+      const targetId = effectResults[0].target_ids[0];
+      const targetCreature = activePlayer.board.find(
+        c => c && c.instance_id === targetId
+      );
+      if (targetCreature && targetCreature.is_alive) {
+        // Check if Piercing appeared in innate_keywords (had it before the event)
+        const hadPiercingBefore = targetCreature.innate_keywords.includes('PIERCING') ||
+          targetCreature.modifiers.some(m =>
+            m.grants_keyword === 'PIERCING' &&
+            (!m.keyword_is_attuned || m.is_attuned_active)
+          );
+
+        if (hadPiercingBefore) {
+          // Already had Piercing: give additional +2 ATK (total +4)
+          targetCreature.attack += 2;
+          effectResults.push({
+            effect_type: 'STAT_MODIFY_ATTACK',
+            target_ids: [targetId],
+            value: 2,
+            description: '+2 bonus ATK (already had Piercing)',
+          });
+          // Add the +2 to temp_buffs so it expires at end of turn
+          targetCreature.temp_buffs.push({
+            effect: { effect_type: 'STAT_MODIFY_ATTACK', target: 'SELF', value: 2, duration: 'THIS_TURN' },
+            expires_at: 'END_OF_TURN',
+            source: 'C8_PIERCING_BONUS',
+          });
+        }
+      }
+    }
   }
 
   // Fire triggered abilities (ON_ORDER or ON_CHAOS) left-to-right (slot 0->4)

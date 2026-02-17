@@ -257,14 +257,30 @@ export function handlePlayCard(
 
     recalculateInstability(activePlayer);
   } else if (card.card_type === 'SPELL') {
-    // Resolve spell immediately
-    // If spell targets a specific creature, use targetId
-    if (targetId) {
-      const targetCreature = findTargetCreature(state, targetId);
-      if (targetCreature) {
-        // TODO: resolve spell with specific target
+    // Resolve spell effects via its triggered abilities (ON_PLAY)
+    const specificTarget = targetId ? findTargetCreature(state, targetId) : undefined;
+
+    for (const ability of card.triggered_abilities) {
+      if (ability.trigger === 'ON_PLAY') {
+        const results = resolveEffect(
+          state,
+          ability.effect,
+          activePlayer,
+          undefined, // no source creature for spells
+          specificTarget ?? undefined
+        );
+        effectResults.push(...results);
       }
     }
+
+    // Process any deaths caused by the spell
+    processDeaths(state, activePlayer);
+    const opponent = state.active_player === 'PLAYER_1' ? state.player_2 : state.player_1;
+    processDeaths(state, opponent);
+
+    // Recalculate instability after spell effects
+    recalculateInstability(activePlayer);
+    recalculateInstability(opponent);
 
     activePlayer.graveyard.push(card);
   }
