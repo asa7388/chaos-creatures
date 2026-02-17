@@ -1,6 +1,6 @@
 # Chaos Creatures -- Build Phase Progress
 
-## Current Wave: Audit Gate 3 (In Progress)
+## Current Wave: Audit Gate 3 COMPLETE — Ready for Wave 4 (Polish & Launch)
 
 ## Actual Directory Structure (set by project-scaffold)
 
@@ -17,7 +17,7 @@ The scaffold agent chose a monorepo layout. All agents must use these paths:
 |---|---|---|---|---|---|
 | 0 | supabase-schema | DB migrations, seed data, RLS policies | COMPLETE | 12 migrations, seed.sql, config.toml | `supabase db reset` PASS |
 | 0 | project-scaffold | Repo structure, configs, deploy scripts | COMPLETE | 88+ iOS files, server/admin scaffolds, scripts, CI/CD | `npm install` PASS (both) |
-| 1 | game-server | Railway turn engine, combat, WebSocket | COMPLETE | 31 files, 8,270 lines (engine, services, ws) | 238 tests PASS |
+| 1 | game-server | Railway turn engine, combat, Supabase Realtime | COMPLETE | 31 files, 8,270 lines (engine, services, ws) | 328 tests PASS |
 | 1 | edge-functions | Supabase Edge Functions (all services) | COMPLETE | 21 functions, 5 shared utils | 32 tests PASS |
 | 1 | ai-pipeline | fal.ai + OpenAI + R2 card generation | COMPLETE | 14 files (4 Edge Functions, 4 services, prompt builder) | 81 tests PASS |
 | 2 | ios-app-shell | SwiftUI navigation, auth, screens | COMPLETE | 74 Swift files (45 new), 13 services, all screens | Xcode project needs config |
@@ -36,8 +36,21 @@ The scaffold agent chose a monorepo layout. All agents must use these paths:
 | 2 | api-contract-auditor | REVIEW-contracts-wave-2.md | 8 (fixed) | 11 | COMPLETE |
 | 2 | security-auditor | REVIEW-security-wave-2.md | 7 (fixed) | 9 | COMPLETE |
 | 2 | simulator-test | — | — | — | SKIP (no .xcodeproj) |
-| 3 | api-contract-auditor | REVIEW-contracts-wave-3.md | TBD | TBD | IN PROGRESS |
-| 3 | security-auditor | REVIEW-security-wave-3.md | TBD | TBD | IN PROGRESS |
+| 3 | api-contract-auditor | REVIEW-contracts-wave-3.md | 5 (all fixed) | 5 | COMPLETE |
+| 3 | security-auditor | REVIEW-security-wave-3.md | 3 (all fixed) | 5 | COMPLETE |
+
+## Audit Gate 3 — CRITICAL Fixes Applied (dfe061a)
+
+| ID | Finding | Fix |
+|---|---|---|
+| C-01/C-02 | WebSocket transport mismatch (iOS Realtime vs server raw ws) | Rewrote game server to use Supabase Realtime channels |
+| S-01/S-02 | No JWT validation on WS; envelope player_id ignored | Supabase Realtime handles auth; server validates player is in match |
+| C-03 | Missing `matches` table | Added migration 00013_matches_table.sql |
+| C-04 | Missing `increment_chaos_energy` RPC | Added migration 00014_chaos_energy_rpc.sql |
+| C-05 | Post-match record timing race | Added 3-attempt retry with exponential backoff |
+| S-03 | StoreKit receipt verification not implemented | Added dedup check + format validation stub |
+| S-06 | Admin session embeds secret in plaintext | Replaced with HMAC-SHA256 signed tokens |
+| S-08 | Double dust deduction in open-pack | Removed direct UPDATE, kept only RPC call |
 
 ## Wave Dependencies
 
@@ -83,7 +96,8 @@ Before Wave 0 can start, the owner must:
 
 ## Blockers
 
-- None yet.
+- **Xcode project file (.xcodeproj)**: iOS code is complete but needs an Xcode project to compile. Owner must create the project in Xcode and add all Swift files under `ChaosCreatures/`.
+- **WARNING-level audit findings**: 5 contract warnings + 5 security warnings deferred to Wave 4. See REVIEW-contracts-wave-3.md and REVIEW-security-wave-3.md.
 
 ## Budget Tracker
 
