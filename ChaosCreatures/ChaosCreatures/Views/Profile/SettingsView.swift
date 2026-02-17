@@ -36,7 +36,7 @@ struct SettingsView: View {
         Form {
             // Account
             Section("Account") {
-                LabeledContent("Username", value: appState.player?.username ?? "Unknown")
+                LabeledContent("Username", value: appState.player?.displayName ?? "Unknown")
 
                 if let tier = appState.player?.subscriptionTier {
                     LabeledContent("Subscription", value: tier.displayName)

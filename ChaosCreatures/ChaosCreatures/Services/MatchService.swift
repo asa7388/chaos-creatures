@@ -100,10 +100,8 @@ final class MatchService {
             return
         }
 
-        // Use jsonPayload (not JSONEncoder) to produce the flat
-        // { type: "PLAY_CARD", card_id: "..." } format the server expects.
-        let dict = action.jsonPayload
-        await channel.broadcast(event: "player_action", message: dict)
+        // Use the Codable overload so the server receives the expected format.
+        try? await channel.broadcast(event: "player_action", message: action)
     }
 
     /// Send end turn action
@@ -128,7 +126,7 @@ final class MatchService {
                 guard let self, self.isConnected else { return }
 
                 // Send heartbeat via broadcast
-                await self.matchChannel?.broadcast(
+                try? await self.matchChannel?.broadcast(
                     event: "heartbeat",
                     message: ["player_id": playerId.uuidString]
                 )

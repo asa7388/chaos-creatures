@@ -44,21 +44,23 @@ final class SupabaseService {
         ascending: Bool = true,
         limit: Int? = nil
     ) async throws -> [T] {
-        var query = client.from(table).select()
+        var filterQuery = client.from(table).select()
 
         for filter in filters {
-            query = query.eq(filter.column, value: filter.value)
+            filterQuery = filterQuery.eq(filter.column, value: filter.value)
         }
 
+        var transformQuery: PostgrestTransformBuilder = filterQuery
+
         if let orderBy {
-            query = query.order(orderBy, ascending: ascending)
+            transformQuery = transformQuery.order(orderBy, ascending: ascending)
         }
 
         if let limit {
-            query = query.limit(limit)
+            transformQuery = transformQuery.limit(limit)
         }
 
-        return try await query.execute().value
+        return try await transformQuery.execute().value
     }
 
     /// Insert a row
@@ -78,7 +80,7 @@ final class SupabaseService {
         values: T,
         filters: [(column: String, value: String)]
     ) async throws {
-        var query = client.from(table).update(values)
+        var query = try client.from(table).update(values)
 
         for filter in filters {
             query = query.eq(filter.column, value: filter.value)
@@ -109,11 +111,9 @@ final class SupabaseService {
         if let body {
             return try await client.functions
                 .invoke(functionName, options: .init(body: body))
-                .value
         } else {
             return try await client.functions
                 .invoke(functionName)
-                .value
         }
     }
 

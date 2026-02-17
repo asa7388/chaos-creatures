@@ -46,7 +46,8 @@ enum EventSlideAction {
         scene.addChild(label)
 
         let fadeIn = SKAction.fadeIn(withDuration: 0.15)
-        let scaleIn = SKAction.scale(from: 0.5, to: 1.0, duration: 0.15)
+        label.setScale(0.5)
+        let scaleIn = SKAction.scale(to: 1.0, duration: 0.15)
         let hold = SKAction.wait(forDuration: duration)
         let fadeOut = SKAction.fadeOut(withDuration: 0.3)
         let scaleOut = SKAction.scale(to: 1.3, duration: 0.3)
@@ -103,7 +104,8 @@ enum EventSlideAction {
 
         // Dramatic entrance
         let fadeIn = SKAction.fadeIn(withDuration: 0.3)
-        let scaleIn = SKAction.scale(from: 0.1, to: 1.0, duration: 0.3)
+        label.setScale(0.1)
+        let scaleIn = SKAction.scale(to: 1.0, duration: 0.3)
         scaleIn.timingMode = .easeOut
         let hold = SKAction.wait(forDuration: 2.0)
 

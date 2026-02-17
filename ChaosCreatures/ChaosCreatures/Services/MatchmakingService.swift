@@ -158,7 +158,7 @@ final class MatchmakingService {
             for await message in broadcastStream {
                 guard let self, self.isSearching else { return }
 
-                if let matchIdValue = message.payload["match_id"]?.stringValue {
+                if let matchIdValue = message["match_id"]?.stringValue {
                     self.matchFound = true
                     self.matchId = matchIdValue
                     self.isSearching = false

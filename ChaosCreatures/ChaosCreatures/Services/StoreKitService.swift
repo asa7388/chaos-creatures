@@ -48,7 +48,7 @@ final class StoreKitService {
 
     // MARK: - Private
 
-    private var transactionListener: Task<Void, Error>?
+    nonisolated(unsafe) private var transactionListener: Task<Void, Error>?
 
     private init() {
         // Start listening for transactions on init

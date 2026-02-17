@@ -1,0 +1,86 @@
+name: ChaosCreatures
+options:
+  bundleIdPrefix: com.chaoscreatures
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "26.2"
+  generateEmptyDirectories: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    INFOPLIST_KEY_UILaunchScreen_Generation: true
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
+
+targets:
+  ChaosCreatures:
+    type: application
+    platform: iOS
+    sources:
+      - path: ChaosCreatures
+        excludes:
+          - "Config/Info.plist"
+    resources:
+      - path: ChaosCreatures/Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chaoscreatures.app
+        INFOPLIST_FILE: ChaosCreatures/Config/Info.plist
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SUPPORTED_INTERFACE_ORIENTATIONS: UIInterfaceOrientationPortrait
+        CODE_SIGN_STYLE: Automatic
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    configFiles:
+      Debug: Config.xcconfig
+      Release: Config.xcconfig
+    dependencies:
+      - package: Supabase
+      - framework: SpriteKit.framework
+        implicit: true
+      - framework: StoreKit.framework
+        implicit: true
+      - framework: GameplayKit.framework
+        implicit: true
+    scheme:
+      testTargets:
+        - ChaosCreaturesTests
+        - ChaosCreaturesUITests
+      gatherCoverageData: true
+
+  ChaosCreaturesTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ChaosCreaturesTests
+    dependencies:
+      - target: ChaosCreatures
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chaoscreatures.app.tests
+        GENERATE_INFOPLIST_FILE: true
+
+  ChaosCreaturesUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ChaosCreaturesUITests
+    dependencies:
+      - target: ChaosCreatures
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chaoscreatures.app.uitests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: ChaosCreatures

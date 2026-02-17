@@ -57,7 +57,7 @@ struct HomeView: View {
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Welcome back, \(appState.player?.username ?? "Player")")
+                Text("Welcome back, \(appState.player?.displayName ?? "Player")")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.textPrimary)
 
@@ -78,10 +78,10 @@ struct HomeView: View {
             // Rank/XP badge
             if let player = appState.player {
                 VStack(spacing: 2) {
-                    Text("Level \(player.xp / 100)")
+                    Text("Level \(player.playerXp / 100)")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.ironwright)
-                    Text("\(player.xp % 100) XP")
+                    Text("\(player.playerXp % 100) XP")
                         .font(.system(size: 10))
                         .foregroundColor(.textTertiary)
                 }
@@ -150,7 +150,7 @@ struct HomeView: View {
                 )
                 StatTile(
                     title: "Cards",
-                    value: "\(appState.player?.totalMatches ?? 0)",
+                    value: "\(appState.player?.totalGames ?? 0)",
                     icon: "rectangle.stack.fill",
                     color: .orderBlue
                 )

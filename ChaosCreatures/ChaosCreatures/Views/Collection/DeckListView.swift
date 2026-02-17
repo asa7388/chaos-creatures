@@ -14,7 +14,7 @@ struct DeckListView: View {
     @State private var error: String?
 
     private var maxDeckSlots: Int {
-        appState.player?.subscriptionTier?.maxDeckSlots ?? 3
+        appState.player?.subscriptionTier.maxDeckSlots ?? 3
     }
 
     var body: some View {
@@ -148,7 +148,7 @@ struct DeckRowView: View {
     var body: some View {
         HStack(spacing: 12) {
             // Faction icon
-            if let faction = FactionShortName(rawValue: deck.factionId) {
+            if let faction = FactionShortName(rawValue: deck.factionId.uuidString) {
                 Image(systemName: faction.systemIconName)
                     .font(.system(size: 20))
                     .foregroundColor(faction.swiftUIColor)
@@ -164,12 +164,12 @@ struct DeckRowView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
-                    Text("\(deck.cards.count)/20 cards")
+                    Text("\(deck.totalCards)/20 cards")
                         .font(.system(size: 12))
-                        .foregroundColor(deck.cards.count == 20 ? .textSecondary : .warningYellow)
+                        .foregroundColor(deck.totalCards == 20 ? .textSecondary : .warningYellow)
 
-                    if deck.isActive {
-                        Text("ACTIVE")
+                    if deck.isValid {
+                        Text("VALID")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.healGreen)
                             .padding(.horizontal, 6)

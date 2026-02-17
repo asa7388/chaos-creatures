@@ -24,7 +24,7 @@ struct CardDetailView: View {
                     cardInfoSection
 
                     // Stats (creatures only)
-                    if let card = router.selectedCardInstance, card.cardType == .creature {
+                    if let card = router.selectedCardInstance, card.currentAttack != nil {
                         statsSection(card: card)
                     }
 
@@ -47,7 +47,7 @@ struct CardDetailView: View {
                 .padding(.bottom, 80)
             }
             .background(Color.bgPrimary)
-            .navigationTitle(router.selectedCardInstance?.name ?? "Card Detail")
+            .navigationTitle(router.selectedCardInstance?.currentName ?? "Card Detail")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -100,43 +100,34 @@ struct CardDetailView: View {
             if let card = router.selectedCardInstance {
                 // Name + mana cost
                 HStack {
-                    Text(card.name)
+                    Text(card.currentName)
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.textPrimary)
                     Spacer()
-                    LargeManaGemView(cost: card.manaCost)
+                    LargeManaGemView(cost: card.currentManaCost)
                 }
 
-                // Type + faction
+                // Tier info
                 HStack {
-                    Text(card.cardType.displayName)
+                    Text(card.tier.displayName)
                         .font(.system(size: 14))
                         .foregroundColor(.textSecondary)
-
-                    Text(" - ")
-                        .foregroundColor(.textTertiary)
-
-                    if let faction = FactionShortName(rawValue: card.factionId) {
-                        Text(faction.shortDisplayName)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(faction.swiftUIColor)
-                    }
 
                     Spacer()
 
                     // Tier badge
-                    Text(card.currentTier.displayName)
+                    Text(card.tier.displayName)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(Color.tierColor(card.currentTier))
+                        .background(Color.tierColor(card.tier))
                         .cornerRadius(6)
                 }
 
                 // Flavor text
-                if let flavor = card.flavorText {
-                    Text(flavor)
+                if !card.flavorText.isEmpty {
+                    Text(card.flavorText)
                         .font(.system(size: 13).italic())
                         .foregroundColor(.textTertiary)
                         .padding(.top, 4)
@@ -151,9 +142,9 @@ struct CardDetailView: View {
 
     private func statsSection(card: CardInstance) -> some View {
         HStack(spacing: 20) {
-            statBox(title: "ATK", value: "\(card.attack ?? 0)", color: .chaosRed)
-            statBox(title: "HP", value: "\(card.health ?? 0)", color: .healGreen)
-            statBox(title: "INST", value: "\(card.baseInstability)", color: .warningYellow)
+            statBox(title: "ATK", value: "\(card.currentAttack ?? 0)", color: .chaosRed)
+            statBox(title: "HP", value: "\(card.currentHealth ?? 0)", color: .healGreen)
+            statBox(title: "INST", value: "\(card.instabilityValue)", color: .warningYellow)
         }
         .padding(16)
         .cardBackground()
@@ -262,11 +253,9 @@ struct CardDetailView: View {
 
                     Spacer()
 
-                    if let modName = record.modifierName {
-                        Text(modName)
-                            .font(.system(size: 11))
-                            .foregroundColor(.textTertiary)
-                    }
+                    Text(record.nameChosen)
+                        .font(.system(size: 11))
+                        .foregroundColor(.textTertiary)
                 }
                 .padding(8)
                 .background(Color.bgTertiary)

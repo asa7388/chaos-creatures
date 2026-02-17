@@ -74,13 +74,13 @@ struct ProfileView: View {
                 )
 
             // Username
-            Text(appState.player?.username ?? "Player")
+            Text(appState.player?.displayName ?? "Player")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.textPrimary)
 
             // Faction badge
             if let factionId = appState.player?.primaryFactionId,
-               let faction = FactionShortName(rawValue: factionId) {
+               let faction = FactionShortName(rawValue: factionId.uuidString) {
                 HStack(spacing: 6) {
                     Image(systemName: faction.systemIconName)
                         .font(.system(size: 13))
@@ -142,7 +142,7 @@ struct ProfileView: View {
                             Text("LP")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.textTertiary)
-                            Text("\(appState.player?.seasonLp ?? 0)")
+                            Text("\(appState.player?.seasonRankPoints ?? 0)")
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.textPrimary)
                         }
@@ -165,8 +165,8 @@ struct ProfileView: View {
                                     .font(.system(size: 13))
                                     .foregroundColor(.textSecondary)
                             }
-                            if let player = appState.player, player.totalMatches > 0 {
-                                Text("\(Int(Double(player.totalWins) / Double(player.totalMatches) * 100))%")
+                            if let player = appState.player, player.totalGames > 0 {
+                                Text("\(Int(Double(player.totalWins) / Double(player.totalGames) * 100))%")
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(.textTertiary)
                             }
@@ -197,10 +197,10 @@ struct ProfileView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                profileStatRow("Total Matches", value: "\(appState.player?.totalMatches ?? 0)")
+                profileStatRow("Total Matches", value: "\(appState.player?.totalGames ?? 0)")
                 profileStatRow("Win Streak", value: "\(appState.player?.currentWinStreak ?? 0)")
-                profileStatRow("Best Streak", value: "\(appState.player?.longestWinStreak ?? 0)")
-                profileStatRow("XP", value: "\(appState.player?.xp ?? 0)")
+                profileStatRow("Best Streak", value: "\(appState.player?.bestWinStreak ?? 0)")
+                profileStatRow("XP", value: "\(appState.player?.playerXp ?? 0)")
             }
         }
         .padding(16)

@@ -22,20 +22,51 @@ final class AuthService {
 
     // MARK: - Apple Sign-In
 
-    /// Sign in with Apple via Supabase Auth
-    func signInWithApple() async {
+    /// Sign in with Apple via Supabase Auth (using ID token flow)
+    /// Called from UI after Apple credential is obtained.
+    func signInWithApple(idToken: String, nonce: String) async {
         isLoading = true
         error = nil
         defer { isLoading = false }
 
         do {
-            let session = try await supabase.auth.signInWithApple()
+            let session = try await supabase.auth.signInWithIdToken(
+                credentials: .init(
+                    provider: .apple,
+                    idToken: idToken,
+                    nonce: nonce
+                )
+            )
             self.session = session
 
             // Ensure player record exists (Edge Function creates if needed)
             try await ensurePlayerProfile()
         } catch {
             self.error = error.localizedDescription
+        }
+    }
+
+    /// Convenience wrapper: triggers the full Apple Sign In flow
+    /// (ASAuthorizationController) and then passes the credential to Supabase.
+    func signInWithApple() async {
+        isLoading = true
+        error = nil
+
+        do {
+            let helper = AppleSignInHelper()
+            let credential = try await helper.performSignIn()
+            guard let idTokenData = credential.identityToken,
+                  let idToken = String(data: idTokenData, encoding: .utf8) else {
+                self.error = "Failed to obtain Apple ID token."
+                isLoading = false
+                return
+            }
+            let nonce = helper.currentNonce
+            // Delegate to the token-based method (which sets isLoading = false)
+            await signInWithApple(idToken: idToken, nonce: nonce)
+        } catch {
+            self.error = error.localizedDescription
+            isLoading = false
         }
     }
 
@@ -118,5 +149,66 @@ extension AuthService {
                 }
             }
         }
+    }
+}
+
+// MARK: - Apple Sign In Helper
+
+import CryptoKit
+
+/// Handles the ASAuthorizationController flow and returns the credential.
+private final class AppleSignInHelper: NSObject, ASAuthorizationControllerDelegate {
+    private var continuation: CheckedContinuation<ASAuthorizationAppleIDCredential, Error>?
+    private(set) var currentNonce: String = ""
+
+    @MainActor
+    func performSignIn() async throws -> ASAuthorizationAppleIDCredential {
+        currentNonce = Self.randomNonceString()
+        let hashedNonce = Self.sha256(currentNonce)
+
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = hashedNonce
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+
+        return try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+            controller.performRequests()
+        }
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
+            continuation?.resume(returning: credential)
+        } else {
+            continuation?.resume(throwing: AuthError.invalidCredential)
+        }
+        continuation = nil
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        continuation?.resume(throwing: error)
+        continuation = nil
+    }
+
+    private enum AuthError: Error {
+        case invalidCredential
+    }
+
+    private static func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        _ = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String(randomBytes.map { charset[Int($0) % charset.count] })
+    }
+
+    private static func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        return hashedData.compactMap { String(format: "%02x", $0) }.joined()
     }
 }

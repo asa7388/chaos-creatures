@@ -165,7 +165,7 @@ struct DeckBuilderView: View {
     private var filteredAvailable: [CardInstance] {
         if searchQuery.isEmpty { return availableCards }
         let query = searchQuery.lowercased()
-        return availableCards.filter { $0.name.lowercased().contains(query) }
+        return availableCards.filter { $0.currentName.lowercased().contains(query) }
     }
 
     private func canAddCard(_ card: CardInstance) -> Bool {
@@ -241,7 +241,7 @@ struct DeckBuilderView: View {
                 }
             }
 
-            let factionId = appState.player?.primaryFactionId ?? FactionShortName.ironwright.rawValue
+            let factionId = appState.player?.primaryFactionId?.uuidString ?? ""
             try await SupabaseService.shared.callFunction(
                 "player/save-deck",
                 body: DeckSave(name: deckName, cards: deckCards, factionId: factionId)

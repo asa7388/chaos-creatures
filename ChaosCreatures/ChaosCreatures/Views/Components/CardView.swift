@@ -38,15 +38,15 @@ struct CardGridItemView: View {
 
             // Tier border
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.tierColor(card.currentTier), lineWidth: 2)
+                .stroke(Color.tierColor(card.tier), lineWidth: 2)
 
             // Tier badge
-            Text(card.currentTier.displayName)
+            Text(card.tier.displayName)
                 .font(.system(size: 9, weight: .bold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Color.tierColor(card.currentTier))
+                .background(Color.tierColor(card.tier))
                 .cornerRadius(4)
                 .padding(4)
 
@@ -67,7 +67,7 @@ struct CardGridItemView: View {
             // Mana cost
             VStack {
                 HStack {
-                    ManaGemView(cost: card.manaCost)
+                    ManaGemView(cost: card.currentManaCost)
                         .padding(4)
                     Spacer()
                 }
@@ -115,18 +115,18 @@ struct CardListRowView: View {
 
             // Card info
             VStack(alignment: .leading, spacing: 2) {
-                Text(card.name)
+                Text(card.currentName)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
-                    Text(card.cardType.displayName)
+                    Text(card.tier.displayName)
                         .font(.system(size: 11))
                         .foregroundColor(.textTertiary)
 
-                    if card.cardType == .creature {
-                        Text("\(card.attack ?? 0)/\(card.health ?? 0)")
+                    if let atk = card.currentAttack, let hp = card.currentHealth {
+                        Text("\(atk)/\(hp)")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.textSecondary)
                     }
@@ -143,7 +143,7 @@ struct CardListRowView: View {
             }
 
             // Mana cost
-            ManaGemView(cost: card.manaCost)
+            ManaGemView(cost: card.currentManaCost)
         }
         .padding(.vertical, 4)
     }

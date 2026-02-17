@@ -696,9 +696,6 @@ final class BattleScene: SKScene {
             persistentLine.strokeColor = SK.Colors.validTarget
             persistentLine.lineWidth = 2
             persistentLine.zPosition = SK.ZPosition.blockLines
-
-            // Dashed line
-            persistentLine.lineDashPattern = [6, 4]
             addChild(persistentLine)
             blockerLines[lineKey] = persistentLine
         }
@@ -814,7 +811,6 @@ extension BattleScene: BattleStateMachineDelegate {
                     line.strokeColor = SK.Colors.validTarget
                     line.lineWidth = 2
                     line.zPosition = SK.ZPosition.blockLines
-                    line.lineDashPattern = [6, 4]
                     addChild(line)
                     blockerLines[assignment.blockerId] = line
                 }

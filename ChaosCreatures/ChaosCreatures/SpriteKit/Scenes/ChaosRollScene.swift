@@ -126,12 +126,13 @@ final class ChaosRollScene: SKScene {
         label.zPosition = 10
         label.text = text
         label.alpha = 0
+        label.setScale(0.5)
         addChild(label)
 
         label.run(SKAction.sequence([
             SKAction.group([
                 SKAction.fadeIn(withDuration: 0.15),
-                SKAction.scale(from: 0.5, to: 1.0, duration: 0.15)
+                SKAction.scale(to: 1.0, duration: 0.15)
             ])
         ]))
     }

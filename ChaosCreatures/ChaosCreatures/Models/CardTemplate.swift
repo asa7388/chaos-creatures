@@ -96,6 +96,26 @@ struct SpellEffect: Codable {
     }
 }
 
+// MARK: - Indirect Box (for recursive value types)
+
+final class Indirect<T: Codable>: Codable {
+    let value: T
+
+    init(_ value: T) {
+        self.value = value
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        value = try container.decode(T.self)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(value)
+    }
+}
+
 // MARK: - Effect (Section 7)
 
 struct Effect: Codable {
@@ -104,7 +124,7 @@ struct Effect: Codable {
     let value: Int?
     let keyword: Keyword?
     let duration: Duration?
-    let secondaryEffect: Effect?
+    let secondaryEffect: Indirect<Effect>?
     let condition: EffectCondition?
 
     enum CodingKeys: String, CodingKey {

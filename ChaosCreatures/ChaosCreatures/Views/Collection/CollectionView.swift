@@ -178,13 +178,14 @@ struct CollectionView: View {
 
         // Faction filter
         if selectedFaction != .all {
-            result = result.filter { $0.factionId == selectedFaction.rawValue }
+            // TODO: Filter by faction once CardInstance includes faction data
+            _ = selectedFaction
         }
 
         // Search filter
         if !searchQuery.isEmpty {
             let query = searchQuery.lowercased()
-            result = result.filter { $0.name.lowercased().contains(query) }
+            result = result.filter { $0.currentName.lowercased().contains(query) }
         }
 
         return result

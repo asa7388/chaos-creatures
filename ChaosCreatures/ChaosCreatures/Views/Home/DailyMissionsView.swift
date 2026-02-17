@@ -47,7 +47,7 @@ struct DailyMissionsView: View {
     }
 
     private var completedCount: Int {
-        appState.activeMissions.filter { $0.completed }.count
+        appState.activeMissions.filter { $0.isCompleted }.count
     }
 }
 
@@ -62,10 +62,10 @@ struct MissionRowView: View {
                 // Mission icon
                 Image(systemName: missionIcon(mission.missionType))
                     .font(.system(size: 16))
-                    .foregroundColor(mission.completed ? .healGreen : .orderBlue)
+                    .foregroundColor(mission.isCompleted ? .healGreen : .orderBlue)
                     .frame(width: 28, height: 28)
                     .background(
-                        (mission.completed ? Color.healGreen : Color.orderBlue)
+                        (mission.isCompleted ? Color.healGreen : Color.orderBlue)
                             .opacity(0.15)
                     )
                     .cornerRadius(6)
@@ -84,9 +84,9 @@ struct MissionRowView: View {
                 Spacer()
 
                 // Progress label
-                Text("\(mission.currentProgress)/\(mission.targetValue)")
+                Text("\(mission.currentValue)/\(mission.targetValue)")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(mission.completed ? .healGreen : .textSecondary)
+                    .foregroundColor(mission.isCompleted ? .healGreen : .textSecondary)
             }
 
             // Progress bar
@@ -97,7 +97,7 @@ struct MissionRowView: View {
                         .cornerRadius(3)
 
                     Rectangle()
-                        .fill(mission.completed ? Color.healGreen : Color.orderBlue)
+                        .fill(mission.isCompleted ? Color.healGreen : Color.orderBlue)
                         .frame(width: geometry.size.width * mission.progress)
                         .cornerRadius(3)
                 }
@@ -107,7 +107,7 @@ struct MissionRowView: View {
         .padding(12)
         .background(Color.bgTertiary)
         .cornerRadius(10)
-        .opacity(mission.completed ? 0.7 : 1.0)
+        .opacity(mission.isCompleted ? 0.7 : 1.0)
     }
 
     private func missionIcon(_ type: MissionType) -> String {
@@ -126,10 +126,13 @@ struct MissionRowView: View {
     }
 
     private func rewardText(_ mission: Mission) -> String {
-        switch mission.rewardType {
-        case .xp: return "+\(mission.rewardAmount) XP"
-        case .shards: return "+\(mission.rewardAmount) Shards"
-        case .chaosEnergyBoost: return "+\(mission.rewardAmount) Chaos Energy"
+        var parts: [String] = []
+        if mission.rewardDust > 0 {
+            parts.append("+\(mission.rewardDust) Dust")
         }
+        if mission.rewardShardCount > 0, let tier = mission.rewardShardTier {
+            parts.append("+\(mission.rewardShardCount) \(tier.rawValue) Shards")
+        }
+        return parts.isEmpty ? "Reward" : parts.joined(separator: ", ")
     }
 }
