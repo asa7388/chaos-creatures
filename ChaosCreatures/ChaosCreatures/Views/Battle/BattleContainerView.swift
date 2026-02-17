@@ -22,6 +22,7 @@ struct BattleContainerView: View {
     @State private var sceneSize: CGSize = .zero
     @State private var matchResult: MatchResultData?
     @State private var showSurrenderConfirm = false
+    @State private var showBattleLog = false  // S-32
     @State private var actionBridge: ActionBridge?  // Strong ref to keep delegate alive
 
     var body: some View {
@@ -44,6 +45,32 @@ struct BattleContainerView: View {
                     .padding(.top, 8)
                     .padding(.horizontal, 12)
 
+                    // S-16: Turn timer bar
+                    if viewModel.turnTimerActive {
+                        TurnTimerBar(
+                            timeRemaining: viewModel.turnTimeRemaining,
+                            maxTime: viewModel.stateMachine.gameState?.turnTimerSeconds ?? 45,
+                            isMyTurn: viewModel.isMyTurn
+                        )
+                        .padding(.horizontal, 12)
+                        .padding(.top, 4)
+                    }
+
+                    // S-32: Battle log toggle button
+                    HStack {
+                        Spacer()
+                        Button(action: { showBattleLog.toggle() }) {
+                            Image(systemName: "text.bubble.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.textSecondary)
+                                .padding(6)
+                                .background(Color.bgPrimary.opacity(0.7))
+                                .clipShape(Circle())
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 4)
+
                     Spacer()
 
                     // Player HUD (bottom) + hand + controls
@@ -63,8 +90,26 @@ struct BattleContainerView: View {
                             selectedCardId: viewModel.selectedHandCardId,
                             canPlay: viewModel.stateMachine.canPlayCards,
                             currentMana: viewModel.playerMana,
-                            onSelect: { cardId in viewModel.selectHandCard(cardId) },
-                            onPlay: { cardId in viewModel.playCard(cardId) }
+                            onSelect: { cardId in
+                                viewModel.selectHandCard(cardId)
+                                // Tell the scene about the selected card for slot highlighting
+                                let card = viewModel.hand.first(where: { $0.instanceId == cardId })
+                                let needsSlot = card?.cardType == .creature || card?.cardType == .stabilizer
+                                viewModel.battleScene?.setSelectedHandCard(cardId, needsSlot: needsSlot)
+                            },
+                            onPlay: { cardId in
+                                // For spells, play immediately (no slot needed).
+                                // For creatures/stabilizers, selection + board tap handles it.
+                                let card = viewModel.hand.first(where: { $0.instanceId == cardId })
+                                if card?.cardType == .spell {
+                                    viewModel.playCard(cardId)
+                                    viewModel.battleScene?.setSelectedHandCard(nil, needsSlot: false)
+                                } else {
+                                    // Select and wait for board slot tap
+                                    viewModel.selectHandCard(cardId)
+                                    viewModel.battleScene?.setSelectedHandCard(cardId, needsSlot: true)
+                                }
+                            }
                         )
                         .frame(height: 120)
 

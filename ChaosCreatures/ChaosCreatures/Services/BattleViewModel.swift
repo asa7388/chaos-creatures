@@ -41,6 +41,17 @@ final class BattleViewModel: ObservableObject {
 
     @Published var selectedHandCardId: String?
 
+    // S-16: Turn timer
+    @Published var turnTimeRemaining: Int = 0
+    @Published var turnTimerActive: Bool = false
+    private var timerTask: Task<Void, Never>?
+
+    // S-41: Graveyard cards
+    @Published var graveyardCards: [BattleCardData] = []
+
+    // S-32: Battle log
+    @Published var battleLog: [BattleLogEntry] = []
+
     // MARK: - Internal
 
     let stateMachine = BattleStateMachine()
@@ -114,6 +125,52 @@ final class BattleViewModel: ObservableObject {
     /// Called by MatchService when a server event arrives
     func handleServerEvent(_ event: ServerEvent) {
         stateMachine.handleServerEvent(event)
+
+        // S-16: Handle timer events
+        switch event {
+        case .phaseChanged(let data):
+            if data.phase.isDecisionPhase {
+                startTurnTimer(seconds: stateMachine.gameState?.turnTimerSeconds ?? 45)
+            } else {
+                stopTurnTimer()
+            }
+            // S-32: Log phase change
+            addLogEntry(type: .phaseChange, message: "\(data.phase.displayName) phase")
+
+        case .timerWarning(let data):
+            turnTimeRemaining = data.secondsRemaining
+
+        case .timerExpired:
+            stopTurnTimer()
+            addLogEntry(type: .system, message: "Timer expired")
+
+        case .turnStart(let data):
+            addLogEntry(type: .turnStart, message: "Turn \(data.turn)")
+
+        case .chaosRoll(let data):
+            addLogEntry(type: .chaosRoll, message: "D20 rolled \(data.roll) (\(data.result.rawValue))")
+
+        case .cardPlayed(let data):
+            addLogEntry(type: .cardPlayed, message: "\(data.card.name) played")
+
+        case .creatureDestroyed(let data):
+            // S-41: Track destroyed creatures for graveyard
+            addLogEntry(type: .creatureDied, message: "Creature destroyed (\(data.cause))")
+
+        case .hpChanged(let data):
+            let delta = data.newHp - data.oldHp
+            let sign = delta >= 0 ? "+" : ""
+            addLogEntry(type: .hpChange, message: "HP \(sign)\(delta) (\(data.cause))")
+
+        case .combatResolved(let data):
+            addLogEntry(type: .combat, message: "\(data.pairs.count + data.unblocked.count) combat actions resolved")
+
+        case .eventTriggered(let data):
+            addLogEntry(type: .eventTriggered, message: "\(data.eventName): \(data.description)")
+
+        default:
+            break
+        }
     }
 
     // MARK: - Player Actions
@@ -125,7 +182,16 @@ final class BattleViewModel: ObservableObject {
         guard card.manaCost <= playerMana else { return }
 
         selectedHandCardId = nil
-        let action = PlayerAction.playCard(cardId: cardId, targetSlot: targetSlot, targetId: targetId)
+
+        // For creatures/stabilizers, auto-select the first empty slot if none specified
+        var slot = targetSlot
+        if slot == nil && (card.cardType == .creature || card.cardType == .stabilizer) {
+            if let state = stateMachine.gameState {
+                slot = state.me.board.firstIndex(where: { $0 == nil })
+            }
+        }
+
+        let action = PlayerAction.playCard(cardId: cardId, targetSlot: slot, targetId: targetId)
         sendAction(action)
     }
 
@@ -187,6 +253,49 @@ final class BattleViewModel: ObservableObject {
         stateMachine.canPlayCards && card.manaCost <= playerMana
     }
 
+    // MARK: - S-16: Turn Timer
+
+    private func startTurnTimer(seconds: Int) {
+        stopTurnTimer()
+        turnTimeRemaining = seconds
+        turnTimerActive = true
+
+        timerTask = Task { [weak self] in
+            while let self, self.turnTimeRemaining > 0, !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if !Task.isCancelled {
+                    self.turnTimeRemaining = max(0, self.turnTimeRemaining - 1)
+                }
+            }
+            if !Task.isCancelled {
+                self?.turnTimerActive = false
+            }
+        }
+    }
+
+    private func stopTurnTimer() {
+        timerTask?.cancel()
+        timerTask = nil
+        turnTimerActive = false
+    }
+
+    // MARK: - S-32: Battle Log
+
+    private func addLogEntry(type: BattleLogEntryType, message: String) {
+        let entry = BattleLogEntry(
+            id: UUID(),
+            timestamp: Date(),
+            turn: currentTurn,
+            type: type,
+            message: message
+        )
+        battleLog.append(entry)
+        // Keep log to a reasonable size
+        if battleLog.count > 200 {
+            battleLog.removeFirst(50)
+        }
+    }
+
     /// Primary action button label based on current phase
     var primaryActionLabel: String {
         switch currentPhase {
@@ -220,4 +329,54 @@ final class BattleViewModel: ObservableObject {
         default: break
         }
     }
+}
+
+// MARK: - Battle Log Entry (S-32)
+
+enum BattleLogEntryType: String {
+    case turnStart = "TURN"
+    case phaseChange = "PHASE"
+    case chaosRoll = "ROLL"
+    case cardPlayed = "CARD"
+    case creatureDied = "DEATH"
+    case hpChange = "HP"
+    case combat = "COMBAT"
+    case eventTriggered = "EVENT"
+    case system = "SYSTEM"
+
+    var iconName: String {
+        switch self {
+        case .turnStart: return "arrow.clockwise"
+        case .phaseChange: return "arrow.right"
+        case .chaosRoll: return "die.face.5.fill"
+        case .cardPlayed: return "rectangle.portrait.fill"
+        case .creatureDied: return "xmark.circle.fill"
+        case .hpChange: return "heart.fill"
+        case .combat: return "bolt.fill"
+        case .eventTriggered: return "sparkles"
+        case .system: return "gearshape"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .turnStart: return .textSecondary
+        case .phaseChange: return .orderBlue
+        case .chaosRoll: return .warningYellow
+        case .cardPlayed: return .ironwright
+        case .creatureDied: return .chaosRed
+        case .hpChange: return .healGreen
+        case .combat: return .damageOrange
+        case .eventTriggered: return .rarityEpic
+        case .system: return .textTertiary
+        }
+    }
+}
+
+struct BattleLogEntry: Identifiable {
+    let id: UUID
+    let timestamp: Date
+    let turn: Int
+    let type: BattleLogEntryType
+    let message: String
 }

@@ -573,8 +573,7 @@ final class BattleScene: SKScene {
                 handleBlockerDragStart(at: location)
 
             case .mainPhase where sm.isMyTurn:
-                // Tap on player creature for info, or handle other main phase interactions
-                break
+                handleMainPhaseTap(at: location)
 
             default:
                 break
@@ -598,6 +597,48 @@ final class BattleScene: SKScene {
         if stateMachine?.currentPhase == .assignBlockers {
             handleBlockerDragEnd(at: location)
         }
+    }
+
+    // MARK: - Card Selection State
+
+    /// The instance ID of the hand card currently selected for play (set by BattleViewModel)
+    private var selectedHandCardForPlay: String?
+
+    /// Called by BattleContainerView when a hand card is selected/deselected.
+    /// Highlights empty board slots when a creature/stabilizer card is selected.
+    func setSelectedHandCard(_ cardId: String?, needsSlot: Bool) {
+        selectedHandCardForPlay = cardId
+
+        // Clear previous slot highlights
+        playerBoard.resetAllSlotHighlights()
+
+        // Highlight empty slots if a creature/stabilizer card is selected
+        if cardId != nil && needsSlot {
+            for i in 0..<SK.Board.slotCount {
+                if playerBoard.creatureAt(slot: i) == nil {
+                    playerBoard.highlightSlot(i, valid: true)
+                }
+            }
+        }
+    }
+
+    // MARK: - Main Phase Tap (card play to board)
+
+    private func handleMainPhaseTap(at location: CGPoint) {
+        guard let selectedCardId = selectedHandCardForPlay else { return }
+
+        // Check if the tap is on a player board slot
+        let locationInBoard = convert(location, to: playerBoard)
+        guard let slot = playerBoard.slotAt(point: locationInBoard) else { return }
+
+        // Check the slot is empty
+        guard playerBoard.creatureAt(slot: slot) == nil else { return }
+
+        // Play the selected card to this slot
+        playerBoard.resetAllSlotHighlights()
+        selectedHandCardForPlay = nil
+        battleDelegate?.battleScene(self, didRequestAction:
+            .playCard(cardId: selectedCardId, targetSlot: slot, targetId: nil))
     }
 
     // MARK: - Attacker Selection
