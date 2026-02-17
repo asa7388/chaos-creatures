@@ -2,6 +2,7 @@
 // Chaos Creatures
 // StoreKit 2 paywall for subscription tiers.
 // Full-screen comparison of Free / Chaos Adept / Chaos Master plans.
+// Wired to StoreKitService.shared for product loading, purchasing, and restore.
 // Source: docs/design/09-monetization-details.md, 07-ui-ux-specs.md Section 6
 
 import SwiftUI
@@ -11,18 +12,11 @@ struct SubscriptionView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
-    @State private var products: [Product] = []
-    @State private var isLoading = true
     @State private var isPurchasing = false
     @State private var purchaseError: String?
     @State private var selectedTier: SubscriptionTier = .mid
 
-    // StoreKit product identifiers
-    private enum ProductID {
-        static let mid = "com.chaoscreatures.sub.adept"
-        static let high = "com.chaoscreatures.sub.master"
-        static let allIDs: Set<String> = [mid, high]
-    }
+    private let storeKit = StoreKitService.shared
 
     private var currentTier: SubscriptionTier {
         appState.player?.subscriptionTier ?? .free
@@ -76,7 +70,7 @@ struct SubscriptionView: View {
                 }
             }
             .task {
-                await loadProducts()
+                await storeKit.loadProducts()
             }
             .alert("Purchase Error", isPresented: .constant(purchaseError != nil)) {
                 Button("OK") { purchaseError = nil }
@@ -357,64 +351,30 @@ struct SubscriptionView: View {
         }
     }
 
-    // MARK: - StoreKit 2
-
-    private func loadProducts() async {
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            products = try await Product.products(for: ProductID.allIDs)
-                .sorted { $0.price < $1.price }
-        } catch {
-            purchaseError = "Failed to load products: \(error.localizedDescription)"
-        }
-    }
+    // MARK: - StoreKit 2 (via StoreKitService)
 
     private func purchase() async {
-        let productId: String
-        switch selectedTier {
-        case .mid: productId = ProductID.mid
-        case .high: productId = ProductID.high
-        case .free: return
-        }
-
-        guard let product = products.first(where: { $0.id == productId }) else {
-            purchaseError = "Product not found. Please try again."
-            return
-        }
+        guard selectedTier != .free else { return }
 
         isPurchasing = true
         defer { isPurchasing = false }
 
         do {
-            let result = try await product.purchase()
+            let transaction = try await storeKit.purchaseSubscription(tier: selectedTier)
 
-            switch result {
-            case .success(let verification):
-                let transaction = try checkVerified(verification)
-                await transaction.finish()
-
-                // Update subscription on backend
-                try await SupabaseService.shared.callFunction(
-                    "player/update-subscription",
-                    body: ["tier": selectedTier.rawValue, "transaction_id": transaction.id] as [String: Any]
-                )
-
-                // Refresh player data
+            if transaction != nil {
+                // Purchase succeeded - refresh player data from backend
                 await appState.refreshPlayer()
                 appState.showToast("Welcome to \(selectedTier.displayName)!", type: .success)
                 dismiss()
-
-            case .userCancelled:
-                break
-
-            case .pending:
-                purchaseError = "Purchase is pending approval."
-
-            @unknown default:
-                purchaseError = "Unknown purchase result."
             }
+            // If nil, user cancelled - do nothing
+        } catch StoreKitPurchaseError.pending {
+            purchaseError = "Purchase is pending approval."
+        } catch StoreKitPurchaseError.productNotFound {
+            purchaseError = "Product not found. Please try again later."
+        } catch StoreKitPurchaseError.failedVerification {
+            purchaseError = "Transaction verification failed."
         } catch {
             purchaseError = "Purchase failed: \(error.localizedDescription)"
         }
@@ -425,20 +385,11 @@ struct SubscriptionView: View {
         defer { isPurchasing = false }
 
         do {
-            try await AppStore.sync()
+            try await storeKit.restorePurchases()
             await appState.refreshPlayer()
             appState.showToast("Purchases restored", type: .success)
         } catch {
             purchaseError = "Restore failed: \(error.localizedDescription)"
-        }
-    }
-
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-        switch result {
-        case .unverified:
-            throw StoreError.failedVerification
-        case .verified(let safe):
-            return safe
         }
     }
 
@@ -465,12 +416,12 @@ struct SubscriptionView: View {
         case .free:
             return "Free"
         case .mid:
-            if let product = products.first(where: { $0.id == ProductID.mid }) {
+            if let product = storeKit.subscriptionProduct(for: .mid) {
                 return product.displayPrice + "/mo"
             }
             return "$6.99/mo"
         case .high:
-            if let product = products.first(where: { $0.id == ProductID.high }) {
+            if let product = storeKit.subscriptionProduct(for: .high) {
                 return product.displayPrice + "/mo"
             }
             return "$12.99/mo"

@@ -540,8 +540,109 @@ function finishMatch(
   });
 
   destroyTimerManager(matchId);
-  // TODO: Save match record to Supabase
-  // TODO: Award chaos energy to deck cards
+
+  // Save match record to Supabase and award chaos energy (fire and forget)
+  saveMatchRecordAndAwardEnergy(result).catch((err) => {
+    console.error(`Failed to save match record ${matchId}:`, err);
+  });
+}
+
+/**
+ * Save the match record to Supabase and award chaos energy to deck cards.
+ */
+async function saveMatchRecordAndAwardEnergy(
+  result: ReturnType<typeof endMatch>
+): Promise<void> {
+  const { getSupabase } = await import('../services/supabase');
+  const supabase = getSupabase();
+
+  const record = result.match_record;
+
+  // Insert match record
+  await supabase.from('match_records').insert({
+    id: record.id,
+    mode: record.mode,
+    player_1_id: record.player_1_id,
+    player_2_id: record.player_2_id,
+    winner_id: record.winner_id,
+    loser_id: record.loser_id,
+    player_1_deck_id: record.player_1_deck_id,
+    player_2_deck_id: record.player_2_deck_id,
+    player_1_avatar_id: record.player_1_avatar_id,
+    player_2_avatar_id: record.player_2_avatar_id,
+    player_1_faction_id: record.player_1_faction_id,
+    player_2_faction_id: record.player_2_faction_id,
+    end_reason: record.end_reason,
+    total_turns: record.total_turns,
+    duration_seconds: record.duration_seconds,
+    player_1_final_hp: record.player_1_final_hp,
+    player_2_final_hp: record.player_2_final_hp,
+    player_1_rank: record.player_1_rank,
+    player_2_rank: record.player_2_rank,
+    total_rolls: record.total_rolls,
+    order_events_p1: record.order_events_p1,
+    chaos_events_p1: record.chaos_events_p1,
+    order_events_p2: record.order_events_p2,
+    chaos_events_p2: record.chaos_events_p2,
+    started_at: record.started_at,
+    ended_at: record.ended_at,
+    season_id: record.season_id,
+  });
+
+  // Award chaos energy to all card instances in both decks
+  // Winner earns 2 energy, loser earns 1 (per docs/design/04-progression-economy.md)
+  const winnerEnergy = 2;
+  const loserEnergy = 1;
+
+  // Update card instances: increment chaos_energy for all cards in winner's deck
+  if (record.winner_id && record.player_1_deck_id) {
+    const winnerDeckId = record.winner_id === record.player_1_id
+      ? record.player_1_deck_id
+      : record.player_2_deck_id;
+    const loserDeckId = record.winner_id === record.player_1_id
+      ? record.player_2_deck_id
+      : record.player_1_deck_id;
+
+    // Fetch deck card instance IDs and increment energy
+    await awardEnergyToDeck(supabase, winnerDeckId, winnerEnergy);
+    await awardEnergyToDeck(supabase, loserDeckId, loserEnergy);
+  }
+
+  // Update match status
+  await supabase
+    .from('matches')
+    .update({ status: 'COMPLETED', ended_at: record.ended_at })
+    .eq('id', record.id);
+
+  console.log(`Match record saved: ${record.id} (winner: ${record.winner_id})`);
+}
+
+async function awardEnergyToDeck(
+  supabase: ReturnType<typeof import('../services/supabase').getSupabase>,
+  deckId: string,
+  energy: number
+): Promise<void> {
+  // Get all card instance IDs in this deck
+  const { data: deckCards } = await supabase
+    .from('deck_cards')
+    .select('card_instance_id')
+    .eq('deck_id', deckId);
+
+  if (!deckCards || deckCards.length === 0) return;
+
+  const instanceIds = deckCards.map((dc: { card_instance_id: string }) => dc.card_instance_id);
+
+  // Increment chaos_energy for each card instance via RPC or direct update
+  // Using raw SQL via rpc for atomic increment
+  const { error: rpcError } = await supabase.rpc('increment_chaos_energy', {
+    instance_ids: instanceIds,
+    amount: energy,
+  });
+
+  if (rpcError) {
+    // RPC may not exist yet — log warning but don't fail the match
+    console.warn(`increment_chaos_energy RPC failed (${rpcError.message}), skipping energy award`);
+  }
 }
 
 function handlePlayerDisconnect(

@@ -9,8 +9,13 @@ import { loadConfig } from './config';
 import { initSupabase, getSupabase } from './services/supabase';
 import { handleConnection } from './ws/handler';
 import { startMatchmakingPoller, stopMatchmakingPoller } from './services/matchmaking';
-import { getActiveMatchCount } from './engine/match';
-import { getActiveRoomCount } from './ws/rooms';
+import { createMatch, getActiveMatchCount } from './engine/match';
+import type { MatchParticipant } from './engine/match';
+import { createRoom, getActiveRoomCount } from './ws/rooms';
+import { startNextTurn } from './ws/handler';
+import type { BattleCard, BattleModifier, TriggeredAbility } from './types/game-state';
+import type { SeasonRank, Keyword, CardType } from './types/enums';
+import { randomUUID } from 'crypto';
 
 const config = loadConfig();
 
@@ -220,8 +225,169 @@ wss.on('connection', (ws, request) => {
 if (config.NODE_ENV !== 'test') {
   startMatchmakingPoller(async (p1, p2) => {
     console.log(`Match found: ${p1.player_id} vs ${p2.player_id}`);
-    // TODO: Load deck data from Supabase and create match
+
+    try {
+      const supabase = getSupabase();
+
+      // Load deck cards for both players (card_instances joined with card_templates)
+      const [p1Cards, p2Cards] = await Promise.all([
+        loadDeckCards(p1.player_id, p1.deck_id),
+        loadDeckCards(p2.player_id, p2.deck_id),
+      ]);
+
+      // Load avatar instability modifiers
+      const [p1Avatar, p2Avatar] = await Promise.all([
+        loadAvatarModifier(p1.avatar_id),
+        loadAvatarModifier(p2.avatar_id),
+      ]);
+
+      // Build match participants
+      const participant1: MatchParticipant = {
+        player_id: p1.player_id,
+        deck_cards: p1Cards,
+        avatar_id: p1.avatar_id,
+        avatar_instability_modifier: p1Avatar,
+        deck_id: p1.deck_id,
+        faction_id: p1.faction_id,
+        season_rank: p1.season_rank,
+      };
+
+      const participant2: MatchParticipant = {
+        player_id: p2.player_id,
+        deck_cards: p2Cards,
+        avatar_id: p2.avatar_id,
+        avatar_instability_modifier: p2Avatar,
+        deck_id: p2.deck_id,
+        faction_id: p2.faction_id,
+        season_rank: p2.season_rank,
+      };
+
+      // Determine game mode from queue entry
+      const mode = (p1.mode === 'RANKED' ? 'RANKED' : 'CASUAL') as 'RANKED' | 'CASUAL';
+
+      // Create match via engine
+      const matchId = randomUUID();
+      const state = createMatch(matchId, mode, participant1, participant2);
+
+      // Create WebSocket room for the match
+      createRoom(matchId);
+
+      // Insert match record into Supabase matches table
+      await supabase.from('matches').insert({
+        id: matchId,
+        mode,
+        player_1_id: state.player_1.player_id,
+        player_2_id: state.player_2.player_id,
+        player_1_deck_id: state.player_1.deck_id,
+        player_2_deck_id: state.player_2.deck_id,
+        status: 'IN_PROGRESS',
+        started_at: state.started_at,
+      });
+
+      // Broadcast MATCH_FOUND to both players via Supabase Realtime
+      // Each player listens on their own matchmaking:<playerId> channel
+      const matchFoundPayload = {
+        type: 'broadcast',
+        event: 'MATCH_FOUND',
+        payload: { match_id: matchId },
+      };
+
+      await Promise.all([
+        supabase.channel(`matchmaking:${p1.player_id}`)
+          .send(matchFoundPayload as any),
+        supabase.channel(`matchmaking:${p2.player_id}`)
+          .send(matchFoundPayload as any),
+      ]);
+
+      console.log(`Match ${matchId} created: ${p1.player_id} vs ${p2.player_id} (${mode})`);
+    } catch (err) {
+      console.error('Failed to create match from matchmaking:', err);
+    }
   });
+}
+
+/**
+ * Load deck cards for a player from Supabase.
+ * Joins card_instances with card_templates to get full card data.
+ */
+async function loadDeckCards(playerId: string, deckId: string): Promise<BattleCard[]> {
+  const supabase = getSupabase();
+
+  // Fetch deck_cards join: deck_cards -> card_instances -> card_templates
+  const { data: deckCards, error } = await supabase
+    .from('deck_cards')
+    .select(`
+      card_instance_id,
+      card_instances!inner (
+        id,
+        card_template_id,
+        evolution_tier,
+        chaos_energy,
+        modifiers,
+        triggered_abilities,
+        card_templates!inner (
+          id,
+          name,
+          card_type,
+          mana_cost,
+          base_attack,
+          base_health,
+          base_instability,
+          innate_keywords,
+          faction_id,
+          art_url
+        )
+      )
+    `)
+    .eq('deck_id', deckId);
+
+  if (error) {
+    throw new Error(`Failed to load deck cards for player ${playerId}: ${error.message}`);
+  }
+
+  if (!deckCards || deckCards.length === 0) {
+    throw new Error(`No cards found in deck ${deckId} for player ${playerId}`);
+  }
+
+  return deckCards.map((dc: any) => {
+    const ci = dc.card_instances;
+    const ct = ci.card_templates;
+
+    return {
+      instance_id: ci.id,
+      template_id: ct.id,
+      card_type: ct.card_type as CardType,
+      name: ct.name,
+      mana_cost: ct.mana_cost,
+      art_url: ct.art_url ?? '',
+      base_attack: ct.base_attack ?? undefined,
+      base_health: ct.base_health ?? undefined,
+      base_instability: ct.base_instability ?? 0,
+      innate_keywords: (ct.innate_keywords ?? []) as Keyword[],
+      modifiers: (ci.modifiers ?? []) as BattleModifier[],
+      triggered_abilities: (ci.triggered_abilities ?? []) as TriggeredAbility[],
+      faction_id: ct.faction_id,
+    } satisfies BattleCard;
+  });
+}
+
+/**
+ * Load avatar instability modifier from Supabase.
+ */
+async function loadAvatarModifier(avatarId: string): Promise<number> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('avatars')
+    .select('instability_modifier')
+    .eq('id', avatarId)
+    .single();
+
+  if (error || !data) {
+    console.warn(`Could not load avatar ${avatarId}, defaulting instability modifier to 0`);
+    return 0;
+  }
+
+  return data.instability_modifier ?? 0;
 }
 
 const PORT = config.GAME_SERVER_PORT;

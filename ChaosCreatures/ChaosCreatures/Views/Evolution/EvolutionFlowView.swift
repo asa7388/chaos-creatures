@@ -1,13 +1,498 @@
 // EvolutionFlowView.swift
 // Chaos Creatures
-// TODO: Implement in Wave 1
-// Multi-step evolution ceremony (art reveal, name selection, modifier pick).
+// Multi-step evolution ceremony: select card -> choose modifier + channel -> confirm -> reveal.
+// Source: docs/design/07-ui-ux-specs.md Section 5, 02-card-data-model.md Section 3
 
 import SwiftUI
 
 struct EvolutionFlowView: View {
-    var body: some View {
-        Text("Evolution")
-        // TODO: Implement multi-step evolution flow
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    let card: CardInstance
+
+    // MARK: - State
+
+    @State private var flowPhase: EvolutionFlowPhase = .loading
+    @State private var selectedModifier: ModifierDefinition?
+    @State private var selectedChannel: EventType = .order
+
+    // Snapshot of card before evolution (for reveal comparison)
+    @State private var previousTier: EvolutionTier = .common
+    @State private var previousName: String = ""
+    @State private var previousArtUrl: String?
+
+    private let evolutionService = EvolutionService.shared
+
+    // MARK: - Flow Phases
+
+    private enum EvolutionFlowPhase: Equatable {
+        case loading
+        case choosingModifier
+        case confirming
+        case generating
+        case reveal
+        case error(String)
+
+        static func == (lhs: EvolutionFlowPhase, rhs: EvolutionFlowPhase) -> Bool {
+            switch (lhs, rhs) {
+            case (.loading, .loading),
+                 (.choosingModifier, .choosingModifier),
+                 (.confirming, .confirming),
+                 (.generating, .generating),
+                 (.reveal, .reveal):
+                return true
+            case (.error(let a), .error(let b)):
+                return a == b
+            default:
+                return false
+            }
+        }
     }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.bgPrimary.ignoresSafeArea()
+
+                switch flowPhase {
+                case .loading:
+                    loadingView
+
+                case .choosingModifier:
+                    ModifierPickerView(
+                        modifiers: evolutionService.modifierChoices,
+                        cardName: card.currentName,
+                        onConfirm: { modifier, channel in
+                            selectedModifier = modifier
+                            selectedChannel = channel
+                            confirmEvolution(modifier: modifier, channel: channel)
+                        },
+                        onCancel: {
+                            evolutionService.cancelEvolution()
+                            dismiss()
+                        }
+                    )
+
+                case .confirming, .generating:
+                    generatingView
+
+                case .reveal:
+                    if let result = evolutionService.evolutionResult {
+                        EvolutionRevealView(
+                            result: result,
+                            previousTier: previousTier,
+                            previousName: previousName,
+                            previousArtUrl: previousArtUrl,
+                            modifierName: selectedModifier?.name,
+                            statChanges: evolutionService.statChanges,
+                            onContinue: {
+                                evolutionService.reset()
+                                Task { await appState.refreshPlayer() }
+                                dismiss()
+                            }
+                        )
+                    }
+
+                case .error(let message):
+                    errorView(message: message)
+                }
+            }
+            .navigationTitle(navigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if flowPhase != .reveal {
+                        Button("Cancel") {
+                            evolutionService.cancelEvolution()
+                            dismiss()
+                        }
+                        .foregroundColor(.textSecondary)
+                    }
+                }
+            }
+            .interactiveDismissDisabled(
+                flowPhase == .confirming || flowPhase == .generating
+            )
+        }
+        .task {
+            await startEvolution()
+        }
+        .onChange(of: evolutionService.evolutionStatus) { _, newStatus in
+            handleStatusChange(newStatus)
+        }
+    }
+
+    // MARK: - Navigation Title
+
+    private var navigationTitle: String {
+        switch flowPhase {
+        case .loading: return "Preparing Evolution"
+        case .choosingModifier: return "Choose Modifier"
+        case .confirming: return "Evolving..."
+        case .generating: return "Evolving..."
+        case .reveal: return "Evolution Complete"
+        case .error: return "Evolution Failed"
+        }
+    }
+
+    // MARK: - Loading View
+
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            // Card being evolved
+            cardPreview
+
+            ProgressView()
+                .scaleEffect(1.3)
+                .tint(Color.tierColor(card.tier))
+
+            Text("Preparing evolution choices...")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.textSecondary)
+
+            // Card stats
+            evolutionEligibilityInfo
+        }
+    }
+
+    // MARK: - Generating View
+
+    private var generatingView: some View {
+        VStack(spacing: 24) {
+            // Card preview
+            cardPreview
+
+            // Status indicator
+            VStack(spacing: 12) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .tint(.tauntGold)
+
+                Text(evolutionService.evolutionStatus.displayMessage)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textSecondary)
+                    .animation(.easeInOut, value: evolutionService.evolutionStatus)
+
+                // Progress stages
+                generationStages
+            }
+
+            if let modifier = selectedModifier {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 12))
+                        .foregroundColor(.tauntGold)
+                    Text("Applying: \(modifier.name)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.tauntGold)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.tauntGold.opacity(0.1))
+                .cornerRadius(8)
+            }
+        }
+    }
+
+    // MARK: - Generation Stages
+
+    private var generationStages: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            stageRow(
+                label: "Start evolution",
+                isComplete: evolutionService.evolutionStatus != .generating,
+                isActive: evolutionService.evolutionStatus == .generating
+            )
+            stageRow(
+                label: "Generate new art",
+                isComplete: evolutionService.evolutionStatus != .generatingArt
+                    && evolutionService.evolutionStatus != .generating,
+                isActive: evolutionService.evolutionStatus == .generatingArt
+            )
+            stageRow(
+                label: "Create name and lore",
+                isComplete: evolutionService.evolutionStatus == .applyingModifiers
+                    || evolutionService.evolutionStatus == .completed,
+                isActive: evolutionService.evolutionStatus == .generatingText
+            )
+            stageRow(
+                label: "Apply modifier effects",
+                isComplete: evolutionService.evolutionStatus == .completed,
+                isActive: evolutionService.evolutionStatus == .applyingModifiers
+            )
+        }
+        .padding(16)
+        .background(Color.bgSecondary)
+        .cornerRadius(12)
+        .padding(.horizontal, 32)
+    }
+
+    private func stageRow(label: String, isComplete: Bool, isActive: Bool) -> some View {
+        HStack(spacing: 10) {
+            if isComplete {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.healGreen)
+            } else if isActive {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .tint(.tauntGold)
+                    .frame(width: 16, height: 16)
+            } else {
+                Circle()
+                    .fill(Color.bgQuaternary)
+                    .frame(width: 16, height: 16)
+            }
+
+            Text(label)
+                .font(.system(size: 13, weight: isActive ? .semibold : .regular))
+                .foregroundColor(isActive ? .textPrimary : (isComplete ? .textSecondary : .textDisabled))
+        }
+    }
+
+    // MARK: - Card Preview
+
+    private var cardPreview: some View {
+        VStack(spacing: 8) {
+            // Mini art
+            if let url = card.artURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    default:
+                        Rectangle()
+                            .fill(Color.bgTertiary)
+                    }
+                }
+                .frame(width: 100, height: 100)
+                .cornerRadius(12)
+            } else {
+                Rectangle()
+                    .fill(Color.bgTertiary)
+                    .frame(width: 100, height: 100)
+                    .cornerRadius(12)
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.textDisabled)
+                    )
+            }
+
+            Text(card.currentName)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.textPrimary)
+
+            HStack(spacing: 8) {
+                Text(card.tier.displayName)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.tierColor(card.tier))
+                    .cornerRadius(6)
+
+                if let nextTier = card.tier.nextTier {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(.textDisabled)
+
+                    Text(nextTier.displayName)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.tierColor(nextTier))
+                        .cornerRadius(6)
+                }
+            }
+        }
+    }
+
+    // MARK: - Evolution Eligibility Info
+
+    private var evolutionEligibilityInfo: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.tauntGold)
+                Text("Chaos Energy: \(card.chaosEnergy)")
+                    .font(.system(size: 13))
+                    .foregroundColor(.textSecondary)
+
+                if let threshold = card.nextEnergyThreshold {
+                    Text("/ \(threshold)")
+                        .font(.system(size: 13))
+                        .foregroundColor(.textDisabled)
+                }
+            }
+
+            // Evolution progress bar
+            if let threshold = card.nextEnergyThreshold, threshold > 0 {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.bgQuaternary)
+                            .frame(height: 6)
+
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.tauntGold)
+                            .frame(
+                                width: geo.size.width * card.evolutionProgress,
+                                height: 6
+                            )
+                    }
+                }
+                .frame(height: 6)
+                .padding(.horizontal, 40)
+            }
+        }
+    }
+
+    // MARK: - Error View
+
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.warningYellow)
+
+            Text("Evolution Failed")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.textPrimary)
+
+            Text(message)
+                .font(.system(size: 14))
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            VStack(spacing: 12) {
+                Button(action: {
+                    flowPhase = .loading
+                    Task { await startEvolution() }
+                }) {
+                    Text("Try Again")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .background(Color.tauntGold)
+                        .cornerRadius(12)
+                }
+
+                Button(action: {
+                    evolutionService.reset()
+                    dismiss()
+                }) {
+                    Text("Cancel")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.textSecondary)
+                }
+            }
+            .padding(.horizontal, 32)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func startEvolution() async {
+        // Snapshot card state before evolution
+        previousTier = card.tier
+        previousName = card.currentName
+        previousArtUrl = card.artUrl
+
+        flowPhase = .loading
+
+        do {
+            try await evolutionService.startEvolution(cardId: card.id)
+            // Status handler will transition to .choosingModifier
+        } catch {
+            flowPhase = .error(error.localizedDescription)
+        }
+    }
+
+    private func confirmEvolution(modifier: ModifierDefinition, channel: EventType) {
+        flowPhase = .confirming
+
+        Task {
+            do {
+                try await evolutionService.confirmEvolution(
+                    modifierChosenId: modifier.id,
+                    nameChosen: card.currentName // Server generates new name
+                )
+                // Status handler will transition to .reveal
+            } catch {
+                flowPhase = .error(error.localizedDescription)
+            }
+        }
+    }
+
+    // MARK: - Status Change Handler
+
+    private func handleStatusChange(_ status: EvolutionStatus) {
+        switch status {
+        case .choosingModifier:
+            if flowPhase == .loading {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    flowPhase = .choosingModifier
+                }
+            }
+
+        case .generating, .generatingArt, .generatingText, .applyingModifiers:
+            if flowPhase != .generating && flowPhase != .confirming {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    flowPhase = .generating
+                }
+            }
+
+        case .completed:
+            withAnimation(.easeInOut(duration: 0.3)) {
+                flowPhase = .reveal
+            }
+
+        case .failed:
+            if let error = evolutionService.error {
+                flowPhase = .error(error)
+            } else {
+                flowPhase = .error("An unknown error occurred.")
+            }
+
+        default:
+            break
+        }
+    }
+}
+
+#Preview {
+    EvolutionFlowView(
+        card: CardInstance(
+            id: UUID(),
+            templateId: UUID(),
+            ownerId: UUID(),
+            tier: .common,
+            currentName: "Iron Sentinel",
+            currentAttack: 3,
+            currentHealth: 4,
+            currentManaCost: 3,
+            instabilityValue: 2,
+            innateKeywords: ["SHIELD"],
+            modifierKeywords: [],
+            evolutionHistory: [],
+            modifiers: [],
+            triggeredAbilities: [],
+            chaosEnergy: 15,
+            gamesPlayed: 8,
+            artUrl: "",
+            flavorText: "A stalwart guardian of the Ironwright forges.",
+            artPromptHistory: [],
+            isFavorite: false,
+            inDeckIds: [],
+            createdAt: Date(),
+            lastEvolvedAt: nil
+        )
+    )
+    .environment(AppState())
 }

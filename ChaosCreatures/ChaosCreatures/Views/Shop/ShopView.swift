@@ -9,6 +9,9 @@ struct ShopView: View {
     @Environment(AppState.self) private var appState
     @Environment(AppRouter.self) private var router
 
+    @State private var showSubscription = false
+    @State private var selectedPackType: PackType?
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -36,6 +39,14 @@ struct ShopView: View {
                 }
             }
         }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
+                .environment(appState)
+        }
+        .sheet(item: $selectedPackType) { packType in
+            CardPackOpeningView(packType: packType)
+                .environment(appState)
+        }
     }
 
     // MARK: - Currency Header
@@ -57,10 +68,10 @@ struct ShopView: View {
 
             // Shard counts
             HStack(spacing: 10) {
-                shardCounter(tier: .uncommon, count: 0)
-                shardCounter(tier: .rare, count: 0)
-                shardCounter(tier: .epic, count: 0)
-                shardCounter(tier: .legendary, count: 0)
+                shardCounter(tier: .uncommon, count: appState.player?.shardsUncommon ?? 0)
+                shardCounter(tier: .rare, count: appState.player?.shardsRare ?? 0)
+                shardCounter(tier: .epic, count: appState.player?.shardsEpic ?? 0)
+                shardCounter(tier: .legendary, count: appState.player?.shardsLegendary ?? 0)
             }
         }
         .padding(.horizontal, 16)
@@ -93,24 +104,41 @@ struct ShopView: View {
 
     private var subscriptionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Subscription")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.textPrimary)
-                .padding(.horizontal, 16)
+            HStack {
+                Text("Subscription")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.textPrimary)
+
+                Spacer()
+
+                // Current tier badge
+                let tier = appState.player?.subscriptionTier ?? .free
+                Text(tier.displayName)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(tier == .free ? .textTertiary : .black)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(tier == .free ? Color.bgQuaternary : Color.tauntGold)
+                    .cornerRadius(4)
+            }
+            .padding(.horizontal, 16)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     SubscriptionCardItem(
                         tier: .free,
-                        currentTier: appState.player?.subscriptionTier ?? .free
+                        currentTier: appState.player?.subscriptionTier ?? .free,
+                        onUpgrade: { showSubscription = true }
                     )
                     SubscriptionCardItem(
                         tier: .mid,
-                        currentTier: appState.player?.subscriptionTier ?? .free
+                        currentTier: appState.player?.subscriptionTier ?? .free,
+                        onUpgrade: { showSubscription = true }
                     )
                     SubscriptionCardItem(
                         tier: .high,
-                        currentTier: appState.player?.subscriptionTier ?? .free
+                        currentTier: appState.player?.subscriptionTier ?? .free,
+                        onUpgrade: { showSubscription = true }
                     )
                 }
                 .padding(.horizontal, 16)
@@ -134,21 +162,27 @@ struct ShopView: View {
                     description: "5 random cards from your faction",
                     price: "100 Dust",
                     icon: "gift.fill",
-                    color: .rarityUncommon
+                    color: .rarityUncommon,
+                    canAfford: (appState.player?.chaosDust ?? 0) >= 100,
+                    onPurchase: { selectedPackType = .starter }
                 )
                 PackRow(
                     name: "Rare Pack",
                     description: "3 cards, guaranteed 1 Rare or better",
                     price: "250 Dust",
                     icon: "star.fill",
-                    color: .rarityRare
+                    color: .rarityRare,
+                    canAfford: (appState.player?.chaosDust ?? 0) >= 250,
+                    onPurchase: { selectedPackType = .rare }
                 )
                 PackRow(
                     name: "Epic Pack",
                     description: "3 cards, guaranteed 1 Epic or better",
                     price: "500 Dust",
                     icon: "sparkles",
-                    color: .rarityEpic
+                    color: .rarityEpic,
+                    canAfford: (appState.player?.chaosDust ?? 0) >= 500,
+                    onPurchase: { selectedPackType = .epic }
                 )
             }
             .padding(.horizontal, 16)
@@ -179,6 +213,7 @@ struct ShopView: View {
 struct SubscriptionCardItem: View {
     let tier: SubscriptionTier
     let currentTier: SubscriptionTier
+    var onUpgrade: () -> Void = {}
 
     private var isCurrent: Bool { tier == currentTier }
 
@@ -219,9 +254,7 @@ struct SubscriptionCardItem: View {
             Spacer()
 
             // Action button
-            Button(action: {
-                // StoreKit purchase
-            }) {
+            Button(action: onUpgrade) {
                 Text(isCurrent ? "Current Tier" : "Upgrade")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(isCurrent ? .textTertiary : .white)
@@ -306,6 +339,8 @@ struct PackRow: View {
     let price: String
     let icon: String
     let color: Color
+    var canAfford: Bool = true
+    var onPurchase: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 12) {
@@ -328,17 +363,16 @@ struct PackRow: View {
 
             Spacer()
 
-            Button(action: {
-                // Purchase action
-            }) {
+            Button(action: onPurchase) {
                 Text(price)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(canAfford ? .white : .textDisabled)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(color)
+                    .background(canAfford ? color : Color.bgQuaternary)
                     .cornerRadius(8)
             }
+            .disabled(!canAfford)
         }
         .padding(12)
         .cardBackground()

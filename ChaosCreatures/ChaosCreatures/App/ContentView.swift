@@ -89,7 +89,7 @@ struct ContentView: View {
                         case .subscription:
                             SubscriptionView()
                         case .cardPackOpening:
-                            CardPackOpeningView()
+                            CardPackOpeningView(packType: .starter)
                         case .settings:
                             SettingsView()
                         }
@@ -103,15 +103,24 @@ struct ContentView: View {
         .tint(.ironwright)
         .fullScreenCover(isPresented: $router.showBattle) {
             if let matchID = router.matchID {
-                BattleContainerView()
+                BattleContainerView(matchId: matchID)
+                    .environment(router)
             }
         }
         .sheet(isPresented: $router.showMatchmaking) {
             MatchmakingView()
+                .environment(appState)
+                .environment(router)
+        }
+        .fullScreenCover(isPresented: $router.showPostMatch) {
+            PostMatchView(matchId: router.matchID)
+                .environment(appState)
+                .environment(router)
         }
         .sheet(isPresented: $router.showEvolution) {
             if let card = router.selectedCardInstance {
-                EvolutionFlowView()
+                EvolutionFlowView(card: card)
+                    .environment(appState)
             }
         }
     }

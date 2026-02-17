@@ -1,6 +1,8 @@
 // BattleContainerView.swift
 // Chaos Creatures
 // Hosts the SpriteKit BattleScene with SwiftUI HUD overlay.
+// Connects to MatchService on appear, routes server events to BattleViewModel,
+// and transitions to PostMatchView on game over.
 // Source: docs/design/07-ui-ux-specs.md Section 3
 
 import SwiftUI
@@ -11,8 +13,16 @@ import SpriteKit
 /// SwiftUI handles the HUD (HP bars, hand cards, action buttons).
 struct BattleContainerView: View {
 
+    let matchId: String
+
+    @Environment(AppRouter.self) private var router
+
     @StateObject private var viewModel = BattleViewModel()
+    @State private var matchService = MatchService.shared
     @State private var sceneSize: CGSize = .zero
+    @State private var matchResult: MatchResultData?
+    @State private var showSurrenderConfirm = false
+    @State private var actionBridge: ActionBridge?  // Strong ref to keep delegate alive
 
     var body: some View {
         GeometryReader { geo in
@@ -68,7 +78,7 @@ struct BattleContainerView: View {
                             graveyardCount: viewModel.playerGraveyardCount,
                             hasChaosSpark: viewModel.hasChaosSpark,
                             onChaosSpark: viewModel.useChaosSpark,
-                            onSurrender: viewModel.surrender,
+                            onSurrender: { showSurrenderConfirm = true },
                             onGraveyard: { viewModel.showGraveyard = true }
                         )
                         .padding(.horizontal, 12)
@@ -87,7 +97,128 @@ struct BattleContainerView: View {
         }
         .ignoresSafeArea()
         .statusBarHidden()
+        .task {
+            await connectToMatch()
+        }
+        .onDisappear {
+            Task {
+                await matchService.disconnect()
+            }
+        }
+        .alert("Surrender?", isPresented: $showSurrenderConfirm) {
+            Button("Surrender", role: .destructive) {
+                viewModel.surrender()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("You will lose this match if you surrender.")
+        }
+        .onChange(of: viewModel.currentPhase) { _, newPhase in
+            if newPhase == .gameOver {
+                // Build match result data from the view model's state
+                handleGameOver()
+            }
+        }
     }
+
+    // MARK: - Match Connection
+
+    private func connectToMatch() async {
+        guard let playerId = await SupabaseService.shared.currentUserID else {
+            viewModel.isConnected = false
+            return
+        }
+
+        // Wire MatchService events to BattleViewModel
+        matchService.onGameEvent = { [weak viewModel] event in
+            viewModel?.handleServerEvent(event)
+        }
+
+        matchService.onConnectionStateChange = { [weak viewModel] connected in
+            viewModel?.isConnected = connected
+        }
+
+        // Connect to the match channel
+        await matchService.connect(matchId: matchId, playerId: playerId)
+
+        // Wire BattleScene delegate for player actions
+        let bridge = ActionBridge(matchService: matchService, matchId: matchId, playerId: playerId)
+        actionBridge = bridge  // Keep strong reference (battleDelegate is weak)
+        viewModel.battleScene?.battleDelegate = bridge
+    }
+
+    // MARK: - Game Over
+
+    private func handleGameOver() {
+        // Extract result data from the current game state
+        let state = viewModel.stateMachine.gameState
+        let isWinner: Bool
+        if let winner = state?.winner, let mySide = state?.mySide {
+            isWinner = winner == mySide
+        } else {
+            isWinner = false
+        }
+
+        matchResult = MatchResultData(
+            matchId: matchId,
+            isVictory: isWinner,
+            playerFinalHp: viewModel.playerHp,
+            opponentFinalHp: viewModel.opponentHp,
+            totalTurns: viewModel.currentTurn,
+            xpEarned: isWinner ? 25 : 10, // Base XP values
+            dustEarned: isWinner ? 5 : 2   // Base dust values
+        )
+
+        // Short delay for match-end animation, then transition
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+            await matchService.disconnect()
+            router.dismissBattle()
+        }
+    }
+}
+
+// MARK: - Action Bridge (BattleScene -> MatchService)
+
+/// Bridges BattleScene delegate actions to MatchService.
+/// BattleScene sends PlayerAction, this bridge forwards to the server.
+private class ActionBridge: BattleSceneDelegate {
+    let matchService: MatchService
+    let matchId: String
+    let playerId: UUID
+
+    init(matchService: MatchService, matchId: String, playerId: UUID) {
+        self.matchService = matchService
+        self.matchId = matchId
+        self.playerId = playerId
+    }
+
+    func battleScene(_ scene: BattleScene, didSelectHandCard cardId: String) {
+        // Hand card selection is handled by BattleViewModel directly
+    }
+
+    @MainActor
+    func battleScene(_ scene: BattleScene, didRequestAction action: PlayerAction) {
+        Task {
+            await matchService.sendAction(action)
+        }
+    }
+
+    func battleSceneDidTapAvatar(_ scene: BattleScene, isPlayer: Bool) {
+        // Avatar tap is handled by BattleViewModel
+    }
+}
+
+// MARK: - Match Result Data
+
+struct MatchResultData {
+    let matchId: String
+    let isVictory: Bool
+    let playerFinalHp: Int
+    let opponentFinalHp: Int
+    let totalTurns: Int
+    let xpEarned: Int
+    let dustEarned: Int
 }
 
 // MARK: - Opponent HUD
@@ -371,6 +502,7 @@ struct ConnectionLostOverlay: View {
 }
 
 #Preview {
-    BattleContainerView()
+    BattleContainerView(matchId: "preview-match")
         .preferredColorScheme(.dark)
+        .environment(AppRouter())
 }

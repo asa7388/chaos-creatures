@@ -492,38 +492,11 @@ struct CardPackOpeningView: View {
         phase = .purchasing
 
         do {
-            // Call the edge function to open a pack
-            struct PackOpenRequest: Encodable {
-                let packType: String
-                let factionId: String
-
-                enum CodingKeys: String, CodingKey {
-                    case packType = "pack_type"
-                    case factionId = "faction_id"
-                }
-            }
-
-            struct PackOpenResponse: Decodable {
-                let cards: [CardInstance]
-                let dustRemaining: Int
-
-                enum CodingKeys: String, CodingKey {
-                    case cards
-                    case dustRemaining = "dust_remaining"
-                }
-            }
-
             let factionId = appState.player?.primaryFactionId?.uuidString ?? FactionShortName.ironwright.rawValue
 
-            let response: PackOpenResponse = try await SupabaseService.shared.callFunction(
-                "shop/open-pack",
-                body: PackOpenRequest(
-                    packType: packType.rawValue,
-                    factionId: factionId
-                )
-            )
+            let result = try await CollectionService.shared.openPack(factionId: factionId)
 
-            revealedCards = response.cards
+            revealedCards = result.cards
 
             // Initialize animation arrays
             cardOffsets = Array(repeating: CGFloat(0), count: revealedCards.count)
