@@ -11,7 +11,7 @@ enum ParticleEffects {
     // MARK: - Death Particles
 
     /// Faction-specific death particle burst
-    static func deathEmitter(for faction: Faction) -> SKEmitterNode {
+    static func deathEmitter(for faction: FactionShortName) -> SKEmitterNode {
         let emitter = SKEmitterNode()
 
         emitter.particleBirthRate = 80
@@ -52,6 +52,7 @@ enum ParticleEffects {
             emitter.yAcceleration = -20
 
         case .demonicKingdoms:
+
             // Ember/smoke — deep red
             emitter.particleColor = UIColor(hex: "#FF5252")
             emitter.particleColorBlendFactor = 1.0
@@ -132,7 +133,7 @@ enum ParticleEffects {
     // MARK: - Card Play Glow
 
     /// Brief glow burst when a card is played to the board
-    static func cardPlayGlow(faction: Faction) -> SKEmitterNode {
+    static func cardPlayGlow(factionColor: UIColor) -> SKEmitterNode {
         let emitter = SKEmitterNode()
 
         emitter.particleBirthRate = 40
@@ -150,7 +151,7 @@ enum ParticleEffects {
         emitter.particleScale = 0.15
         emitter.particleScaleRange = 0.05
 
-        emitter.particleColor = faction.primaryColor
+        emitter.particleColor = factionColor
         emitter.particleColorBlendFactor = 1.0
         emitter.particleSize = CGSize(width: 4, height: 4)
 
@@ -232,7 +233,7 @@ enum ParticleEffects {
     // MARK: - Spell Effect Trail
 
     /// Particle trail for spell projectile
-    static func spellTrail(faction: Faction) -> SKEmitterNode {
+    static func spellTrail(factionColor: UIColor) -> SKEmitterNode {
         let emitter = SKEmitterNode()
 
         emitter.particleBirthRate = 60
@@ -245,7 +246,7 @@ enum ParticleEffects {
         emitter.particleScale = 0.15
         emitter.particleScaleRange = 0.05
 
-        emitter.particleColor = faction.accentColor
+        emitter.particleColor = factionColor
         emitter.particleColorBlendFactor = 1.0
         emitter.particleSize = CGSize(width: 4, height: 4)
 
