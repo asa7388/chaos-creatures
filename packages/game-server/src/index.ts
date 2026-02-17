@@ -11,12 +11,14 @@ import { loadConfig } from './config';
 import { initSupabase, getSupabase } from './services/supabase';
 import { setupMatchChannel, registerPlayer, startNextTurn } from './ws/handler';
 import { startMatchmakingPoller, stopMatchmakingPoller } from './services/matchmaking';
-import { createMatch, getActiveMatchCount } from './engine/match';
+import { createMatch, getActiveMatchCount, getMatch } from './engine/match';
 import type { MatchParticipant } from './engine/match';
 import { getActiveRoomCount } from './ws/rooms';
 import type { BattleCard, BattleModifier, TriggeredAbility } from './types/game-state';
 import type { SeasonRank, Keyword, CardType } from './types/enums';
 import { randomUUID } from 'crypto';
+import { buildBotDeck, BOT_PLAYER_ID, BOT_DECK_ID, BOT_AVATAR_ID } from './bot/ai';
+import { executeBotTurn, shouldBotAct } from './bot/runner';
 
 const config = loadConfig();
 
@@ -215,6 +217,177 @@ app.post('/api/admin/batch/start', async (req, res) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(500).json({ error: `Batch start failed: ${message}` });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// JWT Verification Helper
+// Validates a Supabase JWT and returns the user ID.
+// Used by the practice endpoint for player authentication.
+// ---------------------------------------------------------------------------
+async function verifySupabaseJWT(authHeader: string | undefined): Promise<string | null> {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data.user) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Practice Match Endpoint: POST /api/practice/start
+// Creates a practice match against the AI bot.
+// Bypasses the matchmaking queue entirely.
+// Source: docs/design/PRACTICE-MATCH-SPEC.md Section 3.3
+// ---------------------------------------------------------------------------
+app.post('/api/practice/start', async (req, res) => {
+  try {
+    // 1. Authenticate
+    const userId = await verifySupabaseJWT(req.headers.authorization);
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    // 2. Validate request
+    const { deck_id } = req.body;
+    if (!deck_id || typeof deck_id !== 'string') {
+      res.status(400).json({ error: 'deck_id is required' });
+      return;
+    }
+
+    const supabase = getSupabase();
+
+    // 3. Load player profile
+    const { data: player, error: playerError } = await supabase
+      .from('players')
+      .select('id, season_rank')
+      .eq('auth_id', userId)
+      .single();
+
+    if (playerError || !player) {
+      res.status(400).json({ error: 'Player profile not found' });
+      return;
+    }
+
+    // 4. Load the player's deck
+    const { data: deck, error: deckError } = await supabase
+      .from('decks')
+      .select('id, faction_id, avatar_id, is_valid')
+      .eq('id', deck_id)
+      .eq('owner_id', player.id)
+      .single();
+
+    if (deckError || !deck) {
+      res.status(400).json({ error: 'Deck not found or does not belong to player' });
+      return;
+    }
+
+    // 5. Load player's deck cards (same query as matchmaking poller)
+    const playerCards = await loadDeckCards(player.id, deck_id);
+
+    // 6. Load player's avatar instability modifier
+    const playerAvatarMod = await loadAvatarModifier(deck.avatar_id);
+
+    // 7. Build bot deck from card_templates
+    const botCards = await buildBotDeck({ card_count: 20 });
+
+    // 8. Build participants
+    const humanParticipant: MatchParticipant = {
+      player_id: player.id,
+      deck_cards: playerCards,
+      avatar_id: deck.avatar_id,
+      avatar_instability_modifier: playerAvatarMod,
+      deck_id: deck_id,
+      faction_id: deck.faction_id,
+      season_rank: player.season_rank as SeasonRank,
+    };
+
+    const botParticipant: MatchParticipant = {
+      player_id: BOT_PLAYER_ID,
+      deck_cards: botCards,
+      avatar_id: BOT_AVATAR_ID,
+      avatar_instability_modifier: -4, // Kael's instability modifier
+      deck_id: BOT_DECK_ID,
+      faction_id: 'a0000000-0000-0000-0000-000000000003', // Demonic Kingdoms
+      season_rank: 'BRONZE_3' as SeasonRank,
+    };
+
+    // 9. Create match (PRACTICE mode)
+    // Force human = PLAYER_1, bot = PLAYER_2 (override random assignment)
+    const matchId = randomUUID();
+    const state = createMatch(matchId, 'PRACTICE', humanParticipant, botParticipant);
+
+    // Ensure human is PLAYER_1 and bot is PLAYER_2
+    // createMatch randomly assigns P1/P2, so we may need to swap
+    if (state.player_1.player_id !== player.id) {
+      // Swap player_1 and player_2 objects
+      const temp = state.player_1;
+      state.player_1 = state.player_2;
+      state.player_2 = temp;
+      state.player_1.side = 'PLAYER_1';
+      state.player_2.side = 'PLAYER_2';
+
+      // Fix hand sizes and Chaos Spark to match side conventions:
+      // P1 should have 4-card hand (no Chaos Spark)
+      // P2 should have 5-card hand (with Chaos Spark)
+      // After the swap, P1 (human) has 5 cards + spark, P2 (bot) has 4 cards + no spark.
+      // Move one card from P1's hand back to top of P1's deck, give P2 a card from P2's deck.
+      if (state.player_1.hand.length > 4 && state.player_2.deck.length > 0) {
+        // Return the last card from P1's hand to the top of P1's deck
+        const returnedCard = state.player_1.hand.pop()!;
+        state.player_1.deck.unshift(returnedCard);
+        // Draw one extra card for P2 from P2's deck
+        const drawnCard = state.player_2.deck.shift();
+        if (drawnCard) {
+          state.player_2.hand.push(drawnCard);
+        }
+      }
+      // Fix Chaos Spark assignment: P1 = no spark, P2 = spark
+      state.player_1.has_chaos_spark = false;
+      state.player_2.has_chaos_spark = true;
+    }
+
+    // 10. Set up Supabase Realtime channel
+    await setupMatchChannel(matchId);
+
+    // 11. Register both players in the room
+    registerPlayer(matchId, player.id);
+    registerPlayer(matchId, BOT_PLAYER_ID);
+
+    // 12. We do NOT insert into matches table for practice matches since
+    // BOT_PLAYER_ID does not exist in the players table.
+    // Instead, we just track in-memory.
+
+    // 13. Return match_id to client
+    res.json({
+      match_id: matchId,
+      bot_name: 'Kael, the Bound Tyrant',
+    });
+
+    console.log(`Practice match ${matchId} created: ${player.id} vs BOT`);
+
+    // 14. Start the first turn after a short delay
+    // (gives the client time to connect to the channel)
+    setTimeout(() => {
+      const s = getMatch(matchId);
+      if (s && !s.winner) {
+        startNextTurn(s, matchId);
+        // NOTE: Do NOT call executeBotTurn here. startNextTurn() in handler.ts
+        // already checks isPracticeMatch && shouldBotAct and schedules the bot
+        // turn if needed. Adding another call would cause double execution.
+      }
+    }, 2000); // 2 second delay for client connection
+
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Practice match creation failed:', message);
+    res.status(500).json({ error: `Failed to create practice match: ${message}` });
   }
 });
 

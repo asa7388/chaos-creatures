@@ -113,32 +113,93 @@ final class MatchmakingService {
         searchTimer = nil
     }
 
-    /// Start a practice match against AI
-    func startPracticeMatch(playerId: UUID, deckId: UUID) async throws -> String {
+    /// Start a practice match against AI via the game server's REST API.
+    /// Does NOT use the matchmaking queue or Edge Functions.
+    /// Calls the game server directly at POST /api/practice/start.
+    func startPracticeMatch(deckId: UUID) async throws -> String {
+        // Reset state
+        isSearching = true
+        matchFound = false
+        matchId = nil
+        error = nil
+
         struct PracticeRequest: Encodable {
-            let playerId: UUID
             let deckId: UUID
 
             enum CodingKeys: String, CodingKey {
-                case playerId = "player_id"
                 case deckId = "deck_id"
             }
         }
 
         struct PracticeResponse: Decodable {
             let matchId: String
+            let botName: String
 
             enum CodingKeys: String, CodingKey {
                 case matchId = "match_id"
+                case botName = "bot_name"
             }
         }
 
-        let response: PracticeResponse = try await supabase.callFunction(
-            "matchmaking/practice",
-            body: PracticeRequest(playerId: playerId, deckId: deckId)
-        )
+        do {
+            // Get the current user's access token for auth
+            guard let session = await supabase.currentSession else {
+                isSearching = false
+                throw MatchmakingError.notAuthenticated
+            }
 
-        return response.matchId
+            let gameServerURL = Secrets.gameServerURL
+            guard !gameServerURL.isEmpty,
+                  let url = URL(string: "\(gameServerURL)/api/practice/start") else {
+                isSearching = false
+                throw PracticeMatchError.serverNotConfigured
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+
+            let body = PracticeRequest(deckId: deckId)
+            request.httpBody = try JSONEncoder().encode(body)
+
+            let (data, httpResponse) = try await URLSession.shared.data(for: request)
+
+            guard let response = httpResponse as? HTTPURLResponse else {
+                isSearching = false
+                throw PracticeMatchError.invalidResponse
+            }
+
+            guard response.statusCode == 200 else {
+                isSearching = false
+                // Try to decode error message
+                if let errorBody = try? JSONDecoder().decode(PracticeErrorBody.self, from: data) {
+                    throw PracticeMatchError.serverError(errorBody.error)
+                }
+                throw PracticeMatchError.serverError("HTTP \(response.statusCode)")
+            }
+
+            let practiceResponse = try JSONDecoder().decode(PracticeResponse.self, from: data)
+
+            self.matchFound = true
+            self.matchId = practiceResponse.matchId
+            self.isSearching = false
+
+            return practiceResponse.matchId
+
+        } catch let error as PracticeMatchError {
+            self.isSearching = false
+            self.error = error.localizedDescription
+            throw error
+        } catch let error as MatchmakingError {
+            self.isSearching = false
+            self.error = error.localizedDescription
+            throw error
+        } catch {
+            self.isSearching = false
+            self.error = "Practice match failed: \(error.localizedDescription)"
+            throw error
+        }
     }
 
     // MARK: - Realtime Subscription
@@ -211,4 +272,27 @@ enum MatchmakingError: LocalizedError {
             return "You must be signed in to join matchmaking."
         }
     }
+}
+
+// MARK: - Practice Match Errors
+
+enum PracticeMatchError: LocalizedError {
+    case serverNotConfigured
+    case invalidResponse
+    case serverError(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .serverNotConfigured:
+            return "Game server URL not configured."
+        case .invalidResponse:
+            return "Invalid response from game server."
+        case .serverError(let message):
+            return "Server error: \(message)"
+        }
+    }
+}
+
+private struct PracticeErrorBody: Decodable {
+    let error: String
 }

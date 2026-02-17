@@ -36,6 +36,7 @@ import {
   destroyTimerManager,
 } from '../services/timer';
 import { getSupabase } from '../services/supabase';
+import { isPracticeMatch, shouldBotAct, executeBotTurn, executeBotBlockers } from '../bot/runner';
 
 /**
  * Set up a Supabase Realtime channel for a match.
@@ -378,6 +379,15 @@ function handleDeclareAction(
         active_player: defenderSide,
       });
 
+      // --- Bot blocker hook ---
+      // If the defender is the bot, let the bot handle blockers instead of starting a timer.
+      if (isPracticeMatch(state)) {
+        executeBotBlockers(matchId).catch((err) => {
+          console.error(`Bot blocker error in match ${matchId}:`, err);
+        });
+        return; // Bot handles blockers; do not start a human decision timer
+      }
+
       // Start defender timer
       const timer = getTimerManager(matchId);
       if (timer) {
@@ -444,21 +454,14 @@ function handleSurrenderAction(
   matchId: string,
   playerId: string
 ): void {
-  if (state.current_turn < 2) {
+  // Allow early surrender in practice, but not in PvP
+  if (state.current_turn < 2 && state.mode !== 'PRACTICE') {
     throw new GameError('TOO_EARLY', 'Cannot surrender before turn 2');
   }
 
-  forfeitMatch(state, playerId);
-  broadcastToRoom(matchId, {
-    type: 'MATCH_END',
-    winner: state.winner!,
-    end_reason: 'SURRENDER',
-    player_1_final_hp: state.player_1.current_hp,
-    player_2_final_hp: state.player_2.current_hp,
-    total_turns: state.current_turn,
-  });
-
-  destroyTimerManager(matchId);
+  // Use finishMatch for full cleanup (room destroy, record save, timer destroy)
+  state.winner = state.player_1.player_id === playerId ? 'PLAYER_2' : 'PLAYER_1';
+  finishMatch(state, matchId, 'SURRENDER');
 }
 
 function handleReconnectAction(
@@ -618,6 +621,14 @@ export function startNextTurn(state: GameState, matchId: string): void {
       }
     }
   });
+
+  // --- Bot automation hook ---
+  // If this is a practice match and it's the bot's turn, schedule bot actions.
+  if (isPracticeMatch(state) && shouldBotAct(state)) {
+    executeBotTurn(matchId).catch((err) => {
+      console.error(`Bot turn error in match ${matchId}:`, err);
+    });
+  }
 }
 
 function finishMatch(
@@ -641,10 +652,15 @@ function finishMatch(
   // Clean up the Realtime channel room
   destroyRoom(matchId);
 
-  // Save match record to Supabase and award chaos energy (fire and forget)
-  saveMatchRecordAndAwardEnergy(result).catch((err) => {
-    console.error(`Failed to save match record ${matchId}:`, err);
-  });
+  // Skip match record save and energy award for practice matches
+  if (state.mode !== 'PRACTICE') {
+    // Save match record to Supabase and award chaos energy (fire and forget)
+    saveMatchRecordAndAwardEnergy(result).catch((err) => {
+      console.error(`Failed to save match record ${matchId}:`, err);
+    });
+  } else {
+    console.log(`Practice match ${matchId} ended (no record saved)`);
+  }
 }
 
 /**

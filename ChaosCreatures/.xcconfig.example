@@ -6,3 +6,4 @@ SUPABASE_URL = https://your-project.supabase.co
 SUPABASE_ANON_KEY = your-supabase-anon-key
 POSTHOG_API_KEY = your-posthog-api-key
 R2_PUBLIC_URL = https://your-r2-public-url
+GAME_SERVER_URL = https://your-game-server.railway.app

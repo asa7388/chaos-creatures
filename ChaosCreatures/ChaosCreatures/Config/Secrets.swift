@@ -21,4 +21,8 @@ enum Secrets {
     static var r2PublicURL: String {
         Bundle.main.object(forInfoDictionaryKey: "R2_PUBLIC_URL") as? String ?? ""
     }
+
+    static var gameServerURL: String {
+        Bundle.main.object(forInfoDictionaryKey: "GAME_SERVER_URL") as? String ?? ""
+    }
 }

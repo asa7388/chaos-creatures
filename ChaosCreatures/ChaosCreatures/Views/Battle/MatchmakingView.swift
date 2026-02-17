@@ -121,7 +121,7 @@ struct MatchmakingView: View {
             }
 
             VStack(spacing: 8) {
-                Text("Finding Opponent...")
+                Text(router.selectedGameMode == .practice ? "Setting up AI opponent..." : "Finding Opponent...")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.textPrimary)
 
@@ -196,8 +196,13 @@ struct MatchmakingView: View {
         guard !hasJoinedQueue else { return }
         hasJoinedQueue = true
 
-        // Use the first deck the player has as the queue deck
-        // In production, this comes from a deck selection screen before matchmaking
+        // Practice mode: call game server directly, skip matchmaking queue
+        if router.selectedGameMode == .practice {
+            await startPractice()
+            return
+        }
+
+        // PvP modes: use the matchmaking queue (existing flow)
         do {
             let decks: [Deck] = try await SupabaseService.shared.fetchAll(
                 from: SupabaseService.Table.decks,
@@ -219,8 +224,38 @@ struct MatchmakingView: View {
         }
     }
 
+    private func startPractice() async {
+        do {
+            let decks: [Deck] = try await SupabaseService.shared.fetchAll(
+                from: SupabaseService.Table.decks,
+                filters: [("is_valid", "true")],
+                limit: 1
+            )
+            guard let deck = decks.first else {
+                joinError = "No valid deck found. Build a deck first."
+                hasJoinedQueue = false
+                return
+            }
+
+            _ = try await matchmakingService.startPracticeMatch(deckId: deck.id)
+
+            // Match found immediately -- navigate to battle
+            // The onChange(of: matchmakingService.matchFound) handler will fire
+            // and call router.navigateToBattle(matchID:)
+
+        } catch {
+            joinError = error.localizedDescription
+            hasJoinedQueue = false
+        }
+    }
+
     private func cancelMatchmaking() async {
-        await matchmakingService.leaveQueue()
+        if router.selectedGameMode != .practice {
+            await matchmakingService.leaveQueue()
+        }
+        matchmakingService.isSearching = false
+        matchmakingService.matchFound = false
+        matchmakingService.matchId = nil
         router.showMatchmaking = false
     }
 }

@@ -39,5 +39,7 @@
     <string>$(POSTHOG_API_KEY)</string>
     <key>R2_PUBLIC_URL</key>
     <string>$(R2_PUBLIC_URL)</string>
+    <key>GAME_SERVER_URL</key>
+    <string>$(GAME_SERVER_URL)</string>
 </dict>
 </plist>
