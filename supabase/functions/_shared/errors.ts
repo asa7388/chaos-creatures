@@ -95,8 +95,10 @@ export const corsHeaders = {
  */
 const ALLOWED_ORIGINS = [
   "https://admin.chaoscreatures.com",
+  "https://admin-dashboard-eight-sooty-40.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
+  "http://localhost:3002",
 ];
 
 /**
