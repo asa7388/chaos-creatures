@@ -159,21 +159,20 @@ final class CollectionService {
     // MARK: - Card Packs
 
     /// Open a card pack and get new cards
-    func openPack(packType: String, factionId: String) async throws -> PackOpenResult {
+    func openPack(factionId: String) async throws -> PackOpenResult {
         struct PackOpenRequest: Encodable {
-            let packType: String
             let factionId: String
 
             enum CodingKeys: String, CodingKey {
-                case packType = "pack_type"
                 case factionId = "faction_id"
             }
         }
 
-        return try await supabase.callFunction(
-            "shop/open-pack",
-            body: PackOpenRequest(packType: packType, factionId: factionId)
+        let envelope: PackOpenEnvelope = try await supabase.callFunction(
+            "open-pack",
+            body: PackOpenRequest(factionId: factionId)
         )
+        return envelope.data
     }
 
     // MARK: - Card Templates (read-only game content)
@@ -198,12 +197,17 @@ final class CollectionService {
 
 // MARK: - Pack Open Result
 
+/// Wrapper for Edge Function envelope: { data: { cards, dust_spent } }
+struct PackOpenEnvelope: Decodable {
+    let data: PackOpenResult
+}
+
 struct PackOpenResult: Decodable {
     let cards: [CardInstance]
-    let dustRemaining: Int
+    let dustSpent: Int
 
     enum CodingKeys: String, CodingKey {
         case cards
-        case dustRemaining = "dust_remaining"
+        case dustSpent = "dust_spent"
     }
 }

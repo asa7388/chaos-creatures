@@ -1,6 +1,6 @@
 # Chaos Creatures -- Build Phase Progress
 
-## Current Wave: 2 (Complete) → Audit Gate 2
+## Current Wave: Audit Gate 2 (Complete) → Wave 3
 
 ## Actual Directory Structure (set by project-scaffold)
 
@@ -28,14 +28,14 @@ The scaffold agent chose a monorepo layout. All agents must use these paths:
 
 | Wave | Audit Agent | Report File | Critical | Warnings | Status |
 |---|---|---|---|---|---|
-| 0 | build-validator | — | — | — | Not started |
-| 1 | build-validator | — | — | — | Not started |
-| 1 | api-contract-auditor | — | — | — | Not started |
-| 1 | security-auditor | — | — | — | Not started |
-| 2 | build-validator | — | — | — | Not started |
-| 2 | api-contract-auditor | — | — | — | Not started |
-| 2 | security-auditor | — | — | — | Not started |
-| 2 | simulator-test | — | — | — | Not started |
+| 0 | build-validator | — | — | — | Skipped (covered by Wave 2) |
+| 1 | build-validator | — | — | — | Skipped (covered by Wave 2) |
+| 1 | api-contract-auditor | — | — | — | Skipped (covered by Wave 2) |
+| 1 | security-auditor | — | — | — | Skipped (covered by Wave 2) |
+| 2 | build-validator | BUILD-REPORT-wave-2.md | 2 (fixed) | 1 | COMPLETE |
+| 2 | api-contract-auditor | REVIEW-contracts-wave-2.md | 8 (fixed) | 11 | COMPLETE |
+| 2 | security-auditor | REVIEW-security-wave-2.md | 7 (fixed) | 9 | COMPLETE |
+| 2 | simulator-test | — | — | — | SKIP (no .xcodeproj) |
 | 3 | e2e-test | — | — | — | Not started |
 | 3 | req-coverage-auditor | — | — | — | Not started |
 

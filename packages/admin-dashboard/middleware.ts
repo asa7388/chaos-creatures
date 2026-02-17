@@ -5,7 +5,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const SESSION_TOKEN = process.env.ADMIN_JWT_SECRET || 'chaos-admin-session';
+function getSessionToken(): string {
+  const token = process.env.ADMIN_JWT_SECRET;
+  if (!token) {
+    throw new Error('ADMIN_JWT_SECRET environment variable is required');
+  }
+  return token;
+}
 const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 function validateSession(cookieValue: string | undefined): boolean {
@@ -15,7 +21,7 @@ function validateSession(cookieValue: string | undefined): boolean {
     const [timestampStr, secret] = decoded.split(':');
     const timestamp = parseInt(timestampStr, 10);
     if (isNaN(timestamp)) return false;
-    if (secret !== SESSION_TOKEN) return false;
+    if (secret !== getSessionToken()) return false;
     if (Date.now() - timestamp > SESSION_MAX_AGE_MS) return false;
     return true;
   } catch {

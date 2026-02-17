@@ -21,6 +21,8 @@ struct BattleCardData: Codable, Identifiable {
     let baseInstability: Int
     let innateKeywords: [Keyword]
     let factionId: String
+    let modifiers: [BattleModifier]?
+    let triggeredAbilities: [BattleTriggeredAbility]?
 
     var id: String { instanceId }
 
@@ -36,6 +38,8 @@ struct BattleCardData: Codable, Identifiable {
         case baseInstability = "base_instability"
         case innateKeywords = "innate_keywords"
         case factionId = "faction_id"
+        case modifiers
+        case triggeredAbilities = "triggered_abilities"
     }
 
     var factionShortName: FactionShortName? {
@@ -125,6 +129,42 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
 
     static func == (lhs: BattleCreatureData, rhs: BattleCreatureData) -> Bool {
         lhs.instanceId == rhs.instanceId
+    }
+}
+
+// MARK: - Battle Modifier (runtime modifier state from server)
+
+struct BattleModifier: Codable {
+    let definitionId: String
+    let name: String
+    let isAttunedActive: Bool
+    let isPenaltyActive: Bool
+    let instabilityAdjustment: Int
+    let grantsKeyword: Keyword?
+
+    enum CodingKeys: String, CodingKey {
+        case definitionId = "definition_id"
+        case name
+        case isAttunedActive = "is_attuned_active"
+        case isPenaltyActive = "is_penalty_active"
+        case instabilityAdjustment = "instability_adjustment"
+        case grantsKeyword = "grants_keyword"
+    }
+}
+
+// MARK: - Battle Triggered Ability (from evolution)
+
+struct BattleTriggeredAbility: Codable {
+    let id: String
+    let cardInstanceId: String
+    let trigger: String
+    let name: String
+    let description: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case cardInstanceId = "card_instance_id"
+        case trigger, name, description
     }
 }
 

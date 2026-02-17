@@ -18,6 +18,7 @@
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { createServiceClient } from '../_shared/supabase.ts';
+import { verifyServiceRole } from '../_shared/auth.ts';
 import { errorResponse, successResponse, handleCors, ErrorCode, corsHeaders } from '../_shared/errors.ts';
 import {
   buildArtPrompt,
@@ -258,6 +259,10 @@ serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return errorResponse(ErrorCode.INVALID_REQUEST, 'Method not allowed', 405);
   }
+
+  // Service-role-only: art generation is an internal pipeline function
+  const authError = verifyServiceRole(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json() as GenerateCardArtRequest;

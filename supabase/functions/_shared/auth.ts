@@ -48,3 +48,29 @@ export async function getAuthContext(req: Request): Promise<AuthContext | Respon
 export function isAuthError(result: AuthContext | Response): result is Response {
   return result instanceof Response;
 }
+
+/**
+ * Verify that the request is authorized with the service role key.
+ * Used for server-to-server calls (game server -> Edge Functions, admin -> Edge Functions,
+ * and internal pipeline functions like batch-generate, generate-card-art, etc.).
+ *
+ * The caller must send: Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>
+ */
+export function verifyServiceRole(req: Request): Response | null {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return errorResponse(ErrorCode.UNAUTHORIZED, "Missing Authorization header", 401);
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceRoleKey) {
+    return errorResponse(ErrorCode.UNAUTHORIZED, "Server misconfigured: missing service role key", 500);
+  }
+
+  if (token !== serviceRoleKey) {
+    return errorResponse(ErrorCode.UNAUTHORIZED, "Invalid service role key", 403);
+  }
+
+  return null; // Auth passed
+}

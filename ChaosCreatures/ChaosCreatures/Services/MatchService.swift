@@ -100,16 +100,10 @@ final class MatchService {
             return
         }
 
-        do {
-            let data = try JSONEncoder().encode(action)
-            guard let dict = try JSONSerialization.jsonObject(
-                with: data
-            ) as? [String: Any] else { return }
-
-            await channel.broadcast(event: "player_action", message: dict)
-        } catch {
-            connectionError = "Failed to send action: \(error.localizedDescription)"
-        }
+        // Use jsonPayload (not JSONEncoder) to produce the flat
+        // { type: "PLAY_CARD", card_id: "..." } format the server expects.
+        let dict = action.jsonPayload
+        await channel.broadcast(event: "player_action", message: dict)
     }
 
     /// Send end turn action
@@ -217,18 +211,18 @@ struct MatchRecord: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id
-        case gameMode = "game_mode"
-        case player1Id = "player1_id"
-        case player2Id = "player2_id"
-        case player1DeckId = "player1_deck_id"
-        case player2DeckId = "player2_deck_id"
+        case gameMode = "mode"
+        case player1Id = "player_1_id"
+        case player2Id = "player_2_id"
+        case player1DeckId = "player_1_deck_id"
+        case player2DeckId = "player_2_deck_id"
         case winnerId = "winner_id"
         case endReason = "end_reason"
         case totalTurns = "total_turns"
         case durationSeconds = "duration_seconds"
-        case player1FinalHp = "player1_final_hp"
-        case player2FinalHp = "player2_final_hp"
-        case createdAt = "created_at"
+        case player1FinalHp = "player_1_final_hp"
+        case player2FinalHp = "player_2_final_hp"
+        case createdAt = "started_at"
         case endedAt = "ended_at"
     }
 }

@@ -6,7 +6,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
-const SESSION_TOKEN = process.env.ADMIN_JWT_SECRET || 'chaos-admin-session';
+function getSessionToken(): string {
+  const token = process.env.ADMIN_JWT_SECRET;
+  if (!token) {
+    throw new Error('ADMIN_JWT_SECRET environment variable is required');
+  }
+  return token;
+}
 const SESSION_MAX_AGE = 8 * 60 * 60; // 8 hours in seconds
 
 export async function POST(request: NextRequest) {
@@ -37,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Create a simple session token: base64(timestamp:secret)
     const timestamp = Date.now();
-    const token = Buffer.from(`${timestamp}:${SESSION_TOKEN}`).toString('base64');
+    const token = Buffer.from(`${timestamp}:${getSessionToken()}`).toString('base64');
 
     const response = NextResponse.json({ success: true });
     response.cookies.set('admin_session', token, {

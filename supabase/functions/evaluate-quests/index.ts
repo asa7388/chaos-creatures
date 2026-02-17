@@ -10,6 +10,7 @@
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
+import { verifyServiceRole } from "../_shared/auth.ts";
 import { errorResponse, handleCors, corsHeaders, ErrorCode } from "../_shared/errors.ts";
 import { SUBSCRIPTION_QUEST_MULTIPLIER, SubscriptionTier } from "../_shared/types.ts";
 
@@ -34,11 +35,9 @@ serve(async (req: Request) => {
     return errorResponse(ErrorCode.INVALID_REQUEST, "Method not allowed", 405);
   }
 
-  // This is called by the game server with service role key, not player auth
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
-    return errorResponse(ErrorCode.UNAUTHORIZED, "Missing Authorization", 401);
-  }
+  // Service-role-only: called by game server with service role key
+  const authError = verifyServiceRole(req);
+  if (authError) return authError;
 
   const body = await req.json();
   const { player_id, match_data } = body as { player_id: string; match_data: MatchData };

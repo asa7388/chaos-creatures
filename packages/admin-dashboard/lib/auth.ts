@@ -1,7 +1,13 @@
 // Chaos Creatures Admin Dashboard — Auth Helpers
 // Validates admin session cookie for middleware and server components.
 
-const SESSION_TOKEN = process.env.ADMIN_JWT_SECRET || 'chaos-admin-session';
+function getSessionToken(): string {
+  const token = process.env.ADMIN_JWT_SECRET;
+  if (!token) {
+    throw new Error('ADMIN_JWT_SECRET environment variable is required');
+  }
+  return token;
+}
 const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
 
 export function validateSession(cookieValue: string | undefined): boolean {
@@ -13,7 +19,7 @@ export function validateSession(cookieValue: string | undefined): boolean {
     const timestamp = parseInt(timestampStr, 10);
 
     if (isNaN(timestamp)) return false;
-    if (secret !== SESSION_TOKEN) return false;
+    if (secret !== getSessionToken()) return false;
 
     // Check if session has expired (8 hours)
     const now = Date.now();
