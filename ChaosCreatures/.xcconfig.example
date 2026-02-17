@@ -1,0 +1,8 @@
+// ChaosCreatures.xcconfig — API Keys Template
+// Copy this file to Config.xcconfig and fill in actual values.
+// This file is gitignored. Never commit the real Config.xcconfig.
+
+SUPABASE_URL = https://your-project.supabase.co
+SUPABASE_ANON_KEY = your-supabase-anon-key
+POSTHOG_API_KEY = your-posthog-api-key
+R2_PUBLIC_URL = https://your-r2-public-url
