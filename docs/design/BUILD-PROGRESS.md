@@ -1,13 +1,22 @@
 # Chaos Creatures -- Build Phase Progress
 
-## Current Wave: 0 (Not Started)
+## Current Wave: 0 (Complete) → Audit Gate 0
+
+## Actual Directory Structure (set by project-scaffold)
+
+The scaffold agent chose a monorepo layout. All agents must use these paths:
+- `packages/game-server/` (not `server/`)
+- `packages/admin-dashboard/` (not `admin/`)
+- `packages/shared/` (shared TypeScript types + constants)
+- `ChaosCreatures/` (not `ios/ChaosCreatures/`)
+- `supabase/` (as expected)
 
 ## Build Agents
 
 | Wave | Agent | Description | Status | Files Produced | Tests |
 |---|---|---|---|---|---|
-| 0 | supabase-schema | DB migrations, seed data, RLS policies | Not started | — | — |
-| 0 | project-scaffold | Repo structure, configs, deploy scripts | Not started | — | — |
+| 0 | supabase-schema | DB migrations, seed data, RLS policies | COMPLETE | 12 migrations, seed.sql, config.toml | `supabase db reset` PASS |
+| 0 | project-scaffold | Repo structure, configs, deploy scripts | COMPLETE | 88+ iOS files, server/admin scaffolds, scripts, CI/CD | `npm install` PASS (both) |
 | 1 | game-server | Railway turn engine, combat, WebSocket | Not started | — | — |
 | 1 | edge-functions | Supabase Edge Functions (all services) | Not started | — | — |
 | 1 | ai-pipeline | fal.ai + OpenAI + R2 card generation | Not started | — | — |
@@ -61,9 +70,9 @@ Between each wave:
 ## Prerequisites Checklist
 
 Before Wave 0 can start, the owner must:
-- [x] Install Supabase CLI (`brew install supabase/tap/supabase`)
-- [x] Install Deno (`brew install deno`)
-- [x] Open Docker Desktop (Supabase local dev requires Docker)
+- [x] Install Supabase CLI (`brew install supabase/tap/supabase`) — v2.75
+- [x] Install Deno (`brew install deno`) — v2.6
+- [x] Open Docker Desktop (Supabase local dev requires Docker) — running
 - [ ] Create Supabase project → get URL + anon key + service role key (NOT needed for code writing — only for cloud deploy)
 - [ ] Sign up for fal.ai → get FAL_KEY (NOT needed for code writing — mocked in tests)
 - [ ] Sign up for OpenAI → get OPENAI_API_KEY (NOT needed for code writing — mocked in tests)
