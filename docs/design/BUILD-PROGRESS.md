@@ -1,6 +1,6 @@
 # Chaos Creatures -- Build Phase Progress
 
-## Current Wave: 0 (Complete) → Audit Gate 0
+## Current Wave: 1 (Complete) → Wave 2
 
 ## Actual Directory Structure (set by project-scaffold)
 
@@ -17,9 +17,9 @@ The scaffold agent chose a monorepo layout. All agents must use these paths:
 |---|---|---|---|---|---|
 | 0 | supabase-schema | DB migrations, seed data, RLS policies | COMPLETE | 12 migrations, seed.sql, config.toml | `supabase db reset` PASS |
 | 0 | project-scaffold | Repo structure, configs, deploy scripts | COMPLETE | 88+ iOS files, server/admin scaffolds, scripts, CI/CD | `npm install` PASS (both) |
-| 1 | game-server | Railway turn engine, combat, WebSocket | Not started | — | — |
-| 1 | edge-functions | Supabase Edge Functions (all services) | Not started | — | — |
-| 1 | ai-pipeline | fal.ai + OpenAI + R2 card generation | Not started | — | — |
+| 1 | game-server | Railway turn engine, combat, WebSocket | COMPLETE | 31 files, 8,270 lines (engine, services, ws) | 238 tests PASS |
+| 1 | edge-functions | Supabase Edge Functions (all services) | COMPLETE | 21 functions, 5 shared utils | 32 tests PASS |
+| 1 | ai-pipeline | fal.ai + OpenAI + R2 card generation | COMPLETE | 14 files (4 Edge Functions, 4 services, prompt builder) | 81 tests PASS |
 | 2 | ios-app-shell | SwiftUI navigation, auth, screens | Not started | — | — |
 | 2 | ios-battle | SpriteKit battlefield scene | Not started | — | — |
 | 2 | admin-dashboard | Next.js admin web app | Not started | — | — |
