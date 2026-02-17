@@ -181,27 +181,25 @@ serve(async (req: Request) => {
     return errorResponse(ErrorCode.INTERNAL_ERROR, "Failed to update card", 500);
   }
 
-  // 7. Update player stats
-  await supabase
+  // 7. Update player stats atomically (single read, then single write)
+  const { data: currentPlayer } = await supabase
     .from("players")
-    .update({
-      cards_evolved_total: (await supabase
-        .from("players")
-        .select("cards_evolved_total")
-        .eq("id", auth.playerId)
-        .single()
-        .then((r) => r.data?.cards_evolved_total || 0)) + 1,
-      highest_tier_reached: getHighestTier(
-        (await supabase
-          .from("players")
-          .select("highest_tier_reached")
-          .eq("id", auth.playerId)
-          .single()
-          .then((r) => r.data?.highest_tier_reached || "COMMON")),
-        targetTier
-      ),
-    })
-    .eq("id", auth.playerId);
+    .select("cards_evolved_total, highest_tier_reached")
+    .eq("id", auth.playerId)
+    .single();
+
+  if (currentPlayer) {
+    await supabase
+      .from("players")
+      .update({
+        cards_evolved_total: (currentPlayer.cards_evolved_total || 0) + 1,
+        highest_tier_reached: getHighestTier(
+          currentPlayer.highest_tier_reached || "COMMON",
+          targetTier
+        ),
+      })
+      .eq("id", auth.playerId);
+  }
 
   // 8. Trigger achievement evaluation asynchronously
   // Call the evaluate-achievements function via Supabase

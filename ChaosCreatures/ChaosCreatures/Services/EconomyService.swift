@@ -112,6 +112,44 @@ final class EconomyService {
         return balances.count(for: tier) >= count
     }
 
+    // MARK: - Shard Purchases
+
+    /// Purchase an Evolution Shard with Chaos Dust.
+    /// Costs: Uncommon=30, Rare=60, Epic=120, Legendary=240
+    func purchaseShard(tier: ShardTier) async throws -> PurchaseShardResult {
+        struct PurchaseRequest: Encodable {
+            let shardTier: String
+
+            enum CodingKeys: String, CodingKey {
+                case shardTier = "shard_tier"
+            }
+        }
+
+        return try await supabase.callFunction(
+            "purchase-shards",
+            body: PurchaseRequest(shardTier: tier.rawValue)
+        )
+    }
+
+    // MARK: - Card Packs
+
+    /// Open a card pack for a faction. Deducts dust and returns new card instances.
+    /// Costs: 100 dust (own faction) or 150 dust (other faction).
+    func openPack(factionId: UUID) async throws -> OpenPackResult {
+        struct PackRequest: Encodable {
+            let factionId: String
+
+            enum CodingKeys: String, CodingKey {
+                case factionId = "faction_id"
+            }
+        }
+
+        return try await supabase.callFunction(
+            "open-pack",
+            body: PackRequest(factionId: factionId.uuidString)
+        )
+    }
+
     // MARK: - Economy Config
 
     /// Fetch economy configuration values
@@ -212,6 +250,42 @@ struct MissionClaimResult: Decodable {
         case shardsAwarded = "shards_awarded"
         case shardTier = "shard_tier"
         case xpAwarded = "xp_awarded"
+    }
+}
+
+struct PurchaseShardResult: Decodable {
+    let shardTier: String
+    let dustSpent: Int
+
+    enum CodingKeys: String, CodingKey {
+        case shardTier = "shard_tier"
+        case dustSpent = "dust_spent"
+    }
+}
+
+struct OpenPackResult: Decodable {
+    let cards: [CardInstanceData]
+    let dustSpent: Int
+
+    enum CodingKeys: String, CodingKey {
+        case cards
+        case dustSpent = "dust_spent"
+    }
+}
+
+struct CardInstanceData: Decodable, Identifiable {
+    let id: UUID
+    let templateId: UUID
+    let currentName: String
+    let tier: String
+    let artUrl: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case templateId = "template_id"
+        case currentName = "current_name"
+        case tier
+        case artUrl = "art_url"
     }
 }
 

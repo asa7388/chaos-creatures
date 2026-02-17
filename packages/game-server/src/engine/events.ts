@@ -285,6 +285,16 @@ export function resolveEventPhase(
   const selectedEvent = pool[eventIndex];
   state.last_roll_event_id = selectedEvent.id;
 
+  // Snapshot full-HP creature IDs BEFORE resolving effects (needed for O8 Harmonize)
+  const fullHpCreatureIds = new Set<string>();
+  if (selectedEvent.id === 'O8') {
+    for (const creature of activePlayer.board) {
+      if (creature && creature.is_alive && creature.health >= creature.max_health) {
+        fullHpCreatureIds.add(creature.instance_id);
+      }
+    }
+  }
+
   // Resolve event effect
   const effectResults = resolveEffect(state, selectedEvent.effect, activePlayer);
 
@@ -311,13 +321,21 @@ export function resolveEventPhase(
     }
   }
 
-  // Handle Harmonize (O8) special case: creatures at full HP get +0/+1 instead
+  // Handle Harmonize (O8) special case: creatures that were at full HP BEFORE
+  // the heal get +0/+1 permanent instead. Uses pre-heal snapshot to avoid
+  // wrongly buffing creatures that were healed up to full by the event.
   if (selectedEvent.id === 'O8') {
     for (const creature of activePlayer.board) {
-      if (creature && creature.is_alive && creature.health >= creature.max_health) {
-        // Full HP creature gets +0/+1 permanent instead
+      if (creature && creature.is_alive && fullHpCreatureIds.has(creature.instance_id)) {
+        // This creature was at full HP before the heal — give +0/+1 permanent
         creature.max_health += 1;
         creature.health = creature.max_health;
+        effectResults.push({
+          effect_type: 'STAT_MODIFY_HEALTH',
+          target_ids: [creature.instance_id],
+          value: 1,
+          description: '+0/+1 permanent (was at full HP)',
+        });
       }
     }
   }
