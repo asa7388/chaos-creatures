@@ -156,7 +156,7 @@ export function resolveChaosRoll(state: GameState): ChaosRollResult {
 // ─── Phase 3: Event Resolution ─────────────
 
 export function resolveEventResolution(state: GameState): EventResolutionResult | null {
-  if (!state.last_roll_event || state.last_roll_event === 'NOTHING') {
+  if (!state.last_roll_event) {
     return null;
   }
 

@@ -519,8 +519,10 @@ describe('executeAutomaticPhases', () => {
 
   it('should draw a card during phase 4', () => {
     const handBefore = state.player_1.hand.length;
-    executeAutomaticPhases(state);
-    expect(state.player_1.hand.length).toBe(handBefore + 1);
+    const result = executeAutomaticPhases(state);
+    // Phase 4 always draws 1 card. Events (e.g. O4 Clarity) may draw additional cards.
+    expect(result.drawAndMana.drawn_card).not.toBeNull();
+    expect(state.player_1.hand.length).toBeGreaterThanOrEqual(handBefore + 1);
   });
 
   it('should gain mana during phase 4', () => {
