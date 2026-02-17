@@ -1,6 +1,6 @@
 # Chaos Creatures -- Build Phase Progress
 
-## Current Wave: Audit Gate 2 (Complete) → Wave 3
+## Current Wave: Audit Gate 3 (In Progress)
 
 ## Actual Directory Structure (set by project-scaffold)
 
@@ -36,8 +36,8 @@ The scaffold agent chose a monorepo layout. All agents must use these paths:
 | 2 | api-contract-auditor | REVIEW-contracts-wave-2.md | 8 (fixed) | 11 | COMPLETE |
 | 2 | security-auditor | REVIEW-security-wave-2.md | 7 (fixed) | 9 | COMPLETE |
 | 2 | simulator-test | — | — | — | SKIP (no .xcodeproj) |
-| 3 | e2e-test | — | — | — | Not started |
-| 3 | req-coverage-auditor | — | — | — | Not started |
+| 3 | api-contract-auditor | REVIEW-contracts-wave-3.md | TBD | TBD | IN PROGRESS |
+| 3 | security-auditor | REVIEW-security-wave-3.md | TBD | TBD | IN PROGRESS |
 
 ## Wave Dependencies
 
@@ -58,13 +58,13 @@ Between each wave:
 
 | Milestone | Description | Status |
 |---|---|---|
-| M1 | iOS app builds and launches in Simulator | Not started |
-| M2 | Player can sign in with Apple and see home screen | Not started |
-| M3 | Matchmaking finds opponent and starts match | Not started |
-| M4 | Full battle plays out (9 phases, combat, events) | Not started |
-| M5 | Evolution ceremony works with live AI art | Not started |
-| M6 | StoreKit 2 subscriptions work end-to-end | Not started |
-| M7 | Admin Dashboard can trigger batch generation and review cards | Not started |
+| M1 | iOS app builds and launches in Simulator | Code complete (needs .xcodeproj) |
+| M2 | Player can sign in with Apple and see home screen | Code complete |
+| M3 | Matchmaking finds opponent and starts match | Code complete (Wave 3 Batch 2) |
+| M4 | Full battle plays out (9 phases, combat, events) | Code complete (Wave 3 Batch 2) |
+| M5 | Evolution ceremony works with live AI art | Code complete (Wave 3 Batch 3) |
+| M6 | StoreKit 2 subscriptions work end-to-end | Code complete (Wave 3 Batch 3) |
+| M7 | Admin Dashboard can trigger batch generation and review cards | Code complete (Wave 3 Batch 4) |
 | M8 | App Store submission package complete | Not started |
 
 ## Prerequisites Checklist
