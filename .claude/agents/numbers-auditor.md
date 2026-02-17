@@ -1,6 +1,6 @@
 ---
 name: numbers-auditor
-description: Cross-document numbers auditor. Reads all design docs and verifies every specific number is consistent with the source-of-truth docs (00 and 01). Outputs docs/design/REVIEW-numbers.md.
+description: Cross-document numbers auditor. Reads all design docs and verifies every specific number is consistent with the source-of-truth docs (00 and 01). Outputs docs/design/REVIEW-numbers.md or REVIEW-numbers-v2.md.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
@@ -21,12 +21,23 @@ Read ALL docs in docs/design/ (00 through 10, plus CLAUDE.md). For every specifi
 2. **Economy**: shard prices, dust rewards (win/loss/quest), card pack costs, subscription tier prices, dust bonus percentages, card limits per faction
 3. **Technical**: denoising ranges, API latency targets, infrastructure costs, API costs per image/token, file size budgets, channel limits, resolution specs
 4. **Content**: card counts per faction, modifier counts, keyword counts, quest counts, achievement counts
+5. **Budget**: Verify total infrastructure + API costs stay under $300
+
+## Tech Stack Compliance
+
+Verify all docs reference the correct stack:
+- Swift/SwiftUI/SpriteKit (NOT React Native, Expo, Unity)
+- Supabase (NOT Firebase, Auth0, generic PostgreSQL)
+- Railway (NOT AWS, GCP, Kubernetes)
+- fal.ai (NOT Replicate)
+- Cloudflare R2 (NOT S3, GCS)
+- PostHog (NOT Datadog, Amplitude)
+- StoreKit 2 (NOT RevenueCat, Stripe, expo-in-app-purchases)
+- iOS only (NOT Android, Google Play)
 
 ## Output
 
-Write docs/design/REVIEW-numbers.md with:
+Write the output file (docs/design/REVIEW-numbers.md or as instructed) with:
 1. A summary count at the top (X matches, Y mismatches, Z missing)
-2. A table organized by category with columns: Value Name | Source Doc | Expected (from 00/01) | Found Value | Found In Doc | Match?
+2. A table organized by category
 3. A "Critical Mismatches" section listing any contradictions that would cause implementation bugs
-
-Also verify that all docs now reference the correct infrastructure stack (Supabase, Railway, Expo, fal.ai, Cloudflare R2, PostHog, OpenAI) and not old/generic alternatives.

@@ -28,17 +28,17 @@ If a process requires more than 3 clicks or one terminal command from the owner,
 
 These are the actual services the project will use. Do not recommend alternatives or say "consider X." These are decided.
 
-- **Client**: React Native (Expo) — NOT Unity. TypeScript. Ships to iOS and Android via Expo EAS Build. Claude Code can build and iterate on this directly.
+- **Client**: Native iOS app. Swift + SwiftUI for UI, SpriteKit for battlefield/card animations. Xcode Cloud for builds. iOS 17+ minimum target.
 - **Backend**: Supabase (Postgres database, Auth, Realtime for WebSocket match communication, Edge Functions for serverless game logic, Storage for non-art assets)
 - **Game Server**: Railway (Node.js/TypeScript server for authoritative match resolution — the turn engine. Communicates with clients via Supabase Realtime channels or direct WebSocket. Auto-scales.)
 - **AI Image Generation**: fal.ai (FLUX Kontext API for card art generation and evolution img2img)
 - **AI Text Generation**: OpenAI API (GPT-4o Mini for card names, flavor text, evolution narratives)
 - **Card Art Storage + CDN**: Cloudflare R2 (stores generated card art, serves globally via built-in CDN)
 - **Analytics**: PostHog (player behavior, retention, match data, economy health)
-- **App Stores**: Apple Developer Program + Google Play Developer Console
-- **Payments**: App Store / Google Play native IAP (no Stripe needed — stores handle subscriptions)
+- **App Store**: Apple Developer Program (iOS only — no Android)
+- **Payments**: App Store native IAP via StoreKit 2 (no Stripe, no RevenueCat, no third-party payment SDK)
 
-All infrastructure must be deployable from the project repo. Local dev = Docker Compose or Supabase CLI. Production = one-command deploy scripts per service. The owner signs up for accounts and sets API keys in a .env file. Claude Code does everything else.
+All infrastructure must be deployable from the project repo. Local dev = Supabase CLI + Xcode Simulator. Production = one-command deploy scripts for backend services, Xcode Cloud for iOS builds. The owner signs up for accounts and sets API keys in a config file. Claude Code does everything else.
 
 Accounts the owner needs to create before build phase:
 1. Supabase (supabase.com) — create a project, get URL + anon key + service role key
@@ -47,14 +47,95 @@ Accounts the owner needs to create before build phase:
 4. Cloudflare (cloudflare.com) — sign up, create R2 bucket
 5. Railway (railway.app) — sign up, link GitHub repo
 6. Apple Developer (developer.apple.com) — enroll ($99/year)
-7. Google Play (play.google.com/console) — register ($25)
-8. PostHog (posthog.com) — sign up, get project API key
+7. PostHog (posthog.com) — sign up, get project API key
 
-All keys go in a single .env file. No other configuration needed.
+All keys go in a single .xcconfig or environment config file. No other configuration needed.
 
 ## Client Technology
 
-The client is React Native (Expo) with TypeScript. NOT Unity. This is a firm decision driven by the vibe coding workflow — Claude Code works natively with TypeScript/React and cannot effectively drive the Unity editor. All UI/UX specs, technical architecture, and PRD must be written for React Native/Expo, not Unity. Card art rendering, animations, and battlefield interactions will use React Native Reanimated, Skia, or equivalent RN-compatible libraries.
+The client is a native iOS app built with Swift + SwiftUI + SpriteKit. NOT React Native. NOT Unity. NOT Expo. This is iOS only — no Android.
+
+- SwiftUI for all non-game screens (collection, deck builder, shop, settings, onboarding, admin)
+- SpriteKit for the battlefield scene (card rendering, attack animations, damage numbers, chaos roll, event overlays)
+- StoreKit 2 for in-app purchases and subscriptions (native Apple API, no third-party wrappers)
+- URLSession + Supabase Swift SDK for networking
+- Swift Concurrency (async/await) for all async operations
+
+All UI/UX specs, technical architecture, and PRD must be written for Swift/SwiftUI/SpriteKit. No React Native, no Expo, no TypeScript on the client side. The server remains Node.js/TypeScript on Railway.
+
+## Two Applications
+
+The project produces TWO separate applications:
+1. **Game Client** — Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store.
+2. **Admin Dashboard** — Web application (React or plain HTML, deployed on Railway). What the owner uses to manage the game: trigger card generation, review/approve content, adjust economy values, view analytics, push balance patches. This is NOT part of the iOS app. It is a separate web app.
+
+Every doc must be clear about which application a feature belongs to. No doc should spec admin features inside the iOS app or game features inside the web dashboard.
+
+## Budget Constraint
+
+Total build-to-launch budget: $300 maximum. This covers all service signups, API usage for content generation, and first month of any paid tiers. Use free tiers where available during development, but paid tiers (e.g., Supabase Pro) are acceptable within the budget. Every doc that references infrastructure costs must include a dollar estimate and stay within this budget.
+
+Do not recommend any paid design tools, asset marketplaces, or premium services. All assets must be AI-generated or free/open-source.
+
+## Launch Requirements (App Store)
+
+This ships to the App Store only. Every doc must account for:
+- Privacy policy hosted at a public URL (static page on Cloudflare Pages — free)
+- Terms of service hosted at a public URL (same)
+- App icon (1024x1024, generated via fal.ai)
+- App Store screenshots (automated via Xcode UI tests or Fastlane snapshot)
+- App Store description copy and keywords
+- Age rating questionnaire answers
+- App Store privacy nutrition labels (data collection declarations)
+
+The content-pipeline doc must include generating these store assets as part of the launch checklist.
+
+## Art Consistency
+
+All card art must look like it belongs in the same game. The prompt-engineer doc must define a locked visual style anchor — a base prompt prefix that every single card image uses to enforce consistent rendering style, lighting, color palette, and framing. Individual cards vary in subject matter but must share the same artistic DNA. If a card looks like it came from a different game, it's a failed generation and must be rejected/regenerated.
+
+## Animation & Polish
+
+The game must feel polished, not like a prototype. The tech architecture and UI specs must commit to:
+- SpriteKit for all battlefield animations (card play, attacks, damage, death, chaos roll, events)
+- SwiftUI animations for all menu/UI transitions
+- Specific animation specs for: card play (hand to board), attack declaration (glow + movement), damage numbers (floating text), creature death (fade/shatter), chaos roll (D20 spin), event popup (slide in/out), evolution reveal (dramatic unveil)
+- Loading states, error states, and empty states for every screen — no blank screens ever
+
+## Testing & Validation (Build Phase)
+
+During the build phase, agents can and should use the Xcode Simulator to test their work. This includes:
+- Building the iOS app and launching it in the Simulator to check for compilation errors
+- Visually inspecting UI layouts, animations, and screen flows in the Simulator
+- Running the app through gameplay scenarios to validate game logic
+- Taking screenshots from the Simulator to verify UI matches specs
+- If a build fails or a UI looks wrong, the agent should fix the issue immediately before considering the task complete
+
+Agents are also expected to write and run unit tests and integration tests as they build. Code is not considered done until it compiles, runs in the Simulator without crashes, and passes its tests.
+
+## Safety Rules (Bypass Permissions Mode)
+
+Claude Code is running in bypass permissions mode. These rules are absolute:
+- NEVER delete any file in docs/design/ — only edit in place
+- NEVER overwrite a file without appending to its Revision Log first
+- ALWAYS git commit before starting any major operation
+- NEVER run destructive bash commands (rm -rf, drop table, etc.)
+- NEVER git force-push, rebase, or delete branches
+- NEVER commit .xcconfig, .env, or any file containing API keys to git
+- Ensure .gitignore includes: *.xcconfig, .env, .env.*, *.secret
+- If something breaks, git stash or git revert — never try to manually reconstruct
+
+## Protected Files
+
+These files are the source of truth for the entire project. After CLAUDE.md is updated in Step 1, the following files are READ-ONLY — no agent may modify them for the remainder of this operation:
+- CLAUDE.md
+- docs/design/00-game-design-master.md
+- docs/design/01-battle-mechanics.md
+- docs/design/02-card-data-model.md
+
+If a downstream doc (03-10) contradicts a protected file, the downstream doc is wrong and must be fixed to match the protected file. Never the other way around.
+
+Exception: In Step 1 only, the core docs (00, 01, 02) receive a light platform-alignment pass (see below). After that, they are locked.
 
 ## Repository Structure
 ```

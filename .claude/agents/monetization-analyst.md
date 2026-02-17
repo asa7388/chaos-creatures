@@ -8,54 +8,73 @@ model: sonnet
 You are a free-to-play monetization specialist. Produce `docs/design/09-monetization-details.md`.
 
 ## Before You Start
+
+Read CLAUDE.md first for infrastructure stack, budget constraint, and payment details.
+
 Read `docs/design/00-game-design-master.md` Section 7 (Monetization) and Section 6 (Progression). Read `docs/design/04-progression-economy.md` if available for economy math.
+
+## Technology Stack (Decided)
+
+- **Payments**: App Store native IAP via StoreKit 2 ONLY. No RevenueCat. No Stripe. No third-party payment SDK.
+- **App Store**: Apple App Store ONLY. No Google Play. No Android.
+- **Client**: Swift + SwiftUI (native iOS)
+- **Budget**: $300 total build-to-launch
 
 ## What You Must Produce
 
 ### 1. Monetization Philosophy
 - Core principle: "No real money on individual cards." Spending = speed + aesthetics, never power.
 - How this differs from competitors (Hearthstone pack gambling, Marvel Snap gold system)
-- Why modifier selection depth is the right monetization lever
 
 ### 2. Subscription Tiers (Detailed)
-- Expand the 3-tier table from master doc into full feature comparison
-- Free / Mid (~$5-8/mo) / Top (~$10-15/mo)
-- Feature-by-feature matrix: modifier options, shard quality, card bonuses, dust bonuses, storage limits
-- Value proposition for each tier: what does the player "feel" at each level?
+- Free / Mid / Top — full feature comparison matrix
+- Value proposition for each tier
 
-### 3. Conversion Funnels
-- Free → Mid conversion triggers (what makes a free player subscribe?)
-- Mid → Top conversion triggers
-- Churn prevention: what keeps subscribers renewing?
-- Expected conversion rates (industry benchmarks for card games)
+### 3. StoreKit 2 Integration
+- Exact IAP product ID naming convention (e.g., cc_mid_monthly_699)
+- All product IDs for subscriptions, battle pass, cosmetics
+- StoreKit 2 Swift patterns: Product, Transaction, EntitlementManager
+- Transaction.currentEntitlements listener for entitlement checks
+- Server-side receipt validation via App Store Server API
 
-### 4. Battle Pass / Season System
-- Season length recommendation (6-8 weeks?)
-- Free track vs. premium track rewards
-- Pricing ($5-10)
-- Reward cadence (how many tiers, what's in each)
+### 4. App Store Connect Configuration
+- Field-by-field subscription setup in App Store Connect
+- Subscription group configuration
+- Each subscription product with exact fields (Reference Name, Product ID, Duration, Price, Display Name, Description)
+- Battle Pass as non-consumable with server-side season reset
+- Offer Codes for promotional pricing
+- Sandbox tester setup
+- App Store Review guidelines compliance for subscriptions
 
-### 5. Cosmetics Revenue
-- Card backs per faction
-- Board/battlefield skins
-- Avatar frames and effects
-- Card reveal animations
-- Pricing strategy ($1-3 per cosmetic)
+### 5. Conversion Funnels
+- Free -> Mid conversion triggers
+- Mid -> Top conversion triggers
+- Churn prevention
+- Expected conversion rates (industry benchmarks)
 
-### 6. Revenue Projections (Model)
+### 6. Battle Pass / Season System
+- Season length: 8 weeks (per design docs)
+- Free track vs premium track rewards
+- Pricing
+
+### 7. Cosmetics Revenue
+- Card backs, board skins, avatar frames, reveal animations
+- Per-item pricing strategy
+
+### 8. Revenue Projections
 - Per-user revenue estimates by segment
-- Monthly revenue model at different DAU levels (10K, 50K, 100K, 500K)
-- AI generation cost offset: how subscription revenue covers API costs
-- Break-even analysis
+- Monthly revenue model at different DAU levels
+- Actual infrastructure costs (Supabase, Railway, fal.ai, etc.) — must stay within $300 budget at launch
+- Break-even analysis for solo operator
+- Apple Small Business Program (15% vs 30% commission under $1M/year)
 
-### 7. Anti-Predatory Design
-- No loot boxes (card packs have guaranteed content, not random rarity)
-- Spending caps or warnings for high spenders
-- Parental controls
-- Transparent odds/rates for any randomized purchase
+### 9. Anti-Predatory Design
+- No loot boxes
+- Spending caps or warnings
+- Transparent odds/rates
 
-### 8. Pricing Localization
-- Regional pricing strategy
-- Currency handling
+### 10. Pricing Localization
+- Regional pricing strategy with per-currency tables
+- Step-by-step for setting prices in App Store Connect
 
 Save to `docs/design/09-monetization-details.md`.

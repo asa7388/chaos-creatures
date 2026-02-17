@@ -1356,3 +1356,11 @@ Mechanics and content categories that are intentionally NOT in the launch versio
 
 *Last updated: 2026-02-16*
 *Status: Core framework complete. All mechanical systems defined. Sections 8-9 (events) fully designed — 8 Order + 8 Chaos events with effects and design notes. Section 7 triggered ability framework complete with trigger/effect/targeting/duration type systems. Sections 10-11 (spells and stabilizers) frameworks defined. Section 6 modifier pools defined structurally — individual modifier definitions (240) to be authored as content. Individual triggered ability assignments per creature to be authored as content.*
+
+---
+
+## Revision Log
+
+| Date | Change | Section(s) |
+|---|---|---|
+| 2026-02-16 | Platform-alignment pass: no platform-specific references existed in this document (it is purely game mechanics). No changes required. Revision Log added for consistency with other core docs. | N/A |

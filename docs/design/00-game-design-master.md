@@ -430,7 +430,7 @@ Creatures can attack the turn they are played. Games move fast, every creature m
 
 ### Win Condition
 
-Reduce opponent to 0 HP. That's it. An empty deck does not cause a loss — if a player must draw and cannot, they simply don't draw. This keeps games focused on combat and prevents mill/stall strategies that aren't fun on mobile.
+Reduce opponent to 0 HP. That's it. An empty deck does not cause a loss — if a player must draw and cannot, they simply don't draw. This keeps games focused on combat and prevents mill/stall strategies that aren't fun on iOS mobile.
 
 ### First Player / Second Player Balance
 
@@ -449,7 +449,7 @@ Each player has **60 seconds per turn** to complete all actions (play cards, dec
 
 - At **15 seconds remaining**, the bar turns red and a "fuse burning" audio/visual cue plays.
 - At **0 seconds**, the turn auto-ends (no cards played, no attackers declared for that turn).
-- **No rope extensions.** Keeping turns short maintains mobile-friendly pacing.
+- **No rope extensions.** Keeping turns short maintains iOS-friendly pacing.
 - Chaos roll, event resolution, and draw/mana phases are not counted against the timer — only the player's decision phases (play cards and declare attackers/blockers).
 
 ### Surrender
@@ -466,7 +466,7 @@ Spells are the minority of cards. All spells are played during the main phase on
 - **Removal** — Deal damage to a creature or destroy it.
 - **Utility** — Draw cards, heal, gain mana.
 
-No counterspells. No combat tricks (no spells during combat). Keeps the game flowing on mobile without complex stack interactions.
+No counterspells. No combat tricks (no spells during combat). Keeps the game flowing on iOS without complex stack interactions.
 
 ### Deck Construction Rules
 
@@ -634,13 +634,13 @@ A tight set of 7 creature keywords. Kept small so that modifier-granted keywords
 
 ### Platform
 
-iOS primary, web prototype first.
+iOS only (Swift/SwiftUI/SpriteKit) via Xcode Cloud.
 
-| Layer | Options |
+| Layer | Technology |
 |---|---|
-| Client | React Native / Flutter / PWA with Phaser.js |
+| Client | Native iOS app (Swift + SwiftUI + SpriteKit) |
 | Backend | Node.js or Python + AI API layer |
-| Image Gen | FLUX Kontext (img2img for evolution), FLUX Dev (text2img for batch) via Replicate or Fal.ai |
+| Image Gen | FLUX Kontext (img2img for evolution), FLUX Dev (text2img for batch) via fal.ai |
 | Text Gen | GPT-4o Mini via OpenAI API |
 | Audio | Licensed packs |
 
@@ -660,11 +660,11 @@ The game targets a "clean and stylish" visual philosophy — clear, readable, sa
 **Fully codeable by AI (Claude Code):**
 
 - All game logic, backend, database, API layer
-- React Native / Flutter UI and all screen flows
+- Swift + SwiftUI UI and all screen flows
 - Card art generation via AI image APIs
 - Flavor text and prompt generation via LLM APIs
-- Simple card animations: sliding, shaking, fading, glowing (CSS transforms, Lottie, sprite sheets)
-- Particle effects: glowing energy, floating motes, crackling chaos (via Phaser.js, PixiJS, or CSS)
+- Simple card animations: sliding, shaking, fading, glowing (SpriteKit actions, sprite sheets)
+- Particle effects: glowing energy, floating motes, crackling chaos (SpriteKit)
 - D20 roll: stylized 2D animated die with satisfying physics and landing effects
 - Board layout, hand management, all interaction patterns
 
@@ -792,7 +792,7 @@ For the rare case where generation fails, a fallback system applies a programmat
 
 ### Visual Philosophy
 
-Clean, stylish, card-game-native. The UI should feel like a premium card game app — not a mobile game with cards bolted on. Think Balatro's clarity, Marvel Snap's speed, Slay the Spire's readability. Every screen serves one primary purpose with minimal navigation friction.
+Clean, stylish, card-game-native. The UI should feel like a premium iOS card game app — not a generic mobile game with cards bolted on. Think Balatro's clarity, Marvel Snap's speed, Slay the Spire's readability. Every screen serves one primary purpose with minimal navigation friction.
 
 Dark theme default. The game's lore is built around chaos rifts and planar energy — a dark UI lets card art and particle effects pop. Light accents come from the player's active faction palette.
 
@@ -1047,7 +1047,7 @@ The deck builder is where strategy crystallizes. It must make it easy to underst
 - Avatar selector (filtered to avatars matching the selected faction)
 - Deck stats summary bar (see below)
 
-**Left panel (or main area on mobile) — Deck contents:**
+**Left panel (or main area on iOS) — Deck contents:**
 
 - Cards currently in the deck displayed as a scrollable list or compact grid.
 - Each card shows: thumbnail art, name, tier badge, ATK/HP, chaos mote cost, and small icons for attunement breakdown (e.g., 3 Chaos-attuned modifiers shown as 3 small red dots, 1 Order as 1 blue dot).
@@ -1056,7 +1056,7 @@ The deck builder is where strategy crystallizes. It must make it easy to underst
 - Running count: "14/20 cards" displayed prominently.
 - Legendary count: "1/2 Legendaries" when applicable.
 
-**Right panel (or bottom sheet on mobile) — Card pool:**
+**Right panel (or bottom sheet on iOS) — Card pool:**
 
 - All cards in your collection for the selected faction that are NOT in the deck.
 - Same compact card display as the deck panel.
@@ -1374,7 +1374,7 @@ Tracking confirmed design decisions and when they were made, for reference.
 | Onboarding: trial decks | Player tries 3 faction trial decks (20 Commons each), commits to one. | ✅ Confirmed |
 | Paid asset budget | Under $100 total for particles, SFX, and similar polish assets | ✅ Confirmed |
 | Visual philosophy | Clean and stylish, Balatro/Slay the Spire tier, not Hearthstone AAA | ✅ Confirmed |
-| MVP approach | Web prototype first, iOS primary target | ✅ Confirmed |
+| MVP approach | iOS only via Xcode Cloud | ✅ Confirmed |
 | Evolution probability | 70/30 split when channeling toward Order or Chaos | ✅ Confirmed |
 | Deck size | 20 cards, max 2 copies, max 2 Legendaries (1 copy each) | ✅ Confirmed |
 | Board size | 5 creature slots per side | ✅ Confirmed |
@@ -1389,7 +1389,7 @@ Tracking confirmed design decisions and when they were made, for reference.
 | Opponent info visibility | Mana, hand count, deck count, instability all visible | ✅ Recommended |
 | Spell targeting | Drag spell to board → valid targets highlight → tap to confirm | ✅ Recommended |
 | Evolution art: image-to-image | FLUX Kontext takes current card art as input + prompt modifiers describe transformation. Art evolves visually, not regenerated from scratch. | ✅ Confirmed |
-| AI image model | FLUX Kontext Dev (free), FLUX Kontext Pro (subscribers) via Replicate/Fal.ai. Same model family = visual cohesion across tiers. | ✅ Confirmed |
+| AI image model | FLUX Kontext Dev (free), FLUX Kontext Pro (subscribers) via fal.ai. Same model family = visual cohesion across tiers. | ✅ Confirmed |
 | AI text model | GPT-4o Mini for card names and flavor text (batch + live evolution). Chosen for cost efficiency on simple creative text tasks. | ✅ Confirmed |
 | Card names evolve | AI generates a new name at each evolution step. CardInstance has `current_name` separate from template. | ✅ Confirmed |
 | Prewritten content | Modifier names, triggered ability descriptions, event flavor text — all prewritten for consistency and zero battle latency. | ✅ Confirmed |
@@ -1398,7 +1398,7 @@ Tracking confirmed design decisions and when they were made, for reference.
 | No AI calls during battle | Event text prewritten. Zero API latency risk in gameplay. | ✅ Confirmed |
 | 7 keywords | Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing | ✅ Confirmed |
 | Combat model | MTG-style: declare attackers → defender assigns blockers → simultaneous damage. 1-to-1 blocking (no gang blocking). | ✅ Confirmed |
-| Spell timing | Main phase only (Hearthstone model). No response windows during combat. Fast, clean, mobile-friendly. | ✅ Confirmed |
+| Spell timing | Main phase only (Hearthstone model). No response windows during combat. Fast, clean, iOS-friendly. | ✅ Confirmed |
 | P1 skips attack turn 1 | Player 1 cannot attack on their first turn. Standard first-player balance tool. | ✅ Confirmed |
 | Taunt = forced attack + forced block | Opponent must declare min 1 attacker per Taunt you control. Your Taunts must block if able. Scales with count, countered by Flying/spells/disposable attackers. | ✅ Confirmed |
 | Simultaneous combat damage | Both attacker and blocker deal damage at the same time. No "first strike" or sequential damage. | ✅ Confirmed |
@@ -1435,3 +1435,11 @@ Tracking confirmed design decisions and when they were made, for reference.
 | `09-monetization-details.md` | Subscription tiers, pricing, Chaos Dust economy, conversion funnels | 🔲 Not started |
 | `10-prd.md` | Formal PRD for engineering handoff | 🔲 Not started |
 | `11-claude-code-agents.md` | Sub-agent task breakdown for Claude Code | 🔲 Not started |
+
+---
+
+## Revision Log
+
+| Date | Change | Section(s) |
+|---|---|---|
+| 2026-02-16 | Platform-alignment pass: updated Section 13 infrastructure table from "React Native / Flutter / PWA with Phaser.js" to "Native iOS app (Swift + SwiftUI + SpriteKit)"; changed image gen provider from "Replicate or Fal.ai" to "fal.ai"; updated platform from "iOS primary, web prototype first" to "iOS only (Swift/SwiftUI/SpriteKit) via Xcode Cloud"; replaced "React Native / Flutter UI" with "Swift + SwiftUI"; replaced "Phaser.js, PixiJS, or CSS" particle references with "SpriteKit"; updated animation references from "CSS transforms, Lottie" to "SpriteKit actions"; changed Decisions Log entries: MVP approach to "iOS only via Xcode Cloud", AI image model provider to "fal.ai", spell timing to "iOS-friendly"; updated generic "mobile" references to "iOS" or "iOS mobile" throughout Sections 8, 14, 16, and 26. No game mechanics, numbers, or design decisions were changed. | 13, 13a (MVP Visual Approach), 8, 14, 16, 26 |

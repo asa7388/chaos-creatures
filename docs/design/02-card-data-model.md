@@ -473,7 +473,7 @@ Avatar {
   // --- Visual ---
   portrait_url:        string           // Avatar portrait art
   battle_sprite_url:   string           // In-battle representation
-  frame_style:         string           // CSS/asset reference for the avatar's frame design
+  frame_style:         string           // Asset reference for the avatar's frame design
   
   // --- Lore ---
   title:               string           // "The Resolute", "Entropy Witch", etc.
@@ -1157,3 +1157,11 @@ Recompute player instability:
   2. Add avatar.instability_modifier
   3. Clamp result to 1–20 (D20 range)
 ```
+
+---
+
+## Revision Log
+
+| Date | Change | Section(s) |
+|---|---|---|
+| 2026-02-16 | Platform-alignment pass: updated Avatar entity `frame_style` field comment from "CSS/asset reference" to "Asset reference" (removed CSS reference since client is now native iOS, not web). No game mechanics, numbers, or data structures were changed. | 9 (Avatar) |

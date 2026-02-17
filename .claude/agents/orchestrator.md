@@ -79,3 +79,13 @@ Maintain a progress file at `docs/design/PROGRESS.md` with:
 ```
 
 Update this after each agent completes.
+
+## Resilience Rules
+
+You coordinate agents but you are not the only source of truth. PROGRESS.md is.
+- Before starting any phase, read PROGRESS.md to understand current state.
+- After every agent completes, immediately update PROGRESS.md.
+- After every phase completes, run the checkpoint-auditor agent before proceeding to the next phase.
+- If your context gets compacted, re-read PROGRESS.md and CLAUDE.md to recover state.
+- If you're unsure whether an agent completed, check for the file and its Revision Log rather than relying on memory.
+- Git commit after every completed phase, not just at the end.

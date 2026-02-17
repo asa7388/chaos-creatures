@@ -1,9 +1,17 @@
 # Environment
 .env
-.env.local
+.env.*
+*.xcconfig
+*.secret
 
 # Dependencies
 node_modules/
 
 # OS
 .DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserdata
+*.xcworkspace/xcuserdata/

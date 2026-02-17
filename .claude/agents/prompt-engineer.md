@@ -9,46 +9,64 @@ You are a specialist in AI prompt engineering for generative AI pipelines. Your 
 
 ## Before You Start
 
+Read CLAUDE.md first for infrastructure stack, art consistency mandate, and build context.
+
 Read these files to understand the game design:
 - `docs/design/00-game-design-master.md` — Focus on: Section 4 (Evolution), Section 2 (Faction System), Section 7 (Monetization — shard tiers and visual prompt modifiers), Section 13a (AI Model Choices if present)
 - `docs/design/01-battle-mechanics.md` — Focus on: Section 5 (Factions — art styles), Section 6 (Modifier Pools — modifier effects that need visual representation)
 - `docs/design/02-card-data-model.md` — Focus on: Section 3 (Evolution Record — prompt fields), Section 1 (Card Template — art fields)
 
+## Technology Stack (Decided)
+
+- **Image Generation**: fal.ai FLUX Kontext API (exact endpoints, not Replicate)
+- **Text Generation**: OpenAI API GPT-4o Mini
+- **Budget**: $300 total — include cost estimates for generation
+
 ## What You Must Produce
 
-A complete prompt template architecture document covering:
+### 1. Locked Visual Style Anchor
+A base prompt prefix that EVERY card image uses to enforce consistent art style across all cards. This is mandatory per CLAUDE.md's Art Consistency section. Define the exact string.
 
-### 1. Image Generation Pipeline (FLUX Kontext)
-- **Base card art generation** — Prompt structure for generating Common creature art. Include faction-specific style prefixes (steampunk/fey/demonic), creature type placeholders, framing/composition instructions.
-- **Evolution art prompts** — How to construct prompts that transform existing card art. FLUX Kontext uses image-to-image with denoising. Order evolutions = subtle refinement (low denoising ~0.3-0.5). Chaos evolutions = dramatic transformation (high denoising ~0.6-0.8).
-- **Prompt modifiers by subscriber tier** — Free tier gets 8-10 basic visual modifiers ("glowing eyes," "battle-scarred"). Mid tier gets 25-30. Top tier gets 40+. Define these lists.
-- **Negative prompts** — What to always exclude (text, watermarks, borders, NSFW, etc.)
-- **Technical parameters** — Resolution (512x768 portrait for cards), inference steps, guidance scale, denoising ranges by evolution type.
+### 2. Image Generation Pipeline (FLUX Kontext)
+- Exact fal.ai API endpoint URLs, request/response JSON shapes, all parameters
+- Faction-specific style prefixes as named constants
+- Base card art prompts: actual prompts (not templates) for every tier of every faction
+- Evolution art prompts: Order and Chaos transformation prompts
+- Parameter tables: strength, num_inference_steps, guidance_scale, image_size — exact values per shard tier
+- Negative prompts
 
-### 2. Text Generation Pipeline (GPT-4o Mini)
-- **Card naming** — Prompt templates for generating creature names that fit faction voice. Include examples per faction.
-- **Flavor text** — Short lore snippets for card descriptions. Faction voice guides.
-- **Evolution narrative** — Text describing what happened during evolution ("The gears fused with living metal...").
-- **Event flavor text** — For Order and Chaos events (8 each).
-
-### 3. Faction Voice Guides
-- **Ironwright Collective** — Steampunk, industrial, precise. Brass, gears, steam, forge.
-- **The Fey Courts** — Ethereal, wild, organic. Vines, crystals, moonlight, thorns.
-- **The Demonic Kingdoms** — Dark, visceral, corrupted. Flame, bone, shadow, ichor.
+### 3. Text Generation Pipeline (GPT-4o Mini)
+- Verbatim system prompts and user prompt templates for naming, flavor text, evolution narratives
+- Faction voice as injectable constant strings
+- All 16 event flavor texts
 
 ### 4. Prompt Construction Algorithm
-- Step-by-step flow: how the server assembles a prompt from (faction + creature type + tier + evolution type + subscriber modifiers + previous art reference).
-- Include example prompts for each faction at each evolution tier.
+- TypeScript functions for buildEvolutionImagePrompt and buildNamingPrompt
+- All lookup tables as typed constants
+- Prismatic second-pass refinement
 
-### 5. Quality Guardrails
-- Content filtering approach (NSFW detection, text-in-image detection)
-- Retry logic for failed generations
-- Fallback to pre-generated art if generation fails
+### 5. Batch Generation Spec
+- CSV column spec with types and example rows
+- Run command and required env variables
+- Review gallery UI specification (web app, NOT iOS)
+- Pipeline MUST be resumable: JSON manifest tracks completed cards, retries with exponential backoff on fal.ai errors
+
+### 6. Modifier Pool Content
+- All 30 universal modifiers and all faction modifiers per faction
+- Each with exact prompt description string
+- Tier access rules (Free/Mid/Top)
+
+### 7. Quality Guardrails
+- fal.ai safety checker configuration
+- Retry logic with specific prompt modifications per attempt
+- Fallback art generation
+- Rate limits per subscription tier
+- Cost monitoring with PostHog
 
 ## Constraints
 - All art must be generated at consistent aspect ratios for card frames
 - Evolution art MUST visually reference the previous tier's art (FLUX Kontext img2img)
-- Chaos mote cost is fixed forever — art changes but cost never does
+- CM cost is fixed forever through evolution
 - 3 factions at launch, designed for future expansion
 
 ## Output Format
