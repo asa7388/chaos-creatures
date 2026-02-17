@@ -2,8 +2,11 @@
 // Copy this file to Config.xcconfig and fill in actual values.
 // This file is gitignored. Never commit the real Config.xcconfig.
 
-SUPABASE_URL = https://your-project.supabase.co
+// IMPORTANT: xcconfig treats // as inline comment. Use $(DOUBLE_SLASH) in URLs.
+DOUBLE_SLASH = //
+
+SUPABASE_URL = https:$(DOUBLE_SLASH)your-project.supabase.co
 SUPABASE_ANON_KEY = your-supabase-anon-key
 POSTHOG_API_KEY = your-posthog-api-key
-R2_PUBLIC_URL = https://your-r2-public-url
-GAME_SERVER_URL = https://your-game-server.railway.app
+R2_PUBLIC_URL = https:$(DOUBLE_SLASH)your-r2-public-url
+GAME_SERVER_URL = https:$(DOUBLE_SLASH)your-game-server.railway.app
