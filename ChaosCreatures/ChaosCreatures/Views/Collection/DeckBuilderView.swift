@@ -9,14 +9,17 @@ struct DeckBuilderView: View {
     @Environment(AppState.self) private var appState
     @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var deckName = "New Deck"
     @State private var deckCards: [DeckEntry] = []
     @State private var availableCards: [CardInstance] = []
+    @State private var existingDeckId: UUID?
     @State private var isLoading = false
     @State private var isSaving = false
     @State private var error: String?
     @State private var searchQuery = ""
+    @State private var showDeckPanel = false  // For phone toggle layout (S-25)
 
     private let maxCards = 20
 
@@ -25,20 +28,13 @@ struct DeckBuilderView: View {
             // Deck header
             deckHeader
 
-            // Split view: deck list + card pool
-            GeometryReader { geometry in
-                HStack(spacing: 0) {
-                    // Card pool (left/top)
-                    cardPoolSection
-                        .frame(width: geometry.size.width * 0.55)
-
-                    Divider()
-                        .background(Color.borderDefault)
-
-                    // Deck list (right/bottom)
-                    deckListSection
-                        .frame(width: geometry.size.width * 0.45)
-                }
+            // S-25: Adaptive layout based on horizontal size class
+            if sizeClass == .regular {
+                // iPad / landscape: side-by-side split
+                splitLayout
+            } else {
+                // iPhone portrait: tab-toggle between pool and deck
+                phoneLayout
             }
         }
         .background(Color.bgPrimary)
@@ -58,28 +54,89 @@ struct DeckBuilderView: View {
         }
         .loading(isLoading: isLoading || isSaving)
         .task {
-            await loadAvailableCards()
+            await loadData()
         }
     }
 
     // MARK: - Deck Header
 
     private var deckHeader: some View {
-        HStack {
-            TextField("Deck Name", text: $deckName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.textPrimary)
-                .textFieldStyle(.plain)
+        VStack(spacing: 0) {
+            HStack {
+                TextField("Deck Name", text: $deckName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.textPrimary)
+                    .textFieldStyle(.plain)
 
-            Spacer()
+                Spacer()
 
-            Text("\(totalCards)/\(maxCards)")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(totalCards == maxCards ? .healGreen : .warningYellow)
+                Text("\(totalCards)/\(maxCards)")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(totalCards == maxCards ? .healGreen : .warningYellow)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.bgSecondary)
+
+            // S-25: Phone toggle between Available Cards and Deck
+            if sizeClass != .regular {
+                HStack(spacing: 0) {
+                    Button(action: { withAnimation { showDeckPanel = false } }) {
+                        Text("Available Cards")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(showDeckPanel ? .textTertiary : .white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(showDeckPanel ? Color.clear : Color.orderBlue.opacity(0.3))
+                    }
+
+                    Button(action: { withAnimation { showDeckPanel = true } }) {
+                        HStack(spacing: 4) {
+                            Text("Deck")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("(\(totalCards))")
+                                .font(.system(size: 12, weight: .bold))
+                        }
+                        .foregroundColor(showDeckPanel ? .white : .textTertiary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(showDeckPanel ? Color.orderBlue.opacity(0.3) : Color.clear)
+                    }
+                }
+                .background(Color.bgSecondary)
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.bgSecondary)
+    }
+
+    // MARK: - Split Layout (iPad / landscape)
+
+    private var splitLayout: some View {
+        GeometryReader { geometry in
+            HStack(spacing: 0) {
+                cardPoolSection
+                    .frame(width: geometry.size.width * 0.55)
+
+                Divider()
+                    .background(Color.borderDefault)
+
+                deckListSection
+                    .frame(width: geometry.size.width * 0.45)
+            }
+        }
+    }
+
+    // MARK: - Phone Layout (S-25)
+
+    private var phoneLayout: some View {
+        Group {
+            if showDeckPanel {
+                deckListSection
+                    .transition(.move(edge: .trailing))
+            } else {
+                cardPoolSection
+                    .transition(.move(edge: .leading))
+            }
+        }
     }
 
     // MARK: - Card Pool
@@ -209,17 +266,30 @@ struct DeckBuilderView: View {
 
     // MARK: - Data
 
-    private func loadAvailableCards() async {
+    /// S-24: Load available cards and, if editing, pre-populate from existing deck
+    private func loadData() async {
         guard let playerId = appState.player?.id else { return }
         isLoading = true
         defer { isLoading = false }
 
         do {
+            // Load available cards
             availableCards = try await SupabaseService.shared.fetchAll(
                 from: SupabaseService.Table.cardInstances,
-                filters: [("player_id", playerId.uuidString)],
-                orderBy: "mana_cost"
+                filters: [("owner_id", playerId.uuidString)],
+                orderBy: "current_mana_cost"
             )
+
+            // S-24: If we navigated with an existing deck ID, load its data
+            if let selectedDeck = router.selectedDeck {
+                existingDeckId = selectedDeck.id
+                deckName = selectedDeck.name
+                deckCards = selectedDeck.cardEntries
+            } else {
+                // Check if the navigation destination included a deck ID
+                // DeckListView navigates with DecksDestination.deckBuilder(deck.id)
+                // The deck might be set via router.selectedDeck
+            }
         } catch {
             self.error = error.localizedDescription
         }
@@ -231,12 +301,13 @@ struct DeckBuilderView: View {
 
         do {
             struct DeckSave: Encodable {
+                let id: UUID?
                 let name: String
                 let cards: [DeckEntry]
                 let factionId: String
 
                 enum CodingKeys: String, CodingKey {
-                    case name, cards
+                    case id, name, cards
                     case factionId = "faction_id"
                 }
             }
@@ -244,7 +315,12 @@ struct DeckBuilderView: View {
             let factionId = appState.player?.primaryFactionId?.uuidString ?? ""
             try await SupabaseService.shared.callFunction(
                 "player/save-deck",
-                body: DeckSave(name: deckName, cards: deckCards, factionId: factionId)
+                body: DeckSave(
+                    id: existingDeckId,
+                    name: deckName,
+                    cards: deckCards,
+                    factionId: factionId
+                )
             )
             appState.showToast("Deck saved!", type: .success)
             dismiss()

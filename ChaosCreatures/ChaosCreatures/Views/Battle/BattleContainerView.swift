@@ -164,6 +164,14 @@ struct BattleContainerView: View {
                 handleGameOver()
             }
         }
+        // S-41: Graveyard sheet
+        .sheet(isPresented: $viewModel.showGraveyard) {
+            GraveyardSheetView(graveyardCount: viewModel.playerGraveyardCount)
+        }
+        // S-32: Battle log sheet
+        .sheet(isPresented: $showBattleLog) {
+            BattleLogSheetView(entries: viewModel.battleLog)
+        }
     }
 
     // MARK: - Match Connection
@@ -276,47 +284,43 @@ struct OpponentHUDView: View {
     let instability: Int
 
     var body: some View {
-        HStack(spacing: 12) {
-            // HP
-            HStack(spacing: 4) {
-                Image(systemName: "heart.fill")
-                    .foregroundColor(.chaosRed)
-                    .font(.system(size: 12))
-                Text("\(hp)/\(maxHp)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
-            }
+        VStack(spacing: 4) {
+            HStack(spacing: 12) {
+                // S-31: HP bar
+                HPBarView(current: hp, max: maxHp, height: 10, showLabel: true, fontSize: 11)
+                    .frame(maxWidth: 120)
 
-            Spacer()
+                Spacer()
 
-            // Hand count
-            HStack(spacing: 4) {
-                Image(systemName: "rectangle.portrait.fill")
-                    .foregroundColor(.textSecondary)
-                    .font(.system(size: 10))
-                Text("\(handCount)")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.textSecondary)
-            }
+                // Hand count
+                HStack(spacing: 4) {
+                    Image(systemName: "rectangle.portrait.fill")
+                        .foregroundColor(.textSecondary)
+                        .font(.system(size: 10))
+                    Text("\(handCount)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.textSecondary)
+                }
 
-            // Deck count
-            HStack(spacing: 4) {
-                Image(systemName: "square.stack.fill")
-                    .foregroundColor(.textSecondary)
-                    .font(.system(size: 10))
-                Text("\(deckCount)")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.textSecondary)
-            }
+                // Deck count
+                HStack(spacing: 4) {
+                    Image(systemName: "square.stack.fill")
+                        .foregroundColor(.textSecondary)
+                        .font(.system(size: 10))
+                    Text("\(deckCount)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.textSecondary)
+                }
 
-            // Instability
-            HStack(spacing: 4) {
-                Image(systemName: "bolt.fill")
-                    .foregroundColor(instabilityColor)
-                    .font(.system(size: 10))
-                Text("\(instability)")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(instabilityColor)
+                // Instability
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .foregroundColor(instabilityColor)
+                        .font(.system(size: 10))
+                    Text("\(instability)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(instabilityColor)
+                }
             }
         }
         .padding(.horizontal, 8)
@@ -347,63 +351,59 @@ struct PlayerHUDView: View {
     let onGraveyard: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            // HP
-            HStack(spacing: 4) {
-                Image(systemName: "heart.fill")
-                    .foregroundColor(.chaosRed)
-                    .font(.system(size: 14))
-                Text("\(hp)/\(maxHp)")
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
-            }
+        VStack(spacing: 4) {
+            // S-31: HP bar row
+            HStack(spacing: 8) {
+                HPBarView(current: hp, max: maxHp, height: 12, showLabel: true, fontSize: 12)
+                    .frame(maxWidth: 140)
 
-            // Mana
-            HStack(spacing: 4) {
-                Image(systemName: "drop.fill")
-                    .foregroundColor(.timerBlue)
-                    .font(.system(size: 12))
-                Text("\(mana)/\(manaCap)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
-            }
-
-            Spacer()
-
-            // Chaos Spark button
-            if hasChaosSpark {
-                Button(action: onChaosSpark) {
-                    Image(systemName: "bolt.circle.fill")
-                        .foregroundColor(.warningYellow)
-                        .font(.system(size: 22))
+                // Mana
+                HStack(spacing: 4) {
+                    Image(systemName: "drop.fill")
+                        .foregroundColor(.timerBlue)
+                        .font(.system(size: 12))
+                    Text("\(mana)/\(manaCap)")
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
                 }
-            }
 
-            // Graveyard
-            Button(action: onGraveyard) {
+                Spacer()
+
+                // Chaos Spark button
+                if hasChaosSpark {
+                    Button(action: onChaosSpark) {
+                        Image(systemName: "bolt.circle.fill")
+                            .foregroundColor(.warningYellow)
+                            .font(.system(size: 22))
+                    }
+                }
+
+                // Graveyard
+                Button(action: onGraveyard) {
+                    HStack(spacing: 2) {
+                        Image(systemName: "archivebox.fill")
+                            .font(.system(size: 11))
+                        Text("\(graveyardCount)")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundColor(.textSecondary)
+                }
+
+                // Deck count
                 HStack(spacing: 2) {
-                    Image(systemName: "archivebox.fill")
+                    Image(systemName: "square.stack.fill")
                         .font(.system(size: 11))
-                    Text("\(graveyardCount)")
+                    Text("\(deckCount)")
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .foregroundColor(.textSecondary)
-            }
 
-            // Deck count
-            HStack(spacing: 2) {
-                Image(systemName: "square.stack.fill")
-                    .font(.system(size: 11))
-                Text("\(deckCount)")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-            .foregroundColor(.textSecondary)
-
-            // Surrender (menu)
-            Button(action: onSurrender) {
-                Image(systemName: "flag.fill")
-                    .foregroundColor(.textTertiary)
-                    .font(.system(size: 14))
+                // Surrender (menu)
+                Button(action: onSurrender) {
+                    Image(systemName: "flag.fill")
+                        .foregroundColor(.textTertiary)
+                        .font(.system(size: 14))
+                }
             }
         }
         .padding(.horizontal, 8)
@@ -543,6 +543,217 @@ struct ConnectionLostOverlay: View {
             }
         }
         .ignoresSafeArea()
+    }
+}
+
+// MARK: - S-31: HP Bar View
+
+struct HPBarView: View {
+    let current: Int
+    let max: Int
+    let height: CGFloat
+    let showLabel: Bool
+    let fontSize: CGFloat
+
+    private var ratio: Double {
+        guard max > 0 else { return 0 }
+        return Double(current) / Double(max)
+    }
+
+    private var barColor: Color {
+        if ratio > 0.6 { return .healGreen }
+        if ratio > 0.3 { return .warningYellow }
+        return .chaosRed
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "heart.fill")
+                .foregroundColor(.chaosRed)
+                .font(.system(size: fontSize))
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background
+                    RoundedRectangle(cornerRadius: height / 2)
+                        .fill(Color.bgQuaternary)
+
+                    // Fill
+                    RoundedRectangle(cornerRadius: height / 2)
+                        .fill(
+                            LinearGradient(
+                                colors: [barColor, barColor.opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * CGFloat(ratio))
+                        .animation(.easeInOut(duration: 0.3), value: current)
+                }
+            }
+            .frame(height: height)
+
+            if showLabel {
+                Text("\(current)")
+                    .font(.system(size: fontSize, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
+                    .frame(minWidth: 20, alignment: .trailing)
+            }
+        }
+    }
+}
+
+// MARK: - S-16: Turn Timer Bar
+
+struct TurnTimerBar: View {
+    let timeRemaining: Int
+    let maxTime: Int
+    let isMyTurn: Bool
+
+    private var ratio: Double {
+        guard maxTime > 0 else { return 0 }
+        return Double(timeRemaining) / Double(maxTime)
+    }
+
+    private var timerColor: Color {
+        if timeRemaining <= 5 { return .chaosRed }
+        if timeRemaining <= 15 { return .warningYellow }
+        return .timerBlue
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "clock.fill")
+                .font(.system(size: 10))
+                .foregroundColor(timerColor)
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.bgQuaternary)
+
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(timerColor)
+                        .frame(width: geometry.size.width * CGFloat(ratio))
+                        .animation(.linear(duration: 1), value: timeRemaining)
+                }
+            }
+            .frame(height: 6)
+
+            Text("\(timeRemaining)s")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(timerColor)
+                .frame(minWidth: 30, alignment: .trailing)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.bgPrimary.opacity(0.8))
+        .cornerRadius(6)
+    }
+}
+
+// MARK: - S-41: Graveyard Sheet
+
+struct GraveyardSheetView: View {
+    let graveyardCount: Int
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                if graveyardCount == 0 {
+                    VStack(spacing: 12) {
+                        Spacer()
+                        Image(systemName: "archivebox")
+                            .font(.system(size: 40))
+                            .foregroundColor(.textDisabled)
+                        Text("No cards in graveyard")
+                            .font(.system(size: 15))
+                            .foregroundColor(.textSecondary)
+                        Spacer()
+                    }
+                } else {
+                    VStack(spacing: 8) {
+                        Text("\(graveyardCount) card(s) in graveyard")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.textSecondary)
+                            .padding(.top, 16)
+
+                        Text("Destroyed creatures are sent here.")
+                            .font(.system(size: 13))
+                            .foregroundColor(.textTertiary)
+
+                        Spacer()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.bgPrimary)
+            .navigationTitle("Graveyard")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - S-32: Battle Log Sheet
+
+struct BattleLogSheetView: View {
+    let entries: [BattleLogEntry]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(entries) { entry in
+                            HStack(spacing: 8) {
+                                Image(systemName: entry.type.iconName)
+                                    .font(.system(size: 10))
+                                    .foregroundColor(entry.type.color)
+                                    .frame(width: 16)
+
+                                Text("T\(entry.turn)")
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.textTertiary)
+                                    .frame(width: 24)
+
+                                Text(entry.message)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.textSecondary)
+                                    .lineLimit(2)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .id(entry.id)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
+                .onAppear {
+                    if let last = entries.last {
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
+                }
+            }
+            .background(Color.bgPrimary)
+            .navigationTitle("Battle Log")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 

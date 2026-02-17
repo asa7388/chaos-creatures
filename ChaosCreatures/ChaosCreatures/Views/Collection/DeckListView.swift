@@ -83,6 +83,8 @@ struct DeckListView: View {
 
                 ForEach(decks) { deck in
                     Button(action: {
+                        // S-24: Set the selected deck so DeckBuilderView can load it
+                        router.selectedDeck = deck
                         router.decksNavigationPath.append(DecksDestination.deckBuilder(deck.id))
                     }) {
                         DeckRowView(deck: deck)
