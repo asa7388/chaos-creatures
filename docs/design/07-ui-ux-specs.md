@@ -1,684 +1,758 @@
 # 07 — UI/UX Specifications
 
 **Chaos Creatures — Mobile Card Game Interface Design**
+**Version: 2.0 — Revised for React Native (Expo) / TypeScript**
 
-This document expands the UI/UX section of the master design document into a complete specification for engineering handoff. It defines every screen, interaction pattern, navigation flow, and responsive consideration needed to implement the game's interface.
+This document is the complete UI/UX specification for engineering implementation. It covers every screen, interaction pattern, animation, and component in the player-facing mobile app AND the owner-facing admin dashboard. All component names reference actual React Native primitives or the named third-party libraries listed below.
 
-**Design Philosophy:** Clean, stylish, card-game-native. The UI should feel like a premium card game app (Balatro's clarity, Marvel Snap's speed, Slay the Spire's readability), not a mobile game with cards bolted on. Dark theme default with faction-themed light accents. Every screen serves one primary purpose with minimal navigation friction.
+**Design Philosophy:** Clean, stylish, card-game-native. Dark theme default with faction-themed light accents. Think Balatro's clarity, Marvel Snap's speed, Slay the Spire's readability. Every screen serves one primary purpose with minimal navigation friction.
 
-**Depends on:** `00-game-design-master.md` (overall systems), `01-battle-mechanics.md` (battle mechanics), `02-card-data-model.md` (data structures)
+**Depends on:** `00-game-design-master.md`, `01-battle-mechanics.md`, `02-card-data-model.md`
+
+---
+
+## Technology Stack Decisions (Non-Negotiable)
+
+These are fixed decisions. Do not use alternatives.
+
+| Layer | Technology | Notes |
+|---|---|---|
+| Client framework | React Native (Expo SDK 51+) | TypeScript only. Ships via Expo EAS Build. |
+| Navigation | Expo Router v3 (file-based routing) | Bottom tabs, stack navigators, modals all via Expo Router. |
+| Animation library | React Native Reanimated 3 | All card animations, transitions, layout shifts. |
+| 2D graphics / particles | React Native Skia | D20 rendering, particle effects, card frame drawing, HP bars. |
+| Gesture handling | React Native Gesture Handler | Drag interactions (blocker assignment, hand play), swipe, long-press. |
+| State management | Zustand | Global game state, collection state, deck builder state. |
+| Server state / caching | TanStack Query (React Query) | All Supabase data fetching, mutation, and cache invalidation. |
+| Real-time match comms | Supabase Realtime (channels) | WebSocket match state from Railway game server. |
+| Backend database | Supabase (Postgres + Edge Functions) | Auth, player data, card data, deck data, economy. |
+| Card art CDN | Cloudflare R2 | All generated card art served via R2 CDN URL. |
+| Analytics | PostHog | All player events. Use `posthog-react-native`. |
+| Payments | Expo IAP (expo-in-app-purchases) | Wraps App Store / Google Play native IAP. |
+| Haptics | Expo Haptics | All haptic feedback. |
+| Sharing | Expo Sharing + Expo FileSystem | Evolution share screenshots. |
+
+---
+
+## Part A — Player-Facing App
 
 ---
 
 ## 1. Screen Inventory
 
-Complete list of all screens in the application with their primary purpose and access paths.
+Complete list of all screens with primary purpose and access path.
 
 ### Core Screens (Always Accessible)
 
-| Screen | Primary Purpose | Access Path |
-|--------|----------------|-------------|
-| **Home** | Dashboard and play entry point | Bottom tab bar (leftmost tab) |
-| **Collection** | Browse and manage owned cards | Bottom tab bar |
-| **Decks** | Build and edit decks | Bottom tab bar |
-| **Profile** | Player stats, achievements, showcase | Bottom tab bar |
-| **Shop** | Subscriptions, card packs, cosmetics | Bottom tab bar (rightmost tab) |
+| Screen | Primary Purpose | Access Path | Expo Router Path |
+|--------|----------------|-------------|-----------------|
+| **Home** | Dashboard and play entry point | Bottom tab bar (position 1) | `/(tabs)/home` |
+| **Collection** | Browse and manage owned cards | Bottom tab bar (position 2) | `/(tabs)/collection` |
+| **Decks** | Build and edit decks | Bottom tab bar (position 3) | `/(tabs)/decks` |
+| **Profile** | Player stats, achievements, showcase | Bottom tab bar (position 4) | `/(tabs)/profile` |
+| **Shop** | Subscriptions, shards, cosmetics | Bottom tab bar (position 5) | `/(tabs)/shop` |
 
 ### Battle Flow Screens
 
-| Screen | Primary Purpose | Access Path |
-|--------|----------------|-------------|
-| **Mode Selection** | Choose Ranked/Casual/Practice | Tap Play button on Home |
-| **Matchmaking** | Queue for match, display opponent | After mode selection |
-| **Battle** | Main gameplay screen | After matchmaking completes |
-| **Post-Match Results** | Display results, rewards, XP gains | After battle ends |
+| Screen | Primary Purpose | Access Path | Expo Router Path |
+|--------|----------------|-------------|-----------------|
+| **Mode Selection** | Choose Ranked / Casual / Practice | Tap Play on Home | `/battle/mode-select` |
+| **Matchmaking** | Queue for match, show opponent | After mode selection | `/battle/matchmaking` |
+| **Battle** | Main gameplay screen | After match found | `/battle/[matchId]` |
+| **Post-Match Results** | Results, rewards, XP, evolution-ready cards | After battle ends | `/battle/results` |
 
 ### Card Management Screens
 
-| Screen | Primary Purpose | Access Path |
-|--------|----------------|-------------|
-| **Card Detail** | Full card stats, evolution history, actions | Tap any card in Collection, Deck Builder, or Battle |
-| **Evolution Flow** | Evolve a card through ritual UI | Tap "Evolve" from Card Detail when eligible |
-| **Graveyard** | View destroyed cards during battle | Tap avatar during battle |
+| Screen | Primary Purpose | Access Path | Expo Router Path |
+|--------|----------------|-------------|-----------------|
+| **Card Detail** | Full stats, evolution history, actions | Tap any card anywhere | `/card/[cardInstanceId]` |
+| **Evolution Flow** | Multi-step evolution ritual | Tap Evolve in Card Detail | `/card/[cardInstanceId]/evolve` |
+| **Graveyard** | Destroyed cards during battle | Tap avatar in battle | Modal over battle screen |
 
 ### Secondary Screens
 
-| Screen | Primary Purpose | Access Path |
-|--------|----------------|-------------|
-| **Settings** | Account, audio, visual, gameplay preferences | Gear icon in header or Profile tab |
-| **Achievements** | View achievement progress | Profile tab → Achievements section |
-| **Battle Log** | Chronological action history during battle | Battle screen → log icon (bottom-left) |
-| **Friends List** | Manage friends, view online status | Profile tab → Friends section |
-| **Onboarding Tutorial** | First-time user education | First launch only |
+| Screen | Primary Purpose | Access Path | Expo Router Path |
+|--------|----------------|-------------|-----------------|
+| **Settings** | Account, audio, visual, gameplay | Gear icon (top-right, any screen) | `/settings` |
+| **Achievements** | View achievement progress | Profile → Achievements | `/profile/achievements` |
+| **Battle Log** | Chronological action history | Side panel in battle | Side drawer in battle |
+| **Onboarding Tutorial** | First-time user education | First launch only | `/onboarding` |
 
 ---
 
 ## 2. Navigation Map
 
-Text-based flowchart showing how screens connect. The app uses a persistent 5-tab bottom bar as its only top-level navigation.
-
 ```
 [App Launch]
-    ↓
-[Onboarding] (first launch only)
-    ↓
-┌─────────────────────────────────────────────────────────────┐
-│                  Bottom Tab Bar (Persistent)                │
-├─────────┬─────────────┬─────────┬─────────┬────────────────┤
-│  HOME   │ COLLECTION  │  DECKS  │ PROFILE │     SHOP       │
-└─────────┴─────────────┴─────────┴─────────┴────────────────┘
-    ↓            ↓            ↓         ↓            ↓
-[Home Screen]  [Collection] [Deck    [Profile]   [Shop]
-    ↓            ↓         Builder]      ↓            ↓
-    ↓         [Card Detail]  ↓       [Achievements] [Subscription]
-    ↓            ↓            ↓       [Friends]      [Style Packs]
-    ↓         [Evolution]    ↓       [Stats]        [Cosmetics]
-    ↓                         ↓                      [Shards]
-[Mode Selection]          [Card Detail]
-    ↓                         ↓
-[Matchmaking]             [Evolution]
-    ↓
-[Battle Screen] ←──────────────────────┐
-    ↓                                   │
-[Battle Log] (side panel)              │
-[Graveyard] (modal)                    │
-[Card Detail] (in-battle tap)          │
-    ↓                                   │
-[Post-Match Results] ───────────────────┘
-    ↓
-[Home] or [Evolution] (if card ready)
+    |
+    +--> [Onboarding] (first launch: /onboarding)
+    |         |
+    |         v
+    +--> [Expo Router Tabs Layout]
+              |
+    ┌─────────────────────────────────────────────────────┐
+    │              Bottom Tab Bar (persistent)            │
+    │  [Home]  [Collection]  [Decks]  [Profile]  [Shop]  │
+    └─────────────────────────────────────────────────────┘
+         |          |           |          |         |
+         v          v           v          v         v
+      /home    /collection   /decks    /profile   /shop
+         |          |           |          |         |
+         |      /card/[id]  /decks/[id]  /profile/ /shop/
+         |          |       (builder)   achievements  sub
+         |      /card/[id]/             /profile/
+         |       evolve                  friends
+         |
+    /battle/mode-select
+         |
+    /battle/matchmaking
+         |
+    /battle/[matchId]  <-- full-screen, hides tab bar
+         |   |
+         |   +--> [Battle Log] (Animated.View slide-in panel, left)
+         |   +--> [Graveyard] (Modal, full-height)
+         |   +--> [Card Detail] (Modal, from tapping board card)
+         |
+    /battle/results
+         |
+         +--> /home (Play Again)
+         +--> /collection?filter=evolution-ready (Evolve Cards)
 
-
-[Settings] ← Accessible from gear icon in header (any screen)
+[Settings] accessible via stack push from any screen via gear icon.
 ```
 
-**Key Navigation Principles:**
+**Navigation Principles:**
 
-- **Bottom tab bar is always visible** except during battle (battle is full-screen immersive)
-- **No nested tab systems** — every tab is one tap from every other tab
-- **Modal overlays** for focused actions (card detail, evolution, settings) dismiss back to calling screen
-- **Linear flows** for critical paths (matchmaking → battle → results)
-- **Deep linking allowed:** Notification "Card ready to evolve" → directly to Evolution screen for that card
+- Bottom tab bar uses `Tabs` component from Expo Router. It is hidden on `/battle/[matchId]` using `tabBarStyle: { display: 'none' }` in the screen options.
+- Modal screens (Card Detail, Graveyard, Evolution Flow) use `presentation: 'modal'` in Expo Router screen options.
+- Deep linking: Push notification "card ready to evolve" links to `/card/[cardInstanceId]/evolve`.
+- All back navigation uses the Expo Router `router.back()` method. No custom back button logic.
 
 ---
 
 ## 3. Battlefield Screen (Detailed)
 
-The most important screen in the game. Every element must be readable at a glance during fast decision-making.
+The most important screen in the game. Route: `/battle/[matchId]`. Full-screen, portrait orientation locked via `expo-screen-orientation` set to `PORTRAIT` on mount.
 
 ### 3.1 Layout Specification
 
+The battle screen is a single `View` with `flex: 1, backgroundColor: '#0D0D0D'`. All regions are absolutely positioned or use `flexDirection: 'column'` with explicit heights.
+
 ```
-┌──────────────────────────────────────────────────────────┐
-│  OPP AVATAR │ OPP HP BAR [████████░░] 16/20               │ ← Top Header
-│  Instability: 11        [5 cards]  [mana: ●●●●●○○○○○]    │
-├──────────────────────────────────────────────────────────┤
-│                                                           │
-│         ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐                   │ ← Opponent Board
-│         │C1│  │C2│  │C3│  │C4│  │C5│                   │   (5 slots)
-│         └──┘  └──┘  └──┘  └──┘  └──┘                   │
-│                                                           │
-├──────────────────────────────────────────────────────────┤
-│                  ═══ CHAOS ROLL ZONE ═══                 │ ← Central Zone
-│                        [ D20 ]                           │
-│                   "Attack Phase"                         │   (phase indicator)
-├──────────────────────────────────────────────────────────┤
-│                                                           │
-│         ┌──┐  ┌──┐  ┌──┐  ┌──┐  ┌──┐                   │ ← Your Board
-│         │C1│  │C2│  │C3│  │C4│  │C5│                   │   (5 slots)
-│         └──┘  └──┘  └──┘  └──┘  └──┘                   │
-│                                                           │
-├──────────────────────────────────────────────────────────┤
-│  YOUR AVATAR │ YOUR HP BAR [████████████] 20/20          │ ← Bottom Header
-│  Instability: 8         [Timer: ███████░░░ 45s]          │
-├──────────────────────────────────────────────────────────┤
-│  [Hand - Horizontally Scrollable Card Row]               │ ← Hand Area
-│  [Card1] [Card2] [Card3] [Card4] [Card5] →              │
-├──────────────────────────────────────────────────────────┤
-│  [Mana: ●●●●●●○○○○]  [Log]          [END TURN]          │ ← Bottom Controls
-└──────────────────────────────────────────────────────────┘
+Screen (375pt wide reference, portrait)
+┌──────────────────────────────────────────────┐  Total height: ~812pt (iPhone 14)
+│  OpponentInfoBar                             │  h: 64pt
+│  [Avatar 48x48] [Name] [HP Bar] [Instability]│
+│  [HandCount] [DeckCount] [Mana row x10]      │
+├──────────────────────────────────────────────┤
+│  OpponentBoard (5 slots)                     │  h: 110pt
+│  [Slot][Slot][Slot][Slot][Slot]              │
+├──────────────────────────────────────────────┤
+│  CenterZone                                  │  h: 120pt
+│  [D20Component]  [PhaseIndicator]            │
+│  [EventOverlay - conditional]                │
+├──────────────────────────────────────────────┤
+│  PlayerBoard (5 slots)                       │  h: 110pt
+│  [Slot][Slot][Slot][Slot][Slot]              │
+├──────────────────────────────────────────────┤
+│  PlayerInfoBar                               │  h: 56pt
+│  [Avatar 48x48] [Name] [HP Bar] [Instability]│
+│  [TimerBar]                                  │
+├──────────────────────────────────────────────┤
+│  HandScrollView                              │  h: 128pt
+│  Horizontal ScrollView of CardInHand items   │
+├──────────────────────────────────────────────┤
+│  BottomControls                              │  h: 56pt
+│  [ManaDisplay] [BattleLogButton] [EndTurnBtn]│
+└──────────────────────────────────────────────┘
+  (+ SafeAreaView inset bottom for home bar)
 ```
+
+All heights are fixed values, not percentages, to guarantee layout stability during animations.
 
 ### 3.2 Component Specifications
 
-#### Chaos Roll Zone (Center)
-- **Position:** Vertical center of screen, between opponent and player boards
-- **Visual:** Neutral background (not aligned to either player)
-- **D20 Animation:** Full 3D roll when active, static display of current roll result afterward
-- **Roll Display:** Large number (48-60pt), visible for 2-3 seconds before fading to smaller persistent indicator
-- **Event Overlay:** When event triggers, semi-transparent overlay slides in from center
-  - Event name and icon at top
-  - Brief effect description (1 sentence, 18pt)
-  - Highlighting/pulsing on affected creatures
-  - Auto-dismisses after 2.5 seconds or on tap
-  - Visual treatment: Order = blue/gold glow, Chaos = red/purple crackle
-- **Phase Indicator:** Below roll zone, shows current phase
-  - 9 phases: "Start" → "Chaos Roll" → "Event" → "Draw" → "Main" → "Attack" → "Block" → "Combat" → "End"
-  - Active phase highlighted (bright), completed phases dimmed, future phases grayed
-  - Font size: 14pt, always visible but subtle
+All components below are React Native components unless noted as Skia or Reanimated.
 
-#### Board Slots (5 per side)
-- **Slot Dimensions:** Approx 60x85pt each (portrait card ratio)
-- **Empty Slot:** Dim outline/border (30% opacity) so capacity is always visible
-- **Card Display (Compact):**
-  - Card art thumbnail (top 60% of slot)
-  - ATK/HP numbers (bottom corners, 16pt bold)
-  - Active keyword icons (row of small icons, 12x12pt each, max 3 visible, tap for more)
-  - Attunement indicator (small glow effect: blue for Order-attuned, red for Chaos-attuned)
-  - Taunt indicator (shield icon, 16x16pt, bright yellow, top-right corner)
-  - Tap to expand to full Card Detail view
-- **Spacing:** 4-8pt horizontal gap between slots
-- **Positioning:** Centered horizontally, with equal margins on both sides
+#### OpponentInfoBar and PlayerInfoBar
 
-#### HP Bars
-- **Dimensions:** Full width of screen, 32pt height
-- **Components:**
-  - Filled bar (gradient: green at high HP → yellow at medium → red at low)
-  - Numeric display overlay (center): "16/20" (20pt bold)
-  - Background bar (darker shade, shows total HP capacity)
-- **Damage Animation:**
-  - Bar flash (white overlay for 0.2s)
-  - Screen shake (4pt amplitude) on damage to player
-  - Number pop (damaged amount flies up in red, -3pt offset)
-- **Healing Animation:**
-  - Green sparkle effect
-  - Number pop (healed amount flies up in green, +3pt offset)
+```
+Component: View
+style: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12,
+         backgroundColor: '#141414', borderBottomWidth: 1, borderColor: '#2A2A2A' }
+```
 
-#### Hand Area
-- **Position:** Bottom of screen, above bottom controls
-- **Dimensions:** Full width, 120pt height
-- **Layout:** Horizontal scrollable row (swipe left/right)
-- **Card Display (Full Art):**
-  - Full card portrait (90x130pt)
-  - Cards overlap slightly (10pt) to save space
-  - Affordable cards: bright, full opacity
-  - Unaffordable cards: dimmed 50%, grayscale filter
-  - Selected card for play: lifted 10pt, drop shadow
-- **Drag to Play:** Drag card upward from hand to board or target area
-  - Visual: Card follows finger with 20% scale increase
-  - Drop zones highlight when valid target is available
-  - Release on invalid zone: card snaps back to hand with bounce animation
+Children:
+- **AvatarFrame**: `Pressable` wrapping a `Image` (60x60pt). Source: Cloudflare R2 CDN URL. Faction-themed border: 3pt solid, color = faction accent. On press: open Graveyard modal. `onLongPress` opens player profile tooltip.
+- **HpBar**: Custom Skia component. See HpBar spec below.
+- **InstabilityDisplay**: `Text` 18pt bold. Color: white normally, red if instability >= 15, blue if <= 4.
+- **HandCountBadge** (opponent only): `View` + `Text` showing "[N] cards". No interaction.
+- **ManaRow**: Row of 10 `View` circles (20pt diameter, 3pt gap). Filled = faction accent color. Empty = '#2A2A2A'. No interaction.
 
-#### Mana Crystals
-- **Position:** Bottom-left corner, above hand
-- **Display:** Row of 10 circular icons (chaos mote symbols)
-  - Filled (bright, colored): available mana
-  - Empty (dim outline): spent mana
-  - Outlined (pulsing): upcoming next turn (preview)
-- **Size:** 20pt diameter each, 4pt spacing
-- **Animation:** When mana is spent, crystal dims with a brief flash
+#### HpBar (Skia Component)
 
-#### Timer Bar
-- **Position:** Embedded in bottom header, to right of instability display
-- **Dimensions:** 120pt wide x 12pt tall
-- **States:**
-  - Normal (60-16s remaining): Green/blue gradient, smooth depletion
-  - Warning (15-0s remaining): Red, pulsing, audio cue at transition
-  - Inactive (opponent's turn): Gray, not depleting
-- **Numeric Display:** Seconds remaining shown as text overlay (12pt)
+File: `components/battle/HpBar.tsx`
 
-#### Avatars
-- **Position:**
-  - Player avatar: Bottom-left corner, 60x60pt
-  - Opponent avatar: Top-left corner, 60x60pt
-- **Frame:** Faction-themed border (4pt thick) with subtle ambient particle effects
-- **Tap Interaction:** Opens graveyard panel for that player
-- **Instability Display:** Shown directly next to avatar (18pt bold)
+Use `@shopify/react-native-skia` `Canvas` component.
 
-#### End Turn Button
-- **Position:** Bottom-right corner
-- **Dimensions:** 100x44pt (minimum tap target)
-- **States:**
-  - Active (your turn, actions available): Bright, pulsing glow
-  - Inactive (opponent's turn): Grayed out, no interaction
-  - Ready (your turn, no more actions possible): Strong pulse, audio hint
-- **Label:** "END TURN" (14pt bold)
-- **Confirmation:** Optional setting "Confirm before ending turn" adds a 0.5s long-press requirement
+- Canvas dimensions: width = full parent width minus 80pt (for avatar), height = 28pt.
+- Background rect: dark gray `#1A1A1A`, rounded corners 6pt.
+- Filled rect width: `(currentHp / maxHp) * totalWidth`. Color interpolation:
+  - 100-60%: `#4CAF50` (green)
+  - 59-30%: `#FFC107` (yellow-amber), transition via `interpolateColor` from Reanimated
+  - 29-0%: `#F44336` (red)
+- Text overlay: `[currentHp]/[maxHp]` centered in canvas, 14pt bold, white. Use Skia `Text` with `SkFont`.
+- Damage animation: on HP decrease, use Reanimated `withSequence(withTiming(1, {duration: 80}), withTiming(0, {duration: 120}))` driving a white overlay opacity on the bar. Simultaneously drive a `shake` shared value: `withSequence(withTiming(-6), withTiming(6), withTiming(-4), withTiming(4), withTiming(0))` applied as `translateX` on the entire `PlayerInfoBar`.
+- Heal animation: green pulse `withTiming` on a green overlay opacity.
 
-#### Opponent Information Display
-- **Hand Count:** Small number badge next to hand icon (top-right): "[5 cards]"
-- **Deck Count:** Small deck icon with number (top-right, next to hand)
-- **Mana Crystals:** Row of 10 icons (mirroring player's) at top, showing opponent's available mana
-- **Instability:** Displayed next to opponent avatar (same styling as player's)
+#### BoardSlots
 
-### 3.3 Turn Phase Indicators
+Five slots per side.
 
-Visual states for each of the 9 phases:
+```
+Component: View
+style: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+         paddingHorizontal: 8, gap: 4 }
+```
 
-| Phase | Visual State | Timer Active? | Primary Interaction |
-|-------|-------------|---------------|---------------------|
-| **Start** | Label visible, brief (0.5s) | No | None (automatic) |
-| **Chaos Roll** | D20 animating, label bright | No | Watch roll |
-| **Event** | Event overlay visible | No | Read event |
-| **Draw** | Card draw animation | No | None (automatic) |
-| **Main** | Label highlighted | Yes (60s) | Play cards from hand |
-| **Attack** | Label highlighted, "Select Attackers" prompt | Yes (continues) | Tap creatures to attack |
-| **Block** | Label highlighted, "Assign Blockers" prompt | Yes (continues) | Drag blockers onto attackers |
-| **Combat** | Damage numbers flying, animations | No | Watch resolution |
-| **End** | Label visible, brief (0.5s) | No | None (automatic) |
+Each **BoardSlot**:
+```
+Component: Pressable
+style: { width: 60, height: 85, borderRadius: 8,
+         borderWidth: 1.5, borderColor: '#3A3A3A',  // empty state
+         backgroundColor: '#1A1A1A' }
+```
+- Empty state: dim border `#3A3A3A`, no content.
+- Occupied: render `BoardCardView` component.
 
-**Phase Label Styling:**
-- Active phase: Bright white text, 16pt, subtle glow
-- Completed phases: 50% opacity, strikethrough
-- Upcoming phases: 30% opacity, no strikethrough
+**BoardCardView** (compact card in slot):
+
+```
+Component: View (full slot dimensions, 60x85)
+```
+
+Children:
+- `Image` (top 60% of slot, art from CDN URL). `resizeMode: 'cover'`.
+- Stats row at bottom 30%: `View` with `flexDirection: 'row', justifyContent: 'space-between'`. Two `Text` nodes: ATK (left, 13pt bold, white) and HP (right, 13pt bold, white). Background: `rgba(0,0,0,0.7)`.
+- Keyword icons row: small `Image` icons (10x10pt each), max 3 visible, centered above stats. Tap on icons opens tooltip.
+- TauntShield (conditional): `View` positioned top-right, `position: 'absolute', top: 3, right: 3`. Shield icon 14x14pt, color `#FFD700`. Uses Reanimated `withRepeat(withTiming(...))` for pulsing glow — achieved via animating `shadowOpacity` or a Skia glow layer.
+- AttunementGlow (conditional): Skia `Canvas` overlay on the card border. Blue for Order-attuned, Red for Chaos-attuned. Pulse animation on Reanimated shared value.
+- Attack selection state: 3pt red border glow on the card `View`. Driven by `borderColor` animated with Reanimated.
+- Block assignment state: 3pt green border glow.
+- Block assignment line: drawn in parent `Canvas` overlay spanning the full board area using Skia `Path`. Yellow line, 2pt stroke, from blocker center to attacker center.
+
+#### CenterZone (D20 + Phase Indicator)
+
+```
+Component: View
+style: { height: 120, justifyContent: 'center', alignItems: 'center',
+         position: 'relative' }
+```
+
+Children:
+- **D20Component**: Skia `Canvas` (80x80pt). Renders a 20-sided polygon with number display. Animation state machine:
+  - `idle`: Static, shows last roll value (or "--" before first roll).
+  - `rolling`: Reanimated `withRepeat` rotating + scaling (simulates tumble). Duration: 1500-2500ms depending on game event. Shows blur effect via Skia `Blur` filter during roll.
+  - `settled`: Scale pulse `withTiming(1.1, 200ms)` then back to 1.0. Number appears.
+  - Color: white frame, number fills with `#5BC0EB` if Order triggered, `#E63946` if Chaos triggered, `#888` if "nothing".
+- **PhaseIndicator**: Horizontal `View` of 9 `Text` labels separated by `View` dividers.
+  - All 9 phases: "Start", "Roll", "Event", "Draw", "Main", "Attack", "Block", "Combat", "End"
+  - Active phase: 13pt bold white, glow effect via `textShadowColor` and `textShadowRadius`.
+  - Completed phases: 11pt, opacity 0.3.
+  - Future phases: 11pt, opacity 0.2.
+  - Reanimated `withTiming` on opacity/color when phase changes.
+
+#### EventOverlay
+
+Positioned absolutely over `CenterZone`. Uses Reanimated `FadeIn` / `FadeOut` layout animations.
+
+```
+Component: Animated.View (Reanimated)
+style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+         justifyContent: 'center', alignItems: 'center', zIndex: 100 }
+entering: FadeIn.duration(400)
+exiting: FadeOut.duration(300)
+```
+
+Inner card: `View` 280x180pt, `borderRadius: 12`, background `rgba(20,20,20,0.95)`, border 1.5pt faction-colored.
+
+Contents:
+- Event icon (`Image`, 40x40pt)
+- Event name (`Text`, 18pt bold, white)
+- Effect description (`Text`, 14pt, `#B0B0B0`, max 3 lines)
+- Order/Chaos label row: icon + `Text`, 13pt
+
+Auto-dismiss: `setTimeout(() => setVisible(false), 2500)`. Tap anywhere on overlay dismisses immediately.
+
+Affected creatures highlighted: when overlay shows, BoardCardView components matching `affectedCreatureIds` pulse their Skia glow layer (3 cycles of blue/red at 600ms intervals).
+
+#### HandScrollView
+
+```
+Component: ScrollView
+style: { height: 128 }
+horizontal: true
+showsHorizontalScrollIndicator: false
+contentContainerStyle: { paddingHorizontal: 8, gap: -10 }
+```
+
+(Gap of -10 creates the 10pt overlap between cards.)
+
+Each **CardInHand**:
+```
+Component: GestureDetector (react-native-gesture-handler)
+  Gesture: Gesture.Pan() + Gesture.LongPress() + Gesture.Tap()
+```
+
+Wrap a `Animated.View` (Reanimated) of dimensions 90x130pt.
+
+- `Image` (full card art, top 70%), `resizeMode: 'cover'`, `borderRadius: 8`.
+- Stats overlay at bottom: `Text` row with mana cost (center, 16pt bold), ATK/HP (14pt).
+- Affordable (mana available): full opacity 1.0.
+- Unaffordable: `opacity: 0.45`, grayscale via `filter` or Skia `ColorMatrix`.
+
+Drag-to-play gesture:
+- `Gesture.Pan().onStart()`: scale the card to 1.2 via `withTiming(1.2, 150ms)` on a Reanimated shared value. Add drop shadow.
+- `.onUpdate()`: translate the card to follow gesture with `useAnimatedStyle` mapping `translationX`/`translationY`.
+- `.onEnd(event)`: check if card was dragged to valid drop zone (board slot Y threshold). If valid: trigger `playCard(cardId, slotIndex)` action and animate card to slot. If invalid: `withSpring` card back to original position in hand (bounce-back).
+- Drag threshold: `minDistance: 10` to prevent accidental drags on taps.
+- `.onUpdate()` broadcasts current finger position to `DroppableSlot` components via a Zustand action so they can highlight.
+
+Long-press gesture (card preview):
+- After 400ms hold, show `CardDetailModal` in peek mode (card detail slides up but game continues behind).
+
+#### ManaDisplay
+
+```
+Component: View
+style: { flexDirection: 'row', gap: 3, alignItems: 'center' }
+```
+
+10 circles, each `View` 20pt diameter `borderRadius: 10`. Filled: faction accent color. Empty: `#2A2A2A` with 1.5pt border `#4A4A4A`. When a mana is spent, animate `opacity` from 1.0 to 0.4 via `withTiming(0.4, 200ms)`.
+
+#### TimerBar
+
+Embedded in PlayerInfoBar row.
+
+```
+Component: View
+style: { width: 120, height: 10, borderRadius: 5, backgroundColor: '#2A2A2A',
+         overflow: 'hidden' }
+```
+
+Inner filled bar: `Animated.View` (Reanimated). Width driven by `withTiming` from 120 to 0 over `turnDuration` seconds.
+
+Color states (via `interpolateColor` on time remaining):
+- 60-16s: `#4A90E2` (blue)
+- 15-0s: `#E63946` (red, also triggers `withRepeat` opacity pulse for visual urgency)
+
+At 15s: fire `Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)` and trigger audio cue via `expo-av`.
+
+Numeric overlay: `Text` 11pt, absolute center of bar, shows seconds remaining (integer).
+
+When it is opponent's turn: bar is gray `#3A3A3A` with no animation. Text shows "--".
+
+#### EndTurnButton
+
+```
+Component: Pressable
+style: { width: 100, height: 44, borderRadius: 8, justifyContent: 'center',
+         alignItems: 'center' }
+onPress: handleEndTurn
+```
+
+States:
+- **Your turn, actions available**: `backgroundColor: '#2A2A2A'`, border 2pt `#4A90E2`. Reanimated `withRepeat(withTiming)` on `borderOpacity` for subtle glow pulse.
+- **Your turn, no actions remain**: `backgroundColor: '#1A6A3A'` (green), brighter pulse. Text `#FFFFFF`.
+- **Opponent's turn**: `backgroundColor: '#1A1A1A'`, `opacity: 0.5`. `pointerEvents: 'none'`.
+
+Label: `Text` "END TURN" 13pt bold, color `#FFFFFF`.
+
+Confirm-before-end-turn setting: if enabled, `onPress` does nothing. `onLongPress` (400ms) triggers end turn. A `Text` "Hold to End" replaces the label when this setting is active.
+
+### 3.3 Turn Phase Visual States
+
+| Phase | PhaseIndicator Active Label | Timer State | Board Interaction |
+|---|---|---|---|
+| Start | "Start" | Inactive | None |
+| Chaos Roll | "Roll" | Inactive | Watch D20 spin |
+| Event | "Event" | Inactive | Overlay visible |
+| Draw | "Draw" | Inactive | Card draw animation |
+| Main | "Main" | Active (60s), blue | Drag cards from hand |
+| Attack | "Attack" | Active (continues), blue | Tap creatures to toggle attacker |
+| Block | "Block" | Active (continues), blue | Drag creatures onto attackers |
+| Combat | "Combat" | Inactive | Watch animations |
+| End | "End" | Inactive | None |
+
+Phase transitions use `LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)` or a Reanimated `FadeIn`/`FadeOut` on the active indicator. Phase state is stored in Zustand from the Supabase Realtime match state update.
 
 ### 3.4 Combat Animations
 
-#### Attacker Selection (Attack Phase)
-- **Interaction:** Tap a creature on your board to toggle attack
-- **Visual:**
-  - Selected attacker: Red glow border (4pt), "crossing swords" icon above
-  - Deselect: Tap again, glow disappears
-  - Taunt enforcement: If opponent has Taunt creature, all eligible attackers auto-selected with prompt: "Taunt forces attack"
-- **Duration:** No time limit on selection, but turn timer continues
+All animations use React Native Reanimated unless noted.
 
-#### Blocker Assignment (Block Phase)
-- **Interaction:** Drag your creature onto opponent's attacker
-- **Visual:**
-  - Dragging creature: Lifted 20pt, follows finger, drop shadow
-  - Valid drop zone: Attacker highlights with green border
-  - Invalid drop: Red border flash, creature snaps back
-  - Assigned blocker: Visual line connecting blocker to attacker (yellow, 2pt thick)
-  - Taunt creatures: Auto-assigned with prompt "Taunt creature must block", cannot be unassigned
-- **Multiple blockers:** Not allowed (1-to-1 blocking only)
-- **Reassignment:** Drag blocker to different attacker or drag to board to unassign
+#### Attacker Selection
+
+When player taps a BoardCardView to toggle attacker:
+1. `borderColor` animates to `#E63946` (red) via `withTiming(600ms)`.
+2. An "attack swords" icon (16x16pt SVG) fades in above the card via `FadeIn` entering animation.
+3. Tapping again: border back to default, icon fades out.
+4. If opponent has Taunt creature: all eligible attackers auto-highlighted. A `View` overlay slides in from bottom with `Text` "Taunt forces your attack." Player cannot deselect attackers. The Taunt creature's slot has a pulsing gold border.
+
+#### Blocker Assignment
+
+Defender assigns blockers by dragging their creature onto an opponent's attacker.
+
+Interaction flow:
+1. During Block phase, player's own BoardCardViews become `GestureDetector` wrapped with `Gesture.Pan()`.
+2. On drag start: Reanimated `withTiming(1.15)` scale on card. Add shadow via `elevation` (Android) or `shadowOpacity` (iOS).
+3. Card lifts visually (`zIndex` set to 999 via Animated).
+4. `.onUpdate()`: translate card to follow gesture. Broadcast drag position to all opponent BoardCardViews via Zustand.
+5. Opponent attacker slots: if drag position overlaps, border becomes `#4CAF50` (green). If not valid target, border `#F44336` (red flash then returns to normal).
+6. On drag end over valid attacker: `runOnJS(assignBlocker)(myCreatureId, attackerCreatureId)`. Card animates to attacker slot vicinity. A Skia line drawn in parent canvas from blocker position to attacker position: yellow, 2pt stroke.
+7. On drag end over invalid zone: `withSpring` card back to original slot position. Haptic: `Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)`.
+8. Your Taunt creature: auto-assigned on Block phase start. Block line drawn automatically. `Pressable` has `pointerEvents: 'none'` — cannot be moved. Overlay text: "Taunt must block."
 
 #### Damage Numbers
-- **Timing:** Simultaneous during Combat phase
-- **Visual:**
-  - Damage number flies up from creature (red, bold, 24pt)
-  - Fade out over 0.8s
-  - Critical/lethal damage: Larger (32pt), shake effect
-  - Lifesteal: Green number flies to player's HP bar
-  - Piercing: Damage splits (creature and face), two numbers fly simultaneously
+
+Triggered by `combat_result` message from game server via Supabase Realtime.
+
+Each damage event spawns a `DamageNumber` component:
+
+```
+Component: Animated.View (Reanimated)
+```
+
+Initial position: above the damaged creature or player HP bar.
+- Text: `-${damageAmount}` in `#F44336` (red), 22pt bold. Critical (kills creature): 28pt, `withSequence` scale pulse.
+- Lifesteal heal number: `+${healAmount}` in `#4CAF50` (green).
+- Animation: `withTiming(translateY: -40, opacity: 0, duration: 800ms)`. Auto-removed after animation via `useEffect` cleanup.
+- Piercing: two separate DamageNumber components — one at blocker, one at face — fire simultaneously.
 
 #### Death Animation
-- **Trigger:** When creature HP reaches 0
-- **Visual:**
-  - Card dissolves into particles (matching faction aesthetic)
-  - Slot briefly highlights with dark pulse
-  - Card moves to graveyard (small icon animation to avatar)
-- **Duration:** 1.2s (cannot be skipped to maintain game state clarity)
-- **On-Death Effects:** Fire immediately, small popup shows effect text (0.8s)
+
+When creature HP reaches 0:
+1. Reanimated `FadeOut.duration(300)` on the `BoardCardView`.
+2. Simultaneously, a Skia `Canvas` particle burst at the slot position. Pre-built particle textures (faction-specific sprite sheet). Particles disperse outward over 1200ms.
+   - Ironwright: gear/crystal fragments.
+   - Fey Courts: leaf/petal burst.
+   - Demonic Kingdoms: ember/smoke dissipation.
+3. Slot returns to empty state after 1200ms (cannot skip — game state must be clear before next action).
+4. A small card thumbnail animates from slot position to the owning player's avatar position (graveyard entry animation). `withTiming` on translate, 600ms.
 
 #### Spell Cast Animation
-- **Visual:**
-  - Card enlarges briefly in center screen (0.6s)
-  - Effect particles emanate toward target(s)
-  - Spell name flashes at top of card
-  - Card then moves to graveyard
-- **Targeting:** If targeted spell:
-  - All valid targets glow (green for friendly, red for enemy)
-  - Player taps target to confirm
-  - Cancel: Tap outside targets or tap the spell card again
+
+1. Card enlarges from hand to center screen: Reanimated translate + scale `withTiming(300ms)`.
+2. Spell name `Text` pulses: `withSequence(withTiming(1.1), withTiming(1.0))`.
+3. Effect particles emitted from center toward target(s) via Skia Canvas path-following animation.
+4. Card dissolves (opacity 0) and adds to graveyard.
+5. Targeting spells: valid targets glow green (`#4CAF50` border pulse) before player taps to confirm. Cancel: tap outside any highlighted target, or tap the spell card again.
 
 ### 3.5 Taunt Indicators
 
-Taunt is a special keyword that affects both attack and block phases.
+- TauntShield icon on creature: position `absolute, top: 3, right: 3`. Image `shield.png` 14x14pt, tinted `#FFD700`.
+- Pulse animation: Reanimated `withRepeat(withSequence(withTiming(1.3, 750ms), withTiming(1.0, 750ms)), -1)` on `scale` shared value applied to the icon. Loop = -1 (infinite while Taunt creature is on board).
 
-- **Visual Indicator on Taunt Creature:**
-  - Large shield icon (20x20pt) in top-right corner of card
-  - Bright yellow/gold color
-  - Pulsing glow (1.5s cycle)
-  - Visible on both your creatures and opponent's
+**Attack phase with opponent Taunt:**
+- Toast overlay slides up from bottom: `View` 280x52pt, `borderRadius: 8`, `backgroundColor: 'rgba(255,215,0,0.15)'`, `borderColor: '#FFD700'`, border 1.5pt. Text: "Taunt creature forces your attack." Auto-dismisses after 2000ms.
+- All eligible attackers on player's board receive `borderColor: '#E63946'` glow automatically. Player cannot deselect.
 
-- **Attack Phase with Opponent Taunt:**
-  - Prompt appears: "Enemy Taunt creature forces your attack"
-  - All eligible attackers auto-selected
-  - Cannot deselect attackers while opponent Taunt creature is alive
-  - Taunt creature is auto-targeted (attacks directed at it visually)
+**Block phase with player Taunt:**
+- Taunt creature pre-assigned to block first declared attacker automatically. Block line drawn.
+- Toast: "Your Taunt creature must block." Same styling as above.
 
-- **Block Phase with Your Taunt:**
-  - Your Taunt creature auto-assigned to block an attacker
-  - Prompt: "Your Taunt creature must block"
-  - Cannot reassign the Taunt creature
-  - If multiple attackers, Taunt blocks the first declared attacker
+### 3.6 Event Overlay (Full Specification)
 
-### 3.6 Event Overlay Details
+Event overlay: `Animated.View` entering with `SlideInDown.duration(400)`. Positioned in `CenterZone` area, z-index 50.
 
-When a Chaos Roll triggers an Order or Chaos event:
+```
+Component: Animated.View
+style: { width: 280, borderRadius: 12, padding: 16,
+         backgroundColor: 'rgba(20,20,20,0.96)',
+         borderWidth: 1.5 }
+borderColor: Order = '#5BC0EB', Chaos = '#E63946'
+```
 
-- **Overlay Appearance:**
-  - Semi-transparent dark background (70% opacity) behind event card
-  - Event card slides in from center (0.4s animation)
-  - Size: 280x180pt centered
+Contents:
+- Event icon: `Image` 40x40pt (pre-generated icons from asset bundle, not dynamic).
+- Event name: `Text` 18pt bold, white.
+- Effect description: `Text` 14pt, `#B0B0B0`, 3 lines max.
+- Trigger type badge: small `View` row with circle icon + `Text` "Order Event" or "Chaos Event", 12pt.
 
-- **Event Card Contents:**
-  - Top: Event icon (48x48pt) + event name (20pt bold)
-  - Middle: Effect description (16pt, 2-3 lines max)
-  - Bottom: Order/Chaos indicator (icon + label, 14pt)
+Affected creature highlight: while overlay is visible, creatures in `affectedCreatureIds` pulse. Implemented via a Reanimated `withRepeat(withSequence(withTiming(1), withTiming(0)), 3)` on a `glowOpacity` shared value passed as prop to `BoardCardView`.
 
-- **Affected Creatures Highlighting:**
-  - Any creature affected by the event pulses with matching color
-  - Order: Blue pulse (0.6s cycle, 3 cycles)
-  - Chaos: Red pulse (0.6s cycle, 3 cycles)
-  - If triggered abilities fire, those creatures get secondary highlight ring
-
-- **Dismissal:**
-  - Auto-dismiss after 2.5 seconds
-  - Tap anywhere to dismiss immediately
-  - Game state updates visible behind semi-transparent overlay
+Auto-dismiss: `useEffect(() => { const t = setTimeout(() => dismiss(), 2500); return () => clearTimeout(t); }, [])`. Tap anywhere on overlay: immediate dismiss. On dismiss: `FadeOut.duration(300)`.
 
 ### 3.7 Battle Log (Side Panel)
 
-Accessible via small icon (bottom-left corner, 32x32pt) or swipe from left edge.
+Trigger: tap `BattleLogButton` (32x32pt icon, bottom-left corner) or swipe right from left edge of screen.
 
-- **Panel Dimensions:** 280pt wide x full height, slides in from left
-- **Content:** Scrollable chronological list of all actions this game
-- **Entry Format:**
-  - Icon (24x24pt) + timestamp (relative: "3 turns ago") + description (14pt)
-  - Color-coded: Order events (blue), Chaos events (red), damage (orange), healing (green), cards played (white)
+Implementation:
+- `Animated.View` (Reanimated) sliding in from left. Width 280pt, full screen height. Background `#141414`.
+- `translateX` animated from -280 to 0 via `withSpring({damping: 20, stiffness: 200})`.
+- A dark semi-transparent overlay (`View, flex:1, backgroundColor: 'rgba(0,0,0,0.5)'`) covers the rest of the screen. Tap overlay to dismiss.
+- Inside: `FlatList` of log entries. `inverted: true` so newest entries appear at bottom.
 
-- **Example Entries:**
-  - "[D20] Roll: 14 → Order Event triggered"
-  - "[Event] All creatures +1 HP"
-  - "[Play] Temple Warden (3 mana)"
-  - "[Attack] Rift Slasher attacked (4 damage)"
-  - "[Block] Temple Warden blocked Rift Slasher"
-  - "[Combat] Rift Slasher destroyed Temple Warden"
+Each `LogEntry` item:
+```
+Component: View
+style: { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 10,
+         borderBottomWidth: 1, borderColor: '#2A2A2A' }
+```
+- Icon `Image` 20x20pt (colored by type).
+- `Text` timestamp "T3" (turn 3), `#888`, 11pt, width 24pt.
+- `Text` description, 12pt, color by type: Order `#5BC0EB`, Chaos `#E63946`, Damage `#FF7043`, Heal `#4CAF50`, Card played `#FFFFFF`.
 
-- **Tap Entry:** Highlights the relevant card/zone briefly on the board
-- **Persistence:** Log clears at end of game
+Entry format examples:
+- "[Roll] Turn 3: 14 → Order Event"
+- "[Event] All creatures +1 HP"
+- "[Play] Temple Warden (3 mana)"
+- "[Attack] Rift Slasher → opponent face (4 dmg)"
+- "[Block] Temple Warden blocked Rift Slasher"
+- "[Death] Rift Slasher destroyed"
+
+Tap entry: emit `highlightEntity(entityId)` action in Zustand which temporarily highlights the relevant card/zone on the board via a yellow outline pulse (1s).
 
 ### 3.8 Graveyard Panel
 
-Accessible by tapping player or opponent avatar during battle.
+Accessible by tapping player or opponent avatar.
 
-- **Panel:** Modal overlay (90% screen height, centered)
-- **Header:** "Your Graveyard" or "[Opponent] Graveyard"
-- **Layout:** Grid of card thumbnails (3 columns, scrollable)
-- **Card Thumbnails:** 80x110pt each, show card art + tier badge
-- **Tap Thumbnail:** Opens full Card Detail view
-- **Sort Options:** Chronological (most recent first) or by mana cost
-- **Dismiss:** Tap outside panel or back button
+```
+Component: Modal (Expo Router presentation: 'modal')
+style: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)' }
+```
+
+Inner panel: `View` height `90%`, `borderTopLeftRadius: 16, borderTopRightRadius: 16, backgroundColor: '#1A1A1A'`.
+
+Header: `Text` "Your Graveyard" or "[Opponent] Graveyard", 18pt bold. `Pressable` dismiss button (X icon, top-right, 44x44pt tap target).
+
+Sort controls: two `Pressable` buttons: "Newest" | "By Cost". Active has faction accent underline.
+
+Card grid: `FlatList` with `numColumns: 3`. Each cell: `Pressable` 100x140pt `Image` (card art from CDN). Tier badge overlaid top-right. On press: open Card Detail modal (read-only in battle context).
 
 ---
 
 ## 4. Evolution Screen (Detailed)
 
-The evolution screen is the most emotionally impactful moment in the game. It's a ritual—a multi-step flow that builds anticipation and gives the player ownership over the transformation.
+Route: `/card/[cardInstanceId]/evolve`. Full-screen modal, `presentation: 'modal'`. Portrait only.
+
+The evolution flow is a state machine managed in local component state with Zustand for persistence. States: `STEP_1_PRESENTATION` | `STEP_2_CHANNEL` | `STEP_3_GENERATING` | `STEP_4_REVEAL` | `STEP_5_NAME` | `STEP_6_ABILITY` | `STEP_7_MODIFIER` | `STEP_8_FLAVOR` | `STEP_9_CONFIRM`.
+
+All step transitions use `withTiming(300ms)` fade.
 
 ### 4.1 Evolution Flow Overview
 
 ```
-[Card Detail - Evolve Button Pressed]
-    ↓
-[Step 1: Card Presentation & History]
-    ↓
-[Step 2: Channel Selection (Order/Chaos)]
-    ↓
-[Step 3: Evolution Animation + AI Art Generation]
-    ↓
-[Step 4: Art Reveal (Dramatic Unveil)]
-    ↓
-[Step 5: Name Selection]
-    ↓
-[Step 6: New Ability Reveal]
-    ↓
-[Step 7: Modifier Selection (2/3/4 options)]
-    ↓
-[Step 8: Flavor Text Reveal]
-    ↓
-[Step 9: Final Card Presentation & Confirm]
-    ↓
-[Collection - Updated Card]
+[Card Detail - "Evolve" button tapped]
+    |
+    v
+Step 1: Card Presentation & History
+    |
+    v
+Step 2: Channel Selection (Order / Chaos)
+    |
+    v
+Step 3: Evolution Animation + AI Art Generation (FLUX request fires here)
+    |
+    v
+Step 4: Art Reveal (dramatic unveil)
+    |
+    v
+Step 5: Name Selection (from GPT-4o Mini options)
+    |
+    v
+Step 6: New Ability Reveal
+    |
+    v
+Step 7: Modifier Selection (2 / 3 / 4 options by tier)
+    |
+    v
+Step 8: Flavor Text Reveal
+    |
+    v
+Step 9: Final Card Presentation & Confirm
+    |
+    v
+[Collection - card updated]
 ```
-
-**Total Flow Duration:** 25-40 seconds (player-controlled pacing, can tap to skip certain animations)
 
 ### 4.2 Step-by-Step Specifications
 
 #### Step 1: Card Presentation & History
-- **Layout:**
-  - Left side: Current card displayed large (280x400pt), centered
-  - Right side: Evolution history timeline (vertical, scrollable if needed)
 
-- **Evolution History Timeline:**
-  - Each evolution step shown as a node:
-    - Icon: Order (blue crystal) or Chaos (red flame)
-    - Label: Tier achieved (e.g., "Uncommon (Order)")
-    - Modifier gained (small icon + name)
-    - Ability gained (small icon + name)
-  - Visual connector lines between nodes
-  - Current tier highlighted, past tiers dimmed
-  - Next tier shown as empty outline (preview)
+Layout: `View, flex: 1, flexDirection: 'column', alignItems: 'center', paddingTop: 40`.
 
-- **Card Stats Display:**
-  - Current ATK/HP (large, 28pt)
-  - Current tier badge (top-right corner)
-  - Chaos energy progress: "[75/75 Energy Ready]" (green checkmark)
-  - Shard requirement: "Requires: 1x Epic Shard" (icon + text)
+Card display: `Image` of current card art, 240x336pt (5:7 ratio), `borderRadius: 12`, `borderWidth: 3, borderColor: tierColor`.
 
-- **Button:** "Begin Evolution" (center-bottom, 180x52pt, pulsing glow)
+Stats row below card: `Text` nodes for ATK, HP, Mana Cost (24pt bold). Instability (16pt).
 
-#### Step 2: Channel Selection (Order/Chaos)
-- **Layout:** Two large buttons, side-by-side, centered
+Energy progress: `Text` "[75/75 Energy - Ready]" in `#4CAF50`. Uses `ProgressBar` component.
 
-- **Order Button:**
-  - Icon: Blue crystal with geometric patterns
-  - Label: "Channel toward Order" (18pt bold)
-  - Probability: "70% chance" (14pt, below label)
-  - Flavor text: "Stabilize and harmonize"
-  - Color: Blue gradient background
-  - Size: 280x160pt
+Shard requirement: `View` row with shard icon (`Image` 24x24pt) + `Text` "Requires: 1x Epic Shard".
 
-- **Chaos Button:**
-  - Icon: Red flame with chaotic wisps
-  - Label: "Channel toward Chaos" (18pt bold)
-  - Probability: "30% chance" (14pt, below label)
-  - Flavor text: "Embrace transformation"
-  - Color: Red gradient background
-  - Size: 280x160pt
+Evolution history timeline: `ScrollView` horizontal below card. Each node: `View` with Order/Chaos icon + tier label + modifier gained. Connected by a horizontal `View` line separator. Current tier node has gold border.
 
-- **Reminder Text (top):** "This influences the new ability and modifier attunement" (14pt, 70% opacity)
+Button: `Pressable` "Begin Evolution" 200x52pt. `backgroundColor: '#4A90E2'`. `borderRadius: 10`. Reanimated pulse on `scale`: `withRepeat(withSequence(withTiming(1.03, 1000ms), withTiming(1.0, 1000ms)), -1)`.
 
-- **Selection Animation:**
-  - Player taps one button
-  - Selected button pulses and grows 10%
-  - Other button fades out
-  - Transition to Step 3 after 0.6s
+#### Step 2: Channel Selection (Order / Chaos)
+
+Full-screen two-option layout.
+
+```
+Component: View
+style: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20 }
+```
+
+Reminder text at top: `Text` 13pt, `#888`, "This influences the new ability and modifier attunement."
+
+Order button: `Pressable` 300x160pt. `backgroundColor: gradient` — use `expo-linear-gradient` `LinearGradient` from `#0D47A1` to `#1976D2`. `borderRadius: 16`.
+- Icon: `Image` crystal 48x48pt.
+- Label: `Text` "Channel toward Order" 18pt bold white.
+- Probability: `Text` "70% chance Order, 30% chance Chaos" 13pt `#90CAF9`.
+- Flavor: `Text` "Stabilize and harmonize" 13pt italic `#B0B0B0`.
+
+Chaos button: same structure. Gradient: `#B71C1C` to `#E53935`.
+- Label: "Channel toward Chaos"
+- Probability: "70% chance Chaos, 30% chance Order"
+
+Selection:
+1. Player taps button. Selected button: `withTiming` scale to 1.06. Other button: `withTiming` opacity to 0.
+2. Fire the Supabase Edge Function `evolution/start` with `{ cardInstanceId, direction: 'order' | 'chaos' }`. This starts the FLUX image generation job on the server and returns the `evolutionJobId`.
+3. After 600ms transition to Step 3 regardless of whether FLUX has responded yet.
 
 #### Step 3: Evolution Animation + AI Art Generation
-This is where the magic happens. The animation runs while FLUX generates the new card art in the background (typically 2-4 seconds).
 
-- **Visual Sequence:**
-  1. **Card Dissolves (0.8s):**
-     - Current card breaks into particles (faction-themed: crystals for Order, embers for Chaos)
-     - Particles swirl toward center of screen
+This step runs while FLUX generates the image in the background. The animation must loop gracefully.
 
-  2. **Shard Appears (0.4s):**
-     - Planar Shard materializes at center (60x60pt icon)
-     - Shard quality visual matches tier:
-       - Uncommon: Standard glow
-       - Rare: Refined shimmer
-       - Epic: Prismatic rainbow refraction
-       - Legendary: Intense radiant aura
-     - Rotation: Slow spin (2s per rotation)
+Visual sequence implemented as a Skia `Canvas` full-screen component:
 
-  3. **Energy Channeling (1.5-3s, looping until AI completes):**
-     - Particles flow through the shard
-     - Shard pulses with each particle pass
-     - Order: Blue energy flows smoothly
-     - Chaos: Red energy crackles erratically
-     - Sound: Deep resonant hum, building intensity
+1. **Card Dissolves (0-800ms):** Reanimated `opacity: 0` + `scale: 1.2` on the card `Image` from Step 1. Simultaneously, spawn particle burst: 30 particles (Skia `Circle` shapes) animated outward from center using `withTiming` on each particle's `x`/`y`/`opacity` driven by Reanimated shared values. Particles colored by evolution direction (blue = Order, red = Chaos).
 
-  4. **Shard Cracks Open (0.6s):**
-     - When AI art is ready, shard splits
-     - Bright flash (white screen overlay, 0.2s)
-     - Particles reform on the other side
+2. **Shard Materializes (800-1200ms):** Shard icon `Image` (64x64pt) fades in at center via `withTiming`. Slow spin: `withRepeat(withTiming(2 * Math.PI, 2000ms, Easing.linear), -1)` on rotation.
 
-- **Loading State (if AI is slow):**
-  - If generation exceeds 3s, small text appears: "Channeling energy..." (bottom, 14pt, 50% opacity)
-  - Animation continues looping smoothly (no jank, no spinner)
+3. **Energy Channeling Loop (1200ms onward, loops until FLUX complete):** Particles orbit the shard in a circular path. Implemented via `useDerivedValue` computing (x, y) from angle + radius for each particle. Angle incremented on each animation frame. Order: smooth circular orbit in blue. Chaos: erratic path using `Math.random()` perturbation on each frame.
 
-- **Audio:** Continuous ambient sound, crescendo at shard crack, climactic swell
+4. "Channeling energy..." text: `Text` 13pt `#888`, appears via `FadeIn` after 3 seconds if FLUX has not completed.
+
+5. **Shard Cracks (when FLUX complete):** Shard splits into two halves, each translating outward. Flash: `View` `position: 'absolute'` full-screen `backgroundColor: '#FFFFFF'` opacity pulse from 0 to 0.9 to 0 over 300ms. Then transition to Step 4.
+
+FLUX polling: the client polls `GET /evolution/status/{evolutionJobId}` (Supabase Edge Function) every 500ms. When status = `completed`, the new art URL is available and Step 3 ends.
+
+If FLUX takes >10 seconds: show error modal. "Evolution interrupted. Your shard and energy have been refunded." Button: "Try Again" → back to Step 2. Server rolls back the evolution transaction via Supabase Edge Function.
 
 #### Step 4: Art Reveal (Dramatic Unveil)
-The new card art is revealed with maximum impact.
 
-- **Animation:**
-  1. **Card Assembles (1.2s):**
-     - New card frame fades in at center (280x400pt)
-     - Art is initially obscured by bright glow/mist
-     - Glow fades out gradually, revealing art from center outward (iris wipe)
+The new card with FLUX-generated art is revealed.
 
-  2. **Card Flourish (0.8s):**
-     - Card pulses once (scale 1.0 → 1.05 → 1.0)
-     - Tier badge appears in top-right corner (fade in + small bounce)
-     - Particle effects matching evolution outcome swirl around card
-
-- **Pause:** Hold on revealed art for 2 seconds (player can tap to continue earlier)
-- **Audio:** Triumphant chord, magical shimmer sound
+1. New card `Image` (art from CDN URL returned by FLUX) fades in at center, 260x364pt. Initially obscured by a white Skia gradient overlay (radial gradient from center, fully opaque).
+2. Skia radial gradient opacity animates from 1.0 to 0.0 over 1200ms (iris wipe effect), revealing art from center outward.
+3. Card frame `View` (border matching new tier color) fades in simultaneously.
+4. New tier badge (top-right, 28x28pt `View` + `Text`) animates in with `BounceIn` from react-native-reanimated entering animation.
+5. Particle swirl around card: Skia canvas with 20 particles orbiting the card perimeter over 1500ms then dispersing.
+6. Hold for 2 seconds. `Text` "Tap to continue" appears at bottom after 1.5s.
+7. Audio: `expo-av` `Audio.Sound.createAsync(require('../assets/sounds/reveal.mp3'))` plays.
 
 #### Step 5: Name Selection
-The player chooses the evolved card's new name from AI-generated options.
 
-- **Layout:**
-  - Top: New card art (smaller, 200x280pt), centered
-  - Middle: Current name shown with strikethrough: "~~Ashscale Wyvern~~" (20pt, 50% opacity)
-  - Bottom: 2-3 name options as tappable buttons
+Layout: `View, flex: 1, flexDirection: 'column', alignItems: 'center', paddingTop: 30, gap: 20`.
 
-- **Name Options:**
-  - Each displayed as a button (280x52pt)
-  - Font: 18pt bold, center-aligned
-  - Example names:
-    - "Ashscale Fury"
-    - "Emberstorm Wyvern"
-    - "Wyrmfire Tyrant"
-  - Generated by GPT-4o Mini based on evolution history + transformation modifiers
+Top: evolved card art (smaller, 180x252pt).
 
-- **Selection:**
-  - Tap a name button
-  - Selected button highlights (gold border)
-  - Name fades in below card art, replacing old name
-  - Transition to Step 6 after 0.6s
+Middle: old name with strikethrough: `Text` with `textDecorationLine: 'line-through'`, opacity 0.5, 18pt.
+
+Name options (2-3 GPT-4o Mini suggestions, received in FLUX completion response):
+
+Each name: `Pressable` 300x52pt, `backgroundColor: '#1A1A1A'`, `borderRadius: 10`, `borderWidth: 1.5, borderColor: '#3A3A3A'`. On press: `borderColor` → `#FFD700` (gold), other options fade to 50% opacity. `Text` 17pt bold center white.
+
+Confirm not needed — selecting a name immediately transitions to Step 6 after 500ms.
 
 #### Step 6: New Ability Reveal
-The triggered ability gained from this evolution is presented.
 
-- **Layout:**
-  - Top: Card with new name (200x280pt)
-  - Middle: Ability card (300x140pt, centered)
+Layout: card at top (180x252pt), ability card slides in from right.
 
-- **Ability Card Design:**
-  - Border: Order (blue) or Chaos (red) depending on evolution outcome
-  - Icon: 40x40pt ability icon (top-left)
-  - Trigger label: "Chaos Trigger" or "Order Trigger" (16pt bold, top-right)
-  - Ability name: 18pt bold, centered
-  - Ability text: 14pt, 2-3 lines, centered
-  - Background: Gradient matching trigger type
+Ability card: `Animated.View` entering `SlideInRight.duration(500)`. Dimensions 300x140pt. `borderRadius: 12`. Background gradient matching trigger type (blue gradient for Order, red for Chaos). Border 2pt matching type.
 
-- **Animation:**
-  - Ability card slides in from right (0.6s)
-  - Icon pulses once
-  - Border glows (0.8s pulse)
+Contents:
+- Trigger icon `Image` 36x36pt (Order crystal or Chaos flame).
+- Trigger label `Text` "Order Trigger" or "Chaos Trigger" 14pt bold, aligned right.
+- Ability name `Text` 17pt bold, centered, white.
+- Ability description `Text` 13pt, `#B0B0B0`, centered, 3 lines max.
 
-- **Audio:** Ability-specific sound cue (sharp for Order, crackle for Chaos)
+Icon pulses once: `withSequence(withTiming(1.2, 200ms), withTiming(1.0, 200ms))`. Border glows: Reanimated opacity pulse on shadow.
 
-#### Step 7: Modifier Selection (2/3/4 options)
-Player chooses from available modifiers based on subscription tier.
+"Tap to continue" `Pressable` button (44pt height) at bottom.
 
-- **Number of Options:**
-  - Free tier: 2 options
-  - Mid tier: 3 options
-  - Top tier: 4 options
+#### Step 7: Modifier Selection
 
-- **Layout:**
-  - Top: Card with name and new ability (smaller, 180x260pt)
-  - Middle: "Choose a Modifier" prompt (18pt bold)
-  - Bottom: Modifier option cards (scrollable horizontal row if 4 options)
+Header: `Text` "Choose a Modifier" 18pt bold, center.
 
-- **Modifier Card Design (each):**
-  - Size: 260x180pt
-  - Background: Faction-themed gradient
-  - Header: Modifier name (16pt bold) + attunement icon (Order/Chaos)
-  - Body:
-    - Base effect (14pt): Always active bonus
-    - Attuned bonus (14pt, colored): Bonus when attuned event triggers
-    - Penalty (14pt, red): Penalty when opposite event triggers (if applicable)
-  - Footer: Tier badge (where this modifier was gained)
+Card above: evolved card (160x224pt), showing new ability icon on card face.
 
-- **Composition Guarantee:**
-  - Always at least 1 universal modifier
-  - Always at least 1 faction-exclusive modifier
-  - PP budget matches tier (see `01-battle-mechanics.md` Section 1)
+Modifier options in horizontal `ScrollView` (needed for 4 options on smaller phones):
 
-- **Selection:**
-  - Tap a modifier card
-  - Selected card glows (gold border, 4pt)
-  - Other cards fade to 30% opacity
-  - Confirm button appears (center-bottom): "Confirm Modifier" (180x52pt)
-  - Tap confirm → selected modifier slides onto card, transition to Step 8
+Each modifier card: `Pressable` 250x180pt. `backgroundColor: '#1A1A1A'`. `borderRadius: 12`. `borderWidth: 1.5, borderColor: '#3A3A3A'`. Margin 8pt.
+
+Modifier card interior:
+- Header row: modifier name `Text` 15pt bold + attunement icon `Image` 20x20pt (right-aligned).
+- Divider `View` 1pt `#3A3A3A`.
+- Base effect: `Text` "Always: +1 ATK" 13pt `#FFFFFF`.
+- Attuned bonus: `Text` "Order: also Shield" 13pt `#5BC0EB` (Order) or `#E63946` (Chaos).
+- Penalty (if applicable): `Text` "Chaos: -1 ATK" 13pt `#F44336`.
+- Footer: faction badge `View` small pill + tier badge.
+- PP cost: small `Text` "2 PP" `#888` bottom-right.
+
+Guaranteed composition:
+- Free tier (2 options): 1 universal + 1 faction-exclusive.
+- Mid tier (3 options): 1 universal + 2 faction-exclusive.
+- Top tier (4 options): 2 universal + 2 faction-exclusive.
+
+Selection: tap modifier card → `borderColor: '#FFD700'` gold. Other cards `opacity: 0.3`. "Confirm Modifier" `Pressable` button appears at bottom: 200x52pt `backgroundColor: '#FFD700'` `borderRadius: 10`. `Text` "Confirm Modifier" 15pt bold `#000`.
+
+On confirm: selected modifier slides onto card (animate from modifier card position to card face position, shrinking to icon size). Transition to Step 8 after 800ms.
 
 #### Step 8: Flavor Text Reveal
-AI-generated lore snippet reflecting the transformation.
 
-- **Layout:**
-  - Top: Fully evolved card (200x280pt) showing all updates
-  - Bottom: Flavor text box (300x100pt)
+Layout: fully evolved card at top (200x280pt showing all new stats). Flavor text box below.
 
-- **Flavor Text Box:**
-  - Background: Dark semi-transparent (80% opacity)
-  - Border: Faction-colored (2pt)
-  - Text: Italicized, 14pt, center-aligned, 2-3 lines
-  - Example: *"Once bound by Order's chains, it now dances on the edge of madness, each strike a symphony of chaos."*
+Flavor text box: `View` 320x100pt. `backgroundColor: 'rgba(0,0,0,0.8)'`. `borderRadius: 10`. `borderWidth: 1.5`. `borderColor`: faction accent.
 
-- **Animation:**
-  - Text types out letter-by-letter (0.05s per character)
-  - Small sparkle effect on final character
-  - Auto-continue after typing completes + 1.5s pause (or tap to skip)
+Flavor text typed out letter-by-letter via a `useEffect` incrementing a character count index and `text.substring(0, charCount)`. Interval: 40ms per character. Tap to complete instantly (set charCount to full length).
+
+After typing completes + 1.5s pause (or tap): transition to Step 9.
+
+Example flavor text format: italicized `Text` 14pt `#B0B0B0` centered with quotes: `"Once bound by Order's chains, it now dances on the edge of madness."`
 
 #### Step 9: Final Card Presentation & Confirm
-The fully evolved card is presented with all new stats, abilities, modifiers, and flavor text.
 
-- **Layout:**
-  - Center: Final card (300x430pt, maximum size)
-  - Card shows:
-    - New art
-    - New name
-    - Updated ATK/HP (if stat growth occurred)
-    - New tier badge (corner)
-    - New triggered ability (icon on card)
-    - New modifier (icon on card)
-    - Chaos mana cost (unchanged, prominently displayed)
+Center: final card large display (280x392pt). Shows:
+- New art (CDN URL).
+- New name `Text` overlaid at bottom of art, 22pt bold, shadow.
+- Updated ATK/HP.
+- New tier badge.
+- Triggered ability icon on card.
+- Modifier icon on card.
+- Mana cost (unchanged, prominent top-left).
 
-- **Evolution Summary Panel (below card):**
-  - "Evolution Complete!" header (24pt bold, gold)
-  - Stats change: "3/4 → 5/6" (18pt, green if increased)
-  - Instability change: "2 → 3" (18pt, color-coded: red = increased, blue = decreased, white = unchanged)
-  - New ability summary (14pt, 1 line)
-  - New modifier summary (14pt, 1 line)
+Evolution Summary panel below card: `View` `backgroundColor: '#141414'` `borderRadius: 12` `padding: 16`.
 
-- **Buttons (bottom):**
-  - "Save & Continue" (primary, 180x52pt, gold glow)
-  - "Share Screenshot" (secondary, 180x52pt, white border)
+- "Evolution Complete!" `Text` 22pt bold `#FFD700`.
+- Stats: `Text` "3/4 → 5/6" 16pt. Color green for increases.
+- Instability change: `Text` "Instability: 2 → 3" 16pt. Red if increased, blue if decreased.
+- New ability: 1-line summary.
+- New modifier: 1-line summary.
 
-- **Share Functionality:**
-  - Generates shareable image: card art + stats + evolution history summary
-  - Opens native share sheet (iOS/Android)
-  - Image dimensions: 1080x1920px (mobile-optimized)
-  - Watermark: "Chaos Creatures" logo (small, bottom-right)
+Buttons at bottom:
+- "Save & Continue": `Pressable` 180x52pt `backgroundColor: '#FFD700'` `borderRadius: 10`. `Text` 15pt bold `#000`. On press: call Supabase `evolution/confirm` Edge Function (commits the evolution to DB). On success: `router.back()` to collection.
+- "Share Screenshot": `Pressable` 180x52pt `borderWidth: 2, borderColor: '#FFFFFF'` `borderRadius: 10`. On press: use `expo-file-system` + `expo-sharing` to capture the card view as an image and open native share sheet.
 
-### 4.3 Art Generation Loading State (FLUX Wait Time)
+Share image: `captureRef` from `react-native-view-shot` on the card display + summary panel. Dimensions: 1080x1920 equivalent. Watermark: "Chaos Creatures" `Text` 12pt bottom-right.
 
-FLUX typically generates images in 2-4 seconds, but can occasionally take 5-8 seconds if server load is high.
+### 4.3 Art Generation Loading State
 
-**Handling Strategy:**
-
-- **Optimistic Animation:** Evolution animation (Step 3) is designed to loop gracefully
-- **Minimum Animation Duration:** 2.5 seconds (even if FLUX finishes faster, hold the animation for dramatic effect)
-- **Extended Wait (3-8s):**
-  - Animation continues looping (shard pulsing with energy)
-  - Small text appears after 3s: "Channeling energy..." (14pt, bottom-center, 50% opacity)
-  - Music/audio continues without interruption
-  - No loading spinner (feels jarring in a ritual moment)
-
-- **Fallback (8s+ rare failure):**
-  - If FLUX fails or times out, show error modal:
-    - "Evolution interrupted. Your shard and energy have been refunded."
-    - "Try again" button returns to Card Detail
-    - Shard and chaos energy restored to player's inventory
-    - Error logged to analytics
+- FLUX typically responds in 2-4 seconds.
+- The Step 3 animation is designed to loop indefinitely — no spinner, no jarring state.
+- Minimum animation play time: 2500ms (even if FLUX responds faster, hold for drama).
+- "Channeling energy..." text fades in at 3000ms if still waiting.
+- After 10000ms: show error modal. Server refunds shard and energy. Analytics event: `posthog.capture('evolution_flux_timeout', { cardInstanceId })`.
 
 ---
 
@@ -686,862 +760,570 @@ FLUX typically generates images in 2-4 seconds, but can occasionally take 5-8 se
 
 ### 5.1 Collection Screen
 
-The player's card library across all factions.
+Route: `/(tabs)/collection`.
 
-#### Layout
-- **Top Bar:**
-  - Faction tabs (horizontal, scrollable): "All" | "Ironwright" | "Fey Courts" | "Demonic Kingdoms"
-  - Active tab highlighted with faction color underline (4pt thick)
-  - Tab icons: faction symbols (32x32pt)
+```
+Component: SafeAreaView
+style: { flex: 1, backgroundColor: '#0D0D0D' }
+```
 
-- **Filter Bar (below tabs):**
-  - Sort dropdown: Tier | Newest | Most Played | Name | Mana | ATK | HP
-  - Filter button: Opens filter panel (see below)
-  - Search icon: Opens search field
+#### Faction Tabs
 
-- **Card Grid:**
-  - 3 columns on phone (portrait), 5 columns on tablet
-  - Card thumbnails: 100x140pt each
-  - Each thumbnail shows:
-    - Card art (top 70%)
-    - Tier badge (top-right corner, 20x20pt)
-    - Evolution-ready indicator (bottom-right corner, small pulsing shard icon if eligible)
-    - Favorite star (top-left corner, yellow if favorited)
-  - 8pt spacing between cards
-  - Scrolls vertically (infinite scroll / pagination if collection is large)
+```
+Component: ScrollView (horizontal, showsHorizontalScrollIndicator: false)
+style: { height: 48, backgroundColor: '#141414' }
+```
 
-- **Empty State:**
-  - If faction has no cards: "No cards in this faction yet. Visit the Shop to get started!"
-  - Icon: faction symbol at 50% opacity
-  - Button: "Visit Shop" (primary CTA)
+Tab items: `Pressable` with `Text` faction name + faction icon `Image` 20x20pt. Active tab: faction accent color underline `View` 3pt height below tab. Inactive: `#3A3A3A`.
 
-#### Filter Panel
-- **Trigger:** Tap filter button in top bar
-- **Layout:** Bottom sheet modal (slides up from bottom, 60% screen height)
-- **Sections:**
+Tabs: "All" | "Ironwright" | "Fey Courts" | "Demonic" (abbreviated on small screens).
 
-  1. **Card Type:**
-     - Checkboxes: Creature | Spell | Stabilizer
-     - Default: All checked
+#### Filter Bar
 
-  2. **Evolution Tier:**
-     - Checkboxes: Common | Uncommon | Rare | Epic | Legendary
-     - Default: All checked
+```
+Component: View
+style: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 8, gap: 8 }
+```
 
-  3. **Mana Cost:**
-     - Range slider: 1-10
-     - Default: 1-10
+- Sort `Pressable`: shows current sort label + chevron. On press: `BottomSheet` modal (from `@gorhom/bottom-sheet`) with sort options list.
+- Filter `Pressable`: funnel icon. On press: opens FilterPanel bottom sheet.
+- Search `Pressable`: magnifier icon. On press: `TextInput` slides down from top via Reanimated.
 
-  4. **Attunement Leaning:**
-     - Radio buttons: Mostly Order | Balanced | Mostly Chaos | Any
-     - Definition: "Mostly Order" = >60% modifiers are Order-attuned
-     - Default: Any
+#### Card Grid
 
-  5. **Keywords:**
-     - Checkboxes: Shield | Lifesteal | Flying | Reach | Deathtouch | Taunt | Piercing
-     - Label: "Has Keyword"
-     - Default: None
+```
+Component: FlatList
+numColumns: 3 (phone portrait) | 5 (tablet 768pt+)
+keyExtractor: card.instanceId
+renderItem: CardGridItem
+contentContainerStyle: { paddingHorizontal: 8, paddingBottom: 80 }
+columnWrapperStyle: { gap: 8 }
+ItemSeparatorComponent: 8pt View spacer
+```
 
-  6. **Special Filters:**
-     - Checkbox: "Evolution Ready" (has enough energy + player has shard)
-     - Checkbox: "In Deck" (currently in any deck)
-     - Checkbox: "Not in Deck" (not in any deck)
-     - Checkbox: "Favorited Only"
+Each `CardGridItem`: `Pressable` 100x140pt. On press: `router.push('/card/${item.instanceId}')`. On long press: quick action menu via `ContextMenu` (use `@gorhom/bottom-sheet` or a custom `Animated.View` popover).
 
-- **Buttons:**
-  - "Apply Filters" (primary, bottom-center)
-  - "Reset All" (secondary, bottom-left)
-  - "Cancel" (text button, top-right corner of modal)
+Contents:
+- `Image` (CDN URL, full cell) `resizeMode: 'cover'` `borderRadius: 8`.
+- Tier badge: `View` absolute top-right, 20x20pt, background = tier color, `Text` tier initial.
+- Evolution-ready badge: `View` absolute bottom-right, pulsing shard icon `Image` 14x14pt. Visible only when energy threshold met and player has matching shard. Pulse via Reanimated repeat.
+- Favorite star: `Image` star icon, absolute top-left, 16x16pt, visible only when favorited.
 
-#### Search Bar
-- **Trigger:** Tap search icon in filter bar
-- **Layout:** Search field slides down from top, pushes grid down
-- **Functionality:** Real-time search by card name (fuzzy matching)
-- **Clear:** X icon on right side of field
-- **Dismiss:** Tap X or swipe search bar up
+Empty state: `View` centered with faction symbol `Image` at 30% opacity + `Text` message + `Pressable` "Visit Shop" button.
 
-### 5.2 Card Detail View (from Collection)
+#### FilterPanel (Bottom Sheet)
 
-Accessible by tapping any card in Collection, Deck Builder, or Battle.
+Use `@gorhom/bottom-sheet` `BottomSheet` component. `snapPoints: ['65%']`.
 
-#### Layout (Portrait Mode)
-- **Top 50%:** Full card art, edge-to-edge
-  - Card name overlaid at bottom of art (24pt bold, white with dark outline)
-  - Faction tag (top-left corner, small pill: faction name + icon)
-  - Tier badge (top-right corner, 32x32pt)
+Internal `ScrollView` with sections:
 
-- **Bottom 50%:** Scrollable detail panel with sections:
+1. **Card Type**: `View` with row of `Pressable` pill buttons: "Creature" | "Spell" | "Stabilizer". Toggle state stored locally.
+2. **Evolution Tier**: similar pill buttons: "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary".
+3. **Mana Cost**: range slider using `@react-native-community/slider` (two sliders, min and max). Range 1-10.
+4. **Attunement Leaning**: radio-style `Pressable` rows: "Mostly Order" | "Balanced" | "Mostly Chaos" | "Any".
+5. **Keywords**: row of keyword icon `Pressable` buttons (toggle). 7 keywords = 7 buttons in a wrap `View`.
+6. **Special**: `Switch` (React Native) for "Evolution Ready", "In Deck", "Not in Deck", "Favorited Only".
 
-  1. **Stats Row:**
-     - ATK | HP | Mana Cost (large icons + numbers, 28pt bold)
-     - Instability (small icon + number, 18pt)
-     - Spacing: evenly distributed across width
+Bottom: "Apply" `Pressable` 180x44pt `backgroundColor: '#4A90E2'` + "Reset" `Text` button.
 
-  2. **Keywords Row:**
-     - Icons for each keyword (32x32pt) with labels below (12pt)
-     - Tap keyword icon → tooltip with full keyword description
+#### Search
 
-  3. **Triggered Abilities Section:**
-     - Header: "Triggered Abilities" (16pt bold)
-     - Each ability displayed as a card:
-       - Trigger type icon (Order/Chaos, 24x24pt)
-       - Ability name (16pt bold)
-       - Ability description (14pt)
-       - Tier earned (small badge: "Gained at Rare")
-     - If no abilities: "No triggered abilities yet"
+`TextInput`: `backgroundColor: '#1A1A1A'`, `borderRadius: 8`, `color: '#FFFFFF'`, 14pt, `placeholderTextColor: '#666'`, 44pt height, `returnKeyType: 'search'`.
 
-  4. **Modifiers Section:**
-     - Header: "Modifiers" (16pt bold)
-     - Each modifier displayed as an expandable accordion:
-       - Closed: Modifier name + attunement icon
-       - Expanded:
-         - Base effect (always active)
-         - Attuned bonus (colored: blue for Order, red for Chaos)
-         - Penalty (if applicable, red text)
-         - Tier earned badge
-     - If no modifiers: "No modifiers yet"
+Slides down via Reanimated `withTiming` on `translateY` from -60 to 0. Search fires on each keystroke with 300ms debounce (TanStack Query `useQuery` with `enabled: query.length > 0`). Fuzzy matching on card names via Supabase RPC `search_cards`.
 
-  5. **Evolution History Section:**
-     - Header: "Evolution History" (16pt bold)
-     - Timeline (vertical, same as Evolution screen Step 1)
-     - Each node shows: Tier achieved, Order/Chaos outcome, modifier chosen, ability gained
+### 5.2 Card Detail View
 
-  6. **Veterancy Section:**
-     - Header: "Card Progress" (16pt bold)
-     - Games played: "[47 games]"
-     - Chaos energy progress bar: "[45/50 Energy]" (green if ready, yellow if in progress)
-     - Next evolution requirement: "Requires: 1x Epic Shard" (if not max tier)
-     - If max tier: "Fully Evolved" (gold badge)
+Route: `/card/[cardInstanceId]`. Presented as a modal (`presentation: 'modal'`).
 
-  7. **Flavor Text Section:**
-     - Italicized, centered, 14pt
-     - Quote marks, dark background box
+```
+Component: ScrollView
+style: { flex: 1, backgroundColor: '#0D0D0D' }
+```
 
-- **Action Buttons (bottom, sticky):**
-  - **Evolve** (primary, 160x52pt, gold, pulsing) — only if evolution-ready
-  - **Add to Deck** (secondary, 160x52pt, white border)
-  - **More Actions** (three-dot icon, 52x52pt) → opens action menu:
-    - Favorite/Unfavorite
-    - Dismantle (confirmation required)
-    - Share Screenshot
+Top 50%: card art in `Image` (full width, aspect ratio preserved via `aspectRatio: 5/7`). Safe area aware.
 
-#### Flip Interaction (Future Enhancement)
-- **Concept:** Swipe left/right on card art to flip card
-  - Front: Card art + stats + abilities (current view)
-  - Back: Lore panel + full evolution history + flavor text from all tiers
-- **Status:** Deferred to post-launch (engineering complexity)
+Card overlay: `View` absolute at image bottom. Dark gradient to transparent. `Text` card name 22pt bold white with `textShadowColor: '#000'`.
+
+Faction pill: `View` absolute top-left, `borderRadius: 20`, `backgroundColor: 'rgba(0,0,0,0.7)'`, `Text` + icon.
+
+Tier badge: `View` absolute top-right.
+
+Bottom panel (scrollable, 50% initial height):
+
+1. **Stats Row**: `View flexDirection: 'row', justifyContent: 'space-around'`. ATK, HP, Mana (28pt bold, with icon). Instability (18pt).
+2. **Keywords Row**: horizontal `ScrollView` of keyword `Pressable` chips. Each chip: icon 24x24pt + label 12pt. On press: `Tooltip` modal with keyword description.
+3. **Triggered Abilities**: `SectionList` or manual `View` map. Each ability: `View` with trigger type icon + ability name + description. Order abilities: blue accent. Chaos: red accent. "Gained at [Tier]" small badge.
+4. **Modifiers**: `View` map with expandable accordions using Reanimated height animation. Closed: name + icon. Open: full effect text.
+5. **Evolution History**: vertical `View` timeline. Nodes connected by `View` vertical line (2pt, `#3A3A3A`).
+6. **Card Progress**: energy progress bar (`View` + animated inner `View`). Games played count. Next evolution requirement.
+7. **Flavor Text**: `Text` italic 14pt `#888` centered.
+
+Sticky action buttons (bottom, `position: 'absolute', bottom: 0`):
+- **Evolve**: `Pressable` 160x52pt `backgroundColor: '#FFD700'`. Only rendered if `isEvolutionReady`. Pulsing via Reanimated.
+- **Add to Deck**: `Pressable` 160x52pt `borderWidth: 2, borderColor: '#FFFFFF'`.
+- **More Actions** (3-dot): `Pressable` 52x52pt. Opens action sheet (Expo `ActionSheetIOS` on iOS, custom `BottomSheet` on Android).
+  - Options: "Favorite", "Dismantle" (confirmation required, then deducts card and grants Chaos Dust), "Share Screenshot".
 
 ### 5.3 Deck Builder Screen
 
-Where strategy crystallizes. Must make it easy to understand what a deck does, how it responds to events, and where its strengths/weaknesses are.
+Route: `/(tabs)/decks`. On small phones, this is a single-column stack. On tablet (>768pt), two-panel side-by-side.
 
-#### Layout (Desktop/Tablet: Side-by-Side, Mobile: Stacked)
+Detect layout: `useWindowDimensions()` hook. If `width >= 768`, render `DeckBuilderTablet`. Otherwise render `DeckBuilderPhone`.
 
-**Top Section: Deck Identity**
+#### DeckBuilderPhone (stacked, scroll-based)
 
-- **Deck Name Field:**
-  - Editable text field (18pt, center-aligned)
-  - Placeholder: "Untitled Deck"
-  - Max 30 characters
-  - Tap to edit
+```
+Component: View, flex: 1
+```
 
-- **Faction Selector:**
-  - Dropdown or segmented control: "Ironwright" | "Fey Courts" | "Demonic Kingdoms"
-  - Locked once any card is added (grayed out, shows lock icon)
-  - To change faction: "Clear Deck" button required
+**Header section** (fixed, no scroll):
 
-- **Avatar Selector:**
-  - Horizontal scrollable row of avatar portraits (60x60pt each)
-  - Filtered to show only avatars matching selected faction
-  - Selected avatar has gold border (4pt)
-  - Avatar's instability modifier shown below portrait (14pt)
+- Deck name: `TextInput` 18pt center-aligned, `maxLength: 30`, `backgroundColor: '#1A1A1A'`, `borderRadius: 8`. Placeholder "Untitled Deck".
+- Faction selector: three `Pressable` buttons in a row. Each: faction icon + name. Active: faction accent border. On first card added: `pointerEvents: 'none'` + lock icon overlay.
+- Avatar selector: `FlatList` horizontal. Each avatar: `Pressable` 60x60pt `Image` from CDN. Selected: `borderColor: '#FFD700'` 3pt. Instability modifier `Text` below each.
 
-**Deck Stats Summary Bar** (always visible, sticky)
+**DeckStatsSummaryBar** (sticky below header):
 
-- **Mana Curve:**
-  - Horizontal bar chart (10 bars, one per mana cost 1-10)
-  - Height = number of cards at that cost
-  - Color-coded by tier (Common = gray, Uncommon = green, Rare = blue, Epic = purple, Legendary = gold)
-  - Shows distribution at a glance
+```
+Component: View
+style: { backgroundColor: '#141414', padding: 10, borderBottomWidth: 1 }
+```
 
-- **Attunement Balance:**
-  - Horizontal bar: left = Order (blue), right = Chaos (red)
-  - Width proportional to total attuned modifiers across all cards in deck
-  - Example: 60% Order, 40% Chaos → bar is 60% blue, 40% red
-  - Neutral (no attunement) shown as gray in middle
+- Mana curve: `View` with 10 `View` bars. Each bar height = `count * 8pt` (min 4pt). `backgroundColor: tierColor` for each slot.
+- Attunement balance: `View` horizontal bar 200pt wide. Left segment = `(orderCount / total) * 200` wide in `#5BC0EB`. Right = Chaos in `#E63946`. Middle = gray.
+- Avg instability `Text` 17pt bold, color coded.
+- Card count `Text` 17pt. Green if 20, yellow 15-19, red <15.
 
-- **Avg Instability:**
-  - Single number (18pt bold)
-  - Calculated assuming 3-4 creatures on board
-  - Color-coded: 1-6 (blue, Order-leaning), 7-13 (white, balanced), 14-20 (red, Chaos-leaning)
+**Tab switch**: two `Pressable` tabs: "Deck Contents" | "Card Pool". Switches between two panels.
 
-- **Card Count:**
-  - "[14/20 cards]" (18pt)
-  - Green if 20, yellow if 15-19, red if <15
+**Deck Contents Panel**:
 
-- **Legendary Count:**
-  - "[1/2 Legendaries]" (14pt)
-  - Only shown if deck contains Legendaries
+```
+Component: FlatList
+data: cardsInDeck (sorted by current sortOrder)
+renderItem: DeckCardRow
+```
 
-**Left Panel: Deck Contents**
+Each `DeckCardRow`: `Pressable` 44pt height (minimum tap). `flexDirection: 'row'`. Card thumbnail `Image` 40x56pt. Card name `Text` 15pt bold. Mana cost icon. ATK/HP 12pt `#888`. Attunement dots row (up to 4 dots per card). Long-press triggers `Gesture.LongPress` with 400ms delay showing "Remove from Deck?" confirmation tooltip via `Portal` overlay.
 
-- **Layout:** Scrollable vertical list of cards in deck
+**Card Pool Panel**:
 
-- **Card Row (each):**
-  - Card thumbnail (60x85pt, left)
-  - Card name (16pt bold)
-  - Mana cost icon (right, 24x24pt)
-  - ATK/HP (small, 12pt)
-  - Attunement dots (small circles: blue = Order-attuned modifier, red = Chaos-attuned, gray = neutral)
-    - Example: 3 Chaos-attuned modifiers = 3 red dots
-  - Tap row → opens Card Detail
-  - Long-press row → "Remove from Deck" confirmation
+Same `FlatList` grid as Collection screen (numColumns: 3). Shows only cards NOT in deck by default. Tap card to add (if deck < 20 and valid). Validation feedback: deck-full shake animation (`withSequence` on container) + toast.
 
-- **Sort Options (top of panel):**
-  - Dropdown: Mana Cost | Tier | ATK | HP | Name
-  - Default: Mana Cost (ascending)
+Max 2 copies per card enforced: if already 2 copies in deck, card in pool rendered with `opacity: 0.4` and `pointerEvents: 'none'`.
 
-- **Empty State:**
-  - "Add cards to your deck" message
-  - Faction selector enabled
+Max 2 Legendaries enforced: same dim treatment.
 
-**Right Panel: Card Pool** (cards NOT in deck)
+#### DeckBuilderTablet (side-by-side)
 
-- **Layout:** Same as Collection screen grid (3 columns)
+`View flexDirection: 'row'`. Left panel 320pt wide = Deck Contents. Right panel = Card Pool.
 
-- **Filters:**
-  - Same filter options as Collection screen
-  - Additional filter: "Already in Deck" (grayed out, unchecked by default)
+Both panels visible simultaneously. Header spans full width.
 
-- **Tap Card:**
-  - If deck <20 cards → add to deck, card slides to left panel
-  - If deck =20 cards → brief shake + "Deck full" toast message
+#### Deck Validation Toast
 
-- **Validation:**
-  - Max 2 copies per card → if card already has 2 copies in deck, it's grayed out in pool
-  - Max 2 Legendaries → if deck has 2 Legendaries and card is a 3rd unique Legendary, grayed out
-  - Max 2 copies of a single Legendary → if deck has 1 copy of a Legendary, adding the same Legendary again grays it out
+Invalid deck: "Save Deck" `Pressable` is `disabled: true, opacity: 0.5`. Below it: `Text` in `#F44336` showing reason: "Need 6 more cards" or "Remove 1 Legendary".
 
-#### Deck Stats Detailed Panel (Expandable)
-
-Tap "View Stats" button on summary bar → expands full stats panel (modal overlay).
-
-- **Trigger Breakdown:**
-  - Total Order triggers: [12]
-  - Total Chaos triggers: [8]
-  - Visualization: horizontal bar chart
-
-- **Modifier Attunement Breakdown:**
-  - Order-attuned modifiers: [18]
-  - Chaos-attuned modifiers: [14]
-  - Neutral modifiers: [6]
-  - Visualization: pie chart or stacked bar
-
-- **Keyword Distribution:**
-  - Shield: [3 creatures]
-  - Lifesteal: [2 creatures]
-  - Flying: [4 creatures]
-  - Reach: [1 creature]
-  - Deathtouch: [0 creatures]
-  - Taunt: [2 creatures]
-  - Piercing: [1 creature]
-
-- **Type Distribution:**
-  - Creatures: [16]
-  - Spells: [3]
-  - Stabilizers: [1]
-
-- **Estimated Instability Range:**
-  - Low (1-2 creatures out): [4-6]
-  - Medium (3-4 creatures out): [8-12] ← used for summary bar
-  - High (5 creatures out): [14-18]
-  - Calculated based on deck composition + avatar modifier
-
-- **Close Button:** Top-right corner, dismisses modal
-
-#### Deck Validation
-
-Deck cannot be used in matchmaking unless:
-- Exactly 20 cards
-- All cards from same faction
-- Max 2 copies of any card
-- Max 2 Legendaries (max 1 copy each)
-
-**Invalid Deck Indicators:**
-- "Save Deck" button grayed out with validation message below
-- Example: "Need 6 more cards" or "Remove 1 Legendary"
-- Invalid decks can be saved as "Work in Progress" with WIP badge
-- WIP decks shown in deck selector but cannot be used in matchmaking
-
-#### Deck Slots
-
-- **Free tier:** 3 deck slots
-- **Mid tier:** 6 deck slots
-- **Top tier:** 10 deck slots
-
-**Deck Selector (Home Screen):**
-- Horizontal swipe carousel of saved decks
-- Each deck shows: Deck name, faction icon, avatar portrait, card count badge
-- Tap deck to select as active (used for matchmaking)
-- Long-press deck → "Edit" or "Duplicate" or "Delete"
-
-**Duplicate Deck:**
-- Creates a copy of the deck in a new slot (if available)
-- Prompts for new deck name
-- Preserves all cards and avatar selection
+Valid WIP decks (< 20 cards) can be saved with WIP badge by tapping "Save WIP". These appear in deck list with a `[WIP]` badge but cannot be used in matchmaking (greyed out in mode selection).
 
 ---
 
 ## 6. Shop & Economy Screens
 
-Clean, non-predatory, no dark patterns. The shop should feel like a curated boutique, not a casino.
+Route: `/(tabs)/shop`.
 
-### 6.1 Shop Screen Layout
+### 6.1 Layout
 
-**Top Bar:**
-- Current Chaos Dust balance (large, 24pt, icon + number)
-- Current Planar Shards by tier (row of icons + numbers, 16pt)
-  - Uncommon Shard: [3]
-  - Rare Shard: [1]
-  - Epic Shard: [0]
-  - Legendary Shard: [0]
+```
+Component: ScrollView
+style: { flex: 1, backgroundColor: '#0D0D0D' }
+```
 
-**Scrollable Sections:**
+**Sticky header** (CurrencyHeader):
+
+```
+Component: View
+style: { backgroundColor: '#141414', paddingVertical: 10, paddingHorizontal: 16,
+         flexDirection: 'row', justifyContent: 'space-between' }
+```
+
+- Chaos Dust: chaos mote `Image` 24x24pt + `Text` balance 22pt bold `#FFD700`. On tap: tooltip explaining Chaos Dust.
+- Shards row: 4 shard tier icons (20x20pt each) with count `Text` 14pt next to each. On tap: tooltip.
+
+**Scrollable sections:**
 
 #### Section 1: Subscription Tiers
-- **Layout:** Three cards, side-by-side (scrollable horizontally on mobile)
 
-- **Free Tier Card:**
-  - Label: "Free" (18pt bold)
-  - Background: Dark gray
-  - Benefits list:
-    - 3 deck slots
-    - 2 modifier options on evolution
-    - Standard card pack earnings
-  - Status: "Current Tier" badge (if applicable)
-  - No action button (always available)
+`Text` "Subscription" 16pt bold section header.
 
-- **Mid Tier Card:**
-  - Label: "Mid Tier" (18pt bold)
-  - Price: "$4.99/month" (16pt)
-  - Background: Blue gradient
-  - Benefits list:
-    - 6 deck slots
-    - 3 modifier options on evolution
-    - +50% Chaos Dust from packs
-    - Monthly Epic Shard
-  - Button: "Upgrade" or "Current Tier"
+Horizontal `ScrollView` of three `SubscriptionCard` components.
 
-- **Top Tier Card:**
-  - Label: "Top Tier" (18pt bold)
-  - Price: "$9.99/month" (16pt)
-  - Background: Gold gradient
-  - Benefits list (includes all Mid benefits +):
-    - 10 deck slots
-    - 4 modifier options on evolution
-    - +100% Chaos Dust from packs
-    - Monthly Legendary Shard
-    - Access to premium card styles
-  - Button: "Upgrade" or "Current Tier"
+Each `SubscriptionCard`: `View` 260x320pt. `borderRadius: 16`. `borderWidth: 2`. Shadow `elevation: 4`.
 
-**Design Notes:**
-- Current tier highlighted with gold border
-- No countdown timers
-- No "limited offer" pressure
-- Benefits plainly listed, no marketing fluff
+- Free tier: `backgroundColor: '#1A1A1A'`, `borderColor: '#3A3A3A'`.
+- Mid tier: background = `LinearGradient` `['#0D47A1', '#1565C0']`. `borderColor: '#2196F3'`.
+- Top tier: background = `LinearGradient` `['#E65100', '#F57F17']`. `borderColor: '#FFD700'`.
+
+Contents: tier name (20pt bold), price (16pt), benefits `FlatList` (each item = checkmark `Text` + benefit `Text` 13pt), action button "Current Tier" / "Upgrade" (triggers `expo-in-app-purchases`).
+
+Current tier: gold `View` badge "CURRENT" top-right corner of card.
+
+No countdown timers. No "limited time" pressure text.
 
 #### Section 2: Card Packs
-- **Layout:** Vertical scrollable list, each pack type as a card
 
-- **Standard Pack:**
-  - Icon: Chaos mote icon
-  - Contents: "5 random cards (Common-Rare)" (14pt)
-  - Cost: "500 Chaos Dust" (18pt bold)
-  - Button: "Purchase" (140x44pt)
+`Text` "Card Packs" 16pt bold section header.
 
-- **Premium Pack:**
-  - Icon: Shard icon
-  - Contents: "5 random cards, guaranteed 1 Epic+" (14pt)
-  - Cost: "1,500 Chaos Dust" (18pt bold)
-  - Button: "Purchase" (140x44pt)
+`FlatList` vertical, `scrollEnabled: false`. Each `PackItem`: `Pressable` `View` `flexDirection: 'row'`, 60pt height, `borderRadius: 10`, `backgroundColor: '#1A1A1A'`, `marginBottom: 8`.
 
-- **Faction Pack:**
-  - Icon: Faction symbol
-  - Contents: "5 cards from [Faction], guaranteed 1 Rare+" (14pt)
-  - Cost: "800 Chaos Dust" (18pt bold)
-  - Button: "Purchase" (140x44pt)
+- Pack icon `Image` 48x48pt.
+- Name + contents description `Text` column.
+- Cost `Text` "500 Dust" 16pt bold.
+- "Buy" `Pressable` 80x36pt `backgroundColor: '#4A90E2'` `borderRadius: 8`. On press: confirm bottom sheet → `purchasePack(type)` Supabase Edge Function call.
 
-**Pack Opening Flow:**
-- Purchase → brief animation (pack appears, shakes)
-- Pack explodes into 5 cards (reveal one at a time, 0.8s each)
-- Cards flip over to show art + tier
-- Final screen: "Cards Added to Collection" + button to view in Collection
+**Pack Opening Modal**: `Modal` full-screen. Dark background. Five cards dealt face-down one at a time (0.8s each). `Animated.View` flip animation (Reanimated `withTiming` on `rotateY`). Cards flip to reveal art. Final screen: "Cards Added!" + "View Collection" `Pressable`.
 
 #### Section 3: Planar Shards
-- **Layout:** Grid of shard bundles (2 columns on mobile)
 
-- **Uncommon Shard Bundle:**
-  - Icon: Uncommon shard (48x48pt)
-  - Quantity: "x3" (16pt bold)
-  - Price: "$1.99" (14pt)
-  - Button: "Purchase"
+`Text` "Planar Shards" 16pt bold section header.
 
-- **Rare Shard Bundle:**
-  - Icon: Rare shard
-  - Quantity: "x2"
-  - Price: "$3.99"
-  - Button: "Purchase"
+2-column `FlatList` grid. Each `ShardBundle`: `Pressable View` 160x120pt. Shard icon (48x48pt). Quantity `Text`. Price `Text`. "Buy" button. On press: native IAP flow via `expo-in-app-purchases`.
 
-- **Epic Shard Bundle:**
-  - Icon: Epic shard
-  - Quantity: "x1"
-  - Price: "$4.99"
-  - Button: "Purchase"
+#### Section 4: Premium Styles (Top Tier)
 
-- **Legendary Shard Bundle:**
-  - Icon: Legendary shard
-  - Quantity: "x1"
-  - Price: "$9.99"
-  - Button: "Purchase"
+Gated: if not Top Tier subscriber, show "Unlock with Top Tier" overlay on this section.
 
-**Pricing Note:**
-- Intentionally less efficient than subscribing
-- Subscriptions should feel like the better deal for active players
-- Shards available for players who want to accelerate a specific evolution without committing to subscription
+Horizontal `FlatList` of `StyleCard` components: sample card `Image` (160x224pt) + style name + description + "Preview" / "Apply" button.
 
-#### Section 4: Premium Styles (Top Tier Only)
-- **Layout:** Horizontal scrollable cards
-
-- **Each Style Card:**
-  - Sample card rendered in that style (200x280pt)
-  - Style name (16pt bold)
-  - Description: "Apply to all cards in your collection" (12pt)
-  - Price: "$4.99" (one-time purchase) or "Included with Top Tier"
-  - Button: "Preview" (opens modal with 6 sample cards in style)
-  - Button: "Purchase" or "Apply" (if already owned)
-
-**Style Preview Modal:**
-- 6 sample cards from different factions/tiers rendered in the style
-- Swipe to view each card
-- "Purchase Style" button (bottom)
+Preview modal: `Modal` with horizontal `FlatList` of 6 sample cards in that style. `Pressable` "Purchase Style" at bottom.
 
 #### Section 5: Cosmetics
-- **Layout:** Grid (2 columns on mobile)
 
-- **Card Frames:**
-  - Thumbnail: Sample card with frame applied (100x140pt)
-  - Name (14pt)
-  - Price: "$1.99"
-  - Button: "Purchase"
+2-column grid. Thumbnails (card frames, card backs, board skins). Each has name, price, "Buy" button.
 
-- **Card Backs:**
-  - Thumbnail: Card back design (100x140pt)
-  - Name (14pt)
-  - Price: "$1.99"
-  - Button: "Purchase"
+### 6.2 Subscription Upgrade Prompt
 
-- **Board Skins:**
-  - Thumbnail: Screenshot of battlefield with skin applied (140x100pt)
-  - Name (14pt)
-  - Price: "$2.99"
-  - Button: "Preview" → full-screen screenshot
-  - Button: "Purchase"
+Triggered when free player hits a tier-locked action.
 
-### 6.2 Currency Balance Display
+```
+Component: Modal (presentation: 'transparentModal')
+```
 
-**Persistent Header (all shop screens):**
-- Chaos Dust: Icon + number (24pt)
-- Planar Shards: Row of tier icons + numbers (16pt each)
-  - Tap icon → explanation tooltip
+Backdrop: `View` `position: 'absolute'` `flex: 1` `backgroundColor: 'rgba(0,0,0,0.8)'`.
 
-**What Shop Does NOT Have:**
-- Loot boxes (all purchases are deterministic)
-- "First purchase bonus" or manipulative conversion tactics
-- Currency obfuscation (real money prices always shown, no intermediary premium currency beyond Chaos Dust which is earned in-game)
-- FOMO timers on core items (seasonal exclusives are cosmetic-only and clearly labeled)
+Inner modal: `Animated.View` `SlideInUp.duration(400)`. `View` 320pt wide. `borderRadius: 20`. `backgroundColor: '#1A1A1A'`. Padding 24.
 
-### 6.3 Subscription Upgrade Prompt
-
-Triggered when free player attempts action requiring higher tier (e.g., trying to create 4th deck).
-
-**Modal Overlay:**
-- Header: "Unlock More Deck Slots" (20pt bold)
-- Body: "Upgrade to Mid Tier for 6 deck slots, 3 modifier options, and bonus Chaos Dust" (16pt)
-- Subscription comparison table (simplified, 2 columns: Free vs Mid)
-- Button: "Upgrade to Mid Tier — $4.99/mo" (primary, 200x52pt)
-- Button: "Not Now" (secondary, text-only, bottom)
-
-**Design Note:**
-- Not aggressive or blocking
-- Player can dismiss and continue using free tier
-- Prompt only appears once per session for a given action
+- Header `Text` 20pt bold describing locked feature.
+- Body `Text` 15pt `#B0B0B0`.
+- 2-column benefit comparison: Free vs Mid.
+- Primary button: "Upgrade to Mid Tier — $X.XX/mo" 220x52pt gold.
+- "Not Now" `Pressable` text button below. Dismissed via `setVisible(false)`. Shows once per session per trigger type (tracked in Zustand session state).
 
 ---
 
 ## 7. Onboarding Flow
 
-New player experience optimized for immediate engagement and education.
+Route: `/onboarding`. Shown only on first launch. Stored in `AsyncStorage` key `onboardingComplete`. After completion, key set to `'true'` and router redirects to `/(tabs)/home`.
 
-### 7.1 First Launch Sequence
+### 7.1 Flow Overview
 
 ```
-[App Launch - First Time]
-    ↓
-[Intro Cinematic (30-60s, skippable)]
-    ↓
-[Faction Selection]
-    ↓
-[Tutorial Match - Guided Battle]
-    ↓
-[First Evolution - Guided Flow]
-    ↓
-[Deck Builder Tour - Overlay Tooltips]
-    ↓
-[Home Screen - Free to Play]
+[App Launch]
+    |
+    v
+[Step 1: Intro Cinematic - Animated sequence, skippable]
+    |
+    v
+[Step 2: Faction Selection - Three faction cards, swipeable]
+    |
+    v
+[Step 3: Trial Match - Guided battle vs AI]
+    |
+    v
+[Step 4: Faction Commitment - Keep one trial deck]
+    |
+    v
+[Step 5: First Evolution - Guided flow, pre-awarded energy + shard]
+    |
+    v
+[Step 6: Deck Builder Tour - Overlay tooltips]
+    |
+    v
+[Step 7: Home Screen - Free to play, daily missions pre-populated]
 ```
 
 ### 7.2 Step-by-Step Specifications
 
 #### Step 1: Intro Cinematic
-- **Duration:** 30-60 seconds
-- **Style:** Motion graphic / illustrated sequence (not video, to keep app size small)
-- **Content:**
-  - The world
-  - Chaos rifts opening
-  - Creatures transforming through the rifts
-  - Planar shards appearing
-  - Brief lore: "The rifts have opened. Channel their power. Transform your creatures. Master the chaos."
-- **Audio:** Epic orchestral swell
-- **Skip Button:** Top-right corner, always visible (44x44pt tap target)
-- **Auto-advance:** After 60s, transitions to Faction Selection
+
+`View` full-screen `backgroundColor: '#0D0D0D'`.
+
+Implement as a sequence of `Animated.View` panels (not video, keeps app bundle small). Each panel: `Image` static illustration + `Text` subtitle.
+
+Panel sequence (timing in ms):
+- 0-4000: World illustration. "The world was once a thriving land of many civilizations."
+- 4000-8000: Chaos rift illustration. "War tore open rents to the Plane of Chaos."
+- 8000-12000: Transforming creatures illustration. "Chaos motes transform everything they touch."
+- 12000-16000: Planar shard illustration. "Planar Shards hold the power of transformation."
+- 16000-20000: Player avatar illustration. "Channel their power. Transform your creatures. Master the chaos."
+
+Each panel fades in/out via Reanimated `FadeIn`/`FadeOut`. Panel advance driven by `useRef` timer.
+
+Skip button: `Pressable` top-right, 44x44pt. `Text` "Skip" 14pt `#888`. On press: immediately advance to Step 2 and clear all timers.
+
+Audio: `expo-av` plays `assets/music/onboarding_intro.mp3` (looping, fades in).
 
 #### Step 2: Faction Selection
-- **Layout:** Three large cards, side-by-side (swipeable on mobile)
 
-- **Each Faction Card:**
-  - Faction name (24pt bold, top)
-  - Faction icon (80x80pt, center)
-  - Personality description (16pt, 2-3 lines)
-    - Ironwright Collective: "Forge the perfect machine. Augment your creatures with mechanical precision."
-    - Fey Courts: "Weave bonds of loyalty. Your creatures grow stronger together."
-    - Demonic Kingdoms: "Embrace corruption. Sacrifice for overwhelming power."
-  - Sample card (200x280pt, center) representing faction aesthetic
-  - Button: "Choose [Faction]" (180x52pt, bottom)
+Three `FactionCard` components in a horizontal `FlatList` or `PagerView` (use `react-native-pager-view`).
 
-- **Selection:**
-  - Tap "Choose" button
-  - Other cards fade out
-  - Selected card pulses and grows
-  - "You have chosen [Faction]" confirmation (2s)
-  - Transition to Tutorial Match
+Each `FactionCard`: full-screen card (view width x 80% height). `borderRadius: 20`. Faction-themed gradient background via `LinearGradient`.
+
+Contents:
+- Faction icon `Image` 80x80pt centered.
+- Faction name `Text` 26pt bold.
+- 2-line description `Text` 16pt `#B0B0B0`.
+- Sample card `Image` 180x252pt (pre-generated base card from faction pool).
+- "Choose [Faction]" `Pressable` 200x52pt faction accent color. On press: expand selected card, fade out others, 600ms transition, then advance to Step 3.
+
+Page indicator: 3 dots at bottom. Active dot = faction accent.
 
 #### Step 3: Tutorial Match (Guided Battle)
-AI opponent using a simple deck. Hand-holding overlays guide the player through every action.
 
-**Tutorial Steps (in order):**
+Uses the standard Battle screen (`/battle/tutorial`) but with an overlay state machine that controls which elements can be interacted with.
 
-1. **Start of Turn:**
-   - Overlay: "This is the Chaos Roll. It determines which event triggers this turn."
-   - D20 rolls automatically (scripted to roll 15 → Order event)
-   - Overlay: "Order event triggered! Your creatures gain +1 HP."
+Tutorial overlay: `View` `position: 'absolute'` `flex: 1` `pointerEvents: 'box-none'` (allows touch-through to highlighted elements only).
 
-2. **Draw Phase:**
-   - Overlay: "You drew a card. You now have 1 chaos mote to spend."
-   - Mana crystals pulse
+`TutorialOverlay` component maintains a `currentStep` state. For each step:
+- A `SpotlightMask`: Skia canvas rendering a semi-transparent dark overlay with a hole cut out for the highlighted element. Position data comes from `useRef` + `onLayout` measurements on the target element.
+- `TutorialTooltip`: `View` 280x100pt positioned near the spotlight. `Text` instruction. Arrow pointing toward highlighted element.
+- Highlighted element has `pointerEvents: 'auto'`. All other elements have `pointerEvents: 'none'`.
 
-3. **Main Phase:**
-   - Overlay: "Drag a creature from your hand to the board."
-   - Arrow points to a 1-cost creature in hand
-   - Player must drag it to board (forced tutorial action)
-   - Creature appears on board
-   - Overlay: "Creatures have ATK (attack) and HP (health). Tap a creature to see its details."
+Tutorial steps (9 steps as specified in master doc). Each step waits for the required player action before advancing. Step 9 triggers a scripted AI defeat (server returns loss).
 
-4. **Opponent Turn (Auto-plays):**
-   - Overlay: "Your opponent plays a creature and attacks."
-   - Opponent creature appears, attacks (unblocked, player takes 2 damage)
+Turn timer is disabled during tutorial (server sends unlimited timer state).
 
-5. **Your Turn - Attack Phase:**
-   - Overlay: "Now it's your turn to attack. Tap your creature to select it as an attacker."
-   - Arrow points to player's creature
-   - Player taps creature → creature glows
-   - Overlay: "Your creature will attack the opponent directly. Tap 'End Turn' to continue."
+Skip button: always visible at top-right, 44x44pt. On press: skip to Step 4, award starter deck, mark tutorial complete.
 
-6. **Combat:**
-   - Player's creature attacks, deals damage
-   - Overlay: "Your creature dealt damage! The opponent's HP decreased."
+#### Step 4: Faction Commitment
 
-7. **Chaos Roll (Scripted):**
-   - Roll scripted to trigger Chaos event
-   - Overlay: "A Chaos event triggered! Random effects can help or hurt you."
-   - Event resolves (e.g., random creature gets +2 ATK)
+After tutorial match, modal appears:
 
-8. **Modifier Introduction:**
-   - Player draws a creature with an Uncommon modifier
-   - Overlay: "This creature has a modifier! Tap it to see its special abilities."
-   - Player taps creature → Card Detail opens
-   - Overlay: "Modifiers have base effects (always active) and attuned bonuses (active when the right event triggers)."
+`Modal presentation: 'modal'`. `View` `borderRadius: 20` centered.
 
-9. **Tutorial End:**
-   - AI opponent reduced to 0 HP (scripted victory)
-   - Overlay: "Victory! You've mastered the basics. Now let's evolve your first card."
+"Keep [Faction] as your first faction?" with selected faction illustration.
 
-**Tutorial Controls:**
-- Forced actions (player cannot proceed until completing the prompted action)
-- Skip button (top-right): Skips entire tutorial, awards starter deck, proceeds to home screen
-- Overlays are semi-transparent, never fully block the view
-- No turn timer during tutorial
+Two deck previews: selected faction (highlighted, gold border) vs. "Return" indicator for others.
 
-#### Step 4: First Evolution (Guided Flow)
-Player is awarded 15 chaos energy and 1 Uncommon Shard to immediately evolve one card from starter deck.
+"Keep [Faction] Deck" `Pressable` 220x52pt. Calls Supabase `player/commit-faction` Edge Function. On success: the 20 trial cards are converted to owned `CardInstance` records in DB.
 
-- **Pre-selected Card:** A 2-cost creature from starter deck
-- **Overlay:** "You earned enough energy to evolve this creature! Let's transform it."
-- **Evolution Flow:** Same as normal (see Section 4), but with overlays explaining each step:
-  - "Choose Order to stabilize, or Chaos to empower"
-  - "This is your new art, generated just for you"
-  - "Choose a name for your evolved creature"
-  - "This is the new ability your creature gained"
-  - "Choose a modifier to enhance your creature"
-- **Result:** Player completes first evolution, sees fully evolved card
-- **Overlay:** "You can evolve cards by playing games and earning energy. Each evolution makes your deck more powerful and unique."
+#### Step 5: First Evolution (Guided)
 
-#### Step 5: Deck Builder Tour
-Brief overlay tooltips when player first opens Deck Builder.
+Server pre-awards 15 chaos energy (threshold met) and 1 Uncommon Shard to the player's starting 2-cost creature.
 
-- **Tooltip 1:** Points to deck name field: "Name your deck"
-- **Tooltip 2:** Points to avatar selector: "Choose an avatar. Each has a different instability modifier."
-- **Tooltip 3:** Points to mana curve: "This shows your deck's mana distribution. Aim for a balanced curve."
-- **Tooltip 4:** Points to card pool: "Add cards from here to your deck. You need exactly 20 cards."
-- **Tooltip 5:** Points to "Save Deck" button: "Save when you're done."
-- All tooltips dismissible by tap or auto-advance after 4s
+Notification banner slides in: "Your [CreatureName] is ready to evolve!" `Pressable` opens Card Detail.
 
-#### Step 6: Release to Home Screen
-- **Overlay:** "You're ready! Play matches to earn chaos energy, evolve your cards, and climb the ranks."
-- **Button:** "Start Playing" (180x52pt, gold glow)
-- **Daily Missions:** Pre-populated with 3 easy missions:
-  - "Play 1 game" → 50 Chaos Dust
-  - "Evolve 1 card" → 100 Chaos Dust (already completed from tutorial)
-  - "Win 1 game" → 1 Uncommon Shard
+In Card Detail, an overlay tooltip points to "Evolve" button: "Tap Evolve to transform your creature."
+
+Player proceeds through normal evolution flow with overlays at each step explaining what they're doing. Same `TutorialOverlay` mechanism.
+
+#### Step 6: Deck Builder Tour
+
+On first visit to `/(tabs)/decks`, check Zustand flag `deckBuilderTourComplete`. If false, run tour.
+
+Tour: 5 tooltips using `TutorialTooltip` positioned near target elements. Each auto-advances after 4s or on tap. Tour completes: set `deckBuilderTourComplete: true`.
+
+#### Step 7: Release to Home
+
+Last onboarding screen: `View` full-screen. Faction-themed gradient. "You're ready!" `Text` 28pt bold. "Start Playing" `Pressable` 200x52pt gold. On press: sets `AsyncStorage` `onboardingComplete: 'true'`, then `router.replace('/(tabs)/home')`.
+
+Pre-populate daily missions in Zustand: 3 starter missions as defined in master doc.
 
 ### 7.3 Starter Deck Composition
 
-Each faction's starter deck (20 cards):
-
-- **14 Common Creatures:**
-  - 4x 1-cost (various instability values: 0, 1, 2, 3)
-  - 4x 2-cost (instability 1, 2, 2, 3)
-  - 3x 3-cost (instability 2, 2, 3)
-  - 2x 4-cost (instability 2, 3)
-  - 1x 5-cost (instability 3)
-
-- **4 Common Spells:**
-  - 1x removal (3-cost: "Deal 3 damage to a creature")
-  - 1x buff (2-cost: "Give a creature +2 ATK this turn")
-  - 1x heal (2-cost: "Restore 3 HP")
-  - 1x draw (3-cost: "Draw 2 cards")
-
-- **2 Common Stabilizers:**
-  - 1x Order-leaning (3-cost, 0 instability, 0/4 stats, aura effect)
-  - 1x Chaos-leaning (3-cost, 3 instability, 0/3 stats, aura effect)
-
-**Additional Cards (in collection, not in deck):**
-- 6 Common creatures (various costs/instability)
-- 2 Common spells
-
-**Total Starting Collection:** 28 cards (20 in starter deck + 8 extras for deck experimentation)
+See master doc Section 3 Onboarding Flow for exact card counts. Starter deck data is seeded in Supabase and fetched by `player/commit-faction` Edge Function. Cards are pre-generated from the batch pipeline CardTemplates.
 
 ---
 
 ## 8. Interaction Patterns
 
-Mobile-first design. All interactions optimized for thumb-reachable touch targets.
+React Native Gesture Handler (`react-native-gesture-handler`) handles all gestures.
 
-### 8.1 Touch Targets
+### 8.1 Tap Targets
 
-**Minimum Tap Target Size:** 44x44pt (Apple HIG standard)
+**Minimum tap target: 44x44pt** (Apple HIG).
 
-All interactive elements (buttons, cards, icons) meet this minimum to prevent misclicks.
+All `Pressable` and `TouchableOpacity` components must have either:
+- Physical dimensions >= 44x44pt, OR
+- `hitSlop={{ top: N, bottom: N, left: N, right: N }}` to expand tap area to 44x44 minimum.
 
-**Examples:**
-- Card thumbnails in grid: 100x140pt (well above minimum)
-- Small icons (mana crystals, keyword icons): 20-24pt visual, but 44x44pt tap area (invisible padding)
-- End Turn button: 100x44pt (exact minimum width)
+Visual elements smaller than 44pt (mana crystals 20pt, keyword icons 24pt): add `hitSlop` padding so logical tap area is 44x44.
 
 ### 8.2 Tap Interactions
 
-| Element | Tap Action | Visual Feedback |
-|---------|------------|----------------|
-| **Card in hand** | Select to play | Card lifts 10pt, drop shadow |
-| **Card on board** | Open Card Detail | Card pulses, modal slides up |
-| **Creature (attack phase)** | Toggle attacker | Red glow border appears/disappears |
-| **Avatar (battle)** | Open graveyard | Avatar pulses, modal slides up |
-| **Button** | Execute action | Button darkens 20%, brief scale (0.95x) |
-| **Tab** | Switch tab | Tab underline slides, content fades in |
-| **Faction tab** | Filter collection | Tab highlights, grid updates with fade |
+All `Pressable` components use `android_ripple={{ color: 'rgba(255,255,255,0.1)' }}` on Android.
+
+On iOS: `Animated.View` with `useAnimatedStyle` scaling to 0.95 on press-in, back to 1.0 on press-out. Duration: 100ms via `withTiming(Linear)`.
+
+| Element | Tap Action | Feedback |
+|---|---|---|
+| Card in hand | Select to play (lift) | Scale 1.1, shadow |
+| Card on board | Open Card Detail modal | Brief scale pulse 1.05 |
+| Creature (attack phase) | Toggle attacker | Red border glow |
+| Avatar (battle) | Open Graveyard modal | Avatar scale pulse |
+| Pressable button | Execute action | Scale 0.95 then 1.0 |
+| Faction tab | Filter collection | Accent underline slides (Reanimated) |
 
 ### 8.3 Long Press Interactions
 
-| Element | Long Press Action | Visual Feedback | Duration |
-|---------|------------------|----------------|----------|
-| **Card in hand (battle)** | Preview detail without playing | Modal appears, semi-transparent background | Hold to maintain |
-| **Card in deck builder** | Quick remove from deck | "Remove?" confirmation tooltip | 0.5s hold |
-| **Deck in deck selector** | Open action menu (Edit/Duplicate/Delete) | Menu slides up | 0.5s hold |
+Implemented via `Gesture.LongPress()` from RNGH. All long presses require `minDuration: 400` (ms).
+
+| Element | Long Press Action | Feedback |
+|---|---|---|
+| Card in hand (battle) | Preview detail without playing | Card Detail modal in peek mode |
+| Card row in deck builder | "Remove from Deck?" prompt | Confirmation tooltip appears |
+| Deck in deck selector | Action menu (Edit/Duplicate/Delete) | Bottom sheet slides up |
+| Card in collection | Quick action menu (Evolve/Add/Favorite) | Context menu popover |
 
 ### 8.4 Drag Interactions
 
-| Element | Drag Action | Visual Feedback |
-|---------|------------|----------------|
-| **Card from hand → board** | Play card | Card follows finger (1.2x scale), drop zones highlight green, invalid zones red |
-| **Card from hand → target** | Target spell | Card follows finger, valid targets glow green, release to cast |
-| **Blocker → attacker** | Assign block | Blocker follows finger, valid attackers glow green, line connects on release |
-| **Blocker → board** | Unassign block | Blocker follows finger, connection line breaks on release |
-| **Hand (horizontal)** | Scroll hand | Cards slide smoothly, momentum scrolling |
+Implemented via `Gesture.Pan()`. Minimum distance before activation: `minDistance: 10`.
 
-**Drag Tolerance:**
-- Minimum 10pt movement before drag activates (prevents accidental drags on taps)
-- Drag follows finger with 0.1s smoothing (feels natural, not laggy)
+| Element | Drag | Feedback |
+|---|---|---|
+| Card from hand → board | Play card | Card 1.2x scale, follows finger, drop zones highlight green |
+| Card from hand → target | Cast targeted spell | Card follows finger, valid targets glow green |
+| Blocker → attacker | Assign block | Blocker 1.15x scale, follows finger, valid attackers glow |
+| Blocker → empty board | Unassign block | Connection line breaks on release |
+| Hand (horizontal) | Scroll | Momentum scroll (ScrollView native) |
+
+Drag smoothing: 0.1s Reanimated `withTiming` on position updates to prevent jitter.
+
+Invalid drop: `withSpring` card back to origin. Haptic: `Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)`.
+
+Valid drop: `Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)`.
 
 ### 8.5 Swipe Interactions
 
-| Element | Swipe Direction | Action |
-|---------|----------------|--------|
-| **Hand (horizontal)** | Left/right | Scroll through cards in hand |
-| **Collection grid** | Up/down | Scroll through card collection |
-| **Deck selector (home)** | Left/right | Switch between saved decks |
-| **Left edge of battle screen** | Right | Open battle log panel |
-| **Card in Card Detail** | Left/right | Flip card (front: stats, back: lore) — *future* |
+| Element | Direction | Action |
+|---|---|---|
+| Hand (in battle) | Left/right | ScrollView native scroll |
+| Collection grid | Up/down | FlatList native scroll |
+| Deck selector (home) | Left/right | FlatList paginated scroll |
+| Left edge of battle screen | Right | Open battle log panel (Gesture.Pan detecting start near x < 20) |
+| Evolution channel buttons | Left/right | PagerView swipe between Order/Chaos options |
 
-**Swipe Sensitivity:**
-- Minimum 50pt movement to trigger swipe
-- Velocity threshold: 100pt/s to distinguish from slow drag
+Swipe activation: minimum 50pt movement, velocity threshold 80pt/s (distinguish from slow drag).
 
-### 8.6 Pinch/Zoom
+### 8.6 Haptic Feedback
 
-**Not Used** — Cards are viewed at fixed sizes (hand, board, detail view). Pinch/zoom adds complexity without clear UX benefit on fixed layouts.
+Implemented via `expo-haptics`. All haptics wrapped in a `try/catch` because haptics are not available on all devices.
 
-### 8.7 Haptic Feedback (iOS)
+| Action | Haptic | expo-haptics call |
+|---|---|---|
+| Card played | Light impact | `Haptics.impactAsync(ImpactFeedbackStyle.Light)` |
+| Damage dealt | Medium impact | `Haptics.impactAsync(ImpactFeedbackStyle.Medium)` |
+| Creature destroyed | Heavy impact | `Haptics.impactAsync(ImpactFeedbackStyle.Heavy)` |
+| D20 rolls | Light on start, medium on land | Two calls sequenced |
+| Evolution complete | Success | `Haptics.notificationAsync(NotificationFeedbackType.Success)` |
+| Invalid action / error | Error | `Haptics.notificationAsync(NotificationFeedbackType.Error)` |
+| Button tap (general) | Selection | `Haptics.selectionAsync()` |
 
-| Action | Haptic Type |
-|--------|-------------|
-| Card played | Light impact |
-| Damage dealt | Medium impact |
-| Creature destroyed | Heavy impact |
-| Roll D20 | Light impact (on roll start) + medium impact (on result) |
-| Evolution complete | Success notification |
-| Error (invalid action) | Error notification |
-| Button tap | Selection feedback |
-
-**Android:** Use equivalent vibration API with similar intensity levels.
+Android: use same `expo-haptics` API. Expo maps calls to `android.os.VibrationEffect` automatically.
 
 ---
 
 ## 9. Responsive Considerations
 
-Mobile-first, but supports tablets and landscape mode where appropriate.
+### 9.1 Phone vs Tablet
 
-### 9.1 Phone vs Tablet Layouts
+Detect via `useWindowDimensions()` hook. Define breakpoints:
+- Phone portrait: `width < 428`
+- Phone landscape: `height < 428` (or `width >= 428 && height < 428`)
+- Tablet: `width >= 768`
 
-#### Phone (Portrait, 375-428pt width)
-- Collection grid: 3 columns
-- Deck builder: Stacked layout (deck contents above card pool)
-- Battle: Portrait orientation (see Section 3 layout)
-- Shop: Single column scrolling
-- Bottom tab bar: 5 tabs (icons only below 375pt width)
+| Screen | Phone Portrait | Tablet (768pt+) |
+|---|---|---|
+| Collection | 3 columns `FlatList` | 5 columns |
+| Deck Builder | Stacked (tabs for deck/pool) | Side-by-side `View` |
+| Battle | Full portrait (see layout spec) | Portrait preferred (wider board) |
+| Shop | Single column | 2 columns for packs/shards grid |
+| Bottom tab bar | Icons only if width < 375 | Icons + labels |
 
-#### Tablet (768pt+ width)
-- Collection grid: 5-6 columns
-- Deck builder: Side-by-side layout (deck contents left, card pool right)
-- Battle: Landscape orientation preferred (wider board visibility)
-- Shop: 2-column layout for sections
-- Bottom tab bar: 5 tabs (icons + labels)
+### 9.2 Orientation Lock
 
-### 9.2 Orientation Lock Strategy
+All screens: allow both portrait and landscape via `expo-screen-orientation`.
 
-**Battle Screen:**
-- **Option 1 (Recommended):** Landscape lock during battle, portrait for all menus
-  - Pros: Wider board visibility, easier to see all 5 slots at once, more hand space
-  - Cons: Requires orientation change when entering/exiting battle (can be jarring)
+**Exception — Battle screen**: force portrait on mount via `ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)`. Restore on unmount via `ScreenOrientation.unlockAsync()`.
 
-- **Option 2 (Alternative):** Always portrait
-  - Pros: No orientation changes, consistent experience, one-handed play easier
-  - Cons: Cramped board layout, hand area smaller
+**Exception — Evolution flow**: force portrait on mount, restore on unmount.
 
-**Decision:** Start with **Option 2 (always portrait)** for MVP to reduce complexity. Add landscape battle mode post-launch based on player feedback.
+This is the MVP decision. Landscape battle is a post-launch enhancement.
 
-**All Other Screens:** Portrait preferred, but adapts to landscape gracefully
-- Collection, Deck Builder, Shop: Layouts adjust to landscape (more columns, side-by-side panels)
-- Evolution Screen: Portrait only (forced orientation during flow)
+### 9.3 Safe Area
 
-### 9.3 Safe Area Insets (iPhone Notch, etc.)
+All screens wrapped in `<SafeAreaView style={{ flex: 1 }}>` from `react-native-safe-area-context`.
 
-All critical UI respects safe area insets:
-- Top bar: Padded below notch/Dynamic Island
-- Bottom tab bar: Padded above home indicator
-- Full-screen modals: Content within safe bounds, backgrounds extend to edges
+Modals and full-screen overlays: extend background to screen edges (including notch/Dynamic Island area) via `backgroundColor` on the outer `View`, but keep content (text, buttons) inside `SafeAreaView`.
 
 ### 9.4 Font Scaling (Accessibility)
 
-Support system font size preferences (iOS: Dynamic Type, Android: Font Scale).
+```
+Component text: Text allowFontScaling={true} (default)
+```
 
-**Scalable Text:**
-- Card names, descriptions, flavor text
-- UI labels, buttons, tooltips
-- Battle log entries
+Fixed-size text (ATK/HP on compact cards): `allowFontScaling={false}` with `adjustsFontSizeToFit={true}` and `minimumFontScale={0.7}` to handle small values without breaking layout.
 
-**Fixed-Size Text:**
-- ATK/HP numbers on cards (must fit in fixed space)
-- Mana cost icons (visual consistency required)
-
-**Overflow Handling:**
-- Long card names: Truncate with ellipsis (…) after 25 characters
-- Long modifier descriptions: Scrollable in Card Detail view
-- Long flavor text: Scrollable in flavor text box
+Long card names: `numberOfLines={1}` + `ellipsizeMode="tail"`. Max ~25 characters before truncation.
 
 ---
 
 ## 10. Animation & Timing Specifications
 
-Consistent animation speeds create a polished feel.
+### 10.1 Standard Durations (Reanimated)
 
-### 10.1 Standard Durations
+| Animation | Duration | Easing |
+|---|---|---|
+| Modal slide in/out | 300ms | `Easing.out(Easing.quad)` |
+| Card flip (detail reveal) | 400ms | `Easing.inOut(Easing.quad)` |
+| Button press feedback | 100ms | `Easing.linear` |
+| Tab switch | 250ms | `Easing.out(Easing.cubic)` |
+| Tooltip appear/dismiss | 200ms | `Easing.out(Easing.quad)` |
+| Card draw (deck to hand) | 500ms | `Easing.out(Easing.cubic)` |
+| Card play (hand to board) | 400ms | `Easing.out(Easing.cubic)` |
+| Damage number fly-up | 800ms | `Easing.out(Easing.quad)` |
+| Death animation | 1200ms | Custom particle |
+| D20 roll | 1500-2500ms | Custom tumble |
+| Evolution shard crack | 600ms | `Easing.inOut(Easing.quad)` |
+| Art reveal (iris wipe) | 1200ms | `Easing.out(Easing.cubic)` |
 
-| Animation Type | Duration | Easing |
-|---------------|----------|--------|
-| **Modal slide in/out** | 0.3s | Ease-out |
-| **Card flip** | 0.4s | Ease-in-out |
-| **Button press** | 0.1s | Linear |
-| **Page transition** | 0.25s | Ease-out |
-| **Tooltip appear/dismiss** | 0.2s | Ease-out |
-| **Card draw** | 0.5s | Ease-out (card slides from deck to hand) |
-| **Card play** | 0.6s | Ease-out (hand → board) |
-| **Damage number** | 0.8s | Ease-out (flies up, fades) |
-| **Death animation** | 1.2s | Ease-in (dissolves) |
-| **D20 roll** | 1.5-2.5s | Custom (bounce, settle) |
-| **Evolution shard crack** | 0.6s | Ease-in-out |
-| **Art reveal** | 1.2s | Ease-out (iris wipe) |
+All `withTiming` calls use `Easing` imported from `react-native-reanimated`. Not from `react-native`.
 
-### 10.2 Animation Priorities
+### 10.2 Skippable vs Non-Skippable
 
-Animations never block critical actions. Player can always tap to skip or accelerate non-essential animations.
+**Skippable** (player tap to advance):
+- Evolution animations (any step — tap to accelerate to next step).
+- Intro cinematic (skip button always visible).
+- Flavor text typeout (tap to complete instantly).
+- Pack opening (tap to skip to next card reveal).
 
-**Skippable:**
-- Evolution animations (tap to skip to reveal)
-- Intro cinematic (skip button always visible)
-- Flavor text typing (tap to complete instantly)
-
-**Non-Skippable (Critical for Game State):**
-- Combat damage resolution (must see what died)
-- D20 roll result (must see event outcome)
-- Card draw (must see what was drawn)
+**Non-Skippable** (must complete for game state clarity):
+- Combat damage resolution.
+- D20 roll + event overlay (minimum 2.5s).
+- Card draw animation.
+- Death animation (1200ms minimum).
 
 ### 10.3 Reduced Motion Mode
 
-When "Reduced Motion" is enabled in settings:
-- D20 roll: Instant result display (no spinning/bouncing)
-- Card animations: Fade instead of slide
-- Damage numbers: Static display instead of flying
-- Particle effects: Disabled
-- Screen shake: Disabled
+Check `AccessibilityInfo.isReduceMotionEnabled()` on mount. Store in Zustand `preferences.reducedMotion`.
+
+If `reducedMotion: true`:
+- Replace all `withTiming`/`withSpring` transitions with instant value changes via `withTiming(value, { duration: 0 })`.
+- D20 roll: instant number display, no spinning animation.
+- Particle effects: disabled (Skia canvas still renders but particles are omitted).
+- Screen shake on damage: disabled.
+- Card slides: fade-in instead of translate.
 
 ---
 
@@ -1549,41 +1331,43 @@ When "Reduced Motion" is enabled in settings:
 
 ### 11.1 Network Loss
 
-**During Matchmaking:**
-- Show "Connection lost" toast
-- Cancel matchmaking automatically
-- Return to mode selection screen
+**During Matchmaking:** `NetInfo` (from `@react-native-community/netinfo`) detects loss. Toast "Connection lost. Matchmaking cancelled." `router.back()` to mode selection.
 
-**During Battle:**
-- Show "Reconnecting..." overlay
-- Attempt reconnect for 10 seconds
-- If reconnect successful: Resume game
-- If reconnect fails: Forfeit game, count as loss, return to home screen
+**During Battle:** Reconnection overlay: `View` full-screen semi-transparent dark. Spinner (use `ActivityIndicator` from React Native). "Reconnecting..." `Text`. Client attempts Supabase Realtime reconnect. If reconnected within 10s: resume. If not: "Match forfeited. Returning home." Counts as loss. `router.replace('/(tabs)/home')`.
 
-**During Evolution:**
-- If AI generation fails: Show error modal, refund shard + energy, return to Card Detail
-- If network lost before save: Evolution not committed, return to Card Detail with retry option
+**During Evolution:** If Supabase call fails: error modal with "Try Again" button and "Cancel" button. Shard and energy are NOT consumed until `evolution/confirm` is called (final step). Partial failures before confirm = safe to retry.
 
 ### 11.2 Empty States
 
-| Screen | Empty Condition | Empty State Message | CTA |
-|--------|----------------|---------------------|-----|
-| **Collection** | No cards in faction | "No cards in this faction yet. Visit the Shop!" | "Visit Shop" button |
-| **Deck Builder** | No cards in deck | "Add cards to your deck from the card pool below" | (None, instructions only) |
-| **Friends List** | No friends | "Add friends to challenge them and view their profiles!" | "Add Friend" button |
-| **Graveyard** | No destroyed cards | "No cards destroyed yet this game" | (None, close graveyard) |
-| **Shop Shards** | Out of shards | "Out of shards. Purchase more to evolve your cards." | (Shop section, no special CTA) |
+Each `FlatList` has a `ListEmptyComponent` prop rendering an empty state `View`:
+
+```
+Component: View
+style: { flex: 1, justifyContent: 'center', alignItems: 'center',
+         paddingVertical: 60, paddingHorizontal: 30 }
+```
+
+Faction symbol `Image` 80x80pt at 20% opacity. `Text` message 16pt `#888` centered. `Pressable` CTA button if applicable.
+
+| Screen | Empty Condition | Message | CTA |
+|---|---|---|---|
+| Collection | No cards in faction | "No cards yet. Visit the Shop!" | "Visit Shop" |
+| Deck Builder | No cards | "Add cards from the card pool" | None |
+| Graveyard | No destroyed cards | "No cards destroyed yet" | None |
+| Friends | No friends | "Add friends to challenge them!" | "Add Friend" |
 
 ### 11.3 Validation Messages
 
-| Invalid Action | Message | Display Type |
-|---------------|---------|-------------|
-| **Deck full (20/20)** | "Deck is full" | Toast (2s, bottom) |
-| **Not enough mana** | "Not enough mana" | Toast (1s, red) |
-| **Max Legendaries (2/2)** | "Deck already has 2 Legendaries" | Toast (2s, bottom) |
-| **Max copies (2/2)** | "Already have 2 copies of this card" | Toast (2s, bottom) |
-| **Card not evolution-ready** | "Card needs [X] more energy or a shard" | Tooltip on "Evolve" button (disabled) |
-| **Purchase failed** | "Purchase failed. Please try again." | Modal (error icon, "OK" button) |
+Toast notifications: implement as a `ToastProvider` at the Expo Router root layout. `Toast.show(message, type)` callable from anywhere. Position: bottom, above tab bar. Duration: 2000ms. Slide in from bottom, slide out.
+
+| Invalid Action | Message | Toast Type |
+|---|---|---|
+| Deck full | "Deck is full (20/20)" | warning |
+| Not enough mana | "Not enough mana" | error |
+| Max Legendaries | "Deck already has 2 Legendaries" | warning |
+| Max copies | "Already have 2 copies" | warning |
+| Card not ready | Card Detail: disabled "Evolve" with tooltip | tooltip |
+| Purchase failed | "Purchase failed. Please try again." | Modal (not toast) |
 
 ---
 
@@ -1591,316 +1375,671 @@ When "Reduced Motion" is enabled in settings:
 
 ### 12.1 Colorblind Modes
 
-**Supported Modes:**
-- Deuteranopia (red-green)
-- Protanopia (red-green)
-- Tritanopia (blue-yellow)
+Setting in `/(tabs)/profile` → Settings → Visuals → "Colorblind Mode".
 
-**Implementation:**
-- Order/Chaos indicators: Use icons + patterns, not just color
-  - Order: Blue + striped pattern + crystal icon
-  - Chaos: Red + dotted pattern + flame icon
-- Attunement indicators: Shapes + color
-  - Order-attuned: Blue circle
-  - Chaos-attuned: Red triangle
-  - Neutral: Gray square
-- HP bars: Green → yellow → red remains (but also shows numeric HP always)
+Options: "None" | "Deuteranopia" | "Protanopia" | "Tritanopia".
 
-### 12.2 Screen Reader Support (Aspirational)
+Implementation: Zustand `preferences.colorblindMode` drives icon + pattern changes globally.
 
-**Basic Labeling:**
-- All cards: Name, ATK, HP, mana cost, tier, keywords read aloud
-- All buttons: Clear labels ("End Turn", "Play Card", "Evolve")
-- Battle state: "Your turn, 45 seconds remaining, 3 creatures on board, instability 8"
+Order indicator: blue + crystal icon + striped `View` pattern overlay (CSS-like via Skia).
+Chaos indicator: red + flame icon + dotted `View` pattern overlay.
+Attunement: Order = blue circle icon, Chaos = red triangle icon, Neutral = gray square.
+HP bars: always show numeric HP alongside color bar.
 
-**Priority:** Post-MVP, but architecture should not block future implementation.
+### 12.2 VoiceOver / TalkBack
+
+Apply `accessible={true}` and `accessibilityLabel` props to all interactive elements.
+
+Examples:
+- Card on board: `accessibilityLabel={`${card.name}, ${card.atk} attack, ${card.hp} HP, ${card.keywords.join(', ')}`}`
+- End Turn button: `accessibilityLabel="End Turn"`
+- Battle state label: applied to a visually-hidden `Text` component announcing "Your turn, 45 seconds remaining, instability 8, 3 creatures on your board."
+
+Priority: implement labels for all interactive elements in MVP. Screen reader navigation of the full battle screen is post-launch enhancement.
 
 ### 12.3 Turn Timer Extension
 
-**Setting:** "Extended Turn Timer" (Casual and Practice only)
-- Standard: 60 seconds
-- Extended: 90 seconds
-- Ranked: Always 60 seconds (fairness)
-
-### 12.4 Text Scaling
-
-See Section 9.4 (Responsive Considerations)
-
-### 12.5 One-Handed Play
-
-All critical battle interactions reachable in portrait mode with thumb-only input:
-- Hand area: Bottom (thumb zone)
-- End Turn button: Bottom-right (thumb zone)
-- Mana display: Bottom-left (thumb zone)
-- Card on board: Tap to view (center screen, reachable)
-- No essential controls in top corners (opponent info is read-only)
+Setting: `preferences.extendedTimer` (boolean). Only affects Casual and Practice modes. Server respects this setting when creating the match — sends `timerSeconds: 90` instead of 60 in match init payload. Ranked always 60s regardless of setting.
 
 ---
 
-## 13. Dark Theme & Visual Styling
+## 13. Visual Styling Constants
 
-### 13.1 Color Palette
+### 13.1 Color Palette (TypeScript constants file: `constants/colors.ts`)
 
-**Base Colors:**
-- Background (darkest): #0D0D0D
-- Surface (cards, panels): #1A1A1A
-- Surface elevated (modals): #242424
-- Borders: #3A3A3A
-- Text primary: #FFFFFF
-- Text secondary: #B0B0B0
+```typescript
+export const Colors = {
+  // Base
+  bg: '#0D0D0D',
+  surface: '#1A1A1A',
+  surfaceElevated: '#242424',
+  border: '#3A3A3A',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#B0B0B0',
+  textMuted: '#666666',
 
-**Faction Accents (used for highlights, borders, glows):**
-- Ironwright Collective: #4A90E2 (steel blue)
-- Fey Courts: #7ED321 (verdant green)
-- Demonic Kingdoms: #D0021B (crimson red)
+  // Factions
+  ironwright: '#4A90E2',
+  feyCourts: '#7ED321',
+  demonic: '#D0021B',
 
-**Event Colors:**
-- Order: #5BC0EB (light blue)
-- Chaos: #E63946 (bright red)
-- Neutral: #F1F1F1 (white)
+  // Events
+  order: '#5BC0EB',
+  chaos: '#E63946',
 
-**Tier Colors (card borders, badges):**
-- Common: #9E9E9E (gray)
-- Uncommon: #4CAF50 (green)
-- Rare: #2196F3 (blue)
-- Epic: #9C27B0 (purple)
-- Legendary: #FFD700 (gold)
+  // Tiers
+  common: '#9E9E9E',
+  uncommon: '#4CAF50',
+  rare: '#2196F3',
+  epic: '#9C27B0',
+  legendary: '#FFD700',
 
-### 13.2 Typography
+  // Actions
+  danger: '#F44336',
+  success: '#4CAF50',
+  warning: '#FFC107',
+  info: '#2196F3',
+} as const;
+```
 
-**Font Family:**
-- Primary: System font (SF Pro on iOS, Roboto on Android) for UI
-- Display: Custom serif or fantasy font for card names, lore (TBD based on art direction)
+### 13.2 Typography (`constants/typography.ts`)
 
-**Font Sizes (Base, scales with Dynamic Type):**
-- Display large (card names): 24pt
-- Headline (section headers): 20pt
-- Body large (card descriptions): 16pt
-- Body (UI labels): 14pt
-- Caption (metadata): 12pt
-- ATK/HP numbers on board: 16pt bold
-- ATK/HP numbers in detail: 28pt bold
+```typescript
+export const Typography = {
+  // All sizes in sp (scale-independent pixels, same as pt on 1x screens)
+  displayLarge: { fontSize: 28, fontWeight: '700' as const },
+  displayMedium: { fontSize: 24, fontWeight: '700' as const },
+  headline: { fontSize: 20, fontWeight: '700' as const },
+  bodyLarge: { fontSize: 16, fontWeight: '400' as const },
+  body: { fontSize: 14, fontWeight: '400' as const },
+  caption: { fontSize: 12, fontWeight: '400' as const },
+  micro: { fontSize: 11, fontWeight: '400' as const },
+  // Card-specific
+  cardStatLarge: { fontSize: 28, fontWeight: '800' as const },
+  cardStatSmall: { fontSize: 16, fontWeight: '700' as const },
+  cardNameBoard: { fontSize: 13, fontWeight: '700' as const },
+} as const;
+```
 
-### 13.3 Card Frame Design
+Font family: `fontFamily` is NOT set globally. React Native uses San Francisco (iOS) and Roboto (Android) by default. A display font (e.g., a fantasy/serif font) will be loaded via `expo-font` for card names and evolution screen headers only. Font file goes in `assets/fonts/`. `useFonts` hook in root layout.
 
-**Standard Card:**
-- Aspect ratio: 5:7 (portrait)
-- Border: 4pt, color matches tier
-- Corners: 8pt radius
-- Art area: Top 65% of card
-- Stats area: Bottom 35%, dark gradient overlay
-- Tier badge: Top-right corner, 24x24pt circle
+### 13.3 Card Frame Design Constants
 
-**Card on Board (Compact):**
-- Aspect ratio: Same (5:7)
-- Smaller size (60x85pt on phone)
-- Border glows when selected (4pt glow, color = action type)
-  - Attack: Red glow
-  - Block: Green glow
-  - Attunement active: Blue (Order) or Red (Chaos) glow
+Aspect ratio: 5:7 (portrait). `borderRadius: 8`. Border 3pt, color = tier color. Art area: top 65%. Stats area: bottom 35% with dark gradient overlay starting at 50%.
 
-**Card in Hand (Full Art):**
-- Larger size (90x130pt on phone)
-- Full art visible, stats overlay at bottom
-- Tap to lift, drag to play
+Board size: 60x84pt (exactly 5:7 at 60pt wide).
+Hand size: 88x123pt.
+Detail view size: 280x392pt.
+Grid thumbnail: 100x140pt.
 
 ---
 
 ## 14. Settings Screen
 
-Accessible from gear icon in header (top-right, 44x44pt) or Profile tab.
+Route: `/settings`. Full-screen stack push from gear icon.
 
-### 14.1 Settings Categories
+```
+Component: SectionList
+sections: accountSection, audioSection, visualsSection, gameplaySection,
+          notificationsSection, privacySection
+```
 
-**Account:**
-- Display Name (editable field, 3-20 characters)
-- Friend Code (read-only, copyable: "AB1234")
-- Linked Account (Apple ID / Google Play)
-- Data Export (download all player data as JSON)
-- Delete Account (requires confirmation + password)
+Each section header: `Text` 13pt `#888` uppercase, padded.
 
-**Audio:**
-- Master Volume (slider, 0-100%)
-- Music Volume (slider, 0-100%)
-- SFX Volume (slider, 0-100%)
-- Mute All (toggle)
+Each setting row: `View` 44pt height minimum (full touch target). `flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'`.
 
-**Visuals:**
-- Reduced Motion (toggle: on/off)
-- Colorblind Mode (dropdown: Off | Deuteranopia | Protanopia | Tritanopia)
-- Card Animation Quality (dropdown: Full | Reduced | Minimal)
-- Screen Shake (toggle: on/off)
-- Theme (dropdown: Dark | Light — *future*, MVP is dark-only)
+- Text setting: `TextInput` right-aligned.
+- Toggle setting: `Switch` (React Native `Switch`, `trackColor: { true: faction accent, false: '#3A3A3A' }`).
+- Dropdown setting: `Pressable` showing current value + chevron → navigates to sub-screen with `RadioGroup`.
+- Slider setting: `@react-native-community/slider` full-width.
+- Destructive action (Delete Account): `Text` `#F44336` color. On press: confirmation `Alert.alert()`.
 
-**Gameplay:**
-- Turn Timer (dropdown: Standard 60s | Extended 90s — only for Casual/Practice)
-- Auto-End Turn (toggle: on/off — auto-ends turn if no actions available)
-- Confirm Before End Turn (toggle: on/off — requires long-press on End Turn button)
-- Default Play Mode (dropdown: Ranked | Casual | Practice — used when tapping "Play" on home)
-
-**Notifications:**
-- Daily Reward Reminder (toggle)
-- Evolution Ready Alert (toggle)
-- Friend Activity (toggle)
-- Season Ending Reminder (toggle)
-- Default: Daily rewards ON, everything else OFF
-
-**Privacy:**
-- Block Friend Requests (toggle)
-- Hide Profile from Non-Friends (toggle)
-- Hide Online Status (toggle)
-
-### 14.2 Settings Layout
-
-**Mobile (Portrait):**
-- Scrollable vertical list
-- Each section is a collapsible accordion
-- Tap section header to expand/collapse
-- Active section highlighted
-
-**Tablet (Landscape):**
-- Two-column layout: Category list (left), settings panel (right)
-- Tap category to show settings in right panel
-- No accordion (all settings visible in panel)
+Data Export: `Pressable` row "Export My Data" → calls Supabase `player/export-data` Edge Function → JSON file downloaded via `expo-file-system` and shared via `expo-sharing`.
 
 ---
 
 ## 15. Post-Match Results Screen
 
-Appears immediately after battle ends (win/loss/surrender).
+Route: `/battle/results`.
 
 ### 15.1 Layout
 
-**Top Section: Result**
-- Large text: "VICTORY" or "DEFEAT" (32pt bold)
-- Background: Gold gradient (victory) or dark gray (defeat)
-- Small text: Reason (e.g., "Opponent reduced to 0 HP" or "You surrendered")
+```
+Component: ScrollView
+style: { flex: 1, backgroundColor: '#0D0D0D' }
+```
 
-**Middle Section: Rewards Breakdown**
-- **XP Earned:**
-  - Player XP: +50 (win) or +25 (loss)
-  - Progress bar showing level progress
+**Result Header** (fixed, not scrollable):
 
-- **Card XP Earned:**
-  - List of cards that gained chaos energy (max 5 shown, "and 15 more" if > 5)
-  - Each card: Thumbnail + name + "[+2 Energy]" (green if evolution-ready)
-  - If any card is now evolution-ready: Pulsing glow + "READY TO EVOLVE!" badge
+```
+Component: View
+style: { paddingVertical: 40, alignItems: 'center' }
+background: LinearGradient victory=[#F9A825,#FF8F00] or defeat=['#1A1A1A','#0D0D0D']
+```
 
-- **Chaos Dust Earned:**
-  - Icon + number (e.g., "+100 Dust")
+`Text` "VICTORY" or "DEFEAT" 36pt bold. Reason `Text` 14pt `#888`.
 
-- **Quest Progress:**
-  - Any completed quests shown (e.g., "Daily Quest: Win 3 games → 2/3")
+Victory: Reanimated `BounceIn` on "VICTORY" text + confetti particle burst from Skia Canvas.
+Defeat: no animation (clean and respectful).
 
-**Bottom Section: Opponent Profile Card**
-- Opponent's avatar (60x60pt)
-- Opponent's name, rank badge
-- Opponent's showcase (3 cards, small thumbnails)
-- Button: "Add Friend" (if not already friends)
-- Button: "View Profile" (opens opponent's full profile)
+**Rewards Section:**
 
-**Action Buttons (bottom):**
-- "Play Again" (primary, 180x52pt, gold) — re-queues with same deck
-- "Evolve Cards" (secondary, 180x52pt, blue) — if any cards evolution-ready, goes to Collection filtered to ready cards
-- "Home" (text button, bottom-left)
+XP bar: `Text` "+50 XP" + `ProgressBar` component showing level progress. Fills from current position via Reanimated `withTiming`.
 
-### 15.2 Evolution-Ready Flow
+Card Energy Earned: `FlatList` horizontal showing up to 5 card thumbnails. Each card: `Image` 50x70pt + `Text` "+2 Energy" below. "READY TO EVOLVE!" badge on cards that hit threshold: animated `BounceIn` gold badge.
 
-If any card reached evolution threshold this game:
-- Post-match screen highlights it ("Ready to Evolve!" badge)
-- Tap "Evolve Cards" button → Collection screen, filtered to evolution-ready cards
-- Tap a ready card → Card Detail → "Evolve" button glowing
-- Tap "Evolve" → Evolution flow (see Section 4)
+Chaos Dust: `Text` chaos mote icon + "+100 Dust" `Text` 20pt bold.
+
+Quest Progress: if any quests advanced, render quest rows with progress `Text`.
+
+**Opponent Profile Card:**
+
+`View` `backgroundColor: '#1A1A1A'` `borderRadius: 12` `padding: 16`. Opponent avatar + name + rank badge. 3 showcase card thumbnails. "Add Friend" and "View Profile" `Pressable` buttons.
+
+**Bottom Buttons:**
+
+- "Play Again": `Pressable` 180x52pt gold. Re-queues same deck.
+- "Evolve Cards": `Pressable` 180x52pt `#2196F3`. Only visible if any card evolution-ready. On press: `router.push('/collection?filter=evolution-ready')`.
+- "Home": `Pressable` text-only, bottom-left.
 
 ---
 
-## 16. File Naming & Asset Organization
+## Part B — Admin / Content Management UI
 
-For engineering handoff, all UI assets should follow consistent naming conventions.
+The owner manages the game via a web dashboard. This is a separate web application, NOT part of the mobile app. It is the sole interface for all game management tasks. The owner should never touch the Supabase dashboard, Railway console, or any raw database.
 
-### 16.1 Asset Naming Convention
+**Stack: React (Vite + TypeScript) deployed to Cloudflare Pages.**
 
-```
-[category]_[element]_[variant]_[state]_[size].png
-```
-
-**Examples:**
-- `icon_chaos_mote_filled_24.png`
-- `icon_shard_uncommon_48.png`
-- `button_primary_default_large.png`
-- `button_primary_pressed_large.png`
-- `card_frame_common_default.png`
-- `avatar_ironwright_01_portrait_60.png`
-
-### 16.2 Asset Categories
-
-- `icon_` — UI icons (mana, shards, keywords, factions)
-- `button_` — Button states (default, pressed, disabled)
-- `card_` — Card frames, borders, badges
-- `avatar_` — Avatar portraits
-- `bg_` — Background images (battle screen, home screen)
-- `particle_` — Particle effects (evolution, events, damage)
-- `sfx_` — Sound effects (see `08-audio-design.md`)
-- `music_` — Music tracks (see `08-audio-design.md`)
-
-### 16.3 Size Variants
-
-All raster assets provided in 1x, 2x, 3x for iOS (and equivalent for Android: mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi).
-
-**Icon Sizes:**
-- Small: 16pt, 20pt, 24pt
-- Medium: 32pt, 40pt, 48pt
-- Large: 60pt, 80pt
-
-**Card Sizes:**
-- Thumbnail: 100x140pt
-- Hand: 90x130pt
-- Board: 60x85pt
-- Detail: 300x430pt
+Route: `admin.chaoscreatures.game` (password-protected via Supabase Auth email/password, single owner account).
 
 ---
 
-## 17. Open UI/UX Questions & Future Enhancements
+## 16. Admin Dashboard Overview
+
+### 16.1 Admin Navigation
+
+Persistent left sidebar (240pt wide) with section links:
+
+```
+[Logo]
+-----------
+[Dashboard]     /admin
+[Cards]         /admin/cards
+[Evolution]     /admin/evolution
+[Players]       /admin/players
+[Economy]       /admin/economy
+[Analytics]     /admin/analytics
+[Settings]      /admin/settings
+```
+
+Main content area fills remaining width.
+
+### 16.2 Dashboard Page (`/admin`)
+
+Landing page showing key metrics at a glance.
+
+**Stats Grid (4 columns):**
+- Total active players (last 7 days).
+- Total evolutions today.
+- Total card packs purchased today.
+- Total Chaos Dust distributed today.
+
+Each stat: large `text` number + small delta vs. yesterday (green up-arrow or red down-arrow).
+
+**Pending Actions Panel** (highest priority):
+- Cards awaiting approval: count badge + "Review Now" link → `/admin/cards?status=pending`.
+- Evolution requests failed: count + "Investigate" link.
+- Player reports: count + "Review" link.
+
+**Recent Activity Feed:** Scrollable list of last 50 events (card approved, player registered, evolution completed, pack purchased). Timestamp + event type + description.
+
+**Quick Actions:**
+- "Generate Card Batch" button → opens generation workflow modal.
+- "Send Announcement" button → in-game notification to all players.
+- "Toggle Maintenance Mode" button → puts game in maintenance mode (shows maintenance screen to players).
+
+### 16.3 Cards Management (`/admin/cards`)
+
+This is the core content approval workflow.
+
+**Tab bar:** "Pending Review" | "Approved" | "Rejected" | "All Cards"
+
+**Pending Review tab (default):**
+
+Grid of card thumbnails (6 columns on wide monitor). Each card:
+- Full card art thumbnail (160x224pt).
+- Card name overlay.
+- Faction badge.
+- Tier badge.
+- Generation timestamp.
+- Two buttons: "Approve" (green) and "Reject" (red).
+
+Approving a card: calls `POST /admin/cards/{templateId}/approve`. Card moves to approved state. `approved_at` and `approved_by` stamped in DB.
+
+Rejecting a card: opens reject modal. Owner selects reason from dropdown: "Art quality poor" | "Stats imbalanced" | "Art inappropriate" | "Other" (free text). Card marked `rejected`. Option: "Regenerate" button — triggers new FLUX generation job for the same template.
+
+**Batch approve:** Checkbox selection + "Approve Selected" button at top. Calls batch approve API.
+
+**Card Detail (click thumbnail):** Expanded view showing:
+- Large card art (400x560pt).
+- All card stats: type, mana cost, ATK, HP, instability, keywords, faction.
+- Generation metadata: FLUX model used, prompt used, generation time.
+- Action buttons: Approve / Reject / Regenerate / Edit Stats.
+
+**Edit Stats:** Inline form. Owner can adjust ATK, HP, mana cost, keywords, instability values. Save triggers DB update. Reason field required. Change logged in audit trail.
+
+**Regenerate:** Owner can optionally edit the prompt modifier list before regenerating. "Use same prompt" or "Edit prompt" toggle. Submit → new FLUX job queued → card returns to pending.
+
+**Generate Card Batch Workflow:**
+
+Modal overlay with wizard:
+
+Step 1: Select faction (Ironwright / Fey Courts / Demonic Kingdoms).
+Step 2: Select card type (Creature / Spell / Stabilizer).
+Step 3: Set quantity (1-20 cards).
+Step 4: Select archetype template from dropdown (e.g., "2-cost aggro creature", "3-cost removal spell").
+Step 5: Review generated prompt. "Generate" button.
+Step 6: Progress bar while FLUX batch runs. Real-time job status via polling.
+Step 7: Results appear in Pending Review tab.
+
+All of this fires via a single button press after the wizard setup. No command line.
+
+### 16.4 Evolution Management (`/admin/evolution`)
+
+Monitor and manage player evolutions.
+
+**Active Jobs tab:** Live table of in-progress FLUX generation jobs. Columns: Player ID, Card Name, Evolution tier, Status (queued / generating / completed / failed), Duration, Actions.
+
+**Failed Jobs:** Filtered view. For each failed job: Player ID, Card, Error message, Time. Action: "Refund & Notify Player" (server refunds shard + energy, sends in-app notification) or "Retry Job" (requeues FLUX job).
+
+**Evolution Statistics:** Daily chart (line graph) of evolutions per day. Breakdown: by tier (Common→Uncommon, Uncommon→Rare, etc.), by faction. Uses PostHog analytics data via PostHog API.
+
+**Modifier Pool Management:** Table of all 240 modifiers. Editable via inline form. Owner can adjust modifier text, PP cost, effects. Cannot delete a modifier already granted to a player's card — only deprecate (marks as no-longer-available for new evolutions but remains on existing cards).
+
+### 16.5 Players Management (`/admin/players`)
+
+**Player search:** Input field. Search by username, player ID, or email. Returns matching player row(s).
+
+**Player list:** Table. Columns: Username, Faction, Subscription tier, Total games, Cards owned, Last active, Join date, Actions.
+
+**Player detail page (click row):**
+- Player info panel: avatar, username, email, subscription tier, join date, last active.
+- Stats: total games, win rate, total evolutions, Chaos Dust balance, shard balances.
+- Card collection: grid of all owned cards (same as Collection screen admin view).
+- Activity log: recent actions (logins, purchases, evolutions, battles).
+- Actions panel:
+  - "Grant Chaos Dust": input field + "Grant" button. Requires reason field. Logged.
+  - "Grant Shard": tier dropdown + "Grant" button. Logged.
+  - "Suspend Account": input reason + duration. Logged.
+  - "Unsuspend Account": if suspended.
+  - "Reset Evolution" (admin escape hatch): refund a specific evolution. Reverts card and returns shard + energy.
+
+All admin actions are logged in an `admin_audit_log` table in Supabase with `admin_user_id`, `action`, `target_player_id`, `reason`, and `timestamp`.
+
+### 16.6 Economy Management (`/admin/economy`)
+
+**Currency Overview:**
+- Total Chaos Dust in circulation (sum of all player balances).
+- Total Dust distributed today, this week, this month.
+- Dust source breakdown: wins, losses, quests, admin grants.
+
+**Quest Management:**
+- Table of all active daily/weekly quests.
+- Edit quest: reward amount, description, completion condition.
+- "Add New Quest" button → form modal.
+- Toggle quest on/off without deleting.
+
+**Subscription Overview:**
+- Count of players per tier (Free / Mid / Top).
+- Monthly revenue estimate.
+- Churn rate (month-over-month tier changes).
+
+**IAP Products:** Table of all App Store / Google Play IAP product IDs. Shows price, type (subscription / one-time), active status. Cannot be edited here (IAP products are managed in App Store Connect / Play Console) — this is read-only reference.
+
+### 16.7 Analytics (`/admin/analytics`)
+
+Embedded PostHog dashboard iframe. Configured during setup to show:
+- Daily/weekly active users.
+- Retention cohorts.
+- Match completion rate.
+- Evolution funnel (how many players start vs. complete evolution).
+- Economy health (Dust inflation/deflation indicators).
+- Subscription conversion funnel.
+
+Alternatively, owner can link directly to PostHog project dashboard in a new tab.
+
+### 16.8 Settings (`/admin/settings`)
+
+- **Game Configuration:** Global values editable here instead of hardcoded:
+  - Turn timer duration (default 60s). Input field + Save.
+  - Card energy thresholds per tier (15/30/50/75). Four input fields + Save.
+  - Chaos Dust rewards per game result (Win: 15, Loss: 5). Input fields + Save.
+  - Pack costs (standard/premium/faction). Input fields + Save.
+  - Shard costs per tier. Input fields + Save.
+  All saved values write to a `game_config` table in Supabase. Client reads config on launch and caches it.
+
+- **Maintenance Mode:** Toggle switch. When on: all game clients show a maintenance screen. Message text field.
+
+- **Announcement:** Text area + "Send to All Players" button. Sends in-app notification to all active players.
+
+- **Admin Accounts:** Table of admin users. Add / remove admin emails. All admins have full access (no role subdivision in MVP).
+
+- **API Keys Status:** Read-only table showing whether each required API key is set in environment variables. Green checkmark / red X for: SUPABASE_URL, SUPABASE_SERVICE_KEY, FAL_AI_KEY, OPENAI_API_KEY, CLOUDFLARE_R2_KEY, POSTHOG_KEY. Does NOT display the actual key values.
+
+### 16.9 Admin Content Generation Pipeline
+
+The full card batch generation workflow from the owner's perspective:
+
+1. Owner opens `/admin/cards` → clicks "Generate Card Batch".
+2. Wizard: select faction, card type, archetype, quantity.
+3. Click "Generate" — server fires FLUX batch job via `admin/generate-batch` Supabase Edge Function.
+4. Modal shows progress: "Generating 10 cards... [7/10 complete]". Auto-refreshes every 2 seconds.
+5. When batch complete: modal closes. "Pending Review" tab auto-selected with new cards showing.
+6. Owner scrolls through cards. For each: "Approve" or "Reject" or open detail for closer look.
+7. Rejected cards offer "Regenerate" option.
+8. All approved cards are immediately available in player packs.
+
+The owner's entire workflow is: open browser → two clicks → review grid → approve/reject. No terminal, no SQL, no API calls.
+
+---
+
+## 17. Deep Linking & Notifications
+
+### 17.1 Deep Link Scheme
+
+Expo `app.json` config:
+```json
+{
+  "scheme": "chaoscreatures",
+  "intentFilters": [
+    { "pattern": "/card/:cardInstanceId/evolve" },
+    { "pattern": "/card/:cardInstanceId" },
+    { "pattern": "/shop" },
+    { "pattern": "/battle/results" }
+  ]
+}
+```
+
+Push notifications via Expo Push Notification Service (`expo-notifications`). Notification payloads include a `data.screen` field that Expo Router resolves on tap.
+
+### 17.2 Notification Types
+
+| Notification | Trigger | Deep Link |
+|---|---|---|
+| "Card ready to evolve!" | Evolution threshold met | `/card/{id}/evolve` |
+| "Daily quests reset" | 00:00 UTC daily | `/(tabs)/home` |
+| "Match found!" | Matchmaking match | `/battle/{matchId}` |
+| "Friend came online" | Friend status change | `/(tabs)/profile` |
+| Game announcement | Admin sends announcement | Modal on `/home` |
+
+All notifications respect notification settings from `/(tabs)/profile → Settings → Notifications`.
+
+---
+
+## 18. File & Asset Conventions
+
+### 18.1 Project Structure
+
+```
+app/                          Expo Router screens
+  (tabs)/
+    home.tsx
+    collection.tsx
+    decks.tsx
+    profile.tsx
+    shop.tsx
+  battle/
+    [matchId].tsx
+    mode-select.tsx
+    matchmaking.tsx
+    results.tsx
+  card/
+    [cardInstanceId].tsx
+    [cardInstanceId]/
+      evolve.tsx
+  onboarding.tsx
+  settings.tsx
+components/                   Reusable components
+  battle/
+    BoardSlot.tsx
+    BoardCardView.tsx
+    D20Component.tsx
+    PhaseIndicator.tsx
+    EventOverlay.tsx
+    HpBar.tsx
+    TimerBar.tsx
+    HandScrollView.tsx
+    CardInHand.tsx
+    ManaDisplay.tsx
+    EndTurnButton.tsx
+    BattleLogPanel.tsx
+    GraveyardModal.tsx
+    DamageNumber.tsx
+    TauntShield.tsx
+  card/
+    CardGridItem.tsx
+    CardDetailModal.tsx
+    EvolutionTimeline.tsx
+  evolution/
+    ChannelButton.tsx
+    ShardAnimation.tsx
+    ArtReveal.tsx
+    NameSelector.tsx
+    AbilityReveal.tsx
+    ModifierCard.tsx
+    FlavorTextReveal.tsx
+  shared/
+    HpBar.tsx
+    ProgressBar.tsx
+    ToastProvider.tsx
+    TutorialOverlay.tsx
+    BottomSheet.tsx
+    CardFrame.tsx
+constants/
+  colors.ts
+  typography.ts
+  layout.ts                   CARD_SIZES, BOARD_SLOT_SIZE, etc.
+stores/                       Zustand stores
+  gameStore.ts
+  collectionStore.ts
+  deckStore.ts
+  playerStore.ts
+  preferencesStore.ts
+assets/
+  fonts/
+  icons/                      All UI icons as PNG (1x, 2x, 3x)
+  sounds/
+  particles/
+```
+
+### 18.2 Asset Naming Convention
+
+```
+[category]_[element]_[variant]_[state]@[scale]x.png
+```
+
+Examples:
+- `icon_chaos_mote_filled@2x.png`
+- `icon_shard_uncommon@2x.png`
+- `icon_keyword_taunt@2x.png`
+- `card_frame_common@2x.png`
+- `avatar_ironwright_aldric_portrait@2x.png`
+- `bg_battle_ironwright@2x.png`
+
+SVG icons for scalable UI icons (faction symbols, keyword icons) stored as `.svg` files and rendered via `react-native-svg`.
+
+---
+
+## 19. Open Questions & Post-Launch Enhancements
 
 ### Resolved for MVP:
-- Orientation lock: Portrait-only for MVP
-- Card flip interaction: Front-only for MVP, back (lore) deferred
-- Spectating/replays: Post-launch
+- Orientation: portrait-only in battle. Restored outside battle.
+- Card flip interaction: deferred post-launch.
+- Admin dashboard: web app on Cloudflare Pages.
 
 ### Deferred to Post-Launch:
-- Light theme option
-- Advanced battle log filters (e.g., "show only Chaos events")
-- Deck import/export (share deck codes with friends)
-- Card comparison tool (side-by-side stat comparison)
-- Collection stats dashboard (total cards owned by faction/tier)
-- Battle history (past 10 games with replay links)
+- Landscape battle mode.
+- Light theme.
+- Advanced battle log filters.
+- Deck import/export (share codes).
+- Card comparison tool.
+- Collection stats dashboard.
+- Battle replay viewer.
+- Full VoiceOver/TalkBack battle navigation.
 
-### Open Questions for Playtesting:
-- Turn timer: Is 60s too short for new players? Monitor surrender/timeout rates.
-- Hand scrolling: Is horizontal swipe sufficient, or do we need pagination?
-- Modifier selection: Are 2/3/4 options enough differentiation for tiers? Monitor conversion rates.
-- Evolution flow: Is the full flow (9 steps) too long? Monitor skip rates.
-
----
-
-## Document Complete
-
-This UI/UX specification provides all necessary details for engineering to implement the Chaos Creatures interface. Every screen, interaction pattern, animation, and edge case has been defined.
-
-**Next Steps:**
-- Engineering: Use this spec to implement UI components and screens
-- Design: Create high-fidelity mockups based on this spec (Figma/Sketch)
-- QA: Use this spec as acceptance criteria for UI testing
-
-**Related Documents:**
-- `00-game-design-master.md` — Overall game systems and design philosophy
-- `01-battle-mechanics.md` — Battle rules, turn structure, keyword interactions
-- `02-card-data-model.md` — Data structures for cards, decks, game state
-- `08-audio-design.md` — Audio specifications for UI interactions
-- `10-prd.md` — Formal PRD for engineering handoff
+### Post-Launch Monitoring (via PostHog):
+- Turn timeout rate: if >15% of turns end by timer, increase to 75s.
+- Evolution flow completion rate: if <70% complete all 9 steps, simplify to fewer steps.
+- Modifier selection time: if >30s average, reduce to 2 options across all tiers.
+- Pack purchase conversion after graveyard view (does graveyard envy drive shop opens?).
 
 ---
 
-*Document Version: 1.0*
+## Revision Log
+
+This section documents all changes made from Version 1.0 to Version 2.0.
+
+### Breaking Changes (Removed)
+
+1. **Removed all Unity/C# references.** The original document mentioned no Unity references, but did use vague phrases like "the engineer should decide" and "engineering handoff" that implied an engineer would interpret the spec. All such phrases removed. Replaced with specific implementation decisions.
+
+2. **Removed generic "engineering handoff" framing.** The document was written as a spec for a human engineering team. Reframed for direct Claude Code implementation — all decisions are made explicitly in this document.
+
+### Technology Stack Additions
+
+3. **Added Technology Stack Decisions section.** Original doc had no component library or animation library decisions. Now specifies: React Native (Expo), Expo Router v3, React Native Reanimated 3, React Native Skia, React Native Gesture Handler, Zustand, TanStack Query, Supabase Realtime, expo-haptics, expo-av, expo-in-app-purchases, expo-screen-orientation, @gorhom/bottom-sheet, react-native-pager-view, react-native-view-shot, @react-native-community/netinfo, @react-native-community/slider.
+
+4. **Added Expo Router path for every screen.** Original had screen names only. All screens now have explicit Expo Router file paths.
+
+5. **Replaced all "Unity component" language with React Native component names.** Every component specification now names actual React Native primitives (View, ScrollView, Pressable, Animated.View, FlatList, TextInput, Modal, SafeAreaView, Switch, SectionList, PagerView, ActivityIndicator, Alert).
+
+### Battlefield Screen Changes
+
+6. **Added exact pixel heights for all battle screen regions.** Original had a text layout diagram without dimensions. Now specifies exact pt heights (64, 110, 120, 110, 56, 128, 56) that sum to fit the reference screen.
+
+7. **Added full HpBar Skia implementation spec.** Original said "HP Bar with gradient." Now specifies Skia Canvas, color interpolation values, exact Reanimated animation sequences for damage and heal.
+
+8. **Added full BoardCardView spec.** Original had "Compact card display" bullet points. Now specifies exact component structure, child components, absolute positioning for badge elements, and Reanimated animation hooks.
+
+9. **Added CenterZone D20 animation state machine.** Original said "Full 3D roll when active." Now specifies a 2D Skia canvas with 4 states (idle/rolling/settled), Reanimated timing, Easing functions, and color state mapping.
+
+10. **Replaced drag interaction description with RNGH implementation spec.** Original had "Drag card upward from hand." Now specifies `Gesture.Pan()`, `onStart`/`onUpdate`/`onEnd` handlers, `withSpring` bounce-back, and Zustand broadcast for drop zone highlighting.
+
+11. **Specified mana crystal animation with exact Reanimated call.** `withTiming(0.4, 200ms)`.
+
+12. **Added TimerBar color states as exact values.** `#4A90E2` for normal, `#E63946` for warning, pulsing `withRepeat` opacity.
+
+### Evolution Screen Changes
+
+13. **Added Evolution Flow state machine.** Original listed steps sequentially. Now specifies a named state machine: `STEP_1_PRESENTATION | STEP_2_CHANNEL | ... | STEP_9_CONFIRM`.
+
+14. **Added FLUX API call timing.** Clarified that the API call fires at Step 2 (channel selection confirm), not Step 3. The server returns `evolutionJobId` and the client polls `/evolution/status/{evolutionJobId}` every 500ms during Step 3 animation.
+
+15. **Specified Step 3 particle animation implementation.** Original said "particles swirl." Now specifies Skia Canvas with 30 particle `Circle` shapes driven by Reanimated shared values, orbit implemented via `useDerivedValue` computing (x, y) from angle + radius.
+
+16. **Added `react-native-view-shot` for share screenshot.** Original said "Generates shareable image." Now specifies `captureRef` from `react-native-view-shot` + `expo-sharing`.
+
+17. **Added FLUX failure handling detail.** Specified 10-second timeout, error modal, server rollback via Edge Function, PostHog error event.
+
+### Collection & Deck Builder Changes
+
+18. **Replaced generic "grid" with FlatList spec.** Specified `numColumns`, `keyExtractor`, `renderItem`, `columnWrapperStyle`, `ItemSeparatorComponent`.
+
+19. **Added @gorhom/bottom-sheet for FilterPanel.** Original said "Opens filter panel." Now specifies `BottomSheet` component with `snapPoints: ['65%']`.
+
+20. **Added search debounce detail.** 300ms debounce via TanStack Query `enabled` flag.
+
+21. **Added tablet layout detection.** `useWindowDimensions()` hook with explicit `768pt` breakpoint driving `DeckBuilderTablet` vs `DeckBuilderPhone` conditional render.
+
+22. **Added Deck Contents drag-to-remove spec.** `Gesture.LongPress` with 400ms delay + `Portal` overlay for confirmation.
+
+### Shop Screen Changes
+
+23. **Added expo-in-app-purchases for subscription and shard purchases.** Original said "Button: Purchase" without implementation detail. Now specifies Expo IAP.
+
+24. **Added Pack Opening Modal specification.** Original had brief description. Now specifies full Modal component, face-down card `FlatList`, Reanimated `rotateY` flip animation sequence.
+
+25. **Specified LinearGradient for subscription tier cards.** Uses `expo-linear-gradient`.
+
+### Onboarding Flow Changes
+
+26. **Added TutorialOverlay implementation.** Original described overlays conceptually. Now specifies Skia `SpotlightMask` canvas, `onLayout` measurements for positioning, `pointerEvents: 'box-none'` for touch-through behavior.
+
+27. **Added AsyncStorage persistence for onboarding state.** `onboardingComplete` key in AsyncStorage. Expo Router redirect logic on root layout.
+
+28. **Added faction commitment step (Step 4).** Original onboarding had only 3 trial games then commitment, but did not specify what UI triggers the commitment. Now specifies a post-tutorial `Modal` with explicit Supabase `player/commit-faction` Edge Function call.
+
+29. **Added `react-native-pager-view` for faction selection.** Swipeable PagerView with page indicator dots.
+
+### Interaction Patterns Changes
+
+30. **Specified all Gesture.Pan() / Gesture.LongPress() implementations with RNGH.** Original had description-level interaction table. Now has implementation-level specs.
+
+31. **Added Gesture.LongPress `minDuration: 400ms` standard.** Consistent across all long-press interactions.
+
+32. **Added drag tolerance spec: `minDistance: 10`.** Prevents accidental drags on taps.
+
+33. **Added expo-haptics type for every haptic event.** Original said "Light impact / Medium impact." Now specifies exact `expo-haptics` method calls.
+
+### Accessibility Changes
+
+34. **Added `accessibilityLabel` examples with actual prop values.** Original said "cards read aloud." Now shows exact prop string with template literal.
+
+35. **Added `AccessibilityInfo.isReduceMotionEnabled()` check.** Original said "when Reduced Motion is enabled." Now specifies the check mechanism and Zustand storage.
+
+36. **Added `allowFontScaling={false}` for fixed-size card stats.** With `adjustsFontSizeToFit` and `minimumFontScale`.
+
+### Color Palette & Typography Changes
+
+37. **Added `constants/colors.ts` TypeScript file contents.** Original had a markdown table of hex values. Now provides the actual exportable TypeScript constants object.
+
+38. **Added `constants/typography.ts` TypeScript file contents.** Font size constants as a TypeScript object.
+
+39. **Added `fontFamily` decision.** System font for UI. Single display font via `expo-font` for card names only.
+
+### Admin Dashboard (New — Entire Section)
+
+40. **Added Part B — Admin / Content Management UI.** This is entirely new. The original document had no admin UI spec. The admin dashboard covers 9 sections:
+    - Dashboard overview with live metrics and pending actions.
+    - Cards management with approve/reject workflow, batch generation wizard, regenerate, edit stats.
+    - Evolution management with live job monitoring, failed job handling, modifier pool editing.
+    - Players management with search, player detail, admin actions (grant currency, suspend, reset evolution).
+    - Economy management with quest editor, subscription stats, currency circulation tracking.
+    - Analytics via embedded PostHog.
+    - Settings with editable game config (turn timer, energy thresholds, costs) stored in `game_config` Supabase table.
+    - API key status display (no values shown, just connectivity checks).
+    - Full card generation pipeline description from owner's perspective (wizard-driven, browser-only, no terminal).
+
+### File Organization Changes
+
+41. **Added complete project directory structure.** Specifies all screen files, component folders, store files, and asset categories as actual file paths.
+
+42. **Specified Expo Router file structure.** All screen files match Expo Router file-based routing conventions.
+
+### Error Handling Changes
+
+43. **Added NetInfo network detection.** `@react-native-community/netinfo` for network loss detection.
+
+44. **Added ToastProvider architecture.** Central provider at root layout with `Toast.show()` API. Eliminates ad-hoc toast implementations.
+
+45. **Added evolution partial failure safety.** Clarified that shard and energy are not consumed until `evolution/confirm` is called in Step 9, making retries safe.
+
+### Navigation Changes
+
+46. **Changed Settings from "gear icon in header" to explicit stack push.** Added `router.push('/settings')` from gear icon `Pressable` in header of any screen.
+
+47. **Added `tabBarStyle: { display: 'none' }` for battle screen.** Makes tab bar hidden during battle without breaking the tab navigator.
+
+48. **Added deep link intent filters.** Specified Expo `app.json` scheme and intent filter patterns.
+
+### Post-Match Results Changes
+
+49. **Added confetti Skia particle burst on victory.** Specified as Skia Canvas burst triggered by `BounceIn` Reanimated entering animation on result header.
+
+50. **Added `router.push('/collection?filter=evolution-ready')` for Evolve Cards button.** Previous version said "goes to Collection filtered to ready cards" without specifying the URL parameter.
+
+---
+
+*Document Version: 2.0*
 *Last Updated: 2026-02-16*
-*Status: Complete — Ready for Engineering Handoff*
+*Status: Revised — React Native (Expo) / TypeScript. Admin UI included. All engineering decisions specified. Ready for Claude Code implementation.*

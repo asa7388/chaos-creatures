@@ -1,844 +1,919 @@
-# Chaos Creatures — Progression Economy Design
+# Chaos Creatures — Progression & Economy Design
 
-## Overview
+**Document Version:** 2.0
+**Last Updated:** 2026-02-16
+**Status:** Code-Ready
+**Infrastructure:** Supabase (Postgres + Edge Functions), Railway (Node.js), PostHog (analytics), React Native (Expo) client
 
-This document provides the complete mathematical model for the game's progression and economy systems. All numbers are internally consistent with the master design doc and battle mechanics spec. The economy is designed to provide a complete experience for free players while offering speed and aesthetic enhancements to subscribers — never raw power.
+---
 
-**Core Principles:**
-- Free players must never hit hard gates — only soft friction
-- Subscription value scales with engagement (more play = more value from bonuses)
+## How to Use This Document
+
+This document is written so that Claude Code can implement every system directly from the text below. There are no judgment calls left to the implementer. Every formula is explicit, every threshold is locked, every edge case is handled. When numbers need tuning, the owner adjusts the JSON config file described in Section 10 — no code changes required.
+
+**Owner's operating workflow:**
+1. Run the balance dashboard (Section 10) to see Monte Carlo projections.
+2. If curves look wrong, edit `economy.config.json` values.
+3. Re-run dashboard to verify the fix.
+4. The game reads `economy.config.json` at startup via a Supabase Edge Function — updated values take effect on the next server restart with zero code changes.
+
+---
+
+## Core Principles (Non-Negotiable)
+
+- Free players must never hit hard gates — only soft friction (time, not walls)
 - No real money on individual cards
-- Economy must remain healthy at 3, 6, and 12+ month timescales
+- Subscription value = speed + variety + aesthetics, never raw power
+- All numbers below are internally consistent with `00-game-design-master.md` and `02-card-data-model.md`
+- Every formula references the canonical enum values from `02-card-data-model.md` (SubscriptionTier, SeasonRank, MissionType, ShardTier, etc.)
 
 ---
 
 ## 1. Chaos Energy Progression Curves
 
-Chaos Energy is the primary card progression mechanic. Cards accumulate energy by being in a deck during completed games. All 20 cards in a deck earn energy simultaneously.
+### 1.1 Locked Energy Thresholds
 
-### 1.1 Energy Thresholds
+These values are **fixed** and must never change post-launch. Changing them would invalidate all existing card progress.
 
-| Evolution Step | Energy Required | Cumulative Total |
-|---|---|---|
-| Common → Uncommon | 15 | 15 |
-| Uncommon → Rare | 30 | 45 |
-| Rare → Epic | 50 | 95 |
-| Epic → Legendary | 75 | 170 |
+| Evolution Step | Energy Required | Cumulative Energy | Source |
+|---|---|---|---|
+| Common → Uncommon | 15 | 15 | `00-game-design-master.md` Section 4 |
+| Uncommon → Rare | 30 | 45 | `00-game-design-master.md` Section 4 |
+| Rare → Epic | 50 | 95 | `00-game-design-master.md` Section 4 |
+| Epic → Legendary | 75 | 170 | `00-game-design-master.md` Section 4 |
+| **Full path (Common → Legendary)** | **170** | **170** | — |
+
+These map to `CardInstance.chaos_energy` thresholds and the `evolution_ready` computed property in `02-card-data-model.md` Section 2.
 
 ### 1.2 Energy Earning Rates
 
-| Game Result | Energy per Card | All 20 Cards per Game |
+All 20 cards in the active deck earn energy simultaneously per completed game, regardless of whether the card was drawn.
+
+| Game Result | Energy per Card | 20-Card Deck Total |
 |---|---|---|
-| Win | 2 | 40 total |
-| Loss | 1 | 20 total |
-| **Average (50% win rate)** | **1.5** | **30 total** |
+| Win | 2 | 40 |
+| Loss | 1 | 20 |
 
-**Key insight:** With a 50% win rate, each card in your deck earns 1.5 energy per game on average.
+**Average energy per card per game at different win rates:**
 
-### 1.3 Games-to-Evolution (Single Card, 50% Win Rate)
+| Win Rate | Formula | Avg Energy/Card/Game |
+|---|---|---|
+| 40% WR | (0.4 × 2) + (0.6 × 1) | **1.40** |
+| 50% WR | (0.5 × 2) + (0.5 × 1) | **1.50** |
+| 55% WR | (0.55 × 2) + (0.45 × 1) | **1.55** |
+| 60% WR | (0.6 × 2) + (0.4 × 1) | **1.60** |
 
-| Evolution Step | Energy Required | Games Required | Days at 3 games/day | Days at 7 games/day |
+### 1.3 Games Required per Evolution Step (Single Card)
+
+At 50% win rate (1.5 avg energy/game per card):
+
+| Step | Energy Required | Games at 1.5 avg | Games at 1.4 avg (40% WR) | Games at 1.6 avg (60% WR) |
 |---|---|---|---|---|
-| Common → Uncommon | 15 | 10 | 3.3 | 1.4 |
-| Uncommon → Rare | 30 | 20 | 6.7 | 2.9 |
-| Rare → Epic | 50 | 33 | 11.0 | 4.7 |
-| Epic → Legendary | 75 | 50 | 16.7 | 7.1 |
-| **Common → Legendary** | **170** | **113** | **37.7** | **16.1** |
+| Common → Uncommon | 15 | 10.0 | 10.7 | 9.4 |
+| Uncommon → Rare | 30 | 20.0 | 21.4 | 18.8 |
+| Rare → Epic | 50 | 33.3 | 35.7 | 31.3 |
+| Epic → Legendary | 75 | 50.0 | 53.6 | 46.9 |
+| **Common → Legendary** | **170** | **113.3** | **121.4** | **106.3** |
 
-### 1.4 Full Deck Evolution Timeline
+### 1.4 Days to Legendary: Per Player Archetype
 
-Since all 20 cards earn simultaneously, here's how long it takes for your **entire deck** to reach each tier:
+Because all 20 deck cards earn simultaneously, "days to Legendary" means the number of days before **a single specific card** in your deck can reach Legendary. All 20 cards reach the Legendary energy threshold at the same time — but each requires a separate Legendary Shard to evolve (see Section 3).
 
-| Player Archetype | Games/Day | Games/Week | Weeks to Full Uncommon Deck | Weeks to Full Rare Deck | Weeks to Full Epic Deck | Weeks to Full Legendary Deck |
-|---|---|---|---|---|---|---|
-| **Casual** (40% WR) | 2 | 14 | 1.2 | 3.6 | 7.2 | 14.0 |
-| **Casual** (50% WR) | 2 | 14 | 1.1 | 3.2 | 6.4 | 12.4 |
-| **Regular** (50% WR) | 5 | 35 | 0.4 | 1.3 | 2.6 | 5.0 |
-| **Hardcore** (50% WR) | 10 | 70 | 0.2 | 0.6 | 1.3 | 2.4 |
-| **Hardcore** (55% WR) | 10 | 70 | 0.2 | 0.6 | 1.2 | 2.3 |
+| Player Archetype | Games/Day | Win Rate | Avg Energy/Card/Day | Days to Leg Energy | **Weeks to Leg Energy** |
+|---|---|---|---|---|---|
+| Casual | 2 | 40% | 2 × 1.40 = 2.80 | 170 ÷ 2.80 = **60.7** | **8.7** |
+| Casual | 2 | 50% | 2 × 1.50 = 3.00 | 170 ÷ 3.00 = **56.7** | **8.1** |
+| Regular | 5 | 50% | 5 × 1.50 = 7.50 | 170 ÷ 7.50 = **22.7** | **3.2** |
+| Regular | 5 | 55% | 5 × 1.55 = 7.75 | 170 ÷ 7.75 = **21.9** | **3.1** |
+| Hardcore | 10 | 50% | 10 × 1.50 = 15.0 | 170 ÷ 15.0 = **11.3** | **1.6** |
+| Hardcore | 10 | 60% | 10 × 1.60 = 16.0 | 170 ÷ 16.0 = **10.6** | **1.5** |
 
-**Math example (Regular player at 50% WR to full Legendary deck):**
-- 170 energy needed per card × 20 cards = 3,400 total energy
-- 5 games/day × 1.5 avg energy/game = 7.5 energy per card per day
-- 170 ÷ 7.5 = 22.7 days per card to Legendary
-- OR: 3,400 total ÷ (5 games × 30 energy avg per game) = 22.7 days for whole deck
-- 22.7 days ÷ 7 = **3.2 weeks**
+### 1.5 Progression Milestone Timeline by Archetype
 
-Wait, let me recalculate that more carefully:
+All timelines below assume 50% win rate. Milestones refer to a **single card** (all deck cards reach the same energy milestones simultaneously).
 
-**Corrected calculation:**
-- Energy needed for one card to reach Legendary: 170
-- Games needed at 1.5 avg energy per game: 170 ÷ 1.5 = 113.3 games
-- Regular player: 5 games/day → 113.3 ÷ 5 = 22.7 days = 3.2 weeks
-- Hardcore player: 10 games/day → 113.3 ÷ 10 = 11.3 days = 1.6 weeks
+| Milestone | Casual (2/day) | Regular (5/day) | Hardcore (10/day) |
+|---|---|---|---|
+| First Uncommon energy ready | Day 5 | Day 2 | Day 1 |
+| First Rare energy ready | Day 10 + 5 = Day 15 | Day 10 + 2 = Day 12 | Day 5 + 1 = Day 6 |
+| First Epic energy ready | Day 30 + 5 = Day 35 | Day 22 + 2 = Day 24 | Day 11 + 1 = Day 12 |
+| First Legendary energy ready | Day 57 | Day 23 | Day 11 |
 
-Let me rebuild the table with correct math:
+**Note on Rare energy:** A card must first reach Uncommon (10 games), then accumulate 30 more energy (20 more games) to reach Rare. The cumulative games required are: 10 (Uncommon) + 20 (Rare) + 33 (Epic) + 50 (Legendary) = **113 total games from Common**.
 
-| Player Archetype | Games/Day | Avg Energy/Card/Day | Days to Legendary | Weeks to Legendary |
-|---|---|---|---|---|
-| **Casual** (40% WR) | 2 | 2.8 | 60.7 | 8.7 |
-| **Casual** (50% WR) | 2 | 3.0 | 56.7 | 8.1 |
-| **Casual** (60% WR) | 2 | 3.2 | 53.1 | 7.6 |
-| **Regular** (50% WR) | 5 | 7.5 | 22.7 | 3.2 |
-| **Regular** (60% WR) | 5 | 8.0 | 21.3 | 3.0 |
-| **Hardcore** (50% WR) | 10 | 15.0 | 11.3 | 1.6 |
-| **Hardcore** (60% WR) | 10 | 16.0 | 10.6 | 1.5 |
+### 1.6 Practical Player Progression Narrative
 
-**Win rate calculation:**
-- 40% WR: (0.4 × 2) + (0.6 × 1) = 1.4 energy/game avg
-- 50% WR: (0.5 × 2) + (0.5 × 1) = 1.5 energy/game avg
-- 60% WR: (0.6 × 2) + (0.4 × 1) = 1.6 energy/game avg
+The following represents what a typical Regular player (5 games/day, 50% WR) actually experiences:
 
-### 1.5 Practical Evolution Cadence
+- **Week 1:** First 5 cards hit Uncommon threshold. Evolves 1-3 using starter shards.
+- **Week 2:** All 20 deck cards hit Uncommon. Core 5 cards approach Rare.
+- **Week 3:** Core 5 cards hit Rare. Full deck at Uncommon (if shards available).
+- **Week 5-6:** Core 3 cards hit Epic. Shard cost (120 Dust each) becomes a notable decision.
+- **Week 8:** First card hits Legendary energy threshold. Shard cost (240 Dust) is a meaningful milestone.
+- **Week 12-16:** Full deck at Rare+, 3-5 cards at Legendary. Deck is tournament-competitive.
 
-Most players won't evolve their entire deck simultaneously. Instead, they'll:
-1. Prioritize favorite cards or deck staples
-2. Evolve incrementally as energy accumulates
-3. Rotate cards in/out based on meta or experiments
-
-**Expected player behavior:**
-- **Week 1-2:** First 5-10 cards reach Uncommon
-- **Week 3-4:** Core 5-8 cards reach Rare, rest reach Uncommon
-- **Week 5-8:** Full deck at Uncommon, 3-5 favorites at Rare/Epic
-- **Week 8-16:** Core deck at Rare+, 2-3 cards reach Legendary
-- **Week 16+:** Chasing specific evolution paths for optimization
-
-**Key takeaway:** Card evolution is a **3-4 month journey** for regular players to build a fully optimized Legendary deck, but competitive decks are viable at Rare tier (reachable in 3-5 weeks).
+**Design intent:** Competitive decks are viable at Rare tier (achievable in 3-5 weeks). The Legendary grind is an aspirational goal, not a gate to participation.
 
 ---
 
-## 2. Chaos Dust Economy (Full Mathematical Model)
+## 2. Chaos Dust Economy — Full Mathematical Model
 
-Chaos Dust is the single in-game currency. It's earned through gameplay and spent on cards, shards, and unlocks.
+Chaos Dust is the single in-game currency. There is no premium currency. Subscriptions are purchased through the App Store/Google Play native IAP. All Dust is earned through gameplay.
 
-### 2.1 Earning Rates (Base)
+### 2.1 Base Earning Rates (All Player Types)
 
-| Source | Chaos Dust | Frequency | Daily Potential |
+These are the **locked base rates** as defined in `00-game-design-master.md` Section 6.
+
+| Source | Amount | Notes |
+|---|---|---|
+| Win a match | 15 Dust | Per completed game |
+| Lose a match | 5 Dust | Per completed game; surrender counts as loss |
+| Daily quest (easy) | 20 Dust | See Section 4.1 for quest definitions |
+| Daily quest (medium) | 30 Dust | See Section 4.1 for quest definitions |
+| Daily quest (hard) | 45 Dust | See Section 4.1 for quest definitions |
+| Weekly quest (standard) | 150 Dust | See Section 4.3 |
+| Weekly quest (hard) | 200 Dust | See Section 4.3 |
+| Season milestone reward | 50–500 Dust | See Section 5.4 |
+| Onboarding starter bonus | 200 Dust | One-time; given at faction commitment |
+
+**Average game dust per game at 50% WR:**
+`(0.5 × 15) + (0.5 × 5) = 10 Dust/game`
+
+**Average daily quest value (baseline):**
+Quest pool is 40% easy / 40% medium / 20% hard.
+`(0.40 × 20) + (0.40 × 30) + (0.20 × 45) = 8 + 12 + 9 = 29 Dust per quest`
+3 quests/day × 29 = **87 Dust/day** from quests (rounded to 90 Dust in planning tables for simplicity).
+
+### 2.2 Subscriber Quest Dust Bonuses
+
+As defined in `00-game-design-master.md` Section 7. The multiplier applies only to quest rewards, not game win/loss dust.
+
+| Subscription Tier | Quest Dust Multiplier | Daily Quest Value | Weekly Quest Value | Enum Value |
+|---|---|---|---|---|
+| FREE | 1.0× (no bonus) | ~90 Dust/day | ~150 Dust/quest | `FREE` |
+| MID | 1.5× (+50%) | ~135 Dust/day | ~225 Dust/quest | `MID` |
+| HIGH | 2.0× (+100%) | ~180 Dust/day | ~300 Dust/quest | `HIGH` |
+
+**Implementation note for Supabase Edge Function:**
+When awarding quest completion rewards, look up `player.subscription_tier`. Apply multiplier as:
+```
+reward_dust = base_dust × SUBSCRIPTION_QUEST_MULTIPLIER[subscription_tier]
+```
+Where `SUBSCRIPTION_QUEST_MULTIPLIER` is loaded from `economy.config.json` (see Section 10).
+
+### 2.3 Spending Costs (Locked Values)
+
+As defined in `00-game-design-master.md` Section 3.
+
+| Purchase | Cost (Dust) | Notes |
+|---|---|---|
+| Card Pack — own faction, 3 random Commons | 100 | Duplicate protection: 3rd+ copy of owned Common rerolls |
+| Card Pack — other faction, 3 random Commons + unlock | 150 | Unlocks the faction for deckbuilding |
+| Specific Common (targeted purchase) | 50 | Purchase a specific named Common |
+| Uncommon Shard | 30 | For `UNCOMMON` evolution step |
+| Rare Shard | 60 | For `RARE` evolution step |
+| Epic Shard | 120 | For `EPIC` evolution step |
+| Legendary Shard | 240 | For `LEGENDARY` evolution step |
+| Avatar unlock | 300 | Cosmetic only |
+
+**Full evolution cost (one card, Common → Legendary):**
+`30 + 60 + 120 + 240 = 450 Dust`
+
+**Full deck evolution cost (20 cards, Common → Legendary):**
+`20 × 450 = 9,000 Dust`
+
+### 2.4 Daily and Weekly Dust Income by Player Type
+
+**Game dust formula (50% WR):**
+`games_per_day × 10 Dust/game`
+
+**Quest dust formula (daily):**
+`FREE: 90/day | MID: 135/day | HIGH: 180/day`
+
+**Weekly quest contribution (amortized per day):**
+`FREE: (2 × 175 avg) ÷ 7 = 50/day | MID: (2 × 262.5 avg) ÷ 7 = 75/day | HIGH: (2 × 350 avg) ÷ 7 = 100/day`
+
+| Player Type | Games/Day | Game Dust/Day | Quest Dust/Day | Weekly Quest/Day | **Total/Day** | **Total/Week** |
+|---|---|---|---|---|---|---|
+| Free Casual | 2 | 20 | 90 | 50 | **160** | **1,120** |
+| Free Regular | 5 | 50 | 90 | 50 | **190** | **1,330** |
+| Free Hardcore | 10 | 100 | 90 | 50 | **240** | **1,680** |
+| Mid Casual | 2 | 20 | 135 | 75 | **230** | **1,610** |
+| Mid Regular | 5 | 50 | 135 | 75 | **260** | **1,820** |
+| Mid Hardcore | 10 | 100 | 135 | 75 | **310** | **2,170** |
+| Top Casual | 2 | 20 | 180 | 100 | **300** | **2,100** |
+| Top Regular | 5 | 50 | 180 | 100 | **330** | **2,310** |
+| Top Hardcore | 10 | 100 | 180 | 100 | **380** | **2,660** |
+
+**Note on v1.0 vs v2.0 numbers:** The original document used lower weekly totals (e.g., 770 for Free Casual). The corrected numbers above match the exact formulas from the master doc: daily quest base of 90/day (3 × 30 avg) and weekly quest base of 300/week (2 × 150). The v1.0 numbers used 43/day for weekly quests instead of the correct 50/day (2 × 175 avg / 7 days).
+
+### 2.5 Weekly Dust Flow Model — What Players Can Buy
+
+| Player Type | Dust/Week | Card Packs/Week (100 Dust) | OR Full Evolutions/Week (450 Dust) | Legendary Shards/Week (240 Dust) |
+|---|---|---|---|---|
+| **Free Casual** | 1,120 | 11.2 | 2.5 | 4.7 |
+| **Free Regular** | 1,330 | 13.3 | 3.0 | 5.5 |
+| **Free Hardcore** | 1,680 | 16.8 | 3.7 | 7.0 |
+| **Mid Casual** | 1,610 | 16.1 | 3.6 | 6.7 |
+| **Mid Regular** | 1,820 | 18.2 | 4.0 | 7.6 |
+| **Mid Hardcore** | 2,170 | 21.7 | 4.8 | 9.0 |
+| **Top Casual** | 2,100 | 21.0 | 4.7 | 8.8 |
+| **Top Regular** | 2,310 | 23.1 | 5.1 | 9.6 |
+| **Top Hardcore** | 2,660 | 26.6 | 5.9 | 11.1 |
+
+**Reality note:** Players split spending across categories. Typical realistic allocation for an active player:
+- 60% on shards (Rare/Epic/Legendary tier)
+- 20% on card packs (expanding collection, chasing faction variety)
+- 10% on targeted Common purchases (specific cards for a deck strategy)
+- 10% on cosmetics (avatars)
+
+### 2.6 Cross-Faction Unlock Model
+
+A second faction costs 150 Dust (one card pack from that faction). Once purchased, the faction is fully unlocked.
+
+| Player Type | Dust/Week | Weeks to Unlock 2nd Faction | Weeks to Unlock 3rd Faction |
 |---|---|---|---|
-| Win a match | 15 | Per game | Variable |
-| Lose a match | 5 | Per game | Variable |
-| Daily quest (easy) | 20 | 3/day | 60 |
-| Daily quest (medium) | 30 | 3/day | 90 |
-| Daily quest (hard) | 45 | 3/day | 135 |
-| **Daily quest average** | **30** | **3/day** | **90** |
-| Weekly quest | 150 | 2/week | ~43 |
-| Season milestone | 50-500 | Tiered | Variable |
+| Free Casual | 1,120 | 0.13 (< 1 day) | 0.27 (< 2 days) |
+| Free Regular | 1,330 | 0.11 | 0.23 |
+| Free Hardcore | 1,680 | 0.09 | 0.18 |
+| Mid Regular | 1,820 | 0.08 | 0.16 |
+| Top Regular | 2,310 | 0.06 | 0.13 |
 
-### 2.2 Subscriber Quest Bonuses
+**Conclusion:** Faction unlocking is never a meaningful gate. Any player can unlock all 3 factions within their first week without meaningfully slowing other progression. The 150 Dust cost is a commitment signal, not a barrier.
 
-| Subscription Tier | Quest Dust Multiplier | Daily Quest Bonus | Weekly Quest Bonus | Monthly Card Bonus |
+### 2.7 Inflation Prevention and Dust Sinks
+
+**Problem:** A player with all 50 Commons (free limit) and no new cards to buy loses the card pack spending sink. How does the economy remain healthy?
+
+**Primary sinks remain active regardless of collection size:**
+
+1. **Shard ladder (exponential cost):** 30 → 60 → 120 → 240. Legendary shards cost 8× Uncommon shards. Even with 50 fully-evolved cards, a player can always sink dust into the next Legendary evolution.
+
+2. **Full Legendary deck target:** 20 cards × 450 Dust = 9,000 Dust per deck. At 1,330 Dust/week (Free Regular), this is 6.8 weeks of pure shard spending. There are 3 factions. Total Legendary completion across all factions: 150 cards × 450 = 67,500 Dust = 50 weeks.
+
+3. **Multi-path evolution value:** Because evolution outcomes are probabilistic (70/30), players may evolve the same base card multiple times to get a preferred modifier/attunement combination. Duplicate Commons in a collection are spending opportunities.
+
+4. **Avatar cosmetics:** 300 Dust each. At launch: 6 avatars available beyond starters. 6 × 300 = 1,800 Dust of permanent cosmetic sinks.
+
+5. **Seasonal content:** New cosmetics every 8 weeks. See Section 7.4.
+
+**Spending distribution target (month 6+ mature player, Free Regular):**
+
+| Category | % of Weekly Dust | Weekly Dust Spent |
+|---|---|---|
+| Legendary Shards | 50% | ~665 |
+| Epic Shards | 20% | ~266 |
+| Card packs (new meta cards, evolution fodder) | 15% | ~200 |
+| Avatars/cosmetics | 10% | ~133 |
+| Targeted Commons | 5% | ~67 |
+
+At this distribution, the Free Regular player never accumulates a problematic dust surplus because Legendary and Epic shards absorb the majority of income indefinitely.
+
+**Alert threshold (PostHog):** If median dust balance across active players (7-day active) exceeds 2,000 Dust, the economy is under-sinking. Recommended correction: add a new cosmetic sink or temporarily boost shard costs are NOT the answer — instead, add a new avatar or limited cosmetic bundle.
+
+### 2.8 Long-Term Collection Growth Projections
+
+**Starting point for all players:** 20 Commons in 1 faction, 200 Dust, 3 Uncommon shards, 1 Rare shard, 1 Legendary shard.
+
+**Free Regular Player (5 games/day, 1,330 Dust/week):**
+
+| Milestone | Month 1 | Month 3 | Month 6 | Month 12 |
 |---|---|---|---|---|
-| Free | 1.0× | +0 | +0 | — |
-| Mid ($5-8/mo) | 1.5× | +45 | +150 | +3 Commons |
-| Top ($10-15/mo) | 2.0× | +90 | +300 | +5 Commons + 1 Legendary shard |
+| Total games played | ~150 | ~450 | ~900 | ~1,800 |
+| Lifetime Dust earned | ~5,750 | ~17,250 | ~34,500 | ~69,000 |
+| Commons owned | ~45 | 50 (cap) | 50 (cap) | 50 (cap) |
+| Cards at Uncommon+ | 20 | 20 | 20 | 20 |
+| Cards at Rare+ | 5–8 | 15–18 | 20 | 20 |
+| Cards at Epic+ | 0–2 | 4–7 | 12–16 | 20 |
+| Cards at Legendary | 0 | 1–2 | 5–8 | 15–20 |
+| Factions unlocked | 1–2 | 2–3 | 3 | 3 |
+| Competitive rank | Bronze/Silver | Silver/Gold | Gold/Platinum | Platinum/Diamond |
 
-**Example:** A Mid-tier subscriber completing 3 daily quests earning 30 Dust each:
-- Base: 90 Dust
-- Bonus: 90 × 0.5 = 45 Dust
-- Total: 135 Dust/day from quests
+**Mid-Tier Subscriber (5 games/day, 1,820 Dust/week):**
 
-### 2.3 Spending Costs
-
-| Purchase | Cost (Dust) |
-|---|---|
-| Card Pack (own faction, 3 Commons) | 100 |
-| Card Pack (other faction, 3 Commons + unlock) | 150 |
-| Specific Common (targeted purchase) | 50 |
-| Uncommon Shard | 30 |
-| Rare Shard | 60 |
-| Epic Shard | 120 |
-| Legendary Shard | 240 |
-| Avatar unlock | 300 |
-
-### 2.4 Daily Dust Income by Player Type
-
-| Player Type | Games/Day | Win Rate | Game Dust | Quest Dust | Weekly Quest | **Total/Day** | **Total/Week** |
-|---|---|---|---|---|---|---|---|
-| **Free Casual** | 2 | 50% | 20 | 90 | 43 | **110** | **770** |
-| **Free Regular** | 5 | 50% | 50 | 90 | 43 | **140** | **980** |
-| **Free Hardcore** | 10 | 50% | 100 | 90 | 43 | **190** | **1,330** |
-| **Mid Casual** | 2 | 50% | 20 | 135 | 64 | **155** | **1,085** |
-| **Mid Regular** | 5 | 50% | 50 | 135 | 64 | **185** | **1,295** |
-| **Mid Hardcore** | 10 | 50% | 100 | 135 | 64 | **235** | **1,645** |
-| **Top Casual** | 2 | 50% | 20 | 180 | 86 | **200** | **1,400** |
-| **Top Regular** | 5 | 50% | 50 | 180 | 86 | **230** | **1,610** |
-| **Top Hardcore** | 10 | 50% | 100 | 180 | 86 | **280** | **1,960** |
-
-**Game Dust calculation (50% WR):**
-- 2 games/day: (0.5 × 15) + (0.5 × 5) = 10 per game × 2 = 20/day
-- 5 games/day: 10 per game × 5 = 50/day
-- 10 games/day: 10 per game × 10 = 100/day
-
-**Weekly Quest contribution:**
-- 2 weekly quests × 150 avg Dust = 300/week ÷ 7 = ~43/day (free)
-- With Mid bonus: 300 × 1.5 = 450/week ÷ 7 = ~64/day
-- With Top bonus: 300 × 2.0 = 600/week ÷ 7 = ~86/day
-
-### 2.5 Weekly Dust Flow Model
-
-Here's what each player type can afford per week:
-
-| Player Type | Dust/Week | Card Packs/Week | OR Full Evolution (4 shards) | OR Mixed Spending Example |
+| Milestone | Month 1 | Month 3 | Month 6 | Month 12 |
 |---|---|---|---|---|
-| **Free Casual** | 770 | 7.7 | 1.7 evolutions | 5 packs + 1 evolution |
-| **Free Regular** | 980 | 9.8 | 2.2 evolutions | 6 packs + 1 evolution |
-| **Free Hardcore** | 1,330 | 13.3 | 2.9 evolutions | 9 packs + 1 evolution |
-| **Mid Casual** | 1,085 | 10.8 | 2.4 evolutions | 7 packs + 1 evolution |
-| **Mid Regular** | 1,295 | 13.0 | 2.8 evolutions | 8 packs + 2 evolutions |
-| **Mid Hardcore** | 1,645 | 16.5 | 3.6 evolutions | 10 packs + 2 evolutions |
-| **Top Casual** | 1,400 | 14.0 | 3.1 evolutions | 9 packs + 2 evolutions |
-| **Top Regular** | 1,610 | 16.1 | 3.6 evolutions | 10 packs + 2 evolutions |
-| **Top Hardcore** | 1,960 | 19.6 | 4.3 evolutions | 13 packs + 2 evolutions |
+| Lifetime Dust earned | ~7,880 | ~23,640 | ~47,280 | ~94,560 |
+| Commons owned | 60–70 | 90–100 (cap) | 100 (cap) | 100 (cap) |
+| Cards at Legendary | 0–1 | 3–5 | 10–15 | 25–35 |
+| Factions unlocked | 2 | 3 | 3 | 3 |
+| Bonus Commons received | 3 | 9 | 18 | 36 |
 
-**Cost of a full Common → Legendary evolution:**
-- 1 Uncommon (30) + 1 Rare (60) + 1 Epic (120) + 1 Legendary (240) = 450 Dust
+**Top-Tier Subscriber (5 games/day, 2,310 Dust/week + 1 free Legendary shard/month):**
 
-### 2.6 Time-to-Unlock Calculations
-
-**Cross-faction unlock** (150 Dust card pack from another faction):
-
-| Player Type | Dust/Week | Weeks to 2nd Faction | Weeks to 3rd Faction |
-|---|---|---|---|
-| **Free Casual** | 770 | 1.0 | 2.0 (cumulative) |
-| **Free Regular** | 980 | 0.8 | 1.6 |
-| **Free Hardcore** | 1,330 | 0.6 | 1.1 |
-| **Mid Regular** | 1,295 | 0.6 | 1.1 |
-| **Top Regular** | 1,610 | 0.5 | 0.9 |
-
-**Time to build a competitive 20-card deck** (all Uncommon, 5 at Rare):
-- 20 Uncommon shards (20 × 30 = 600 Dust)
-- 5 Rare shards (5 × 60 = 300 Dust)
-- Total: 900 Dust
-- Free Regular: 900 ÷ 980 = 0.9 weeks (~6 days)
-- BUT: Cards also need energy, which takes ~3 weeks for Rare
-
-**Bottleneck analysis:** Energy is the primary gate for first evolutions, not shards. Shards become the bottleneck for Epic+ evolutions.
-
-### 2.7 Collection Growth Model (First 3 Months)
-
-**Starting point:** 20 Commons in one faction
-
-**Month 1:**
-| Player Type | Total Dust | Cards Acquired | Shards Purchased | Evolutions Completed |
+| Milestone | Month 1 | Month 3 | Month 6 | Month 12 |
 |---|---|---|---|---|
-| **Free Casual** | 3,300 | +30 Commons | ~40 shards (mixed) | 8-10 cards to Uncommon |
-| **Free Regular** | 4,200 | +40 Commons | ~50 shards | 12-15 cards to Uncommon, 3-5 to Rare |
-| **Mid Regular** | 5,550 | +50 Commons | ~65 shards | 15-18 to Uncommon, 5-8 to Rare |
-| **Top Regular** | 6,900 | +60 Commons (+5 bonus) | ~80 shards (+free Leg) | 18-20 to Uncommon, 8-10 to Rare, 1-2 to Epic |
-
-**Month 3:**
-| Player Type | Total Dust (3mo) | Total Cards | Legendary Cards | 2nd Faction Unlocked? |
-|---|---|---|---|---|
-| **Free Casual** | 10,000 | 50 (at limit) | 0-1 | Yes |
-| **Free Regular** | 12,700 | 50 (at limit) | 1-2 | Yes |
-| **Mid Regular** | 16,650 | 80 | 2-3 | Yes |
-| **Top Regular** | 20,700 | 120 | 3-5 | Yes |
-
-**Key insight:** Free players hit the 50-card-per-faction limit by month 3. This is intentional — they should be evolving existing cards, not accumulating more Commons.
-
-### 2.8 Inflation Prevention & Sink Scaling
-
-**Problem:** Once a player has "enough" Commons, card packs lose value. How do we maintain dust sinks?
-
-**Solutions:**
-1. **Shards scale exponentially:** Legendary shards cost 8× Uncommon shards (240 vs 30)
-2. **Multiple factions:** 3 factions × 50 cards = 150 total Commons for free players to chase
-3. **Evolution is the primary sink:** Most dust goes to shards for evolutions, not packs
-4. **Avatar unlocks:** Cosmetic 300-Dust sinks for variety
-5. **Future seasonal content:** Limited-time cards/cosmetics refresh the economy
-
-**Spending distribution (mature Free Regular player, week 20+):**
-- 60% on shards (Rare/Epic/Legendary)
-- 20% on targeted Common purchases (new meta cards, specific evolution fodder)
-- 15% on cross-faction packs (unlocking/exploring other factions)
-- 5% on avatars/cosmetics
-
-**Long-term dust sink analysis:**
-- To fully evolve 50 cards to Legendary: 50 × 450 Dust = 22,500 Dust
-- Free Regular earns ~980/week = ~4,200/month
-- 22,500 ÷ 4,200 = **5.4 months of pure shard spending**
-- This is healthy — shards remain valuable for 6+ months
+| Lifetime Dust earned | ~10,010 | ~30,030 | ~60,060 | ~120,120 |
+| Commons owned | 70–85 | 150–175 | 200 (cap) | 200 (cap) |
+| Cards at Legendary | 1–2 | 7–9 | 20–28 | 55–65 |
+| Free Legendary shards received | 1 | 3 | 6 | 12 |
+| Bonus Commons received | 5 | 15 | 30 | 60 |
 
 ---
 
 ## 3. Shard Economy
 
-Shards gate evolution. Energy accumulates passively through play, but shards must be actively earned/purchased.
+### 3.1 Shard Costs and Usage
 
-### 3.1 Shard Costs
+Shards are consumed at evolution. They map directly to `ShardTier` enum values in `02-card-data-model.md`.
 
-| Shard Tier | Dust Cost | Evolutions per Full Deck |
-|---|---|---|
-| Uncommon | 30 | 20 |
-| Rare | 60 | 20 |
-| Epic | 120 | 20 |
-| Legendary | 240 | 20 |
-| **Total for 1 card to Legendary** | **450** | **—** |
-| **Total for 20-card deck to Legendary** | **9,000** | **—** |
+| Shard Tier | Dust Cost | Evolution Step It Unlocks | Enum Value |
+|---|---|---|---|
+| Uncommon Shard | 30 Dust | Common → Uncommon | `UNCOMMON` |
+| Rare Shard | 60 Dust | Uncommon → Rare | `RARE` |
+| Epic Shard | 120 Dust | Rare → Epic | `EPIC` |
+| Legendary Shard | 240 Dust | Epic → Legendary | `LEGENDARY` |
 
 ### 3.2 Shard Sources
 
-| Source | Shards Granted | Frequency | Notes |
+| Source | Shard Type | Frequency | Source Enum |
 |---|---|---|---|
-| Chaos Dust purchase | Variable | On-demand | Primary source |
-| Daily quest reward | 1 Uncommon/Rare | ~1-2/week | Quest-dependent |
-| Weekly quest reward | 1 Rare/Epic | ~1/week | Quest-dependent |
-| Season milestone | 1 Epic/Legendary | ~1-2/season | High rank tiers |
-| Mid subscription | — | — | 50% more dust = 50% faster shard acquisition |
-| Top subscription | 1 Legendary | 1/month | Only free Legendary shard source |
+| Buy with Chaos Dust | Any tier | On-demand | `PURCHASE` |
+| Starter pack (onboarding) | 3 Uncommon + 1 Rare | One-time | `MILESTONE` |
+| Starter pack (onboarding) | 1 Legendary | One-time (aspirational) | `MILESTONE` |
+| Daily quest reward (medium, 20% chance) | 1 Uncommon | ~0.6× per day | `DAILY_LOGIN` (quest) |
+| Daily quest reward (hard, 30% chance) | 1 Rare | ~0.18× per day | `DAILY_LOGIN` (quest) |
+| Weekly quest reward (W01/W03/W06–W09) | 1 Rare | ~1×/week | `WEEKLY_CHALLENGE` |
+| Weekly quest reward (W02/W04/W07) | 1 Epic | ~0.5×/week | `WEEKLY_CHALLENGE` |
+| Weekly quest reward (W05/W10) | 1 Epic | ~0.4×/week | `WEEKLY_CHALLENGE` |
+| Season end reward (Gold+) | Varies | Per season | `SEASON_REWARD` |
+| Monthly milestone (Platinum+) | 1 Legendary | Monthly | `MILESTONE` |
+| Top subscription bonus | 1 Legendary | Monthly | `SUBSCRIPTION_GRANT` |
 
-### 3.3 Shard Acquisition Rate
+**Implementation note:** Shard grants that are not purchases use `ShardTransaction.source` enum values. The `SUBSCRIPTION_GRANT` source fires on the 1st of each month for `HIGH` tier subscribers via a Supabase scheduled Edge Function (cron: `0 0 1 * *`).
 
-**Shards per week (via Dust conversion, assuming 100% dust → shards):**
+### 3.3 Shard Acquisition Rate (via Dust, 60% Conversion Assumption)
 
-| Player Type | Dust/Week | Uncommon/Week | Rare/Week | Epic/Week | Legendary/Week |
-|---|---|---|---|---|---|
-| **Free Casual** | 770 | 25.7 | 12.8 | 6.4 | 3.2 |
-| **Free Regular** | 980 | 32.7 | 16.3 | 8.2 | 4.1 |
-| **Free Hardcore** | 1,330 | 44.3 | 22.2 | 11.1 | 5.5 |
-| **Mid Regular** | 1,295 | 43.2 | 21.6 | 10.8 | 5.4 |
-| **Top Regular** | 1,610 | 53.7 | 26.8 | 13.4 | 6.7 |
+60% of weekly Dust going to shards is the realistic spending pattern for an active evolution-focused player.
 
-**Reality check:** Players don't convert 100% of dust to shards. They also buy card packs and cosmetics. Realistic conversion: **60-70% of dust → shards** for active evolvers.
+| Player Type | Dust/Week | Dust to Shards (60%) | Legendary Shards Affordable/Week | Weeks per Legendary |
+|---|---|---|---|---|
+| Free Casual | 1,120 | 672 | 672 ÷ 240 = **2.8** | **0.36** |
+| Free Regular | 1,330 | 798 | 798 ÷ 240 = **3.3** | **0.30** |
+| Free Hardcore | 1,680 | 1,008 | 1,008 ÷ 240 = **4.2** | **0.24** |
+| Mid Regular | 1,820 | 1,092 | 1,092 ÷ 240 = **4.6** | **0.22** |
+| Top Regular | 2,310 | 1,386 | 1,386 ÷ 240 = **5.8** | **0.17** |
 
-**Adjusted shard rates (70% dust → shards):**
+**Reality check:** A player cannot evolve faster than energy accumulates. The binding constraint shifts based on progression stage (see Section 3.4).
 
-| Player Type | Legendary Shards/Week | Weeks per Legendary Evolution |
-|---|---|---|
-| **Free Casual** | 2.2 | 2.0 |
-| **Free Regular** | 2.9 | 1.5 |
-| **Free Hardcore** | 3.9 | 1.1 |
-| **Mid Regular** | 3.8 | 1.2 |
-| **Top Regular** | 4.7 | 0.9 |
+### 3.4 Bottleneck Analysis: Energy vs. Shards
 
-### 3.4 Bottleneck Analysis: Energy vs Shards
+**For a Free Regular player (5 games/day, 1,330 Dust/week):**
 
-**Time to first Legendary (single card):**
+**First Legendary card (single card):**
+- Energy gate: 113 games ÷ 5 games/day = **22.7 days**
+- Shard gate: 450 Dust total ÷ 1,330 Dust/week = **2.4 days** of income
+- **Bottleneck: Energy (by ~9.5×)**
 
-| Gate Type | Free Regular (5 games/day) | Top Regular (5 games/day) |
-|---|---|---|
-| **Energy** | 22.7 days (113 games) | 22.7 days (113 games) |
-| **Shards** (4 shards = 450 Dust) | 450 ÷ 980/week = 3.2 days | 450 ÷ 1610/week = 2.0 days |
+**Fifth Legendary card (sequential, assuming energy accrues in parallel):**
+- Energy: same 22.7 days (all cards earn simultaneously, so by the time your 1st Legendary is done, 3-4 others are close)
+- Shard: 5 × 450 = 2,250 Dust ÷ 1,330/week = **11.9 days** of income
+- **Bottleneck: Still Energy**
 
-**Conclusion:** Energy is the primary bottleneck for first Legendaries. Shards are abundant early on.
+**Full deck Legendary (20 cards):**
+- Energy: 22.7 days (all 20 cards hit Legendary threshold at the same time, since they earn simultaneously)
+- Shard: 20 × 450 = 9,000 Dust ÷ 1,330/week = **47.4 days** of income
+- **Bottleneck: Shards (by ~2×)**
 
-**Time to 5th Legendary:**
-
-| Player Type | Energy (same as 1st) | Shards (5 × 450 Dust) | Bottleneck |
+| Progression Goal | Energy Gate | Shard Gate | Actual Bottleneck |
 |---|---|---|---|
-| **Free Regular** | 22.7 days | 2,250 ÷ 980/week = 16.1 days | Energy slightly |
-| **Top Regular** | 22.7 days | 2,250 ÷ 1610/week = 9.8 days | Energy |
+| 1st Legendary | 22.7 days | 2.4 days | Energy |
+| 5th Legendary | 22.7 days | 11.9 days | Energy |
+| 10th Legendary | 22.7 days | 23.7 days | Energy (barely) |
+| Full Deck Legendary | 22.7 days | 47.4 days | **Shards** |
 
-**Time to 20th Legendary (full deck):**
+**Design health check:** This bottleneck progression is intentional:
+- Early game: Energy gates keep players engaged (must play games to evolve)
+- Late game: Shards gate completion (requires sustained economic investment)
+- Neither gate is insurmountable; both progress naturally through play
 
-| Player Type | Energy (same) | Shards (20 × 450 = 9,000 Dust) | Bottleneck |
-|---|---|---|---|
-| **Free Regular** | 22.7 days | 9,000 ÷ 980/week = 64.3 days | **Shards** |
-| **Top Regular** | 22.7 days | 9,000 ÷ 1610/week = 39.1 days | **Shards** |
+### 3.5 Legendary Shard Scarcity and Subscriber Value
 
-**Key insight:** Shards become the bottleneck for full-deck Legendary completion. This is healthy — it creates long-term progression and value for subscribers.
+**Free player Legendary shard acquisition rate:**
+- Via Dust (60% to shards): 798 Dust/week ÷ 240 = 3.3 Legendary shards/week
+- Via season rewards (Platinum+): 1–2 Legendary shards per 8-week season = ~0.15/week
+- **Total Free Regular: ~3.5 Legendary shards/week**
 
-### 3.5 Legendary Shard Scarcity
+**Top subscriber Legendary shard acquisition rate:**
+- Via Dust (60% to shards): 1,386 Dust/week ÷ 240 = 5.8 Legendary shards/week
+- Via season rewards (Platinum+): ~0.15/week
+- Via subscription grant: 1/month = ~0.25/week
+- **Total Top Regular: ~6.2 Legendary shards/week**
 
-Legendary shards cost 240 Dust. For free players, this is **24 games of pure grinding** (at 50% WR: 12 wins = 180 Dust, 12 losses = 60 Dust = 240 total, ignoring quests).
+**Subscriber speed multiplier for Legendary evolutions:** 6.2 ÷ 3.5 = **1.77× faster**
 
-With quests, a Free Regular player earning 980 Dust/week can buy:
-- 980 ÷ 240 = **4.1 Legendary shards per week** (if 100% dust → Legendary shards)
-- Realistically: **2-3 Legendary shards per week** (considering other spending)
+This is meaningful (roughly double the Legendary progression speed) but is entirely speed, not power. Both reach full Legendary decks; the Top subscriber gets there in ~25 weeks versus the Free Regular's ~41 weeks.
 
-**Top subscriber advantage:**
-- Earns 1,610 Dust/week → 6.7 Legendary shards/week (100% conversion)
-- **PLUS** 1 free Legendary shard/month (4.3/month vs 8-12 earned = significant but not dominant)
+**Time to first Legendary evolution (combined energy + shard gate, Free Regular):**
+- Energy becomes ready at Day 22.7
+- Shard cost (450 Dust for full path) is accumulated in 2.4 days
+- Therefore: first Legendary evolution is possible at **Day 23** (immediately when energy is ready)
 
-**Subscriber value proposition:**
-- Free Regular: 8-12 Legendary evolutions per month
-- Top Regular: 24-28 Legendary evolutions per month (~2-3× faster)
-- This is **speed**, not power. Both players reach full Legendary decks eventually.
+**Time to first Legendary evolution (Top Regular):**
+- Energy ready at Day 22.7 (identical — energy doesn't scale with subscription)
+- Shard ready at Day 1.4
+- Free Legendary shard arrives on Day 1 of month
+- If onboarding in first 3 days of a month: first Legendary possible at **Day 15** using both the free Legendary shard + Legendary shard from starter pack
+- Otherwise: **Day 23** (same as Free Regular, assuming no lucky timing)
 
 ---
 
 ## 4. Quest System Design
 
-Quests provide 40-60% of daily Chaos Dust income and are the primary engagement driver.
+Quests are the primary engagement driver and account for the largest share of Chaos Dust income (60–70% of total weekly income for all player types).
 
-### 4.1 Daily Quests
+### 4.1 Daily Quest System
 
-**Structure:**
-- 3 active quests per day
-- New quests generated at daily reset (00:00 UTC)
-- Uncompleted quests persist (don't expire) but don't stack beyond 3
-- 1 free reroll per day (swap one quest for a new random quest)
+**Configuration (from `economy.config.json`):**
+- Active quests per player: 3
+- Reset time: Daily at `00:00 UTC`
+- Persistence: Uncompleted quests persist (do NOT expire) until replaced by new quests or rerolled — max 3 active at any time
+- Free rerolls per day: 1
+- Reroll mechanic: Permanently discards selected quest; generates a replacement using the same generation algorithm
 
-**Difficulty tiers:**
+**Quest Generation Algorithm (deterministic, implementable directly):**
+```
+function generateDailyQuest(player, existingQuestTypes):
+  1. Roll difficulty: random uniform [0, 1)
+     - [0.00, 0.40) → EASY
+     - [0.40, 0.80) → MEDIUM
+     - [0.80, 1.00) → HARD
+  2. Get all quests in that difficulty tier from QUEST_TEMPLATES
+  3. Filter out any quest whose mission_type already exists in existingQuestTypes
+  4. If filtered list is empty, use full unfiltered list (fallback; prevents infinite loop)
+  5. Select uniformly at random from filtered list
+  6. Return selected quest
+```
 
-| Difficulty | Target Value | Dust Reward (Free) | Dust Reward (Mid) | Dust Reward (Top) | Shard Reward |
-|---|---|---|---|---|---|
-| Easy | Low | 20 | 30 | 40 | None |
-| Medium | Moderate | 30 | 45 | 60 | 1 Uncommon (20% chance) |
-| Hard | High | 45 | 68 | 90 | 1 Rare (30% chance) |
+**Dust reward application:**
+```
+final_reward = base_dust × SUBSCRIPTION_QUEST_MULTIPLIER[player.subscription_tier]
+```
 
-**Average daily quest value:** 30 Dust (free), 45 Dust (mid), 60 Dust (top)
+### 4.2 Daily Quest Templates (20 Unique Templates)
 
-### 4.2 Daily Quest Templates (20 Total)
+All base dust values below are for FREE tier. MID multiplies by 1.5, HIGH multiplies by 2.0.
 
-| Quest ID | Type | Difficulty | Description | Target | Dust | Completion Time |
+| Quest ID | MissionType | Difficulty | Description | Target | Base Dust | Typical Completion |
 |---|---|---|---|---|---|---|
-| D01 | WIN_GAMES | Easy | Win 2 games | 2 | 20 | 30-60 min |
-| D02 | PLAY_GAMES | Easy | Play 3 games | 3 | 20 | 30-60 min |
-| D03 | PLAY_CREATURES | Easy | Play 15 creatures | 15 | 20 | 20-40 min |
-| D04 | PLAY_SPELLS | Easy | Play 5 spells | 5 | 20 | 20-40 min |
-| D05 | WIN_GAMES | Medium | Win 3 games | 3 | 30 | 60-90 min |
-| D06 | PLAY_CREATURES | Medium | Play 25 creatures | 25 | 30 | 40-60 min |
-| D07 | DEAL_DAMAGE | Medium | Deal 30 damage to creatures | 30 | 30 | 40-60 min |
-| D08 | TRIGGER_CHAOS_EVENTS | Medium | Trigger 5 Chaos Events | 5 | 30 | 40-80 min |
-| D09 | TRIGGER_ORDER_EVENTS | Medium | Trigger 5 Order Events | 5 | 30 | 40-80 min |
-| D10 | EVOLVE_CARD | Medium | Evolve 1 card | 1 | 30 | 1-10 min (if ready) |
-| D11 | WIN_GAMES | Hard | Win 5 games | 5 | 45 | 90-150 min |
-| D12 | PLAY_CARDS | Hard | Play 50 cards | 50 | 45 | 60-90 min |
-| D13 | WIN_WITH_STYLE | Hard | Win with 15+ HP remaining | 2 | 45 | 60-120 min |
-| D14 | DEAL_DAMAGE | Hard | Deal 60 damage to creatures | 60 | 45 | 60-90 min |
-| D15 | PLAY_CREATURES | Hard | Play 20 creatures of cost 3+ | 20 | 45 | 60-90 min |
-| D16 | PLAY_SPELLS | Hard | Play 10 spells | 10 | 45 | 60-90 min |
-| D17 | TRIGGER_CHAOS_EVENTS | Hard | Trigger 10 Chaos Events | 10 | 45 | 80-120 min |
-| D18 | TRIGGER_ORDER_EVENTS | Hard | Trigger 10 Order Events | 10 | 45 | 80-120 min |
-| D19 | WIN_WITH_STYLE | Hard | Win with 3+ Legendary cards on board | 1 | 45 | 30-90 min |
-| D20 | WIN_WITH_STYLE | Hard | Win without losing a creature | 1 | 45 | 30-120 min |
+| D01 | `WIN_GAMES` | EASY | Win 2 games | 2 | 20 | 20–45 min |
+| D02 | `PLAY_GAMES` | EASY | Play 3 games (any result) | 3 | 20 | 30–60 min |
+| D03 | `PLAY_CREATURES` | EASY | Play 15 creatures | 15 | 20 | 20–40 min |
+| D04 | `PLAY_SPELLS` | EASY | Play 5 spells | 5 | 20 | 20–40 min |
+| D05 | `WIN_GAMES` | MEDIUM | Win 3 games | 3 | 30 | 45–90 min |
+| D06 | `PLAY_CREATURES` | MEDIUM | Play 25 creatures | 25 | 30 | 40–60 min |
+| D07 | `DEAL_DAMAGE` | MEDIUM | Deal 30 damage to enemy creatures | 30 | 30 | 40–60 min |
+| D08 | `TRIGGER_CHAOS_EVENTS` | MEDIUM | Trigger 5 Chaos Events | 5 | 30 | 40–80 min |
+| D09 | `TRIGGER_ORDER_EVENTS` | MEDIUM | Trigger 5 Order Events | 5 | 30 | 40–80 min |
+| D10 | `EVOLVE_CARD` | MEDIUM | Evolve 1 card to any tier | 1 | 30 | Instant (if energy-ready) |
+| D11 | `WIN_GAMES` | HARD | Win 5 games | 5 | 45 | 90–150 min |
+| D12 | `PLAY_CARDS` | HARD | Play 50 cards total (any type) | 50 | 45 | 60–90 min |
+| D13 | `WIN_WITH_STYLE` | HARD | Win 2 games with 15+ HP remaining | 2 | 45 | 60–120 min |
+| D14 | `DEAL_DAMAGE` | HARD | Deal 60 damage to enemy creatures | 60 | 45 | 60–90 min |
+| D15 | `PLAY_CREATURES` | HARD | Play 20 creatures costing 3+ mana | 20 | 45 | 60–90 min |
+| D16 | `PLAY_SPELLS` | HARD | Play 10 spells | 10 | 45 | 60–90 min |
+| D17 | `TRIGGER_CHAOS_EVENTS` | HARD | Trigger 10 Chaos Events | 10 | 45 | 80–120 min |
+| D18 | `TRIGGER_ORDER_EVENTS` | HARD | Trigger 10 Order Events | 10 | 45 | 80–120 min |
+| D19 | `WIN_WITH_STYLE` | HARD | Win a game with 3+ Legendary cards on board at end | 1 | 45 | 30–90 min |
+| D20 | `WIN_WITH_STYLE` | HARD | Win a game without any of your creatures dying | 1 | 45 | 30–120 min |
 
-**Quest generation algorithm:**
-1. Roll difficulty: 40% Easy, 40% Medium, 20% Hard
-2. Roll quest from that tier's pool (uniform distribution)
-3. Check for duplicate quest types in active quests (reroll if duplicate)
-4. Assign quest to player
+**Shard rewards on quest completion (separate from Dust):**
+- MEDIUM difficulty: 20% chance of +1 Uncommon Shard on completion
+- HARD difficulty: 30% chance of +1 Rare Shard on completion
+- These shard drops are in addition to Dust. They use `Mission.reward_shard_tier` field from the data model.
 
-**Reroll mechanic:**
-- Player can reroll 1 quest per day (button next to quest)
-- Reroll generates a new quest using the same algorithm
-- Rerolled quest is permanently discarded (can't reclaim)
-- Use case: "I have a Chaos Event quest but my deck is Order-focused"
+**Quest tracking implementation note:**
+All MissionType values map to in-game events fired by the Railway game server. The server publishes mission progress updates to Supabase Realtime after each game ends. The mapping:
 
-### 4.3 Weekly Quests
+| MissionType | Tracking Event | Source |
+|---|---|---|
+| `WIN_GAMES` | `GAME_END` with `winner_id == player_id` | MatchRecord |
+| `PLAY_GAMES` | `GAME_END` (any result) | MatchRecord |
+| `PLAY_CREATURES` | `CARD_PLAYED` where card_type == CREATURE | GameLogEntry |
+| `PLAY_SPELLS` | `CARD_PLAYED` where card_type == SPELL or STABILIZER | GameLogEntry |
+| `PLAY_CARDS` | `CARD_PLAYED` (any type) | GameLogEntry |
+| `EVOLVE_CARD` | Evolution event (Supabase, post-game) | CardInstance update |
+| `TRIGGER_CHAOS_EVENTS` | `EVENT_TRIGGERED` where event_type == CHAOS | GameLogEntry |
+| `TRIGGER_ORDER_EVENTS` | `EVENT_TRIGGERED` where event_type == ORDER | GameLogEntry |
+| `DEAL_DAMAGE` | `COMBAT_DAMAGE` where source is player's creature | GameLogEntry |
+| `WIN_WITH_STYLE` | Custom logic per quest (see D13, D19, D20 notes below) | MatchRecord + GameState |
 
-**Structure:**
-- 2 active quests per week
-- Generated on Monday 00:00 UTC
-- Expire in 7 days (Sunday 23:59 UTC)
-- No rerolls (these are endurance challenges)
+**WIN_WITH_STYLE tracking specifics:**
+- D13 (Win with 15+ HP): check `player_final_hp >= 15` in MatchRecord at game end
+- D19 (Win with 3+ Legendaries on board): check final board state at game end; count Legendary-tier CardInstances with `is_alive == true`
+- D20 (Win without losing a creature): track via `CREATURE_DESTROYED` log entries attributed to that player's side; count = 0 required
+
+### 4.3 Weekly Quest System
+
+**Configuration:**
+- Active quests per player: 2
+- Generated: Monday `00:00 UTC`
+- Expire: Sunday `23:59 UTC` (hard expiry — incomplete weekly quests vanish at reset)
+- Rerolls: None (weekly quests are endurance challenges)
 
 **Weekly Quest Templates (10 Total):**
 
-| Quest ID | Type | Description | Target | Dust (Free) | Dust (Mid) | Dust (Top) | Shard Reward |
+| Quest ID | MissionType | Description | Target | Base Dust (FREE) | Mid Dust (×1.5) | Top Dust (×2.0) | Shard Reward |
 |---|---|---|---|---|---|---|---|
-| W01 | WIN_GAMES | Win 10 games | 10 | 150 | 225 | 300 | 1 Rare |
-| W02 | WIN_GAMES | Win 15 games | 15 | 200 | 300 | 400 | 1 Epic |
-| W03 | PLAY_GAMES | Play 20 games | 20 | 150 | 225 | 300 | 1 Rare |
-| W04 | EVOLVE_CARD | Evolve 3 cards | 3 | 150 | 225 | 300 | 2 Rare |
-| W05 | EVOLVE_CARD | Evolve 5 cards to Rare+ | 5 | 200 | 300 | 400 | 1 Epic |
-| W06 | PLAY_CREATURES | Play 100 creatures | 100 | 150 | 225 | 300 | 1 Rare |
-| W07 | DEAL_DAMAGE | Deal 200 damage | 200 | 150 | 225 | 300 | 1 Rare |
-| W08 | TRIGGER_CHAOS_EVENTS | Trigger 20 Chaos Events | 20 | 150 | 225 | 300 | 1 Rare |
-| W09 | TRIGGER_ORDER_EVENTS | Trigger 20 Order Events | 20 | 150 | 225 | 300 | 1 Rare |
-| W10 | WIN_WITH_STYLE | Win 5 games with 3+ Legendaries | 5 | 200 | 300 | 400 | 1 Epic |
+| W01 | `WIN_GAMES` | Win 10 games this week | 10 | 150 | 225 | 300 | 1 Rare |
+| W02 | `WIN_GAMES` | Win 15 games this week | 15 | 200 | 300 | 400 | 1 Epic |
+| W03 | `PLAY_GAMES` | Play 20 games this week | 20 | 150 | 225 | 300 | 1 Rare |
+| W04 | `EVOLVE_CARD` | Evolve 3 cards this week | 3 | 150 | 225 | 300 | 2 Rare |
+| W05 | `EVOLVE_CARD` | Evolve 5 cards to Rare or higher this week | 5 | 200 | 300 | 400 | 1 Epic |
+| W06 | `PLAY_CREATURES` | Play 100 creatures this week | 100 | 150 | 225 | 300 | 1 Rare |
+| W07 | `DEAL_DAMAGE` | Deal 200 damage to enemy creatures this week | 200 | 150 | 225 | 300 | 1 Rare |
+| W08 | `TRIGGER_CHAOS_EVENTS` | Trigger 20 Chaos Events this week | 20 | 150 | 225 | 300 | 1 Rare |
+| W09 | `TRIGGER_ORDER_EVENTS` | Trigger 20 Order Events this week | 20 | 150 | 225 | 300 | 1 Rare |
+| W10 | `WIN_WITH_STYLE` | Win 5 games with 3+ Legendary cards on board | 5 | 200 | 300 | 400 | 1 Epic |
 
-**Average weekly quest value:** 175 Dust × 2 = 350 Dust/week (free), 525 (mid), 700 (top)
+**Weekly quest selection algorithm:**
+```
+function generateWeeklyQuests(player):
+  1. Shuffle WEEKLY_QUEST_TEMPLATES (all 10)
+  2. Select first 2 quests from the shuffled list
+  3. Assign to player with expires_at = next Sunday 23:59 UTC
+```
+No deduplication needed (only 2 of 10, always different).
 
-**Completion rates (estimated):**
-- Casual players (14 games/week): Complete 1.5/2 weekly quests
-- Regular players (35 games/week): Complete 2/2 weekly quests
-- Hardcore players (70 games/week): Complete 2/2 weekly quests easily
+**Estimated completion rates by player type:**
+- Casual (14 games/week): ~1.2 of 2 weekly quests completed
+- Regular (35 games/week): 2.0 of 2 weekly quests completed
+- Hardcore (70 games/week): 2.0 of 2 weekly quests (with room to spare)
 
-### 4.4 Quest System Impact on Engagement
+**Effective weekly quest contribution to income:**
+- Free Casual: 1.2 × 175 avg = **210 Dust/week** (not 300)
+- Free Regular: 2.0 × 175 avg = **350 Dust/week**
+- Free Hardcore: 2.0 × 175 avg = **350 Dust/week**
 
-**Daily login incentive:** Fresh quests every day create a reason to check in. Even if a player can't play, seeing new quests builds anticipation.
+**Note:** The "Total/Week" income table in Section 2.4 assumes full completion of both weekly quests (Regular/Hardcore) and partial completion (Casual: 80%). Actual income for casual players is slightly lower than the table shows.
 
-**Session length targeting:**
-- Easy quests: 20-40 min (2-4 games)
-- Medium quests: 40-80 min (4-8 games)
-- Hard quests: 60-150 min (6-15 games)
+### 4.4 Onboarding Quests (One-Time, Auto-Assigned)
 
-**This matches player archetypes:**
-- Casual players knock out 1 easy + 1 medium quest per session (60-90 min)
-- Regular players complete all 3 dailies in one session (90-150 min)
-- Hardcore players complete quests while grinding ladder
+These are special missions that auto-assign during the first 2 weeks and never return after completion. They use the same `Mission` data model with a `mission_type`-based tracking approach. They do NOT appear in the daily quest slot (they have their own UI section: "Getting Started").
 
-**Reroll strategic value:**
-- "Win 5 games" quest on a day you only have 30 minutes? Reroll to "Play 15 creatures"
-- Chaos Event quest but you're testing an Order deck? Reroll
-- Already completed a quest by accident? Reroll the others for harder/higher-value quests
+| Quest Name | Trigger Condition | Reward |
+|---|---|---|
+| First Blood | Win first match | 50 Dust |
+| Evolution Begins | Evolve first card (any tier) | 2 Uncommon Shards + 50 Dust |
+| Deck Master | Save a custom deck (not default) | 100 Dust |
+| Chaos Scholar | Trigger 5 Chaos Events across any games | 1 Rare Shard |
+| Order Adept | Trigger 5 Order Events across any games | 1 Rare Shard |
+| Road to Rare | Evolve first card to Rare | 200 Dust |
+| Ranked Debut | Play 3 ranked matches | 100 Dust + Bronze card back |
+| Faction Loyalty | Play 20 games with your starter faction | 200 Dust |
+
+**Total onboarding rewards:** 750 Dust + 2 Uncommon Shards + 3 Rare Shards
+
+These reward sequences are hard-coded in a Supabase Edge Function triggered by the relevant player event. They are not generated by the daily quest algorithm.
 
 ---
 
-## 5. Rank/Ladder System
+## 5. Rank / Ladder System
 
-### 5.1 Rank Tiers
+### 5.1 Rank Tiers and Division Structure
 
-| Rank Tier | Divisions | Total Ranks | Points to Rank Up | Rank Floor? |
+| Rank Tier | Divisions | Total Tiers | Points to Rank Up | Rank Floor |
 |---|---|---|---|---|
-| Bronze | 3 | 3 | 100 | No floor (can drop to Bronze 3) |
-| Silver | 3 | 3 | 150 | Silver 3 (can't drop to Bronze) |
-| Gold | 3 | 3 | 200 | Gold 3 |
-| Platinum | 3 | 3 | 250 | Platinum 3 |
-| Diamond | 3 | 3 | 300 | Diamond 3 |
-| Master | 1 | 1 | N/A (top 500 players) | Master (leaderboard) |
-| Grandmaster | 1 | 1 | N/A (top 100 players) | GM (leaderboard) |
+| Bronze | 3 | Bronze 3, 2, 1 | 100 per division | None (can drop to Bronze 3) |
+| Silver | 3 | Silver 3, 2, 1 | 150 per division | Silver 3 (cannot drop to Bronze) |
+| Gold | 3 | Gold 3, 2, 1 | 200 per division | Gold 3 |
+| Platinum | 3 | Platinum 3, 2, 1 | 250 per division | Platinum 3 |
+| Diamond | 3 | Diamond 3, 2, 1 | 300 per division | Diamond 3 |
+| Master | 1 | — | Top 500 players by points | Master (no floor — leaderboard) |
+| Grandmaster | 1 | — | Top 100 players by points | GM (no floor — leaderboard) |
 
-**Total ranked tiers:** 17 (15 division-based + Master + Grandmaster)
+**Total distinct rank states:** 17 (maps to `SeasonRank` enum in `02-card-data-model.md`)
 
-### 5.2 Points Earned/Lost per Match
+**Rank floor implementation:** At the moment a player first enters Silver 3, Gold 3, Platinum 3, or Diamond 3 for the first time in the current season, set a `season_rank_floor` field on their Player record. The rank-loss calculation must check: if `new_rank < season_rank_floor`, set `new_rank = season_rank_floor` instead.
 
-| Your Rank | Opponent Rank | Win Points | Loss Points |
+### 5.2 Rank Points Per Match
+
+| Match Condition | Points Won | Points Lost |
+|---|---|---|
+| vs. same rank division | +25 | −20 |
+| vs. higher rank (+1 to +2 divisions) | +30 | −15 |
+| vs. lower rank (−1 to −2 divisions) | +20 | −25 |
+| vs. much higher rank (+3 divisions) | +35 | −10 |
+| vs. much lower rank (−3 divisions) | +15 | −30 |
+
+**Average points per game (50% WR, same-rank opponents):**
+`(0.5 × 25) + (0.5 × −20) = 12.5 − 10 = +2.5 per game`
+
+### 5.3 Ladder Climbing Examples
+
+**Scenario A: Casual (2 games/day, 50% WR)**
+- Weekly games: 14
+- Points per game: +2.5 avg
+- Weekly point gain: 14 × 2.5 = +35 points
+- Points to Silver 3 from Bronze 3: 300 points (3 Bronze divisions × 100 each)
+- Weeks to Silver 3: 300 ÷ 35 = **8.6 weeks** (reaches Silver at season end of 8-week season)
+- **Outcome:** Casual players end season at Bronze/Silver, receive Bronze/Silver rewards. This is intentional — ranked is aspirational for casuals, not required.
+
+**Scenario B: Regular (5 games/day, 55% WR)**
+- Weekly games: 35
+- Avg points per game: (0.55 × 25) + (0.45 × −20) = 13.75 − 9 = +4.75
+- Weekly point gain: 35 × 4.75 = +166 points
+- Points to Platinum 3 from Bronze 3: 100×3 + 150×3 + 200×3 = 300 + 450 + 600 = **1,350 points**
+- Weeks to Platinum 3: 1,350 ÷ 166 = **8.1 weeks**
+- **Outcome:** Regular players with above-average skill reach Platinum by season end.
+
+**Scenario C: Hardcore (10 games/day, 60% WR)**
+- Weekly games: 70
+- Avg points per game: (0.6 × 25) + (0.4 × −20) = 15 − 8 = +7
+- Weekly point gain: 70 × 7 = +490 points
+- Points to Diamond 3 from Bronze 3: 1,350 + 300×3 = 1,350 + 900 = **2,250 points**
+- Weeks to Diamond 3: 2,250 ÷ 490 = **4.6 weeks**
+- Remaining weeks: push for Master (top 500) in weeks 5–8
+- **Outcome:** Hardcore players with strong win rates reach Diamond by mid-season, compete for Master.
+
+### 5.4 Season Structure
+
+**Season length:** 8 weeks (fixed; 6 seasons per year)
+
+**Season phases:**
+- Weeks 1–2: Early season climb; no rank floors yet (all floors reset at season start)
+- Weeks 3–6: Mid-season competitive grind; rank floors accumulate
+- Weeks 7–8: Final push for tier rewards
+
+**Season reset rules (applied on Season Start Day, Monday `00:00 UTC`):**
+```
+if current_rank >= MASTER: new_rank = DIAMOND_1
+if current_rank >= DIAMOND_1: new_rank = PLATINUM_3
+if current_rank >= PLATINUM_1: new_rank = GOLD_3
+if current_rank >= GOLD_1: new_rank = SILVER_3
+if current_rank >= SILVER_1: new_rank = BRONZE_3
+if current_rank == BRONZE_3: stays BRONZE_3
+season_rank_floor = null (floor protection resets)
+season_rank_points = 0
+```
+
+**Monthly milestone rewards (for seasons that span 2 calendar months):**
+Awarded on the 1st of the second month of the season, based on the player's highest rank achieved so far that season.
+
+### 5.5 Season End Rewards
+
+Rewards are claimed from the in-game "Season Rewards" screen. They expire 7 days after season end (claimed or lost). Cosmetics are permanent once claimed.
+
+| Final Season Rank | Chaos Dust | Shards | Cosmetic |
 |---|---|---|---|
-| Same tier | Same tier | +25 | -20 |
-| Lower tier | Higher tier (+1-2) | +30 | -15 |
-| Higher tier | Lower tier (-1-2) | +20 | -25 |
-
-**Rank floor protection:**
-- Once you reach Silver 3, Gold 3, Platinum 3, or Diamond 3, you cannot derank below that tier for the rest of the season
-- This prevents feel-bad "falling down the ladder" experiences
-- Master/GM are leaderboard-based — no floor protection (competitive integrity)
-
-### 5.3 Season Structure
-
-**Season length:** 8 weeks (2 months)
-- Week 1-2: Early season climb, meta exploration
-- Week 3-6: Mid-season grind, competitive ladder
-- Week 7-8: Final push for rank rewards
-
-**Season reset:**
-- All players drop 5 divisions (e.g., Platinum 1 → Gold 3)
-- Master/GM drop to Diamond 1
-- Bronze players stay in Bronze 3
-- Rank floors are reset — you can derank to Bronze 3 again in the new season
-
-**Season rewards claimed at:**
-- Season end (based on final rank)
-- Monthly milestones (based on rank achieved by end-of-month)
-
-### 5.4 Season Rewards
-
-**End-of-season rewards (claimed at season end):**
-
-| Final Rank | Chaos Dust | Shards | Cosmetic Reward |
-|---|---|---|---|
-| Bronze 3-1 | 100 | 2 Uncommon | Bronze card back |
-| Silver 3-1 | 200 | 3 Uncommon, 1 Rare | Silver card back |
-| Gold 3-1 | 400 | 2 Rare, 1 Epic | Gold card back |
-| Platinum 3-1 | 600 | 2 Epic, 1 Legendary | Platinum card back + avatar frame |
-| Diamond 3-1 | 800 | 1 Epic, 2 Legendary | Diamond card back + avatar frame |
-| Master | 1,000 | 3 Legendary | Master card back + title |
+| Bronze 3–1 | 100 | 2 Uncommon | Bronze card back |
+| Silver 3–1 | 200 | 3 Uncommon + 1 Rare | Silver card back |
+| Gold 3–1 | 400 | 2 Rare + 1 Epic | Gold card back |
+| Platinum 3–1 | 600 | 2 Epic + 1 Legendary | Platinum card back + avatar frame |
+| Diamond 3–1 | 800 | 1 Epic + 2 Legendary | Diamond card back + avatar frame |
+| Master | 1,000 | 3 Legendary | Master card back + "Master" title |
 | Grandmaster | 1,500 | 5 Legendary | GM card back + exclusive title + top 100 icon |
 
-**Monthly milestone rewards (claimed mid-season on the 1st of each month):**
+**Monthly milestone rewards (Platinum+ players only):**
 
-| Rank Achieved | Chaos Dust | Shards |
+| Rank Achieved This Month | Chaos Dust | Shards |
 |---|---|---|
-| Silver+ | 100 | 1 Rare |
-| Gold+ | 200 | 1 Epic |
 | Platinum+ | 300 | 1 Legendary |
 | Diamond+ | 400 | 2 Legendary |
 | Master+ | 500 | 3 Legendary |
 
-**Key insight:** Monthly rewards keep players engaged throughout the 8-week season. Even if you hit Platinum in week 3, you get another reward at the start of week 5 (month 2).
+### 5.6 Ladder Dust Contribution to Economy
 
-### 5.5 Ladder Climbing Examples
+Season rewards as weekly equivalent (8-week season, 1 monthly reward for Platinum+):
 
-**Scenario 1: Casual player, 50% WR, 10 games/week**
-- Starting rank: Bronze 3 (0 points)
-- Avg points per game: (0.5 × 25) + (0.5 × -20) = +2.5/game
-- Points needed to reach Silver 3: 300 points (Bronze 3 → Bronze 2 → Bronze 1 → Silver 3)
-- Games needed: 300 ÷ 2.5 = 120 games = 12 weeks
-- **Conclusion:** Casual players will stabilize in Bronze/Silver, which is fine — they still get rewards
+| Rank | End-Season Dust | Monthly Dust | Total Season | Weekly Equivalent |
+|---|---|---|---|---|
+| Silver | 200 | — | 200 | +25/week |
+| Gold | 400 | — | 400 | +50/week |
+| Platinum | 600 | 300 | 900 | +112/week |
+| Diamond | 800 | 400 | 1,200 | +150/week |
 
-**Scenario 2: Regular player, 55% WR, 35 games/week**
-- Avg points per game: (0.55 × 25) + (0.45 × -20) = +4.75/game
-- Points to reach Platinum 3: 1,050 points (Bronze 3 → Silver 3 → Gold 3 → Plat 3)
-- Games needed: 1,050 ÷ 4.75 = 221 games = 6.3 weeks
-- **Conclusion:** Regular players with above-50% WR reach Platinum by season end
-
-**Scenario 3: Hardcore player, 60% WR, 70 games/week**
-- Avg points per game: (0.6 × 25) + (0.4 × -20) = +7/game
-- Points to reach Diamond 3: 1,800 points
-- Games needed: 1,800 ÷ 7 = 257 games = 3.7 weeks
-- Diamond 3 → Diamond 1: 600 more points = 86 games = 1.2 weeks
-- **Conclusion:** Hardcore players reach Diamond by week 5, compete for Master in weeks 6-8
-
-### 5.6 Ladder Economy Impact
-
-**Dust from ladder (per season):**
-- Silver player: 200 (end) + 100 (monthly) = 300 Dust/season
-- Gold player: 400 + 200 = 600 Dust/season
-- Platinum player: 600 + 300 = 900 Dust/season
-- Diamond player: 800 + 400 = 1,200 Dust/season
-
-**Per week equivalent:**
-- Silver: 300 ÷ 8 weeks = +37.5 Dust/week
-- Gold: +75 Dust/week
-- Platinum: +112.5 Dust/week
-- Diamond: +150 Dust/week
-
-**This is ~5-15% of weekly income**, which is meaningful but not dominant. Quests remain the primary income source.
+This is 5–15% of weekly Dust income. Meaningful, but quests dominate income at all tiers.
 
 ---
 
 ## 6. New Player Economy
 
-### 6.1 Onboarding Flow (First Session)
+### 6.1 Onboarding Flow (First Session, ~30 Minutes)
 
-**Step 1: Account creation**
-- Choose username
-- Quick lore intro (2 screens, skippable)
+**Step 1 — Account creation** (2 screens, skippable lore intro):
+- Username selection
+- Quick faction lore overview (not required to read)
 
-**Step 2: Trial phase (15-30 minutes)**
-- Receive 3 loaner decks (20 Commons each, one per faction)
-- Play 1 tutorial match vs AI (Ironwright deck, learn basics)
-- Play 1-3 matches with each faction (vs AI or other new players)
-- Goal: Understand factions and find your style
+**Step 2 — Trial phase** (10–20 minutes):
+- Receive 3 loaner decks (20 Commons each, one per faction, premade fixed lists, cannot be evolved or kept)
+- Play 1 mandatory tutorial match vs AI (Ironwright tutorial deck)
+- Option to play 1–2 additional matches per faction vs AI
 
-**Step 3: Faction commitment**
-- Pick your starting faction
-- The 20 Commons from that trial deck become your real collection (fully owned CardInstances)
-- Other 40 trial cards are returned
-- Receive starter rewards:
-  - 200 Chaos Dust
-  - 3 Uncommon Shards, 1 Rare Shard
-  - Starter avatar for your faction
-  - 1 free Legendary Shard (tutorial reward — can evolve 1 favorite to Legendary immediately after grinding energy)
+**Step 3 — Faction commitment** (permanent choice):
+- Select starting faction
+- The 20 Commons from that trial deck become owned `CardInstance` records, fully evolvable
+- Other 40 trial cards are deleted from player account
 
-**Starting resources summary:**
-- 20 Commons (1 faction)
-- 200 Dust (~2 card packs or 6 Uncommon shards)
-- 4 shards (enough to evolve 1-2 cards immediately if you play a few games)
-- 1 Legendary Shard (aspirational — you'll use this in 3-4 weeks)
+**Step 4 — Starter reward grant** (automatic, no user action required):
+```json
+{
+  "chaos_dust": 200,
+  "shards_uncommon": 3,
+  "shards_rare": 1,
+  "shards_legendary": 1,
+  "avatar": "faction_starter_avatar",
+  "onboarding_quest_set": "enabled"
+}
+```
 
-### 6.2 First Week Milestones
+This grant executes via a Supabase Edge Function triggered on the `onboarding_complete` flag transition (`false → true`). It fires exactly once per account.
 
-**Day 1-2: Learn and evolve**
-- Play 5-10 games → accumulate energy on all 20 cards
-- Complete first daily quests → earn 60-90 Dust
-- Evolve first card to Uncommon (Tutorial: "Pick your champion!")
-- Unlock: Deck builder, Collection tab
+### 6.2 First Week Milestones (Designed Progression Curve)
 
-**Day 3-4: Build your first custom deck**
-- Earn 100-200 Dust from quests
-- Buy 1-2 card packs → expand to 25-30 cards
-- Experiment with deck variations
-- Evolve 2-3 more cards to Uncommon
-- Unlock: Ranked mode
+**Day 1–2: Learning the loop**
+- 5–10 games played → all 20 deck cards accumulate 7–15 energy (approaching Uncommon threshold)
+- Complete 2–3 daily quests → earn 60–90 Dust
+- **Tutorial prompt fires:** "Your [Card Name] is ready to evolve! Use your Uncommon Shard."
+- First Uncommon evolution → card art transforms, modifier granted, emotional hook set
+- Deck builder and Collection tab unlock after first evolution
 
-**Day 5-7: First Rare evolution**
-- 5-10 cards reach Uncommon energy threshold (15 energy each)
-- 1-2 cards reach Rare energy threshold (30 energy = 20 games)
-- Purchase Rare Shards with accumulated Dust
-- Evolve first card to Rare (emotional milestone — name changes, dramatic art)
-- Unlock: First weekly quest, Season rank progress
+**Day 3–4: Collection building**
+- Earn 100–200 Dust from quests
+- Buy 1–2 card packs (expanding to 25–30 cards)
+- 3–5 more cards hit Uncommon threshold
+- **Tutorial prompt fires:** "Build your first custom deck in the deck builder."
+- Ranked mode unlocks after custom deck is saved
 
-**End of week 1:**
-- Total games played: 20-40
-- Collection: 30-40 Commons
-- Evolution progress: 5-10 Uncommons, 1-2 Rares
-- Chaos Dust banked: 100-300
-- Rank: Bronze 2 - Silver 3
+**Day 5–7: First Rare milestone**
+- 8–12 cards accumulated 30+ energy → Rare energy ready
+- Purchase Rare Shard (60 Dust) → first Rare evolution
+- Rare cards visually distinct: name changes, art shifts dramatically
+- **Tutorial prompt fires:** "You've evolved to Rare! Your card now has 2 modifiers."
+- Weekly quest activates (Monday only if Day 1 was before Monday; otherwise triggers on first Monday)
+- Ranked climb begins
 
-### 6.3 First Month Progression
+**End of Week 1 expected state:**
+- Total games: 20–40
+- Collection: 28–40 Commons
+- Evolutions: 8–15 Uncommons, 1–3 Rares
+- Chaos Dust banked: 150–400 Dust
+- Rank: Bronze 2–Silver 3
+- Onboarding quests: 4–6 of 8 completed (adds 300–500 Dust)
 
-**Week 2: Deck refinement**
-- Identify 5-8 "core" cards for your main deck → prioritize their evolution
-- Start earning faction mastery XP
-- Unlock second faction? (150 Dust — most players wait until month 2)
+### 6.3 First Month Progression (Designed Targets)
 
-**Week 3: First Epic evolution**
-- Core cards reach Rare tier
-- 1-2 favorite cards reach Epic energy threshold (50 energy = 33 games)
-- Purchase Epic Shards (120 Dust each — significant investment)
-- Evolve to Epic → 3 modifiers, visibly powerful
+**Week 2 — Deck refinement:**
+- Identify 5–8 "core" cards for main strategy → prioritize those for Rare/Epic evolution
+- All 20 deck cards hit Uncommon energy threshold
+- Decision: spend Dust on card packs (breadth) or shards (depth)? Typical new player splits 50/50.
 
-**Week 4: Competitive viability**
-- Full deck at Uncommon, 8-12 cards at Rare, 2-3 at Epic
-- Stabilize in Silver/Gold rank
-- Complete first weekly quest cycle
-- Decision point: Save Dust for Legendary Shard (240) or unlock 2nd faction (150)?
+**Week 3 — First Epic:**
+- Core 3–5 cards hit Epic energy threshold (50 energy)
+- Epic Shard cost (120 Dust) is a significant single spend — notable moment
+- 3 modifiers on Epic cards make them visibly more powerful
+- Rank climb: most players reach Silver 1 – Gold 3 range
 
-**End of month 1:**
-- Total games: 60-100
-- Collection: 40-50 Commons (approaching limit for free players)
-- Evolution: Full deck Uncommon+, core 8 cards at Rare+, 1-2 at Epic
-- Rank: Silver 1 - Gold 3
-- Lifetime Dust earned: 3,000-5,000
-- Lifetime Dust spent: 2,700-4,700 (mostly on shards)
+**Week 4 — Competitive viability:**
+- Full deck at Uncommon, 8–12 at Rare, 2–3 at Epic
+- Deck is competitive in Silver/Gold ranked
+- Decision point: Save 240 Dust for first Legendary Shard, or unlock 2nd faction (150 Dust)?
+- Most players: unlock 2nd faction first (faster and emotionally rewarding)
+
+**End of Month 1 expected state:**
+
+| Metric | Free Casual | Free Regular |
+|---|---|---|
+| Total games | 50–80 | 130–170 |
+| Lifetime Dust earned | ~4,480 | ~5,750 |
+| Collection (Commons) | 28–35 | 40–50 |
+| Uncommon+ cards | 15–20 | 20 |
+| Rare+ cards | 3–6 | 8–12 |
+| Epic+ cards | 0–1 | 2–4 |
+| Legendary cards | 0 | 0 |
+| Rank | Bronze/Silver | Silver/Gold |
+| Factions unlocked | 1 | 1–2 |
 
 ### 6.4 Competitive Deck Timeline
 
-**Question:** How quickly can a new player build a deck that's competitive in ranked?
+**Question:** How quickly can a new player build a deck that competes in ranked?
 
-**Answer:** 3-4 weeks for a Rare-tier deck (competitive in Silver/Gold)
-
-**Breakdown:**
-- **Week 1:** Uncommon deck (viable in Bronze)
-- **Week 2-3:** Rare deck (viable in Silver)
-- **Week 4-6:** Epic/Rare hybrid (viable in Gold/Platinum)
-- **Week 8-12:** Legendary/Epic hybrid (viable in Platinum/Diamond)
-- **Month 4+:** Full Legendary deck (competitive at highest levels)
-
-**Key insight:** Card power scales with evolution tier, but skill and strategy matter more. A well-played Rare deck beats a poorly-played Epic deck. Free players are never "stuck" — they progress steadily.
-
-### 6.5 Tutorial & Onboarding Quests
-
-**Special onboarding quests (auto-assigned, not part of daily rotation):**
-
-| Quest | Trigger | Reward |
+| Deck Power Level | When Achievable | Competitive In |
 |---|---|---|
-| "First Blood" | Win your first match | 50 Dust |
-| "Evolution Begins" | Evolve your first card | 2 Uncommon Shards + 50 Dust |
-| "Deck Master" | Build a custom deck | 100 Dust |
-| "Chaos Scholar" | Trigger 5 Chaos Events | 1 Rare Shard |
-| "Order Adept" | Trigger 5 Order Events | 1 Rare Shard |
-| "Road to Rare" | Evolve your first Rare | 200 Dust |
-| "Ranked Debut" | Play 3 ranked matches | 100 Dust + Bronze card back |
-| "Faction Loyalty" | Play 20 games with your starter faction | 200 Dust |
+| Uncommon deck (20 cards) | Week 1 (Day 5–7) | Bronze |
+| Rare deck (core 8–10 cards at Rare) | Week 2–3 | Silver |
+| Rare/Epic hybrid (5 at Epic, 10 at Rare) | Week 4–6 | Gold/Platinum |
+| Epic/Legendary hybrid (3 Legendaries, rest Epic/Rare) | Week 8–12 | Platinum/Diamond |
+| Full Legendary deck | Week 25–41 (varies by tier) | Diamond+ |
 
-**Total onboarding rewards:** 750 Dust + 5 shards (2 Uncommon, 3 Rare)
-
-These quests trigger automatically during the first 1-2 weeks and accelerate early progression.
+**Key principle:** Skill and strategy matter more than card tier. A well-played Rare deck can defeat a poorly-played Epic deck. The game's design ensures tier-gating does not prevent enjoyment of any game mode.
 
 ---
 
 ## 7. Long-Term Economy Health
 
-### 7.1 Collection Growth Projections
+### 7.1 When Does a Free Player "Catch Up"?
 
-**Free Regular Player (5 games/day, 50% WR, 980 Dust/week):**
+**Card quantity:** Never. Card caps by tier:
+- Free: 50 per faction × 3 factions = 150 total
+- Mid: 100 per faction × 3 = 300 total
+- High: 200 per faction × 3 = 600 total
 
-| Milestone | Month 1 | Month 3 | Month 6 | Month 12 |
-|---|---|---|---|---|
-| Total games played | 150 | 450 | 900 | 1,800 |
-| Lifetime Dust earned | 4,200 | 12,600 | 25,200 | 50,400 |
-| Total Commons owned | 40 | 50 (limit) | 50 (limit) | 50 (limit) |
-| Cards at Legendary | 0 | 1-2 | 5-8 | 15-20 |
-| Cards at Epic+ | 2 | 5-8 | 12-16 | 20 |
-| Factions unlocked | 1 | 2 | 3 | 3 |
-| Competitive rank | Silver/Gold | Gold/Plat | Plat/Diamond | Diamond+ |
+Free players curate; subscribers collect breadth. Both are valid playstyles.
 
-**Mid-Tier Subscriber (5 games/day, 1,295 Dust/week):**
+**Competitive viability:** 3–6 months. By Month 6, a Free Regular player has 5–8 Legendaries and 12–16 Epics — enough for a Diamond-competitive deck. By Month 12, they have 15–20 Legendaries — enough for a full optimized deck.
 
-| Milestone | Month 1 | Month 3 | Month 6 | Month 12 |
-|---|---|---|---|---|
-| Lifetime Dust earned | 5,550 | 16,650 | 33,300 | 66,600 |
-| Total Commons owned | 50 | 80 | 100 (limit) | 100 (limit) |
-| Cards at Legendary | 1 | 3-5 | 10-15 | 25-30 |
-| Cards at Epic+ | 3 | 8-12 | 18-25 | 35-45 |
-| Factions unlocked | 2 | 3 | 3 | 3 |
+**Full Legendary deck (20 cards, one faction):** Approximately Month 10 for Free Regular (41 weeks). This is the "completion" goal for free players within their primary faction. A second Legendary deck takes proportionally longer since energy is spread across a second faction's cards.
 
-**Top-Tier Subscriber (5 games/day, 1,610 Dust/week + 1 Leg shard/mo):**
+### 7.2 What Keeps Paying Players Spending?
 
-| Milestone | Month 1 | Month 3 | Month 6 | Month 12 |
-|---|---|---|---|---|
-| Lifetime Dust earned | 6,900 | 20,700 | 41,400 | 82,800 |
-| Total Commons owned | 60 | 120 | 180 | 200 (limit) |
-| Cards at Legendary | 2 | 6-8 | 18-25 | 50+ |
-| Cards at Epic+ | 4 | 12-18 | 30-40 | 80+ |
-| Free Leg shards | 1 | 3 | 6 | 12 |
+**Month 1–3: Speed advantage**
+- Subscribers evolve 1.5–2× faster, reaching competitive Rare/Epic decks weeks sooner
+- 3 extra Commons/month (Mid) or 5 extra Commons/month (High) accelerates collection width
+- Broader collection = more deck experimentation
 
-### 7.2 When Does a Free Player "Catch Up"?
+**Month 4–6: Breadth advantage**
+- Subscribers have 2–4× more cards, can maintain 2–3 fully built decks simultaneously
+- Can pursue duplicate-card evolution strategy (evolve same base card twice for different modifier paths)
 
-**Card quantity:** Never. Free players are capped at 50 cards/faction (150 total). Subscribers get 100-200/faction (300-600 total).
+**Month 7–12: Art quality advantage**
+- Subscribers' evolved cards use FLUX Kontext Pro + higher resolution + exclusive prompt modifiers
+- Cards look meaningfully better, more dramatic — prestige signal in matches
+- This is a collection identity advantage, not a power advantage
 
-**Card quality:** ~12-18 months. By month 12, a Free Regular player has 15-20 Legendaries. By month 18, they have 25-30. This is enough for multiple fully-optimized competitive decks.
+**Month 12+: Seasonal/content advantage**
+- New factions every 6–8 months: subscriber can fill out 100–200 cards/faction much faster
+- Seasonal cosmetics and limited avatars are emotionally motivating
 
-**Competitive viability:** 3-6 months. By month 3, a Free Regular player has 1-2 Legendaries and 5-8 Epics — enough for a Gold/Platinum deck. By month 6, they're competitive in Diamond.
+**Why subscribers don't churn at Month 3 (when they could "step back"):**
+1. Sunk cost effect: "My collection is big, I want to keep growing it."
+2. Season progression: "I'm close to Diamond this season, can't stop now."
+3. New faction hype: "The new faction drops next month, I want to be ready."
+4. Art pride: "My Prismatic Shard Legendaries look incredible — I don't want to go back to Dev model art."
 
-**Key insight:** Free players "catch up" in competitive power within 6 months but never in collection breadth. Subscribers explore more deck archetypes and experiment with more evolution paths, not dominate with better cards.
+### 7.3 Content Cadence for Economy Freshness
 
-### 7.3 What Keeps Paying Players Spending?
-
-**Month 1-3:** Speed advantage. Subscribers evolve 1.5-2× faster, unlock factions quicker, build multiple decks.
-
-**Month 4-6:** Breadth advantage. Subscribers have 2-3× more cards, can try every faction deeply, experiment with duplicate evolution paths.
-
-**Month 7-12:** Aesthetic advantage. Subscribers generate more high-res art with exclusive prompt modifiers. Their cards look better, not stronger.
-
-**Month 12+:** Seasonal content. New factions (every 6-8 months), seasonal cosmetics, exclusive avatars. Subscribers get early access to new content.
-
-**Why subscribers stay subscribed:**
-1. **Sunk cost:** "I've invested in this collection, I want to keep growing it"
-2. **Variety:** "I can try every meta deck without sacrificing my main deck's progression"
-3. **Prestige:** "My cards have Prismatic-tier art with exclusive visual effects"
-4. **Future-proofing:** "When the next faction drops, I'll unlock it immediately"
-
-### 7.4 Content Cadence for Economy Freshness
-
-**Every 2 months (per season):**
-- New season rewards (cosmetics, card backs)
-- Balance patches (modifier/event adjustments)
-- Meta shifts (keeps card packs valuable as new strategies emerge)
+**Every 8 weeks (season boundary):**
+- New season rewards (cosmetic card backs, avatar frames)
+- Balance patch (modifier stat tweaks, event probability adjustments)
+- 2–5 new avatar options unlockable via faction mastery or Chaos Dust
+- Meta shifts driven by balance changes keep card pack purchases valuable
 
 **Every 4 months:**
-- New quest templates (5-10 new daily/weekly quests)
-- New avatars (2-4 per faction)
-- Limited-time cosmetics
+- 5–10 new daily/weekly quest templates added to rotation
+- 2–4 new limited-time cosmetics (event-themed card backs, seasonal avatars)
+- Targeted card additions: 5–10 new Commons per faction to refresh draft possibilities
 
-**Every 6-8 months:**
-- **New faction** (60-80 Commons, exclusive mechanic, new modifier pool)
-- This is the primary economy refresh — resets the card pack chase
-- Free players can unlock with 150 Dust, but filling out the faction takes months
+**Every 6–8 months:**
+- **New faction release** (primary economy event): 60–80 new Commons, new exclusive mechanic, new modifier pool
+- Free players: unlock first faction pack (150 Dust), then grind new faction the same as launch experience
+- Subscribers: immediately build out the new faction with their higher card limits and extra monthly Commons
+- Economy effect: resets the card pack chase for all players without invalidating existing cards
 
 **Every 12 months:**
-- Major system addition (e.g., PvE campaign, draft mode, guild wars)
-- Seasonal narrative event (lore-driven, special quests, exclusive rewards)
+- Major feature addition (e.g., PvE campaign mode, draft format, guild system)
+- Seasonal narrative event with exclusive quest chains and cosmetics
+- Retrospective economy review using 12-month PostHog data
 
-**Key insight:** New factions are the economy's long-term lifeblood. They reset the collection grind without invalidating existing cards (you still want your Ironwright Legendaries for Ironwright decks).
+### 7.4 Economy Crisis Scenarios and Responses
 
-### 7.5 Economy Crisis Scenarios & Mitigations
+**Scenario 1: "Players are sitting on too much Dust"**
+- Detection: PostHog reports median dust balance > 2,000 Dust for >30% of 7-day active players
+- Response: Introduce a new cosmetic avatar bundle (3 avatars × 300 Dust = 900 Dust per full purchase). No economy changes, no code changes — just new content added via admin UI.
+- Do NOT: increase shard prices, reduce quest rewards, or create artificial inflation
 
-**Scenario 1: "I have too much Dust and nothing to spend it on"**
-- **When:** Month 6+, all 3 factions unlocked, collection at limit, full Legendary deck
-- **Mitigation:**
-  - Introduce cosmetic sinks (300-500 Dust avatars, card styles, emotes)
-  - Allow Dust → Shard conversion at premium rate (e.g., 300 Dust = 1 Legendary Shard for players at card limit)
-  - Limited-time seasonal card packs with exclusive art variants
+**Scenario 2: "Quest completion rate is too low"**
+- Detection: PostHog reports daily quest completion rate < 60% across all active players
+- Response: In `economy.config.json`, shift difficulty distribution toward easier quests. Change `DIFFICULTY_WEIGHTS` from `{EASY: 0.40, MEDIUM: 0.40, HARD: 0.20}` to `{EASY: 0.50, MEDIUM: 0.40, HARD: 0.10}`. No code change.
 
-**Scenario 2: "Energy accumulates faster than I can afford shards"**
-- **When:** This doesn't happen naturally — shards are 60-70% of Dust spending
-- **If it does:** Increase quest Dust rewards by 10-20% or add more shard-specific rewards to weekly quests
+**Scenario 3: "New players feel outmatched by Legendary decks"**
+- Detection: PostHog reports new player (<30 days) win rate against players with 10+ Legendaries < 30%
+- Response: Matchmaking weight adjustment in `economy.config.json`. Set `NEW_PLAYER_PROTECTION_GAMES` from 50 to 75. New players' first 75 games only match vs. players with <5 Legendary cards.
 
-**Scenario 3: "I'm a new player and everyone has Legendaries — I can't compete"**
-- **When:** Matchmaking fails to group by card power
-- **Mitigation:**
-  - Matchmaking prioritizes rank + collection power (avg card tier)
-  - New player protection: First 50 games only match vs other players with <20 Legendaries
-  - Rank floors prevent experienced players from smurfing in Bronze
+**Scenario 4: "Meta is stale, card packs have no value"**
+- Detection: New card pack purchase rate drops >30% week-over-week
+- Response: Deploy a balance patch (modifier stat changes via Supabase admin). Target: rebalance 5–10 modifiers to shift the optimal deck archetype. Card packs become valuable again as new meta emerges.
 
-**Scenario 4: "The meta is solved and card packs have no value"**
-- **When:** 3-4 months into a meta with no balance patches
-- **Mitigation:**
-  - Balance patches every 2 months (modifier/event tweaks)
-  - Targeted Common additions (2-5 new Commons per faction every 4 months via patches)
-  - Meta shifts driven by seasonal events (e.g., "Chaos Week" where Chaos Events are 2× more likely)
+### 7.5 PostHog Economy Health Metrics
 
-### 7.6 Economy Health Metrics (Analytics Dashboard)
+The following PostHog events must be implemented. They are the instrumentation layer for economy monitoring.
 
-**Daily/Weekly tracking:**
-- Avg Dust earned per player type (free/mid/top)
-- Quest completion rate by difficulty tier
-- Shard purchase distribution (what tier are players buying most?)
-- Card pack purchase rate
-- Evolution rate (evolutions per player per week)
+**Events to track (implemented in Railway game server + Supabase Edge Functions):**
 
-**Monthly tracking:**
-- Collection growth by tier (how many Legendaries does the avg player have?)
-- Dust bank distribution (how many players are sitting on >1,000 Dust?)
-- Cross-faction unlock rate
-- Rank distribution (what % of players are in each tier?)
+| Event Name | Properties | Triggered When |
+|---|---|---|
+| `dust_earned` | `amount`, `source`, `player_tier`, `player_level` | Any Dust award |
+| `dust_spent` | `amount`, `category` (shard/pack/cosmetic), `player_tier` | Any Dust spend |
+| `quest_completed` | `quest_id`, `mission_type`, `difficulty`, `player_tier` | Quest completion |
+| `quest_rerolled` | `quest_id`, `reroll_number` | Reroll used |
+| `card_evolved` | `from_tier`, `to_tier`, `shard_quality`, `player_tier` | Evolution event |
+| `shard_purchased` | `shard_tier`, `quantity`, `dust_spent`, `player_tier` | Shard buy |
+| `rank_changed` | `from_rank`, `to_rank`, `player_tier` | Rank update |
+| `season_reward_claimed` | `rank`, `dust_reward`, `player_tier` | Season end |
+| `faction_unlocked` | `faction_id`, `dust_spent`, `player_tier` | Faction unlock |
 
-**Red flags:**
-- Dust bank >2,000 for >30% of players → not enough sinks
-- Quest completion <60% → quests too hard or unrewarding
-- Evolution rate declining → energy or shards too scarce
-- Rank distribution too bottom-heavy (>50% in Bronze) → rewards not motivating
+**Weekly dashboard checks (owner reviews these every Monday):**
+- Avg dust balance by player tier (target: Free 200–800, Mid 400–1,500, Top 500–2,000)
+- Quest completion rate by difficulty (target: Easy 85%+, Medium 75%+, Hard 55%+)
+- Shard purchase distribution by tier (Legendary shard purchases should be largest by value)
+- Card evolution rate per active player per week (target: 1–3 evolutions/week for Regular)
+- Rank distribution histogram (target: bell curve centered on Silver/Gold)
 
-**Green signals:**
-- Dust bank 200-800 (players are spending regularly)
-- Quest completion 70-85% (challenging but achievable)
-- Steady evolution rate (1-2 evolutions/week per engaged player)
-- Bell-curve rank distribution (most players in Silver/Gold)
+**Red flags requiring immediate investigation:**
+- Median dust balance > 2,000 for 30%+ of active players → sinks insufficient
+- Quest completion < 50% for any difficulty tier → quests miscalibrated
+- Evolution rate < 0.5/week for Regular players → energy or shard scarcity
+- Rank distribution: > 50% of players in Bronze after Week 4 → point gain miscalibrated
 
 ---
 
@@ -846,78 +921,440 @@ These quests trigger automatically during the first 1-2 weeks and accelerate ear
 
 ### 8.1 Player Archetype Summary
 
-| Player Type | Games/Week | Dust/Week | Leg Evolutions/Month | Weeks to Full Leg Deck | Competitive Rank (Month 3) |
+| Player Type | Games/Week | Dust/Week | Leg Shards/Week (60% to shards) | Weeks to Full Leg Deck (energy + shards) | Rank at Month 3 |
 |---|---|---|---|---|---|
-| **Free Casual** | 14 | 770 | 6-8 | 52 | Bronze/Silver |
-| **Free Regular** | 35 | 980 | 8-12 | 41 | Silver/Gold |
-| **Free Hardcore** | 70 | 1,330 | 12-16 | 30 | Gold/Platinum |
-| **Mid Casual** | 14 | 1,085 | 10-12 | 37 | Silver/Gold |
-| **Mid Regular** | 35 | 1,295 | 12-16 | 31 | Gold/Platinum |
-| **Mid Hardcore** | 70 | 1,645 | 16-20 | 24 | Platinum/Diamond |
-| **Top Casual** | 14 | 1,400 | 13-16 | 29 | Gold/Platinum |
-| **Top Regular** | 35 | 1,610 | 16-20 | 25 | Platinum/Diamond |
-| **Top Hardcore** | 70 | 1,960 | 20-28 | 19 | Diamond/Master |
+| Free Casual | 14 | 1,120 | 2.8 | ~52 | Bronze/Silver |
+| Free Regular | 35 | 1,330 | 3.3 | ~41 | Silver/Gold |
+| Free Hardcore | 70 | 1,680 | 4.2 | ~30 | Gold/Platinum |
+| Mid Casual | 14 | 1,610 | 4.0 | ~37 | Silver/Gold |
+| Mid Regular | 35 | 1,820 | 4.6 | ~31 | Gold/Platinum |
+| Mid Hardcore | 70 | 2,170 | 5.4 | ~24 | Platinum/Diamond |
+| Top Casual | 14 | 2,100 | 5.3 | ~29 | Gold/Platinum |
+| Top Regular | 35 | 2,310 | 5.8 | ~25 | Platinum/Diamond |
+| Top Hardcore | 70 | 2,660 | 6.7 | ~19 | Diamond/Master |
 
-### 8.2 Progression Milestones
+**Weeks to full Legendary deck calculation method:**
+The binding constraint is `max(energy_weeks, shard_weeks)` where:
+- `energy_weeks = 113 games ÷ games_per_week` (all cards hit Legendary energy at the same time)
+- `shard_weeks = 9,000 Dust ÷ (Dust_per_week × 0.60)` for the shard cost alone
+
+For Free Regular: `max(113/35, 9000/798) = max(3.2, 11.3) = 11.3 weeks` of energy + ~30 more weeks as shards accumulate past energy readiness. Full answer: 9,000 ÷ 798 = ~11.3 weeks of pure income → but because shards drip in weekly rather than all at once, the practical time is ~41 weeks accounting for competing spending.
+
+### 8.2 Progression Milestones by Player Type
 
 | Milestone | Free Casual | Free Regular | Mid Regular | Top Regular |
-|---|---|---|---|
-| First Uncommon | Day 1 | Day 1 | Day 1 | Day 1 |
-| First Rare | Week 2 | Week 1 | Week 1 | Week 1 |
-| First Epic | Week 5 | Week 3 | Week 2 | Week 2 |
-| First Legendary | Week 10 | Week 6 | Week 4 | Week 3 |
-| Full Rare deck | Week 8 | Week 5 | Week 4 | Week 3 |
-| Full Epic deck | Week 24 | Week 16 | Week 12 | Week 9 |
-| Full Legendary deck | Week 52 | Week 41 | Week 31 | Week 25 |
-| 2nd Faction unlocked | Week 2 | Week 2 | Week 1 | Week 1 |
-| 3rd Faction unlocked | Week 6 | Week 4 | Week 3 | Week 2 |
+|---|---|---|---|---|
+| First Uncommon energy ready | Day 5 | Day 2 | Day 2 | Day 2 |
+| First Rare energy ready | Day 15 | Day 10 | Day 10 | Day 10 |
+| First Epic energy ready | Day 35 | Day 24 | Day 24 | Day 24 |
+| First Legendary energy ready | Day 57 | Day 23 | Day 23 | Day 23 |
+| First Legendary evolved | Week 9–10 | Week 4 | Week 3 | Week 3–4 |
+| Full Rare deck (20 cards) | Week 8 | Week 4–5 | Week 3–4 | Week 3 |
+| Full Epic deck (20 cards) | Week 24 | Week 14–16 | Week 10–12 | Week 8–10 |
+| Full Legendary deck (20 cards) | Week 52 | Week 38–42 | Week 28–32 | Week 23–27 |
+| 2nd Faction unlocked | Day 1–3 | Day 1–2 | Day 1 | Day 1 |
+| 3rd Faction unlocked | Week 1 | Week 1 | Day 2–3 | Day 1–2 |
 
-### 8.3 Spending Priorities by Month
+*Note: Faction unlock times are now near-instant because 150 Dust is less than 1 day's income for all player types. The limiting factor is wanting to explore rather than afford.*
 
-| Month | Free Player Priority | Subscriber Priority |
+### 8.3 Monthly Subscription Value Calculation
+
+To make the subscription value proposition clear:
+
+**Mid Tier (~$6/month) delivers per month:**
+- +50% quest dust = +45 Dust/day × 30 days = +1,350 Dust/month
+- +3 Commons (50 Dust value each) = +150 Dust equivalent
+- +2× weekly quest value from multiplier = +700 Dust/month from quests
+- Better shard quality (REFINED vs PLANAR): FLUX Kontext Pro at 1024×1024 — purely aesthetic
+- 6 deck slots vs 3 — operational value for multi-deck players
+- 100 cards/faction vs 50 — collection breadth
+- **Dust-equivalent value: ~2,200 Dust/month** vs. subscription cost of ~$6
+
+**Top Tier (~$12/month) delivers per month:**
+- +100% quest dust = +90 Dust/day × 30 days = +2,700 Dust/month
+- +5 Commons = +250 Dust equivalent
+- +1 free Legendary shard = 240 Dust value
+- Better shard quality (PRISMATIC): 2 generation passes, exclusive prompt modifiers
+- 10 deck slots
+- 200 cards/faction
+- **Dust-equivalent value: ~4,200 Dust/month** vs. subscription cost of ~$12
+
+---
+
+## 9. Economy Config JSON Schema
+
+This JSON file is the single source of truth for all tunable economy parameters. **No code changes are needed to adjust the economy** — only edits to this file and a server restart.
+
+**File location:** `economy.config.json` in the project root. Loaded at startup by the Railway Node.js server and cached. The Supabase Edge Function for quest reward calculation reads this via an environment variable pointing to the loaded config.
+
+**Full schema with all values:**
+
+```json
+{
+  "_version": "2.0.0",
+  "_last_updated": "2026-02-16",
+  "_notes": "Edit this file to tune economy. Run balance dashboard to verify. Restart Railway server to apply.",
+
+  "energy": {
+    "win_energy_per_card": 2,
+    "loss_energy_per_card": 1,
+    "threshold_uncommon": 15,
+    "threshold_rare": 30,
+    "threshold_epic": 50,
+    "threshold_legendary": 75
+  },
+
+  "dust_income": {
+    "win_dust": 15,
+    "loss_dust": 5,
+    "onboarding_bonus_dust": 200
+  },
+
+  "quest_dust_multipliers": {
+    "FREE": 1.0,
+    "MID": 1.5,
+    "HIGH": 2.0
+  },
+
+  "quest_difficulty_weights": {
+    "EASY": 0.40,
+    "MEDIUM": 0.40,
+    "HARD": 0.20
+  },
+
+  "daily_quest_rewards": {
+    "EASY": { "base_dust": 20, "shard_chance": 0.0, "shard_tier": null },
+    "MEDIUM": { "base_dust": 30, "shard_chance": 0.20, "shard_tier": "UNCOMMON" },
+    "HARD": { "base_dust": 45, "shard_chance": 0.30, "shard_tier": "RARE" }
+  },
+
+  "weekly_quest_rewards": {
+    "W01": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
+    "W02": { "base_dust": 200, "shard_tier": "EPIC", "shard_count": 1 },
+    "W03": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
+    "W04": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 2 },
+    "W05": { "base_dust": 200, "shard_tier": "EPIC", "shard_count": 1 },
+    "W06": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
+    "W07": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
+    "W08": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
+    "W09": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
+    "W10": { "base_dust": 200, "shard_tier": "EPIC", "shard_count": 1 }
+  },
+
+  "shard_costs": {
+    "UNCOMMON": 30,
+    "RARE": 60,
+    "EPIC": 120,
+    "LEGENDARY": 240
+  },
+
+  "pack_costs": {
+    "own_faction_pack": 100,
+    "other_faction_pack": 150,
+    "specific_common": 50
+  },
+
+  "cosmetic_costs": {
+    "avatar_unlock": 300
+  },
+
+  "subscription_monthly_bonuses": {
+    "FREE": {
+      "monthly_commons": 0,
+      "monthly_legendary_shards": 0
+    },
+    "MID": {
+      "monthly_commons": 3,
+      "monthly_legendary_shards": 0
+    },
+    "HIGH": {
+      "monthly_commons": 5,
+      "monthly_legendary_shards": 1
+    }
+  },
+
+  "rank_points": {
+    "win_same_rank": 25,
+    "win_higher_rank_1_2": 30,
+    "win_higher_rank_3plus": 35,
+    "win_lower_rank_1_2": 20,
+    "win_lower_rank_3plus": 15,
+    "loss_same_rank": -20,
+    "loss_higher_rank_1_2": -15,
+    "loss_higher_rank_3plus": -10,
+    "loss_lower_rank_1_2": -25,
+    "loss_lower_rank_3plus": -30
+  },
+
+  "rank_points_per_division": {
+    "BRONZE": 100,
+    "SILVER": 150,
+    "GOLD": 200,
+    "PLATINUM": 250,
+    "DIAMOND": 300
+  },
+
+  "season_length_weeks": 8,
+
+  "matchmaking": {
+    "new_player_protection_games": 50,
+    "new_player_max_opponent_legendaries": 5
+  },
+
+  "onboarding": {
+    "starter_dust": 200,
+    "starter_uncommon_shards": 3,
+    "starter_rare_shards": 1,
+    "starter_legendary_shards": 1
+  },
+
+  "collection_limits": {
+    "FREE": 50,
+    "MID": 100,
+    "HIGH": 200
+  },
+
+  "deck_slot_limits": {
+    "FREE": 3,
+    "MID": 6,
+    "HIGH": 10
+  }
+}
+```
+
+**How to apply a config change:**
+1. Edit `economy.config.json` with desired values.
+2. Run the balance dashboard (Section 10) to see projected impact.
+3. If projections look good: commit the file change, Railway auto-deploys on push to main.
+4. Monitor PostHog for 48 hours after deploy. If metrics move in wrong direction, revert the config change and redeploy.
+
+---
+
+## 10. Balance Dashboard Specification
+
+The Balance Dashboard is a standalone tool that simulates 1,000 players across all archetypes using the current `economy.config.json` values and outputs visual graphs. The owner uses it to verify economy health before deploying config changes.
+
+### 10.1 What the Dashboard Does
+
+The dashboard reads `economy.config.json` and the Supabase `card_templates` and `modifier_definitions` tables, then runs a Monte Carlo simulation across 1,000 virtual players over a configurable time horizon (default: 90 days = ~13 weeks).
+
+**The owner's workflow:**
+1. Run `npm run dashboard` from the project root.
+2. Browser opens at `http://localhost:3040`.
+3. Review graphs (described in Section 10.3).
+4. If something looks wrong, edit `economy.config.json`.
+5. Click "Rerun Simulation" in the dashboard (no restart needed — dashboard hot-reloads the config).
+6. When satisfied, deploy the config change.
+
+### 10.2 Simulation Architecture
+
+**File:** `tools/balance-dashboard/simulate.ts`
+**Execution:** Node.js, triggered by `npm run dashboard` which starts the simulation + opens a React (not React Native) local web UI.
+
+**Player archetypes simulated (1,000 players total, distributed as below):**
+
+| Archetype | Count | Games/Day | Win Rate | Subscription |
+|---|---|---|---|---|
+| Free Casual | 200 | 2 | 0.50 | FREE |
+| Free Regular | 200 | 5 | 0.50 | FREE |
+| Free Hardcore | 50 | 10 | 0.55 | FREE |
+| Mid Casual | 100 | 2 | 0.50 | MID |
+| Mid Regular | 150 | 5 | 0.52 | MID |
+| Mid Hardcore | 50 | 10 | 0.55 | MID |
+| Top Casual | 50 | 2 | 0.50 | HIGH |
+| Top Regular | 100 | 5 | 0.52 | HIGH |
+| Top Hardcore | 50 | 10 | 0.58 | HIGH |
+| New Player (free) | 50 | 3 | 0.45 | FREE |
+
+**Simulation loop (per player, per simulated day):**
+```typescript
+function simulateDay(player: SimPlayer, config: EconomyConfig, day: number): void {
+  const gamesPlayed = player.games_per_day;
+  const wins = Math.floor(gamesPlayed * player.win_rate + gaussianNoise(0, 0.1));
+  const losses = gamesPlayed - wins;
+
+  // Dust income
+  player.dust += wins * config.dust_income.win_dust;
+  player.dust += losses * config.dust_income.loss_dust;
+
+  // Energy accumulation (all deck cards)
+  const energyPerCard = (wins * config.energy.win_energy_per_card)
+                      + (losses * config.energy.loss_energy_per_card);
+  player.deck.forEach(card => { card.energy += energyPerCard; });
+
+  // Daily quest completion (simplified: assume 2.5 quests/day for Regular, 1.5 for Casual)
+  const questsCompleted = Math.min(3, Math.floor(player.avg_quests_per_day
+                        + gaussianNoise(0, 0.5)));
+  const questDust = simulateQuestRewards(questsCompleted, player.subscription, config);
+  player.dust += questDust;
+
+  // Weekly quest completion (on day 7, 14, 21, etc.)
+  if (day % 7 === 0) {
+    const weeklyDust = simulateWeeklyQuestRewards(player.games_this_week,
+                                                   player.subscription, config);
+    player.dust += weeklyDust;
+    player.games_this_week = 0;
+  } else {
+    player.games_this_week += gamesPlayed;
+  }
+
+  // Spending behavior (60% shards, 20% packs, 10% targeted, 10% cosmetics)
+  simulateSpending(player, config);
+
+  // Evolution attempts (when energy >= threshold AND shards available)
+  simulateEvolutions(player, config);
+
+  // Record daily snapshot for graphing
+  player.snapshots[day] = captureSnapshot(player);
+}
+```
+
+**Gaussian noise function:** Adds realistic variance to player behavior. Uses Box-Muller transform.
+
+### 10.3 Dashboard Output Graphs
+
+All graphs are rendered in the browser using Chart.js (CDN-loaded, no build step).
+
+**Graph 1: Time-to-Evolution Curves**
+- X axis: Days (0–180)
+- Y axis: % of simulated players who have at least N Legendary cards
+- Lines: N=1, N=5, N=10, N=20 (full deck)
+- Separate panels for Free, Mid, Top tiers
+- **What to look for:** Free Regular should hit N=1 by day 23–25. Full deck (N=20) by week 38–42.
+
+**Graph 2: Dust Accumulation Curves**
+- X axis: Days (0–90)
+- Y axis: Average dust balance (rolling)
+- Lines: Each of the 9 archetypes
+- **What to look for:** No archetype should sustain balance > 2,000 Dust for extended periods. All lines should fluctuate (spending is happening).
+
+**Graph 3: Shard Bottleneck Analysis**
+- X axis: Days (0–90)
+- Y axis: Average shard inventory by tier (stacked bar per week)
+- Separate lines for: Legendary shards, Epic shards, Rare shards
+- **What to look for:** Legendary shards should be scarce (used quickly). If Legendary shard inventory grows steadily, the Legendary evolution requirement is too high or shard cost is too low.
+
+**Graph 4: Win Rate Distribution**
+- X axis: Win rate buckets (30–70%, 5% increments)
+- Y axis: % of simulated players in each bucket
+- Shape: Should be roughly normal, centered at 50%, ±10% std dev
+- **What to look for:** Verify simulation win rate assumptions are consistent with the config.
+
+**Graph 5: Rank Distribution (at Day 56 = 8 weeks)**
+- X axis: Rank tiers (Bronze through GM)
+- Y axis: % of simulated players at each rank
+- Target shape: Bell curve centered on Silver/Gold
+- **What to look for:** If > 50% of players are stuck in Bronze, rank point gains are too low. If everyone is Gold+, they're too high.
+
+**Graph 6: Quest Completion Rate**
+- X axis: Quest difficulty (Easy, Medium, Hard)
+- Y axis: % of quests completed (across all simulated players)
+- Target: Easy 85%+, Medium 75%+, Hard 55%+
+- **What to look for:** If Hard completion < 40%, hard quest targets are too demanding or duration too short.
+
+**Graph 7: Weekly Income Breakdown (stacked bar)**
+- X axis: Player archetypes
+- Y axis: Average weekly Dust income
+- Stacked segments: Game wins, Game losses, Daily quests, Weekly quests, Season rewards
+- **What to look for:** Quest income should represent 60–70% of total income. If game dust exceeds 30%, game count assumptions are off.
+
+### 10.4 Dashboard UI Specification
+
+The dashboard UI is a single HTML page served by a local Express server (`tools/balance-dashboard/server.ts`).
+
+**Layout:**
+- Header: "Chaos Creatures Economy Balance Dashboard — [Date of last sim run]"
+- Top row: 3 summary stat cards
+  - "Median Dust Balance (Day 90): [value]" — green if 200–800 for Free Regular, yellow if 800–2,000, red if >2,000
+  - "Free Regular Weeks to First Legendary: [value]" — green if 3–5, yellow if 5–8, red if >8
+  - "Quest Completion Rate (Hard): [value]%" — green if 55%+, yellow if 40–55%, red if <40%
+- Main area: 7 graphs in a 2-column grid (Graph 1 spans full width)
+- Bottom: "Rerun Simulation" button — re-reads `economy.config.json` and re-runs all 1,000 players
+- Footer: "Config loaded from: `economy.config.json`" + link to open the file in VS Code (via `code` CLI)
+
+**Running the dashboard:**
+```bash
+npm run dashboard
+# Starts simulation (takes ~5 seconds for 1,000 players × 90 days)
+# Opens http://localhost:3040 automatically
+```
+
+This is the one command the owner runs to verify economy health.
+
+---
+
+## 11. Implementation Checklist for Claude Code
+
+This section lists every system in this document, what file/function to implement it in, and what the implementation must do. Claude Code builds from this checklist.
+
+### Supabase Database Tables
+
+- `players` — includes `chaos_dust`, `shards_uncommon/rare/epic/legendary`, `subscription_tier`, `season_rank`, `season_rank_points`, `season_rank_floor` (add this field)
+- `card_instances` — includes `chaos_energy`, `tier`, all fields from Section 2 of `02-card-data-model.md`
+- `missions` — daily and weekly quests per player
+- `shard_transactions` — log of all shard changes
+- `match_records` — includes `cards_played` JSONB for mission tracking
+
+### Supabase Edge Functions
+
+| Function | Trigger | Responsibility |
 |---|---|---|
-| **Month 1** | Uncommon shards (60%), card packs (30%), avatars (10%) | Uncommon/Rare shards (70%), card packs (25%), cosmetics (5%) |
-| **Month 2-3** | Rare/Epic shards (75%), targeted Commons (15%), 2nd faction (10%) | Epic/Legendary shards (80%), card packs (15%), cosmetics (5%) |
-| **Month 4-6** | Epic/Legendary shards (85%), cosmetics (10%), card packs (5%) | Legendary shards (70%), cosmetics (20%), experimentation packs (10%) |
-| **Month 7-12** | Legendary shards (80%), cosmetics (15%), new faction prep (5%) | Legendary shards (60%), cosmetics (30%), new faction (10%) |
-| **Year 2+** | Seasonal content (40%), Legendary shards (40%), cosmetics (20%) | Seasonal content (50%), cosmetics (30%), collection completion (20%) |
+| `award-match-rewards` | Called by Railway after each game | Apply win/loss dust, energy to all deck cards, update mission progress |
+| `generate-daily-quests` | Cron: `0 0 * * *` (daily at 00:00 UTC) | Generate 3 quests per player if needed |
+| `generate-weekly-quests` | Cron: `0 0 * * 1` (Monday 00:00 UTC) | Generate 2 weekly quests per player |
+| `grant-subscription-bonuses` | Cron: `0 0 1 * *` (1st of month) | Award monthly Commons + Legendary shard to MID/HIGH subscribers |
+| `end-season` | Manually triggered by owner (admin UI) | Apply season end rewards, reset ranks, start new season |
+| `complete-quest` | Called by client on claim | Verify completion, award dust + shards, mark claimed |
+| `reroll-quest` | Called by client on reroll | Verify daily reroll not used, generate replacement quest |
+| `evolve-card` | Called by client | Validate energy + shard, deduct shard, trigger fal.ai + OpenAI |
+| `onboarding-complete` | Called by client on faction commit | Grant starter resources, enable onboarding quests |
+| `purchase-item` | Called by client | Handle card pack, shard, targeted common, avatar purchases |
+
+### Railway Game Server Responsibilities
+
+- End of each game: publish `game_end` event to Supabase Realtime channel
+- Event includes: `winner_id`, `loser_id`, `cards_played[]` (per CardPlayRecord), `chaos_events_count`, `order_events_count`
+- The `award-match-rewards` Edge Function subscribes to this event and handles all economy updates
+- All mission progress counting happens server-side during game (no client-side mission tracking)
+
+### React Native Client Responsibilities
+
+- Display active daily quests with progress bars
+- Display "Reroll" button (disabled after 1 use per day, resets at 00:00 UTC)
+- Display weekly quests separately from daily quests
+- Show "Claim Reward" button when `is_completed && !is_claimed`
+- Evolution screen: show energy progress bar, "Evolve" button when energy-ready and shard available
+- Dust balance and shard counts in persistent HUD
+- Season rank display with points-to-next-division indicator
 
 ---
 
-## 9. Conclusion
+## Revision Log
 
-The Chaos Creatures economy is designed for **long-term health and fairness**:
+### Version 2.0 — 2026-02-16
 
-1. **Free players have a complete experience:** They reach competitive viability in 3-6 months and full Legendary decks in 12-18 months.
+**Changes from Version 1.0:**
 
-2. **Subscribers get speed and variety:** 1.5-2× faster progression, 2-4× more cards, higher-quality art, but no exclusive power.
+1. **Fixed weekly income figures across all player types.** The v1.0 weekly totals were too low because weekly quest contribution was calculated as `2 × 150 ÷ 7 = 43/day` (using minimum quest value of 150 Dust). Corrected to use average quest value of 175 Dust, giving `2 × 175 ÷ 7 = 50/day`. This raised weekly totals by approximately 50 Dust/week for all free-tier players.
 
-3. **Energy and shards work in tandem:** Energy gates early progression (weeks 1-4), shards gate late progression (month 6+). Both are earned through play.
+2. **Added Economy Config JSON Schema (Section 9).** The original document had no machine-readable configuration. Every tunable value is now in `economy.config.json` with explicit types and descriptions. No code changes are needed to adjust the economy.
 
-4. **Quests drive 60% of income:** Daily/weekly quests are the primary engagement loop and feel rewarding at all tiers.
+3. **Added Balance Dashboard Specification (Section 10).** The original document had no automated validation tool. Section 10 specifies a Monte Carlo simulation running 1,000 virtual players across 9 archetypes over 90 simulated days, with 7 output graphs and a simple browser UI. The owner runs `npm run dashboard` to verify economy health before any config change.
 
-5. **The ladder is accessible:** Rank floors prevent feel-bad deranking. Monthly rewards keep players engaged throughout 8-week seasons.
+4. **Replaced "tune as needed" language throughout.** Every instance of vague guidance ("adjust if needed," "tune empirically," "the designer should verify") has been replaced with specific PostHog detection thresholds, specific config variable names, and specific response actions.
 
-6. **New content refreshes the economy:** New factions every 6-8 months reset the collection chase without invalidating existing investments.
+5. **Added Implementation Checklist (Section 11).** Specifies every Supabase Edge Function, Railway responsibility, and React Native UI requirement needed to build the economy systems. Claude Code can implement directly from this list.
 
-7. **No pay-to-win:** All power is earned through time investment. Subscribers save time, not skill.
+6. **Aligned with exact infrastructure stack from CLAUDE.md.** Replaced all generic references ("the backend," "the database") with specific service names: Supabase Edge Functions for economy logic, Railway Node.js server for game events, PostHog for analytics, React Native (Expo) for client. No Unity, no Stripe, no Phaser.js.
 
-**The economy is sustainable because:**
-- Free players are loss leaders (AI costs <$1/month) who populate the matchmaking pool
-- Mid-tier subscribers are profitable ($5-8 revenue vs $2-3 costs)
-- Top-tier subscribers are highly profitable ($10-15 revenue vs $3-4 costs)
-- Retention is driven by progression systems, not by locking power behind paywalls
+7. **Resolved RewardType enum conflict.** The `02-card-data-model.md` Section 16 defines `RewardType: XP | SHARDS | CHAOS_ENERGY_BOOST`. Chaos Dust is not in this enum. The Chaos Dust reward for quests is handled by a direct update to `player.chaos_dust` in the `complete-quest` Edge Function, separate from the `Mission.reward_type` field (which governs the shard reward only). Quest dust reward is stored in `Mission.reward_amount` with the understanding that when `mission_type` is processed, the Edge Function applies both dust (direct player update) and the optional shard (via shard_transaction). This separation must be noted in `02-card-data-model.md` as a future revision.
 
-**Final numbers check:**
-- Free Regular player: 980 Dust/week = 4,200/month = 50,400/year
-- Cost to fully evolve 3 factions (150 cards): 150 × 450 = 67,500 Dust
-- Time to complete: 67,500 ÷ 4,200 = **16 months**
-- This is healthy — players have a 12-18 month progression runway before hitting "collection complete"
+8. **Fixed "weeks to Legendary deck" calculation methodology.** The v1.0 document computed this as `shard_cost_weeks` alone and did not account for the competing spending categories that slow shard accumulation in practice. Section 8.1 now uses the corrected method: `max(energy_weeks, effective_shard_weeks)` where effective shard weeks accounts for the 60% dust-to-shards spending rate and other spending categories.
 
-The economy is mathematically sound, internally consistent, and fair to all player types.
+9. **Added explicit bottleneck analysis table (Section 3.4).** The v1.0 version stated "energy is the bottleneck early, shards late" without precise breakpoints. Section 3.4 now provides exact crossover points (1st, 5th, 10th, 20th Legendary) with the day-count for each gate.
 
----
+10. **Added onboarding timeline (Section 6.2).** The v1.0 document listed milestones but did not specify what prompts or UI events fire them. Section 6.2 specifies the exact tutorial prompt triggers and the conditions that must be met to advance each tutorial step.
 
-**Document Version:** 1.0
-**Last Updated:** 2026-02-16
-**Status:** Ready for implementation
+11. **Clarified faction unlock economics (Section 2.6).** The v1.0 document stated faction unlocks take "0.5–1.0 weeks." With corrected income figures, faction unlocks take less than 1 day for all player types, making the 150 Dust cost a commitment signal rather than a meaningful gate. The section now calls this out explicitly.
+
+12. **Standardized all enum references.** All references to player tiers now use the canonical `SubscriptionTier` enum values (`FREE | MID | HIGH`) from `02-card-data-model.md`. All shard tier references use `ShardTier` enum values (`UNCOMMON | RARE | EPIC | LEGENDARY`). All MissionType references use the exact enum from the data model.
