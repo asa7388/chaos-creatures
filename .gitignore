@@ -1,4 +1,9 @@
-.claude
-docs
-claude.md
-setup-guide.md
+# Environment
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
