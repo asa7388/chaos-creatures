@@ -29,12 +29,10 @@ final class MatchmakingService {
 
     // MARK: - Queue Management
 
-    /// Join the matchmaking queue
+    /// Join the matchmaking queue via Edge Function
     func joinQueue(
-        playerId: UUID,
         deckId: UUID,
-        gameMode: GameMode,
-        mmr: Int
+        gameMode: GameMode = .ranked
     ) async throws {
         guard !isSearching else { return }
 
@@ -44,33 +42,46 @@ final class MatchmakingService {
         searchDuration = 0
         error = nil
 
-        struct QueueEntry: Encodable {
-            let playerId: UUID
+        struct JoinQueueRequest: Encodable {
             let deckId: UUID
-            let gameMode: GameMode
-            let mmr: Int
+            let mode: String
 
             enum CodingKeys: String, CodingKey {
-                case playerId = "player_id"
                 case deckId = "deck_id"
-                case gameMode = "game_mode"
-                case mmr
+                case mode
+            }
+        }
+
+        struct JoinQueueEnvelope: Decodable {
+            let data: JoinQueueResponse
+        }
+
+        struct JoinQueueResponse: Decodable {
+            let queueId: String
+            let estimatedWaitSeconds: Int
+
+            enum CodingKeys: String, CodingKey {
+                case queueId = "queue_id"
+                case estimatedWaitSeconds = "estimated_wait_seconds"
             }
         }
 
         do {
-            // Insert into matchmaking queue
-            try await supabase.insert(
-                into: SupabaseService.Table.matchmakingQueue,
-                values: QueueEntry(
-                    playerId: playerId,
+            // Call join-queue Edge Function (player_id read from JWT server-side)
+            let envelope: JoinQueueEnvelope = try await supabase.callFunction(
+                "join-queue",
+                body: JoinQueueRequest(
                     deckId: deckId,
-                    gameMode: gameMode,
-                    mmr: mmr
+                    mode: gameMode.rawValue
                 )
             )
 
-            // Start listening for match assignment
+            estimatedWait = TimeInterval(envelope.data.estimatedWaitSeconds)
+
+            // Start listening for match found broadcast
+            guard let playerId = await supabase.currentUserID else {
+                throw MatchmakingError.notAuthenticated
+            }
             await subscribeToMatchFound(playerId: playerId)
 
             // Start search timer
@@ -82,14 +93,11 @@ final class MatchmakingService {
         }
     }
 
-    /// Leave the matchmaking queue
-    func leaveQueue(playerId: UUID) async {
-        // Remove from queue table
+    /// Leave the matchmaking queue via Edge Function
+    func leaveQueue() async {
+        // Call leave-queue Edge Function (player_id read from JWT server-side)
         do {
-            try await supabase.delete(
-                from: SupabaseService.Table.matchmakingQueue,
-                filters: [("player_id", playerId.uuidString)]
-            )
+            try await supabase.callFunction("leave-queue")
         } catch {
             // Best-effort removal
         }
@@ -135,27 +143,22 @@ final class MatchmakingService {
 
     // MARK: - Realtime Subscription
 
-    /// Subscribe to match found notifications via Supabase Realtime
+    /// Subscribe to MATCH_FOUND broadcast on the player-specific matchmaking channel
     private func subscribeToMatchFound(playerId: UUID) async {
         let channel = supabase.client.realtimeV2.channel("matchmaking:\(playerId.uuidString)")
 
-        let changes = channel.postgresChange(
-            InsertAction.self,
-            schema: "public",
-            table: "match_assignments",
-            filter: "player_id=eq.\(playerId.uuidString)"
-        )
+        let broadcastStream = channel.broadcastStream(event: "MATCH_FOUND")
 
         await channel.subscribe()
 
         self.queueChannel = channel
 
-        // Listen for match assignment in background
+        // Listen for match found broadcast in background
         Task { @MainActor [weak self] in
-            for await change in changes {
+            for await message in broadcastStream {
                 guard let self, self.isSearching else { return }
 
-                if let matchIdValue = change.record["match_id"]?.stringValue {
+                if let matchIdValue = message.payload["match_id"]?.stringValue {
                     self.matchFound = true
                     self.matchId = matchIdValue
                     self.isSearching = false
@@ -197,14 +200,15 @@ final class MatchmakingService {
     }
 }
 
-// MARK: - Match Assignment Payload
+// MARK: - Matchmaking Errors
 
-private struct MatchAssignment: Decodable {
-    let matchId: String
-    let playerId: UUID
+enum MatchmakingError: LocalizedError {
+    case notAuthenticated
 
-    enum CodingKeys: String, CodingKey {
-        case matchId = "match_id"
-        case playerId = "player_id"
+    var errorDescription: String? {
+        switch self {
+        case .notAuthenticated:
+            return "You must be signed in to join matchmaking."
+        }
     }
 }

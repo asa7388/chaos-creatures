@@ -14,9 +14,14 @@ final class StoreKitService {
     // MARK: - Product IDs
 
     enum ProductID {
-        static let subscriptionMid = "com.chaoscreatures.sub.adept"
-        static let subscriptionHigh = "com.chaoscreatures.sub.master"
-        static let allSubscriptions: Set<String> = [subscriptionMid, subscriptionHigh]
+        static let subscriptionMid = "com.chaoscreatures.sub.mid"
+        static let subscriptionHigh = "com.chaoscreatures.sub.high"
+        static let subscriptionMidMonthly = "com.chaoscreatures.sub.mid.monthly"
+        static let subscriptionHighMonthly = "com.chaoscreatures.sub.high.monthly"
+        static let allSubscriptions: Set<String> = [
+            subscriptionMid, subscriptionHigh,
+            subscriptionMidMonthly, subscriptionHighMonthly
+        ]
     }
 
     // MARK: - State
@@ -35,8 +40,8 @@ final class StoreKitService {
     var currentTier: SubscriptionTier {
         guard let product = activeSubscription else { return .free }
         switch product.id {
-        case ProductID.subscriptionMid: return .mid
-        case ProductID.subscriptionHigh: return .high
+        case ProductID.subscriptionMid, ProductID.subscriptionMidMonthly: return .mid
+        case ProductID.subscriptionHigh, ProductID.subscriptionHighMonthly: return .high
         default: return .free
         }
     }
@@ -163,38 +168,32 @@ final class StoreKitService {
 
     // MARK: - Backend Sync
 
-    /// Sync subscription status with Supabase backend
+    /// Sync subscription status with Supabase backend via sync-entitlements Edge Function
     private func syncSubscriptionWithBackend(_ transaction: StoreKit.Transaction) async {
-        struct SubscriptionSync: Encodable {
+        struct EntitlementSync: Encodable {
+            let transactionId: String
             let productId: String
-            let transactionId: UInt64
-            let originalTransactionId: UInt64
-            let expirationDate: Date?
-            let isRevoked: Bool
+            let originalTransactionId: String
 
             enum CodingKeys: String, CodingKey {
-                case productId = "product_id"
                 case transactionId = "transaction_id"
+                case productId = "product_id"
                 case originalTransactionId = "original_transaction_id"
-                case expirationDate = "expiration_date"
-                case isRevoked = "is_revoked"
             }
         }
 
         do {
             try await SupabaseService.shared.callFunction(
-                "player/sync-subscription",
-                body: SubscriptionSync(
+                "sync-entitlements",
+                body: EntitlementSync(
+                    transactionId: String(transaction.id),
                     productId: transaction.productID,
-                    transactionId: transaction.id,
-                    originalTransactionId: transaction.originalID,
-                    expirationDate: transaction.expirationDate,
-                    isRevoked: transaction.revocationDate != nil
+                    originalTransactionId: String(transaction.originalID)
                 )
             )
         } catch {
             // Non-critical: sync will retry on next app launch
-            print("[StoreKit] Failed to sync subscription: \(error)")
+            print("[StoreKit] Failed to sync entitlements: \(error)")
         }
     }
 

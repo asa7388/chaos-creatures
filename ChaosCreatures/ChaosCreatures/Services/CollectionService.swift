@@ -23,16 +23,16 @@ final class CollectionService {
         )
     }
 
-    /// Fetch cards for a specific faction
+    /// Fetch cards for a specific faction (faction_id is on card_templates, not card_instances)
     func fetchCollectionByFaction(playerId: UUID, factionId: String) async throws -> [CardInstance] {
-        try await supabase.fetchAll(
-            from: SupabaseService.Table.cardInstances,
-            filters: [
-                ("owner_id", playerId.uuidString),
-                ("faction_id", factionId)
-            ],
-            orderBy: "current_mana_cost"
-        )
+        try await supabase.client
+            .from(SupabaseService.Table.cardInstances)
+            .select("*, card_templates!inner(faction_id)")
+            .eq("owner_id", value: playerId.uuidString)
+            .eq("card_templates.faction_id", value: factionId)
+            .order("current_mana_cost")
+            .execute()
+            .value
     }
 
     /// Fetch a single card instance by ID
@@ -94,40 +94,86 @@ final class CollectionService {
         try await supabase.fetch(from: SupabaseService.Table.decks, id: id)
     }
 
-    /// Save a deck (create or update)
-    func saveDeck(
+    /// Create a new deck
+    func createDeck(
         name: String,
         factionId: UUID,
-        avatarId: UUID,
-        cards: [DeckEntry],
-        existingDeckId: UUID? = nil
+        avatarId: UUID
     ) async throws -> Deck {
-        struct DeckSave: Encodable {
-            let deckId: UUID?
+        struct CreateDeckRequest: Encodable {
             let name: String
             let factionId: UUID
             let avatarId: UUID
-            let cards: [DeckEntry]
 
             enum CodingKeys: String, CodingKey {
-                case deckId = "deck_id"
                 case name
                 case factionId = "faction_id"
                 case avatarId = "avatar_id"
-                case cards
             }
         }
 
-        return try await supabase.callFunction(
-            "player/save-deck",
-            body: DeckSave(
-                deckId: existingDeckId,
+        struct DeckEnvelope: Decodable {
+            let data: DeckData
+            struct DeckData: Decodable {
+                let deck: Deck
+            }
+        }
+
+        let envelope: DeckEnvelope = try await supabase.callFunction(
+            "save-deck",
+            body: CreateDeckRequest(
                 name: name,
                 factionId: factionId,
-                avatarId: avatarId,
-                cards: cards
+                avatarId: avatarId
             )
         )
+        return envelope.data.deck
+    }
+
+    /// Update an existing deck's card entries, name, and/or avatar
+    func updateDeck(
+        id: UUID,
+        cardEntries: [DeckEntry]? = nil,
+        avatarId: UUID? = nil,
+        name: String? = nil
+    ) async throws -> Deck {
+        struct UpdateDeckRequest: Encodable {
+            let id: UUID
+            let cardEntries: [DeckEntry]?
+            let avatarId: UUID?
+            let name: String?
+
+            enum CodingKeys: String, CodingKey {
+                case id
+                case cardEntries = "card_entries"
+                case avatarId = "avatar_id"
+                case name
+            }
+        }
+
+        struct DeckEnvelope: Decodable {
+            let data: DeckData
+            struct DeckData: Decodable {
+                let deck: Deck
+                let validationErrors: [String]?
+
+                enum CodingKeys: String, CodingKey {
+                    case deck
+                    case validationErrors = "validation_errors"
+                }
+            }
+        }
+
+        let envelope: DeckEnvelope = try await supabase.callFunction(
+            "save-deck",
+            body: UpdateDeckRequest(
+                id: id,
+                cardEntries: cardEntries,
+                avatarId: avatarId,
+                name: name
+            )
+        )
+        return envelope.data.deck
     }
 
     /// Delete a deck

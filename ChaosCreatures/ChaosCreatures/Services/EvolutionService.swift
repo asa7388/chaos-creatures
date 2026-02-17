@@ -17,102 +17,161 @@ final class EvolutionService {
     var evolutionResult: EvolutionResult?
     var error: String?
 
+    /// Data returned from start-evolution, needed for confirm step
+    var currentEvolutionId: String?
+    var currentCardInstanceId: UUID?
+    var statChanges: EvolutionStatChanges?
+
     // MARK: - Private
 
     private var pollTask: Task<Void, Never>?
     private let pollInterval: TimeInterval = 2.0  // seconds between status checks
     private let maxPollAttempts = 60  // 2 minutes max
+    private let supabase = SupabaseService.shared
+
+    private var imageJobId: String?
+    private var textJobId: String?
 
     private init() {}
 
     // MARK: - Evolution Flow
 
-    /// Step 1: Request modifier choices for an evolution
-    func requestEvolutionChoices(
-        cardId: UUID,
-        channeledToward: EventType
-    ) async throws {
-        evolutionStatus = .loadingChoices
-        error = nil
-
-        struct ChoicesRequest: Encodable {
-            let cardInstanceId: UUID
-            let channeledToward: EventType
-
-            enum CodingKeys: String, CodingKey {
-                case cardInstanceId = "card_instance_id"
-                case channeledToward = "channeled_toward"
-            }
-        }
-
-        struct ChoicesResponse: Decodable {
-            let modifiers: [ModifierDefinition]
-        }
-
-        do {
-            let response: ChoicesResponse = try await SupabaseService.shared.callFunction(
-                "evolution/get-choices",
-                body: ChoicesRequest(
-                    cardInstanceId: cardId,
-                    channeledToward: channeledToward
-                )
-            )
-            modifierChoices = response.modifiers
-            evolutionStatus = .choosingModifier
-        } catch {
-            self.error = "Failed to load evolution choices: \(error.localizedDescription)"
-            evolutionStatus = .failed
-        }
-    }
-
-    /// Step 2: Start evolution with selected modifier and shard
+    /// Step 1: Start evolution — validates eligibility, deducts shard, creates generation jobs,
+    /// and returns modifier options for the player to choose from.
     func startEvolution(
         cardId: UUID,
-        channeledToward: EventType,
-        selectedModifierId: UUID,
-        shardTier: ShardTier
+        channelDirection: String? = nil
     ) async throws {
         isEvolving = true
         evolutionStatus = .generating
         error = nil
+        modifierChoices = []
+        currentEvolutionId = nil
+        currentCardInstanceId = cardId
 
-        struct EvolveRequest: Encodable {
+        struct StartRequest: Encodable {
             let cardInstanceId: UUID
-            let channeledToward: EventType
-            let modifierDefinitionId: UUID
-            let shardTier: ShardTier
+            let channelDirection: String?
 
             enum CodingKeys: String, CodingKey {
                 case cardInstanceId = "card_instance_id"
-                case channeledToward = "channeled_toward"
-                case modifierDefinitionId = "modifier_definition_id"
-                case shardTier = "shard_tier"
+                case channelDirection = "channel_direction"
             }
         }
 
-        struct EvolveResponse: Decodable {
-            let evolutionJobId: String
+        struct StartEnvelope: Decodable {
+            let data: StartResponse
+        }
+
+        struct StartResponse: Decodable {
+            let evolutionId: String
+            let targetTier: String
+            let cardInstanceId: UUID
+            let modifierOptions: [ModifierDefinition]
+            let statChanges: EvolutionStatChanges
+            let imageJobId: String?
+            let textJobId: String?
 
             enum CodingKeys: String, CodingKey {
-                case evolutionJobId = "evolution_job_id"
+                case evolutionId = "evolution_id"
+                case targetTier = "target_tier"
+                case cardInstanceId = "card_instance_id"
+                case modifierOptions = "modifier_options"
+                case statChanges = "stat_changes"
+                case imageJobId = "image_job_id"
+                case textJobId = "text_job_id"
             }
         }
 
         do {
-            let response: EvolveResponse = try await SupabaseService.shared.callFunction(
-                "evolution/start",
-                body: EvolveRequest(
+            let envelope: StartEnvelope = try await supabase.callFunction(
+                "start-evolution",
+                body: StartRequest(
                     cardInstanceId: cardId,
-                    channeledToward: channeledToward,
-                    modifierDefinitionId: selectedModifierId,
-                    shardTier: shardTier
+                    channelDirection: channelDirection
                 )
             )
 
-            // Start polling for completion
-            startPolling(jobId: response.evolutionJobId)
+            let response = envelope.data
+            currentEvolutionId = response.evolutionId
+            modifierChoices = response.modifierOptions
+            statChanges = response.statChanges
+            imageJobId = response.imageJobId
+            textJobId = response.textJobId
+
+            // Start polling generation jobs for art + text completion
+            if let imgId = response.imageJobId, let txtId = response.textJobId {
+                startPollingGenerationJobs(imageJobId: imgId, textJobId: txtId)
+            }
+
+            evolutionStatus = .choosingModifier
         } catch {
             self.error = "Failed to start evolution: \(error.localizedDescription)"
+            evolutionStatus = .failed
+            isEvolving = false
+        }
+    }
+
+    /// Step 2: Confirm evolution after player chooses modifier and name.
+    func confirmEvolution(
+        modifierChosenId: UUID? = nil,
+        nameChosen: String
+    ) async throws {
+        guard let evolutionId = currentEvolutionId,
+              let cardInstanceId = currentCardInstanceId else {
+            self.error = "No active evolution to confirm."
+            evolutionStatus = .failed
+            return
+        }
+
+        evolutionStatus = .applyingModifiers
+
+        struct ConfirmRequest: Encodable {
+            let evolutionId: String
+            let cardInstanceId: UUID
+            let modifierChosenId: UUID?
+            let nameChosen: String
+
+            enum CodingKeys: String, CodingKey {
+                case evolutionId = "evolution_id"
+                case cardInstanceId = "card_instance_id"
+                case modifierChosenId = "modifier_chosen_id"
+                case nameChosen = "name_chosen"
+            }
+        }
+
+        struct ConfirmEnvelope: Decodable {
+            let data: ConfirmResponse
+        }
+
+        struct ConfirmResponse: Decodable {
+            let card: CardInstance
+        }
+
+        do {
+            let envelope: ConfirmEnvelope = try await supabase.callFunction(
+                "complete-evolution",
+                body: ConfirmRequest(
+                    evolutionId: evolutionId,
+                    cardInstanceId: cardInstanceId,
+                    modifierChosenId: modifierChosenId,
+                    nameChosen: nameChosen
+                )
+            )
+
+            // Build evolution result from the updated card
+            let updatedCard = envelope.data.card
+            evolutionResult = EvolutionResult(
+                cardInstanceId: updatedCard.id,
+                newName: updatedCard.currentName,
+                newArtUrl: updatedCard.artUrl,
+                newFlavorText: updatedCard.flavorText,
+                tier: updatedCard.tier
+            )
+            evolutionStatus = .completed
+            isEvolving = false
+        } catch {
+            self.error = "Failed to confirm evolution: \(error.localizedDescription)"
             evolutionStatus = .failed
             isEvolving = false
         }
@@ -131,12 +190,18 @@ final class EvolutionService {
         cancelEvolution()
         modifierChoices = []
         evolutionResult = nil
+        currentEvolutionId = nil
+        currentCardInstanceId = nil
+        statChanges = nil
+        imageJobId = nil
+        textJobId = nil
         error = nil
     }
 
-    // MARK: - Polling
+    // MARK: - Polling Generation Jobs
 
-    private func startPolling(jobId: String) {
+    /// Poll the generation_jobs table directly for image and text job completion
+    private func startPollingGenerationJobs(imageJobId: String, textJobId: String) {
         pollTask?.cancel()
 
         pollTask = Task { @MainActor in
@@ -146,32 +211,36 @@ final class EvolutionService {
                 attempts += 1
 
                 do {
-                    let status = try await pollStatus(jobId: jobId)
+                    let jobs: [GenerationJobRow] = try await supabase.client
+                        .from("generation_jobs")
+                        .select("id, job_type, status, error_message")
+                        .in("id", values: [imageJobId, textJobId])
+                        .execute()
+                        .value
 
-                    switch status.state {
-                    case "completed":
-                        evolutionResult = status.result
-                        evolutionStatus = .completed
-                        isEvolving = false
-                        return
+                    let imageJob = jobs.first { $0.id == imageJobId }
+                    let textJob = jobs.first { $0.id == textJobId }
 
-                    case "failed":
-                        error = status.errorMessage ?? "Evolution failed."
+                    // Check for failures
+                    if let failedJob = jobs.first(where: { $0.status == "FAILED" }) {
+                        error = failedJob.errorMessage ?? "Generation failed."
                         evolutionStatus = .failed
                         isEvolving = false
                         return
+                    }
 
-                    case "generating_art":
+                    // Update status based on which jobs are still running
+                    let imageComplete = imageJob?.status == "COMPLETED"
+                    let textComplete = textJob?.status == "COMPLETED"
+
+                    if imageComplete && textComplete {
+                        // Both done -- stay in choosingModifier or move to ready
+                        evolutionStatus = .choosingModifier
+                        return
+                    } else if !imageComplete {
                         evolutionStatus = .generatingArt
-
-                    case "generating_text":
+                    } else if !textComplete {
                         evolutionStatus = .generatingText
-
-                    case "applying_modifiers":
-                        evolutionStatus = .applyingModifiers
-
-                    default:
-                        evolutionStatus = .generating
                     }
                 } catch {
                     // Network error during poll - keep trying
@@ -192,21 +261,6 @@ final class EvolutionService {
                 isEvolving = false
             }
         }
-    }
-
-    private func pollStatus(jobId: String) async throws -> EvolutionJobStatus {
-        struct StatusRequest: Encodable {
-            let jobId: String
-
-            enum CodingKeys: String, CodingKey {
-                case jobId = "job_id"
-            }
-        }
-
-        return try await SupabaseService.shared.callFunction(
-            "evolution/status",
-            body: StatusRequest(jobId: jobId)
-        )
     }
 }
 
@@ -247,53 +301,46 @@ enum EvolutionStatus: Equatable {
     }
 }
 
-// MARK: - Evolution Job Status (from backend polling)
+// MARK: - Generation Job Row (for polling generation_jobs table)
 
-struct EvolutionJobStatus: Decodable {
-    let state: String
-    let progress: Double?
+struct GenerationJobRow: Decodable {
+    let id: String
+    let jobType: String
+    let status: String
     let errorMessage: String?
-    let result: EvolutionResult?
 
     enum CodingKeys: String, CodingKey {
-        case state, progress
+        case id
+        case jobType = "job_type"
+        case status
         case errorMessage = "error_message"
-        case result
     }
 }
 
-// MARK: - Evolution Result
+// MARK: - Evolution Stat Changes (from start-evolution response)
 
-struct EvolutionResult: Decodable, Equatable {
+struct EvolutionStatChanges: Decodable {
+    let attackBonus: Int
+    let healthBonus: Int
+    let instabilityChange: Int
+
+    enum CodingKeys: String, CodingKey {
+        case attackBonus = "attack_bonus"
+        case healthBonus = "health_bonus"
+        case instabilityChange = "instability_change"
+    }
+}
+
+// MARK: - Evolution Result (built from complete-evolution response)
+
+struct EvolutionResult: Equatable {
     let cardInstanceId: UUID
-    let fromTier: EvolutionTier
-    let toTier: EvolutionTier
     let newName: String
     let newArtUrl: String
     let newFlavorText: String
-    let attackChange: Int?
-    let healthChange: Int?
-    let instabilityChange: Int
-    let modifierApplied: String
-    let abilityGranted: String?
-    let keywordGranted: String?
-
-    enum CodingKeys: String, CodingKey {
-        case cardInstanceId = "card_instance_id"
-        case fromTier = "from_tier"
-        case toTier = "to_tier"
-        case newName = "new_name"
-        case newArtUrl = "new_art_url"
-        case newFlavorText = "new_flavor_text"
-        case attackChange = "attack_change"
-        case healthChange = "health_change"
-        case instabilityChange = "instability_change"
-        case modifierApplied = "modifier_applied"
-        case abilityGranted = "ability_granted"
-        case keywordGranted = "keyword_granted"
-    }
+    let tier: EvolutionTier
 
     static func == (lhs: EvolutionResult, rhs: EvolutionResult) -> Bool {
-        lhs.cardInstanceId == rhs.cardInstanceId && lhs.toTier == rhs.toTier
+        lhs.cardInstanceId == rhs.cardInstanceId && lhs.tier == rhs.tier
     }
 }
