@@ -326,7 +326,7 @@ At this distribution, the Free Regular player never accumulates a problematic du
 | Factions unlocked | 2 | 3 | 3 | 3 |
 | Bonus Commons received | 3 | 9 | 18 | 36 |
 
-**Top-Tier Subscriber (5 games/day, 2,310 Dust/week + 1 free Legendary shard/month):**
+**High-Tier Subscriber (5 games/day, 2,310 Dust/week + 1 free Legendary shard/month):**
 
 | Milestone | Month 1 | Month 3 | Month 6 | Month 12 |
 |---|---|---|---|---|
@@ -551,7 +551,7 @@ All MissionType values map to in-game events produced by the Railway game server
 
 **Weekly Quest Templates (10 Total):**
 
-| Quest ID | MissionType | Description | Target | Base Dust (FREE) | Mid Dust (×1.5) | Top Dust (×2.0) | Shard Reward |
+| Quest ID | MissionType | Description | Target | Base Dust (FREE) | Mid Dust (×1.5) | High Dust (×2.0) | Shard Reward |
 |---|---|---|---|---|---|---|---|
 | W01 | `WIN_GAMES` | Win 10 games this week | 10 | 150 | 225 | 300 | 1 Rare |
 | W02 | `WIN_GAMES` | Win 15 games this week | 15 | 200 | 300 | 400 | 1 Epic |
@@ -932,7 +932,7 @@ The following PostHog events must be implemented server-side (Railway game serve
 | `faction_unlocked` | `faction_id`, `dust_spent`, `player_tier` | Faction unlock |
 
 **Weekly dashboard checks (owner reviews PostHog on Monday):**
-- Avg dust balance by player tier (target: Free 200–800, Mid 400–1,500, Top 500–2,000)
+- Avg dust balance by player tier (target: Free 200–800, Mid 400–1,500, High 500–2,000)
 - Quest completion rate by difficulty (target: Easy 85%+, Medium 75%+, Hard 55%+)
 - Shard purchase distribution by tier (Legendary shard purchases should be largest by value)
 - Card evolution rate per active player per week (target: 1–3 evolutions/week for Regular)
@@ -997,7 +997,7 @@ Subscriptions are purchased via StoreKit 2 on iOS. There is no web billing or ex
 - 100 cards/faction vs 50 — collection breadth
 - **Dust-equivalent value: ~2,200 Dust/month** vs. subscription cost of $6.99
 
-**Top Tier ($12.99/month via App Store) delivers per month:**
+**High Tier ($12.99/month via App Store) delivers per month:**
 - +100% quest dust = +90 Dust/day × 30 days = +2,700 Dust/month
 - +5 Commons = +250 Dust equivalent
 - +1 free Legendary shard = 240 Dust value
@@ -1452,7 +1452,7 @@ All graphs are rendered using Chart.js loaded from CDN (zero npm dependencies fo
 - X axis: Days (0–180)
 - Y axis: % of simulated players who have at least N Legendary cards
 - Lines: N=1 (first Legendary), N=5, N=10, N=20 (full deck)
-- Separate panels for Free tier, Mid tier, Top tier
+- Separate panels for Free tier, Mid tier, High tier
 - Target: Free Regular hits N=1 between Day 23–30. If it is before Day 20, Legendary shards are too cheap. If it is after Day 35, energy or shards are too expensive.
 
 **Graph 2: Dust Accumulation Curves**
@@ -1580,7 +1580,7 @@ These are the screens and components the iOS app must implement. All data is rec
 
 **Subscription Screen (`SubscriptionView` — SwiftUI `View` using StoreKit 2):**
 - Displays two `Product` objects fetched via `Product.products(for:)` at view appear
-- Mid and Top tier cards showing benefits (from Section 8.3)
+- Mid and High tier cards showing benefits (from Section 8.3)
 - Purchase button calls `product.purchase()` and on success calls `verify-storekit-receipt` Edge Function
 - Manage Subscription button opens system settings: `URL(string: "itms-apps://apps.apple.com/account/subscriptions")`
 - Current subscription status shown at top of view, updated from `player.subscription_tier`

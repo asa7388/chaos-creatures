@@ -82,7 +82,7 @@ STYLE_ANCHOR = "fantasy card game art, painterly digital illustration, semi-real
 - Model: `gpt-4o-mini`, temperature 0.8, max_tokens 150, response_format json_object
 - Response: JSON `{ "name": "...", "flavor_text": "..." }`
 - Validation: name 3–30 chars, flavor text under 120 chars; retry once if fails
-- Cost: ~$0.0001/card (~$0.02 for all 367 cards). Use OpenAI Batch API for >100 cards (50% cheaper).
+- Cost: ~$0.0001/card (~$0.02 for all 358 cards). Use OpenAI Batch API for >100 cards (50% cheaper).
 - Faction voice prompts: Ironwright=industrial/pragmatic, Fey=ethereal/ancient, Demonic=visceral/corrupted
 
 ### R2 Art Storage
@@ -238,10 +238,10 @@ STYLE_ANCHOR = "fantasy card game art, painterly digital illustration, semi-real
 |---|---|---|
 | Creatures | 100 | 300 |
 | Spells | 17 | 51 |
-| Faction stabilizers | 7 | 21 |
 | Universal stabilizers | — | 7 |
-| **Grand total** | | **379 templates** |
-- Practical launch target: **367 cards** (8 batches of ~50)
+| **Grand total** | | **358 templates** |
+- No faction-specific stabilizers at launch (all 7 stabilizers are universal)
+- Generation runs in 8 batches of ~45
 
 ### Per-Card Requirements
 Every card template needs all 6 before Supabase insert:
@@ -299,11 +299,11 @@ PP validation, stat range checks, instability coherence, image size validation, 
 - Privacy nutrition labels declarations in doc 05 section 6
 
 ### Budget Impact (doc 05)
-- 367 base card images: ~$14.68 (avg $0.04/image)
+- 358 base card images: ~$14.30 (avg $0.04/image)
 - Testing/iteration (3× multiplier): ~$44
 - Evolution testing (~200 evolutions): ~$10
 - App icon + store assets: ~$2
-- Text generation (367 cards): ~$0.04
+- Text generation (358 cards): ~$0.04
 - **Total AI spend for content: ~$71**
 
 ---
@@ -578,8 +578,8 @@ Universal SFX: card draw, mana gain/spend, avatar damage, heal, turn transition,
 |---|---|---|---|
 | Mid Monthly | `com.chaoscreatures.app.sub_mid_monthly_699` | Auto-renewable | $6.99/mo |
 | Mid Annual | `com.chaoscreatures.app.sub_mid_annual_5599` | Auto-renewable | $55.99/yr |
-| Top Monthly | `com.chaoscreatures.app.sub_top_monthly_1299` | Auto-renewable | $12.99/mo |
-| Top Annual | `com.chaoscreatures.app.sub_top_annual_9999` | Auto-renewable | $99.99/yr |
+| High Monthly | `com.chaoscreatures.app.sub_high_monthly_1299` | Auto-renewable | $12.99/mo |
+| High Annual | `com.chaoscreatures.app.sub_high_annual_9999` | Auto-renewable | $99.99/yr |
 | Battle Pass | `com.chaoscreatures.app.iap_battlepass_999` | Non-consumable | $9.99 |
 | Card Back — Standard | `com.chaoscreatures.app.iap_cardback_std_199` | Non-consumable | $1.99 |
 | Card Back — Legendary | `com.chaoscreatures.app.iap_cardback_leg_299` | Non-consumable | $2.99 |
@@ -607,7 +607,7 @@ Universal SFX: card draw, mana gain/spend, avatar damage, heal, turn transition,
 ```sql
 CREATE TABLE user_subscriptions (
   user_id uuid REFERENCES auth.users PRIMARY KEY,
-  tier text NOT NULL DEFAULT 'free' CHECK (tier IN ('free', 'mid', 'top')),
+  tier text NOT NULL DEFAULT 'FREE' CHECK (tier IN ('FREE', 'MID', 'HIGH')),
   cancel_at_period_end boolean DEFAULT false,
   grace_period_until timestamptz,
   ...
@@ -651,11 +651,11 @@ CREATE TABLE user_subscriptions (
 
 ### Collection Caps
 - Free: 50 cards/faction, 3 deck slots
-- Mid: 100 cards/faction, 5 deck slots
-- Top: 200 cards/faction, 10 deck slots
+- Mid: 100 cards/faction, 6 deck slots
+- High: 200 cards/faction, 10 deck slots
 
 ### Content
-- Launch cards: 367 total (300 creatures + 51 spells + 21 faction stabilizers + 7 universal)
+- Launch cards: 358 total (300 creatures + 51 spells + 7 universal stabilizers, no faction-specific stabilizers)
 - Instability range: 0–5 base (creatures), 1–20 board total (clamped)
 - CM cost range: 1–6 for creatures and spells
 - Board size: 5 slots per player (10 total)

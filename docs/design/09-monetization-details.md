@@ -86,8 +86,8 @@ This makes every product ID self-documenting and matches App Store Connect requi
 |---|---|---|---|
 | Mid Tier Monthly | `com.chaoscreatures.app.sub_mid_monthly_699` | Auto-renewable subscription | $6.99/month |
 | Mid Tier Annual | `com.chaoscreatures.app.sub_mid_annual_5599` | Auto-renewable subscription | $55.99/year |
-| Top Tier Monthly | `com.chaoscreatures.app.sub_top_monthly_1299` | Auto-renewable subscription | $12.99/month |
-| Top Tier Annual | `com.chaoscreatures.app.sub_top_annual_9999` | Auto-renewable subscription | $99.99/year |
+| High Tier Monthly | `com.chaoscreatures.app.sub_high_monthly_1299` | Auto-renewable subscription | $12.99/month |
+| High Tier Annual | `com.chaoscreatures.app.sub_high_annual_9999` | Auto-renewable subscription | $99.99/year |
 | Battle Pass | `com.chaoscreatures.app.iap_battlepass_999` | Non-consumable | $9.99 |
 | Card Back — Standard | `com.chaoscreatures.app.iap_cardback_std_199` | Non-consumable | $1.99 |
 | Card Back — Legendary | `com.chaoscreatures.app.iap_cardback_leg_299` | Non-consumable | $2.99 |
@@ -120,11 +120,11 @@ enum ProductID {
     // Subscriptions — go in one subscription group in App Store Connect
     static let midMonthly     = "com.chaoscreatures.app.sub_mid_monthly_699"
     static let midAnnual      = "com.chaoscreatures.app.sub_mid_annual_5599"
-    static let topMonthly     = "com.chaoscreatures.app.sub_top_monthly_1299"
-    static let topAnnual      = "com.chaoscreatures.app.sub_top_annual_9999"
+    static let highMonthly    = "com.chaoscreatures.app.sub_high_monthly_1299"
+    static let highAnnual     = "com.chaoscreatures.app.sub_high_annual_9999"
 
     static let allSubscriptions: Set<String> = [
-        midMonthly, midAnnual, topMonthly, topAnnual
+        midMonthly, midAnnual, highMonthly, highAnnual
     ]
 
     // Battle Pass — non-consumable, season determined server-side
@@ -172,12 +172,12 @@ import StoreKit
 import SwiftUI
 
 enum SubscriptionTier: String, Comparable {
-    case free = "free"
-    case mid  = "mid"
-    case top  = "top"
+    case free = "FREE"
+    case mid  = "MID"
+    case high = "HIGH"
 
     static func < (lhs: SubscriptionTier, rhs: SubscriptionTier) -> Bool {
-        let order: [SubscriptionTier] = [.free, .mid, .top]
+        let order: [SubscriptionTier] = [.free, .mid, .high]
         return order.firstIndex(of: lhs)! < order.firstIndex(of: rhs)!
     }
 }
@@ -225,10 +225,10 @@ final class EntitlementManager: ObservableObject {
             let id = transaction.productID
 
             // Resolve subscription tier.
-            if id == ProductID.topMonthly || id == ProductID.topAnnual {
-                resolvedTier = .top
+            if id == ProductID.highMonthly || id == ProductID.highAnnual {
+                resolvedTier = .high
             } else if (id == ProductID.midMonthly || id == ProductID.midAnnual),
-                      resolvedTier < .top {
+                      resolvedTier < .high {
                 resolvedTier = .mid
             }
 
@@ -432,7 +432,7 @@ serve(async (req) => {
   if (authError || !user) return new Response("Unauthorized", { status: 401 })
 
   const body = await req.json()
-  const { tier } = body  // "free" | "mid" | "top"
+  const { tier } = body  // "FREE" | "MID" | "HIGH"
 
   // Update user_subscriptions table.
   const { error } = await supabase
@@ -474,7 +474,7 @@ Create `/supabase/functions/apple-notifications/index.ts` to handle these events
 CREATE TABLE user_subscriptions (
   user_id           uuid REFERENCES auth.users PRIMARY KEY,
   tier              text NOT NULL DEFAULT 'free'
-                      CHECK (tier IN ('free', 'mid', 'top')),
+                      CHECK (tier IN ('FREE', 'MID', 'HIGH')),
   cancel_at_period_end boolean DEFAULT false,
   grace_period_until timestamptz,  -- non-null during billing retry window
   updated_at        timestamptz DEFAULT now()
@@ -515,7 +515,7 @@ CREATE TABLE user_spending_controls (
 
 ### Tier Comparison
 
-| Feature | Free | Mid Tier | Top Tier |
+| Feature | Free | Mid Tier | High Tier |
 |---|---|---|---|
 | **Price (US)** | $0 | $6.99/month | $12.99/month |
 | **Annual Price (US)** | $0 | $55.99/year (save $28) | $99.99/year (save $56) |
@@ -531,13 +531,13 @@ CREATE TABLE user_spending_controls (
 | **Quest Dust Bonus** | 1.0x (base) | 1.5x | 2.0x |
 | **Free Monthly Shard** | None | None | 1 Legendary Shard |
 | **Evolution Animation** | Standard | Extended with particle effects | Premium with faction-specific effects |
-| **Card Back Access** | Starter back only | +3 exclusive mid-tier backs | +6 exclusive top-tier backs (all mid-tier included) |
+| **Card Back Access** | Starter back only | +3 exclusive mid-tier backs | +6 exclusive high-tier backs (all mid-tier included) |
 | **Avatar Frame Access** | Basic frames | Ornate frames | Legendary + animated frames |
 | **Profile Badge** | None | "Planar Adept" | "Chaos Forged" |
 
 ### Price Justification
 
-The final prices are $6.99/month (Mid) and $12.99/month (Top). These supersede any "~$5-8/mo" or "~$10-15/mo" ranges in earlier design documents. Use only the values above in all implementation.
+The final prices are $6.99/month (Mid) and $12.99/month (High). These supersede any "~$5-8/mo" or "~$10-15/mo" ranges in earlier design documents. Use only the values above in all implementation.
 
 **Mid Tier ($6.99/month):**
 - Positioned as the "committed player" tier for serious-but-budget-conscious players.
@@ -545,7 +545,7 @@ The final prices are $6.99/month (Mid) and $12.99/month (Top). These supersede a
 - Provides meaningful quality-of-life improvements without being required for competitive play.
 - Primary conversion trigger: hitting the 50-card-per-faction limit.
 
-**Top Tier ($12.99/month):**
+**High Tier ($12.99/month):**
 - Positioned as the "collector" tier for deeply invested players who want the full experience.
 - Provides collector-focused benefits: 200 cards per faction, free Legendary shard, premium cosmetics, 2-pass art refinement.
 - Primary conversion trigger: Mid-tier player who has unlocked multiple factions and wants to experiment with more builds.
@@ -562,10 +562,128 @@ The final prices are $6.99/month (Mid) and $12.99/month (Top). These supersede a
 - What you miss: Highest-tier visual effects. Free monthly Legendary shard. Largest collection size.
 - Player feeling: "I am a serious player. My evolutions look great, my collection is growing steadily, and I have room to experiment."
 
-**Top Tier: "I want the full collector experience."**
+**High Tier: "I want the full collector experience."**
 - What you get: 200 cards per faction. Double quest dust. 10 deck slots. Best evolution art in the game — 2-pass refinement, 40+ exclusive visual modifiers, faction-specific ceremony effects. 4 modifier choices (maximum build precision). Free Legendary shard every month.
 - What you miss: Nothing. This is the complete experience.
 - Player feeling: "I am a collector and build tinkerer. My cards are works of art, my collection is massive, and I can chase any build I want."
+
+### 3f. Subscription Lapse and Grace Period
+
+When a subscription lapses — due to billing failure, voluntary cancellation, or Apple billing retry exhaustion — the player is not immediately downgraded. This section is the authoritative spec for lapse behavior and supersedes the high-level reference in Section 5 (Churn Prevention).
+
+#### Grace Period Duration
+
+The grace period is **7 calendar days** from the subscription expiry date (`current_period_end`).
+
+When Apple sends a `DID_FAIL_TO_RENEW` App Store Server Notification, the Supabase Edge Function (`/supabase/functions/apple-notifications/index.ts`) sets:
+
+```sql
+UPDATE user_subscriptions
+SET grace_period_until = current_period_end + INTERVAL '7 days',
+    cancel_at_period_end = true,
+    updated_at = now()
+WHERE user_id = :user_id;
+```
+
+The `subscription_tier` column is NOT changed during the grace period. The player's tier remains `MID` or `HIGH` as active.
+
+#### During the Grace Period (Days 1–7)
+
+- The player retains all current-tier benefits in full: deck slots, collection capacity, modifier selection count, evolution art quality, and quest dust bonus.
+- The iOS app checks `grace_period_until` from the user's Supabase session (fetched on app launch via `SupabaseService.shared.fetchUserSubscription()`).
+- A **yellow warning banner** is displayed on the Home screen and on the Subscription screen:
+  - Text: "Your subscription has lapsed. Renew within [N] days to keep your benefits."
+  - `[N]` is computed as `grace_period_until - today` in days, rounded down, minimum 1.
+  - The banner has a single CTA button: "Renew Now" which opens the StoreKit 2 upgrade paywall.
+  - The banner cannot be permanently dismissed during the grace period (it reappears on next app launch). A session-level dismiss is acceptable (clears when app is backgrounded and relaunched).
+
+**Swift — grace period banner condition:**
+
+```swift
+// In HomeView or the root tab bar, check after entitlement refresh.
+if let gracePeriodUntil = userSubscription.gracePeriodUntil,
+   gracePeriodUntil > Date.now {
+    let daysRemaining = Calendar.current.dateComponents(
+        [.day], from: Date.now, to: gracePeriodUntil
+    ).day ?? 1
+    // Show yellow GracePeriodBannerView(daysRemaining: max(1, daysRemaining))
+}
+```
+
+#### After Grace Period Expires (Day 8+)
+
+When Apple sends a `GRACE_PERIOD_EXPIRED` App Store Server Notification (or when the Supabase Edge Function detects `grace_period_until < now()` on the next user session), enforcement runs:
+
+```sql
+UPDATE user_subscriptions
+SET tier = 'FREE',
+    grace_period_until = NULL,
+    cancel_at_period_end = false,
+    updated_at = now()
+WHERE user_id = :user_id;
+```
+
+The following per-resource rules apply immediately after the downgrade:
+
+**Deck Slots:**
+- Free tier limit: 3 decks. If the player has 4–10 decks, all decks beyond the first 3 (sorted by `last_used_at` descending — most recently used decks are preserved) become **read-only**.
+- Read-only decks cannot be queued for matchmaking. The deck list shows them with a lock icon and a "Locked — subscription required" label.
+- The player must manually delete decks to bring their total to 3 or fewer, at which point the remaining decks unlock automatically.
+- **No automatic deletion. No data loss.**
+
+**Collection Capacity:**
+- Free tier limit: 50 cards per faction. If the player has more than 50 cards in a faction, **excess cards are not deleted**.
+- The player cannot acquire new cards in an over-limit faction (pack purchases, quest rewards, and monthly bonuses for that faction are blocked) until their count drops to 50 or below.
+- Existing cards — including over-limit cards — remain **fully usable** in all decks, including ranked matchmaking. They can be evolved, viewed, and kept indefinitely.
+- The card collection screen shows an over-limit faction with a red badge: "[N] cards — [N-50] over Free limit."
+
+**Modifier Selection:**
+- Drops to 2 options (Free tier: 1 universal + 1 faction modifier) on the next evolution attempt.
+- No retroactive effect on already-evolved cards.
+
+**Evolution Art Quality:**
+- Drops to PLANAR shard quality (FLUX Kontext Dev model, 768x1024 resolution) on the next evolution.
+- No retroactive effect on already-evolved cards.
+
+**Quest Dust Bonus:**
+- Drops to 1.0x base rate immediately (no partial-day proration).
+
+#### UI Treatment
+
+**During grace period (Days 1–7):**
+- Home screen: Yellow banner at top of screen (below navigation bar, above main content). Non-blocking — player can still navigate.
+- Subscription screen: Yellow info card at the top of the subscription management view showing days remaining and a "Renew Now" button.
+
+**After downgrade (Day 8+):**
+- Subscription screen: Red "Subscription Expired" badge on the subscription row in Profile > Settings. Clicking the row opens a detail sheet listing exactly what was active and what changed (example: "You had 8 decks. 5 are now locked. You had 120 cards in Ironwright Collective. New cards are blocked until under 50.").
+- Deck list: If any decks are locked, a red badge on the Decks tab shows "N locked." Each locked deck row shows a lock icon and "Tap to manage" label that links to the subscription paywall.
+- Collection screen: Over-limit factions show a red "Over limit" badge on the faction tab.
+
+#### Resubscription
+
+When the player resubscribes at any tier (verified via StoreKit 2 `Transaction.updates`), the `sync-entitlements` Edge Function:
+
+1. Sets `subscription_tier` to the new tier (`MID` or `HIGH`).
+2. Clears `grace_period_until` (set to `NULL`).
+3. Clears `cancel_at_period_end = false`.
+
+Immediately upon the next `EntitlementManager.refreshEntitlements()` call (which fires automatically from `Transaction.updates`):
+- All locked decks become usable again (no unlock confirmation required, no re-save required).
+- Collection capacity returns to tier limit (100 or 200 per faction). The player can immediately acquire new cards.
+- Modifier selection and evolution art quality restore to tier-appropriate levels on the next evolution.
+
+**No data is ever deleted due to subscription changes.** This is an absolute rule. All deletions are player-initiated.
+
+#### Database Column Reference
+
+The `user_subscriptions` table (schema in Section 2) already includes `grace_period_until timestamptz`. No schema changes are required. The columns involved in lapse enforcement:
+
+| Column | During Grace | After Downgrade | After Resubscribe |
+|---|---|---|---|
+| `tier` | Unchanged (MID or HIGH) | `FREE` | `MID` or `HIGH` |
+| `cancel_at_period_end` | `true` | `false` | `false` |
+| `grace_period_until` | Set to `expiry + 7 days` | `NULL` | `NULL` |
+| `updated_at` | Updated on change | Updated on change | Updated on change |
 
 ---
 
@@ -639,37 +757,37 @@ Inside the same subscription group, click **+**:
 
 Click **Save**.
 
-### 4f. Create Top Tier Monthly Subscription
+### 4f. Create High Tier Monthly Subscription
 
 | Field | Value |
 |---|---|
-| Reference Name | `Top Tier Monthly` |
-| Product ID | `com.chaoscreatures.app.sub_top_monthly_1299` |
+| Reference Name | `High Tier Monthly` |
+| Product ID | `com.chaoscreatures.app.sub_high_monthly_1299` |
 | Subscription Duration | 1 Month |
 | Base Price (USD) | $12.99 |
-| Display Name | `Chaos Creatures Top Tier` |
+| Display Name | `Chaos Creatures High Tier` |
 | Description | `The full collector experience. 200 cards per faction, 4 modifier choices at evolution, 2-pass premium art, 1 free Legendary Shard monthly, and 100% Chaos Dust quest bonus.` |
 
 Click **Save**.
 
-### 4g. Create Top Tier Annual Subscription
+### 4g. Create High Tier Annual Subscription
 
 | Field | Value |
 |---|---|
-| Reference Name | `Top Tier Annual` |
-| Product ID | `com.chaoscreatures.app.sub_top_annual_9999` |
+| Reference Name | `High Tier Annual` |
+| Product ID | `com.chaoscreatures.app.sub_high_annual_9999` |
 | Subscription Duration | 1 Year |
 | Base Price (USD) | $99.99 |
-| Display Name | `Chaos Creatures Top Tier (Annual)` |
-| Description | `Everything in Top Tier, billed annually. Save $56 compared to monthly.` |
+| Display Name | `Chaos Creatures High Tier (Annual)` |
+| Description | `Everything in High Tier, billed annually. Save $56 compared to monthly.` |
 
 Click **Save**.
 
 ### 4h. Set Subscription Group Display Order
 
 In the subscription group, drag the subscriptions into this display order (shown on the upgrade paywall):
-1. Top Tier Monthly (feature tier — displayed prominently)
-2. Top Tier Annual (best value — shown with "Save 36%" badge)
+1. High Tier Monthly (feature tier — displayed prominently)
+2. High Tier Annual (best value — shown with "Save 36%" badge)
 3. Mid Tier Monthly
 4. Mid Tier Annual
 
@@ -713,7 +831,7 @@ All cosmetics are non-consumable (purchased once, owned forever, restored automa
    - Eligibility: New subscribers only
 4. Click **Save**.
 
-Repeat for Top Tier Monthly (introductory price: $4.99 for first month).
+Repeat for High Tier Monthly (introductory price: $4.99 for first month).
 
 **In Swift:** StoreKit 2 exposes introductory offers via `product.subscription?.introductoryOffer`. Display "First month $2.99" on the paywall automatically if this offer is available to the current user.
 
@@ -777,7 +895,7 @@ Apple Guidelines 3.1.2 governs subscriptions. Violations cause rejection:
 - Industry benchmark for F2P mobile: 2-5% of DAU convert to paid.
 - Card games skew higher: 5-10% for successful titles (Hearthstone ~7%, Marvel Snap ~8-10%).
 - Chaos Creatures target: **6-8% of DAU convert to any paid tier**.
-- Of converting players, target 70% choosing Mid tier, 30% Top tier.
+- Of converting players, target 70% choosing Mid tier, 30% High tier.
 
 **In-app conversion tactics (all automated):**
 
@@ -790,18 +908,18 @@ Apple Guidelines 3.1.2 governs subscriptions. Violations cause rejection:
 
 All conversion nudges respect a **30-day suppression window**: if the player dismissed a nudge in the last 30 days, do not show the same nudge type again. Track suppression in Supabase `user_nudge_suppression` table.
 
-### Mid to Top Conversion Triggers
+### Mid to High Conversion Triggers
 
 **Primary conversion moment:** Player has unlocked all 3 launch factions and is approaching the 100-card-per-faction limit.
 
 **Secondary conversion moments:**
-1. Player sees a Top-tier evolution with 2-pass refinement and exclusive visual effects.
+1. Player sees a High-tier evolution with 2-pass refinement and exclusive visual effects.
 2. Player is evolving a favorite card to Legendary and wants 4 modifier choices for maximum precision.
 3. Player wants the free monthly Legendary shard (240 Dust value, 2-3 days of grinding equivalent).
-4. Player wants exclusive top-tier cosmetics (animated avatar frames, Legendary card backs).
+4. Player wants exclusive high-tier cosmetics (animated avatar frames, Legendary card backs).
 
 **Expected conversion rate:**
-- Of players who subscribe to Mid tier, 20-30% eventually upgrade to Top tier.
+- Of players who subscribe to Mid tier, 20-30% eventually upgrade to High tier.
 - Typically happens 2-3 months after initial Mid-tier subscription (once the player has established multiple factions).
 
 ### Churn Prevention
@@ -812,14 +930,14 @@ All conversion nudges respect a **30-day suppression window**: if the player dis
 3. **Art quality attachment.** After evolving 10+ cards with Refined Shards, the lower-resolution Free tier art feels like a downgrade.
 4. **Deck slot utility.** Once 4-6 decks are built, losing half of them is painful.
 
-**For Top Tier:**
+**For High Tier:**
 1. **Massive collection.** 150-200 cards per faction. Dropping to Mid (100 cards) means deleting 50-100 cards — a large psychological barrier.
-2. **Visual identity.** Top-tier evolutions are visibly superior. Players do not want future evolutions to look worse.
+2. **Visual identity.** High-tier evolutions are visibly superior. Players do not want future evolutions to look worse.
 3. **Free Legendary shard.** 240 Dust per month is significant value. Losing this feels like leaving money on the table.
 
 **Churn mitigation tactics:**
 1. **Grace period.** If a subscription lapses (billing failure), give a 7-day grace period before enforcing card limits. Store `grace_period_until` in `user_subscriptions`. Prevent accidental lapses from forcing painful deletions. Apple's GRACE_PERIOD_EXPIRED notification triggers enforcement.
-2. **Downgrade warnings.** If a player cancels Top tier (detected via `DID_CHANGE_RENEWAL_STATUS` App Store notification), display: "You have [N] cards in [Faction]. Downgrading to Mid tier will require you to delete [N-100] cards. Are you sure?" Pull N from Supabase `card_instances` count.
+2. **Downgrade warnings.** If a player cancels High tier (detected via `DID_CHANGE_RENEWAL_STATUS` App Store notification), display: "You have [N] cards in [Faction]. Downgrading to Mid tier will require you to delete [N-100] cards. Are you sure?" Pull N from Supabase `card_instances` count.
 3. **Win-back.** When `EXPIRED` notification fires and tier drops to `free`, the Supabase Edge Function enqueues a PostHog event. A win-back push notification is sent 14 days post-expiry via Supabase auth email with a StoreKit 2 promotional offer code for a discounted first month on re-subscribe.
 4. **Annual discount.** Annual subscriptions are shown at 2-months-free pricing (10-month price for 12 months). Surface the annual option prominently on the subscription paywall screen.
 
@@ -997,7 +1115,7 @@ Avatar frames surround the player's avatar portrait during battle.
 **Launch inventory:**
 - 3 basic frames: free, earned via Player Level milestones
 - 6 ornate frames per faction (18 total): Mid-tier subscription exclusive (no direct purchase)
-- 6 Legendary frames per faction (18 total): Top-tier subscription exclusive (no direct purchase)
+- 6 Legendary frames per faction (18 total): High-tier subscription exclusive (no direct purchase)
 - 12 premium standalone frames (holiday/event/achievement): direct purchase
 
 **Pricing:**
@@ -1062,8 +1180,8 @@ All revenue figures below use **15% commission** (Small Business Program) as the
 | Free (never pay) | 70-75% | $0 | $0 |
 | Free + occasional battle pass | 5-8% | $1.25 | $15 |
 | Mid Tier subscriber | 10-12% | $6.99 | $84 |
-| Top Tier subscriber | 3-5% | $12.99 | $156 |
-| Whales (Top + battle pass + cosmetics) | 1-2% | $18-25 | $220-$300 |
+| High Tier subscriber | 3-5% | $12.99 | $156 |
+| Whales (High + battle pass + cosmetics) | 1-2% | $18-25 | $220-$300 |
 
 **Blended ARPU (all players):**
 - Conservative: $0.85-$1.20/month
@@ -1073,12 +1191,12 @@ All revenue figures below use **15% commission** (Small Business Program) as the
 
 Assumptions:
 - Conversion to any paid tier: 7% of DAU
-- Of paying players: 65% Mid tier, 30% Top tier, 5% Top + battle pass + cosmetics
+- Of paying players: 65% Mid tier, 30% High tier, 5% High + battle pass + cosmetics
 - Battle pass attachment: 15% of DAU buy pass each season (8-week seasons = ~$0.75/user/month average)
 - Cosmetics: $0.10/month ARPU across all players
 - Store commission: 15% (Small Business Program). Revenue figures below are **net after store fees**.
 
-| DAU | Paying Users (7%) | Mid (65%) | Top (30%) | Monthly Gross | Net After 15% Fee | Net After 30% Fee (comparison) |
+| DAU | Paying Users (7%) | Mid (65%) | High (30%) | Monthly Gross | Net After 15% Fee | Net After 30% Fee (comparison) |
 |---|---|---|---|---|---|---|
 | 10,000 | 700 | 455 @ $6.99 | 210 @ $12.99 | $12,540 | **$10,659** | $8,778 |
 | 50,000 | 3,500 | 2,275 @ $6.99 | 1,050 @ $12.99 | $62,700 | **$53,295** | $43,890 |
@@ -1094,7 +1212,7 @@ Assumptions:
 **Monthly evolution volume estimates:**
 - Free player: 10-15 evolutions/month = $0.20-$0.30 in fal.ai costs
 - Mid Tier subscriber: 25 evolutions/month = $1.00 in fal.ai costs
-- Top Tier subscriber: 40 evolutions/month = $1.60 in fal.ai costs
+- High Tier subscriber: 40 evolutions/month = $1.60 in fal.ai costs
 
 **AI cost analysis (net subscription revenue vs. fal.ai cost):**
 
@@ -1102,7 +1220,7 @@ Assumptions:
 |---|---|---|---|
 | Free player | $0 | $0.25 | -$0.25 (loss leader) |
 | Mid Tier subscriber | $5.94 (net after 15%) | $1.00 | $4.94 (83% margin) |
-| Top Tier subscriber | $11.04 (net after 15%) | $1.60 | $9.44 (86% margin) |
+| High Tier subscriber | $11.04 (net after 15%) | $1.60 | $9.44 (86% margin) |
 
 **Monthly fal.ai costs at scale:**
 - 10K DAU: ~$3,900/month
@@ -1247,8 +1365,8 @@ Use App Store Connect's built-in pricing tier system. Set a base USD price and A
 |---|---|---|---|---|---|
 | Mid Monthly | $6.99 | £5.99 | €6.99 | A$10.99 | ¥999 |
 | Mid Annual | $55.99 | £45.99 | €54.99 | A$85.99 | ¥7,999 |
-| Top Monthly | $12.99 | £10.99 | €12.99 | A$19.99 | ¥1,799 |
-| Top Annual | $99.99 | £84.99 | €99.99 | A$154.99 | ¥13,999 |
+| High Monthly | $12.99 | £10.99 | €12.99 | A$19.99 | ¥1,799 |
+| High Annual | $99.99 | £84.99 | €99.99 | A$154.99 | ¥13,999 |
 | Battle Pass | $9.99 | £8.99 | €9.99 | A$14.99 | ¥1,399 |
 
 **Tier 2 Markets (Eastern Europe, Latin America ex-Brazil, Southeast Asia):**
@@ -1257,8 +1375,8 @@ Use App Store Connect's built-in pricing tier system. Set a base USD price and A
 |---|---|---|---|
 | Mid Monthly | ~$4.99 | MX$99 | PLN 22.99 |
 | Mid Annual | ~$39.99 | MX$799 | PLN 179.99 |
-| Top Monthly | ~$8.99 | MX$179 | PLN 40.99 |
-| Top Annual | ~$69.99 | MX$1,399 | PLN 319.99 |
+| High Monthly | ~$8.99 | MX$179 | PLN 40.99 |
+| High Annual | ~$69.99 | MX$1,399 | PLN 319.99 |
 | Battle Pass | ~$6.99 | MX$139 | PLN 30.99 |
 
 **Tier 3 Markets (India, Brazil, Turkey):**
@@ -1267,8 +1385,8 @@ Use App Store Connect's built-in pricing tier system. Set a base USD price and A
 |---|---|---|---|
 | Mid Monthly | ₹199 | R$14.90 | ₺49.90 |
 | Mid Annual | ₹1,599 | R$119.90 | ₺399.90 |
-| Top Monthly | ₹399 | R$29.90 | ₺99.90 |
-| Top Annual | ₹2,999 | R$229.90 | ₺749.90 |
+| High Monthly | ₹399 | R$29.90 | ₺99.90 |
+| High Annual | ₹2,999 | R$229.90 | ₺749.90 |
 | Battle Pass | ₹299 | R$22.90 | ₺79.90 |
 
 ### How to Set Regional Prices in App Store Connect
@@ -1318,7 +1436,7 @@ Note: For non-subscription IAPs (cosmetics, battle pass), use **In-App Purchases
 
 **2. Draft Mode with Entry Fee**
 - Draft events: 150 Dust entry fee or $1.99 IAP, rewards scale with wins.
-- Mid/Top tier subscribers get 1 free draft entry per week.
+- Mid/High tier subscribers get 1 free draft entry per week.
 
 **3. Exclusive Card Variants (Not New Cards)**
 - Alternate art for existing cards (same stats, different visual style): $2.99 each.
@@ -1326,7 +1444,7 @@ Note: For non-subscription IAPs (cosmetics, battle pass), use **In-App Purchases
 
 **4. Prestige Evolution Paths (Post-Legendary)**
 - After Legendary, continue evolving for cosmetic upgrades: animated borders, holographic effects, custom names.
-- Requires Top Tier subscription or a one-time $4.99 Prestige unlock per card (product ID: `com.chaoscreatures.app.iap_prestige_499`).
+- Requires High Tier subscription or a one-time $4.99 Prestige unlock per card (product ID: `com.chaoscreatures.app.iap_prestige_499`).
 
 ---
 
@@ -1377,7 +1495,7 @@ With an expected 7-9% conversion rate, $1.20-$1.60 ARPU at maturity, and 63% mar
 
 ---
 
-**Document version:** 3.0
+**Document version:** 3.1
 **Last updated:** 2026-02-16
 **Owner:** Monetization and Economy Design
 
@@ -1459,7 +1577,7 @@ This revision aligns the document fully with the updated CLAUDE.md (native iOS /
 
 **WARN-5 fix: Subscription prices finalized**
 - Removed all "~$5-8/mo" and "~$10-15/mo" range language from Section 3.
-- Final prices are definitively $6.99/month (Mid) and $12.99/month (Top) throughout.
+- Final prices are definitively $6.99/month (Mid) and $12.99/month (High) throughout.
 - Added note in Section 3 explicitly stating these values supersede any range language in docs 00 and 01.
 
 **Removed: Google Play Console section (Section 5)**
@@ -1508,3 +1626,28 @@ This revision aligns the document fully with the updated CLAUDE.md (native iOS /
 - Added StoreKit 2 as the IAP mechanism.
 - Added $300 budget constraint reference.
 - Removed Google Play from payments line.
+
+---
+
+### v3.0 → v3.1 (2026-02-16)
+
+**WARN-06 fix: Added Section 3f — Subscription Lapse and Grace Period**
+
+This revision resolves WARN-06 from the audit review by adding a complete, code-ready specification for subscription lapse behavior and the 7-day grace period.
+
+**New Section 3f (Subscription Lapse and Grace Period) added inside Section 3 (Subscription Tiers):**
+- Defined grace period duration: 7 calendar days from `current_period_end`.
+- Specified the SQL `UPDATE` that sets `grace_period_until = current_period_end + INTERVAL '7 days'` on `DID_FAIL_TO_RENEW` App Store Server Notification, without changing `subscription_tier`.
+- Specified grace period behavior: full tier benefits retained, yellow warning banner on Home and Subscription screens with days-remaining countdown and "Renew Now" CTA. Banner cannot be permanently dismissed during the grace period.
+- Added Swift code snippet for computing `daysRemaining` from `gracePeriodUntil` for banner display.
+- Specified Day 8+ downgrade enforcement triggered by `GRACE_PERIOD_EXPIRED` notification or session detection: SQL sets `tier = 'FREE'`, clears `grace_period_until`.
+- Defined per-resource downgrade rules (no automatic deletion anywhere):
+  - Deck slots: excess decks become read-only (sorted by `last_used_at` descending to preserve most recently used). Player must manually delete to unlock.
+  - Collection capacity: excess cards are not deleted and remain usable in existing decks; new card acquisition blocked per faction until under limit.
+  - Modifier selection: drops to 2 options on next evolution (no retroactive effect).
+  - Evolution art quality: drops to PLANAR/FLUX Kontext Dev/768x1024 on next evolution (no retroactive effect).
+  - Quest dust bonus: drops to 1.0x immediately.
+- Specified UI treatment: yellow banner during grace, red "Subscription Expired" badge + detail sheet after downgrade, "N locked" badge on deck list, "Over limit" badge on collection factions.
+- Specified resubscription behavior: `sync-entitlements` Edge Function restores tier, clears grace columns; `EntitlementManager.refreshEntitlements()` immediately unlocks decks and restores capacity — no player action required, no data loss.
+- Added database column reference table summarizing `tier`, `cancel_at_period_end`, `grace_period_until`, and `updated_at` states across all three phases.
+- Confirmed no schema changes required — `grace_period_until timestamptz` column already present in `user_subscriptions` table (Section 2).

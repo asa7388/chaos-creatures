@@ -835,8 +835,8 @@ At every evolution, the player is always presented with **at least 1 universal o
 | Subscription Tier | Universal Options | Faction Options | Total Choices |
 |---|---|---|---|
 | Free (Planar Shard) | 1 | 1 | Pick 1 of 2 |
-| Mid (Refined Shard, $5–8/mo) | 1 | 2 | Pick 1 of 3 |
-| Top (Prismatic Shard, $10–15/mo) | 2 | 2 | Pick 1 of 4 |
+| Mid (Refined Shard, $6.99/mo) | 1 | 2 | Pick 1 of 3 |
+| High (Prismatic Shard, $12.99/mo) | 2 | 2 | Pick 1 of 4 |
 
 **Why this isn't pay-to-win:**
 - All tiers draw from the same pools at the same PP budget. No exclusive-to-paid modifiers.
@@ -1108,7 +1108,7 @@ Stabilizers are cards that sit on the board and manipulate the instability/chaos
 - **Aura effects are continuous.** A stabilizer's effect is active as long as it's on the board. When destroyed, the effect ends immediately.
 - **Don't contribute base instability.** Stabilizers have 0 base instability. They modify instability through their aura effect, not through the creature instability formula.
 - **Don't evolve.** Like spells, stabilizers are static cards.
-- **Faction-locked.** Stabilizers belong to a faction.
+- **Faction-agnostic (Universal).** All launch stabilizers are available to all factions. Faction-specific stabilizers are reserved for future expansions.
 
 ### Launch Stabilizer Cards
 
@@ -1190,11 +1190,12 @@ These occupy creature board slots but manipulate instability rather than fightin
 | Card | CM Cost | Effect | Instability Contribution |
 |---|---|---|---|
 | Chaos Anchor | 2 | While on field: your creatures contribute -1 instability each (minimum 0 per creature) | 0 |
+| Warding Pillar | 3 | While on field: your avatar's instability modifier is doubled (e.g., -4 becomes -8) | 0 |
 | Binding Ward | 2 | Spell: set your instability to 5 for one turn | N/A (spell) |
 | Chaos Rift | 2 | While on field: your creatures contribute +1 instability each | 0 |
+| Entropy Engine | 3 | While on field: when you roll a Chaos event, your highest-ATK creature gets +1 ATK permanently | 0 |
 | Entropy Spike | 2 | Spell: set your instability to 15 for one turn | N/A (spell) |
-| Void Lens | 3 | Spell: choose whether this turn's event is Order or Chaos after seeing the roll | N/A (spell) |
-| Probability Anchor | 3 | While on field: your instability is treated as 10 (always 50/50) | 0 |
+| Void Lens | 3 | While on field: after seeing your chaos roll result, you may choose whether the event is treated as Order or Chaos (once per turn). "Nothing" results cannot be overridden. | 0 |
 
 ---
 
@@ -1245,8 +1246,8 @@ Single currency earned through gameplay, spent on cards and shards. No premium c
 | Tier | Card Benefit |
 |---|---|
 | Free | Earn dust through gameplay only |
-| Mid ($5–8/mo) | +3 faction Commons per month (primary faction), +50% dust from quests |
-| Top ($10–15/mo) | +5 faction Commons per month (any unlocked faction), +100% dust from quests, 1 free Legendary shard per month |
+| Mid ($6.99/mo) | +3 faction Commons per month (primary faction), +50% dust from quests |
+| High ($12.99/mo) | +5 faction Commons per month (any unlocked faction), +100% dust from quests, 1 free Legendary shard per month |
 
 ### Cross-Faction Unlocking
 
@@ -1364,3 +1365,5 @@ Mechanics and content categories that are intentionally NOT in the launch versio
 | Date | Change | Section(s) |
 |---|---|---|
 | 2026-02-16 | Platform-alignment pass: no platform-specific references existed in this document (it is purely game mechanics). No changes required. Revision Log added for consistency with other core docs. | N/A |
+| 2026-02-16 | Targeted factual error correction (CRIT-03, CRIT-04): Section 12 summary table had Void Lens listed as a Spell — corrected to match its Section 11 stabilizer definition (board stabilizer, HP 2, instability contribution 0). Removed Probability Anchor from Section 12 — it only existed in this summary table, was absent from Section 11 and doc 00, and would have caused content pipeline confusion. | 12 |
+| 2026-02-16 | v3.2 targeted error corrections: (1) Section 11 property "Faction-locked" → "Faction-agnostic (Universal)" to match all 7 stabilizer cards being Universal in the table immediately below. (2) Section 12 summary table: added missing Warding Pillar and Entropy Engine rows (were in Section 11 but absent from Section 12). (3) Section 6 modifier table and Section 13 subscription benefits: "Top" → "High", stale "$5–8/mo" and "$10–15/mo" → canonical "$6.99/mo" and "$12.99/mo" per doc 09. | 6, 11, 12, 13 |

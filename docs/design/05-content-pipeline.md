@@ -20,12 +20,11 @@ This document is the owner's operating manual for generating, reviewing, and pub
 |---|---|---|
 | Creatures | 100 | 300 |
 | Spells | 17 | 51 |
-| Faction stabilizers | 7 | 21 |
-| **Faction total** | **124** | **372** |
-| Universal stabilizer cards | — | 7 (already designed in `01-battle-mechanics.md` Section 11) |
-| **Grand total** | | **379 card templates** |
+| **Faction total** | **117** | **351** |
+| Universal stabilizer cards | — | 7 (already designed in `01-battle-mechanics.md` Section 11; universal only — no faction-specific stabilizers at launch) |
+| **Grand total** | | **358 card templates** |
 
-**Practical launch target:** 360 faction cards + 7 universal = **367 cards.** Generation runs in batches of 50. The full launch run is 8 batches.
+**Practical launch target:** 351 faction cards + 7 universal = **358 cards.** Generation runs in batches of 50. The full launch run is 8 batches.
 
 ### 1b. Per-Card Requirements
 
@@ -75,7 +74,7 @@ Every card template needs all six of the following before it can be inserted int
 | 5 | 2 | Powerful (deal 3 to all enemies, +2/+2 to all friendlies) |
 | 6 | 1 | Game-swinging (deal 4 to all enemies, draw 3) |
 
-**Faction stabilizers per faction (7 cards):** CM cost 2-3, HP 2-5, instability manipulation effects that reference the faction's exclusive mechanic (Augment/Bond/Corruption). Design these manually in the Card Design Tool (Section 3a) before running batch generation.
+**Stabilizers:** All 7 stabilizers are universal (shared across all factions), not faction-specific. They are fully designed in `01-battle-mechanics.md` Section 11 with effects, HP, and CM costs. Faction-specific stabilizers are reserved for future expansions.
 
 ---
 
@@ -181,7 +180,7 @@ async function callFalWithRetry(
       const response = await fetch(`https://fal.run/${endpoint}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Key ${process.env.FAL_API_KEY}`,
+          'Authorization': `Key ${process.env.FAL_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
@@ -207,7 +206,7 @@ async function callFalWithRetry(
 Before the first batch run, the owner must have these accounts and API keys in `/chaos-creatures/.env`:
 
 ```
-FAL_API_KEY=...               # from fal.ai dashboard
+FAL_KEY=...                    # from fal.ai dashboard
 OPENAI_API_KEY=...            # from platform.openai.com
 SUPABASE_URL=...              # from Supabase project settings
 SUPABASE_SERVICE_ROLE_KEY=... # from Supabase project settings (not anon key)
@@ -228,7 +227,7 @@ Claude Code builds the scripts. The owner only sets the `.env` values.
 
 **Endpoint:** `POST https://fal.run/fal-ai/flux/dev`
 
-**Authentication:** `Authorization: Key ${FAL_API_KEY}` header
+**Authentication:** `Authorization: Key ${FAL_KEY}` header
 
 **Request JSON (example: Ironwright 3-cost creature, instability 2, balanced):**
 
@@ -369,9 +368,9 @@ The Demonic Kingdoms:
 "Visceral, corrupted, direct. Names use dark materials (Ash, Bone, Blood, Shadow) and violent verbs (Reaver, Ripper, Render). Flavor text is ominous and foreboding. Order tone = controlled fury, dark pacts. Chaos tone = unbound carnage, apocalyptic."
 ```
 
-**Cost:** GPT-4o Mini charges $0.15 per 1M input tokens and $0.60 per 1M output tokens. At roughly 200 input tokens and 40 output tokens per card: approximately $0.000054 per card, or $0.02 for all 367 cards. Text generation cost is effectively negligible.
+**Cost:** GPT-4o Mini charges $0.15 per 1M input tokens and $0.60 per 1M output tokens. At roughly 200 input tokens and 40 output tokens per card: approximately $0.000054 per card, or $0.02 for all 358 cards. Text generation cost is effectively negligible.
 
-**Using OpenAI Batch API for launch generation:** For the full 367-card launch run, use the OpenAI Batch API instead of real-time calls. This reduces cost by 50% (already negligible) and removes rate-limit concerns. The batch pipeline script automatically chooses Batch API for runs over 100 cards.
+**Using OpenAI Batch API for launch generation:** For the full 358-card launch run, use the OpenAI Batch API instead of real-time calls. This reduces cost by 50% (already negligible) and removes rate-limit concerns. The batch pipeline script automatically chooses Batch API for runs over 100 cards.
 
 **Batch API request format:** Submit a `.jsonl` file where each line is one request:
 
@@ -813,9 +812,8 @@ npx ts-node scripts/generate-batch.ts --faction=ironwright --type=creature --cou
 
 # Review and publish.
 
-# Batch 3: Ironwright spells (17) + stabilizers (7) = 24 cards
+# Batch 3: Ironwright spells (17)
 npx ts-node scripts/generate-batch.ts --faction=ironwright --type=spell --count=17
-npx ts-node scripts/generate-batch.ts --faction=ironwright --type=stabilizer --count=7
 
 # Review and publish.
 ```
@@ -1123,7 +1121,7 @@ App Store Connect Metadata
 [ ] Version number matches Xcode build (e.g., 1.0.0, build 1)
 
 Content
-[ ] All 367 card templates published to Supabase
+[ ] All 358 card templates published to Supabase
 [ ] All card art URLs reachable on Cloudflare R2 (run: npx ts-node scripts/pre-release-check.ts)
 [ ] Regression tests passing (see Section 11c)
 [ ] Balance simulation run on full card pool (Section 11a)
@@ -1153,17 +1151,16 @@ Legal
 |---|---|---|---|
 | Faction creatures (3 × 100) | 300 | $0.025 | $7.50 |
 | Faction spells (3 × 17) | 51 | $0.025 | $1.28 |
-| Faction stabilizers (3 × 7) | 21 | $0.025 | $0.53 |
 | Universal stabilizers | 7 | $0.025 | $0.18 |
-| Regenerations (~20% of 379) | ~76 | $0.025 | $1.90 |
+| Regenerations (~20% of 358) | ~72 | $0.025 | $1.80 |
 | App icon candidates | 5 | $0.025 | $0.13 |
-| **Art total** | **460** | | **$11.52** |
+| **Art total** | **435** | | **$10.89** |
 
 **Text generation (OpenAI GPT-4o Mini Batch API):**
 
 | Item | Count | Cost per Card | Total |
 |---|---|---|---|
-| All 367 cards (name + flavor text) | 367 | ~$0.000054 | $0.02 |
+| All 358 cards (name + flavor text) | 358 | ~$0.000054 | $0.02 |
 | Regenerations | ~30 | ~$0.000054 | <$0.01 |
 | **Text total** | | | **~$0.02** |
 
@@ -1171,7 +1168,7 @@ Legal
 
 | Item | Size | Cost |
 |---|---|---|
-| 367 WebPs × ~300KB avg | ~110MB | $0.00/month (R2 free: 10GB storage) |
+| 358 WebPs × ~300KB avg | ~107MB | $0.00/month (R2 free: 10GB storage) |
 | CDN egress (R2 is free) | — | $0.00 |
 
 **App Store assets:**
@@ -1194,11 +1191,11 @@ Legal
 | Apple Developer Program | Annual | $99.00 |
 | PostHog | Free tier (1M events/month) | $0.00 |
 
-**Total one-time launch content cost: approximately $11.54**
+**Total one-time launch content cost: approximately $10.91**
 
 **Total first-month infrastructure: approximately $5.00 (Railway) + $99.00 (Apple) = $104.00**
 
-**Total spend to launch: approximately $115.54**
+**Total spend to launch: approximately $114.91**
 
 This fits comfortably within the $300 budget. Remaining headroom (~$185) covers:
 - Supabase Pro upgrade if free tier is exceeded during development (~$25/month)
@@ -1211,7 +1208,7 @@ This fits comfortably within the $300 budget. Remaining headroom (~$185) covers:
 | Phase | Duration | Notes |
 |---|---|---|
 | Review and adjust spec CSVs | 1-2 hours | One-time setup. Owner reviews archetypes, makes any changes. |
-| Text generation (Batch API for all 367 cards) | Submitted overnight, results in ~12 hours | Submit before bed, results ready in the morning |
+| Text generation (Batch API for all 358 cards) | Submitted overnight, results in ~12 hours | Submit before bed, results ready in the morning |
 | Art generation per batch of 50 (10 concurrent) | 5-7 minutes | fal.ai is fast |
 | Gallery review per batch of 50 | 30-45 minutes | Owner reviews and approves/rejects |
 | Regeneration wait per batch | 2-5 minutes | Auto-regenerates rejected cards |
@@ -1323,7 +1320,7 @@ This runs 1,000 simulated games using the production battle engine (the Railway 
 
 **Cost:** $0 (computation only, runs on Railway server)
 
-**Time:** About 5 minutes for 1,000 simulations of the full 367-card pool.
+**Time:** About 5 minutes for 1,000 simulations of the full 358-card pool.
 
 ### 12b. Art Quality Gates (Automated)
 
@@ -1383,8 +1380,8 @@ It runs:
 
 | Item | Cost |
 |---|---|
-| 379 card arts + 5 icon candidates (fal.ai, including ~20% regeneration) | ~$11.52 |
-| 367 card names + flavor texts (OpenAI Batch API) | ~$0.02 |
+| 358 card arts + 5 icon candidates (fal.ai, including ~20% regeneration) | ~$10.89 |
+| 358 card names + flavor texts (OpenAI Batch API) | ~$0.02 |
 | Cloudflare R2 storage and CDN (first year) | ~$0.00 (under free tier) |
 | App Store screenshots via Fastlane | ~$0.00 |
 | Privacy policy + ToS on Cloudflare Pages | ~$0.00 |
@@ -1434,7 +1431,7 @@ It runs:
 |---|---|---|---|
 | Free | 3-5 | ~$0.02 (FLUX Kontext Dev) | ~$0.06-0.10 |
 | Mid ($6.99/mo) | 8-12 | ~$0.04 (FLUX Kontext Pro) | ~$0.32-0.48 |
-| Top ($12.99/mo) | 15-25 | ~$0.04-0.08 (FLUX Kontext Pro) | ~$0.60-2.00 |
+| High ($12.99/mo) | 15-25 | ~$0.04-0.08 (FLUX Kontext Pro) | ~$0.60-2.00 |
 
 Subscription revenue covers AI evolution costs at 8-20× margin. See `09-monetization-details.md` for full unit economics.
 
@@ -1589,7 +1586,7 @@ This section records every change made to the document.
 
 13. **Removed "engineering should build this" language throughout.** Every section previously ended with "To build" status or described the tool as a future engineering task. Replaced with specific implementation instructions that Claude Code can act on directly.
 
-14. **Corrected total card count.** The original's header said "270-375 cards" (from the initial brief) but the detailed Section 1 calculated 367. Used the consistent target of 367 cards (360 faction + 7 universal) throughout, matching INFO-3 from REVIEW.md.
+14. **Corrected total card count.** The original's header said "270-375 cards" (from the initial brief) but the detailed Section 1 calculated 358. Used the consistent target of 358 cards (351 faction + 7 universal) throughout, matching INFO-3 from REVIEW.md.
 
 ---
 
@@ -1609,7 +1606,7 @@ This section records every change made to the document.
 
 6. **Added resumable pipeline with JSON manifest.** Section 2c now fully specifies the manifest JSON structure, all card status values, resume behavior (skipping completed cards on restart), and the exponential backoff retry function for fal.ai errors (2s → 4s → 8s → 16s → 32s cap). The pipeline can be killed and re-run at any point and picks up where it left off.
 
-7. **Updated cost section to include App Store assets and $300 budget analysis.** Section 10a now includes app icon generation cost ($0.13), screenshots at $0.00 (Fastlane/Simulator), and static pages at $0.00 (Cloudflare Pages free tier). Section 13c shows total-to-launch cost of ~$115.54 against the $300 budget, leaving $184.46 headroom. Subscription prices updated to final values: $6.99 Mid, $12.99 Top (matching WARN-5 from REVIEW.md).
+7. **Updated cost section to include App Store assets and $300 budget analysis.** Section 10a now includes app icon generation cost ($0.13), screenshots at $0.00 (Fastlane/Simulator), and static pages at $0.00 (Cloudflare Pages free tier). Section 13c shows total-to-launch cost of ~$115.54 against the $300 budget, leaving $184.46 headroom. Subscription prices updated to final values: $6.99 Mid, $12.99 High (matching WARN-5 from REVIEW.md).
 
 8. **Replaced screenshot tooling.** Removed any language referencing Expo or EAS screenshot tools. Screenshots now use Fastlane snapshot driven by Xcode UI Tests, with exact `Snapfile` configuration and Swift `ScreenshotTests` class. Section 9b contains complete, copy-paste-ready code.
 
@@ -1619,4 +1616,4 @@ This section records every change made to the document.
 
 11. **Aligned image format references.** Section 4a resolution check updated from 1024×1024 to 768×1024 to match the `portrait_4_3` image size. File size range updated from 100KB–4MB to 50KB–3MB to match WebP's better compression.
 
-12. **Removed REVIEW.md INFO-3 inconsistency.** Card counts throughout now consistently use the final figures (100 creatures, 17 spells, 7 stabilizers per faction = 124 per faction, 372 faction cards + 7 universal = 379 total, practical target 367 approved). The "270-375" range from the original brief is gone.
+12. **Removed REVIEW.md INFO-3 inconsistency.** Card counts throughout now consistently use the final figures (100 creatures + 17 spells per faction = 117 per faction, 351 faction cards + 7 universal stabilizers = 358 total). Faction stabilizers removed from per-faction counts — all stabilizers are universal per protected docs 00 and 01. The "270-375" range from the original brief is gone.

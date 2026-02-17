@@ -73,7 +73,7 @@ POST https://fal.run/fal-ai/flux-kontext/dev
 POST https://fal.run/fal-ai/flux-kontext/pro
 ```
 
-**Authentication:** `Authorization: Key ${FAL_API_KEY}` header on every request. `FAL_API_KEY` stored in Railway environment variables (never committed to git).
+**Authentication:** `Authorization: Key ${FAL_KEY}` header on every request. `FAL_KEY` stored in Railway environment variables (never committed to git).
 
 **Base request structure for base card generation (txt2img):**
 ```json
@@ -107,7 +107,7 @@ POST https://fal.run/fal-ai/flux-kontext/pro
 
 **`image_size` values used:**
 - `portrait_4_3` = 768×1024 (Free/Planar Shard tier)
-- `square_hd` = 1024×1024 (Mid/Refined and Top/Prismatic Shard tiers)
+- `square_hd` = 1024×1024 (Mid/Refined and High/Prismatic Shard tiers)
 
 **`strength` parameter (img2img only):** 0.0 = identical to input, 1.0 = completely new image. See denoising table in Section 1.5.
 
@@ -339,7 +339,7 @@ At evolution time, the iOS game client presents the player with a list of modifi
 **Selection counts by tier (from `01-battle-mechanics.md` Section 6):**
 - Free (Planar Shard): Player sees 2 options, picks 1 (1 universal + 1 faction)
 - Mid (Refined Shard): Player sees 3 options, picks 1 (1 universal + 2 faction)
-- Top (Prismatic Shard): Player sees 4 options, picks 1 (2 universal + 2 faction)
+- High (Prismatic Shard): Player sees 4 options, picks 1 (2 universal + 2 faction)
 
 The iOS game client displays these options as a card-selection UI during the evolution ceremony sequence. The server sends the option list; the client renders it; the player taps one. The client sends the chosen modifier ID back to the server. All assembly logic is server-side.
 
@@ -373,7 +373,7 @@ The iOS game client displays these options as a card-selection UI during the evo
 | U19 | Tribal Markings | `bold painted or scarified tribal or clan markings across the body in contrasting pigment` |
 | U20 | Dual Coloring | `the color palette splits — one side or element shifts to a contrasting color suggesting internal conflict` |
 
-#### Universal Modifiers — Top Tier Adds These (Top draws from U01–U30)
+#### Universal Modifiers — High Tier Adds These (High draws from U01–U30)
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -392,7 +392,7 @@ The iOS game client displays these options as a card-selection UI during the evo
 
 #### Ironwright Collective Faction Modifiers
 
-Free tier draws 1 from IF01–IF10. Mid draws 2 from IF01–IF18. Top draws 2 from IF01–IF28.
+Free tier draws 1 from IF01–IF10. Mid draws 2 from IF01–IF18. High draws 2 from IF01–IF28.
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -429,7 +429,7 @@ Free tier draws 1 from IF01–IF10. Mid draws 2 from IF01–IF18. Top draws 2 fr
 
 #### The Fey Courts Faction Modifiers
 
-Free tier draws 1 from FF01–FF10. Mid draws 2 from FF01–FF18. Top draws 2 from FF01–FF28.
+Free tier draws 1 from FF01–FF10. Mid draws 2 from FF01–FF18. High draws 2 from FF01–FF28.
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -466,7 +466,7 @@ Free tier draws 1 from FF01–FF10. Mid draws 2 from FF01–FF18. Top draws 2 fr
 
 #### The Demonic Kingdoms Faction Modifiers
 
-Free tier draws 1 from DF01–DF10. Mid draws 2 from DF01–DF18. Top draws 2 from DF01–DF28.
+Free tier draws 1 from DF01–DF10. Mid draws 2 from DF01–DF18. High draws 2 from DF01–DF28.
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -1186,7 +1186,7 @@ Evolution history: 2 prior Order evolutions, 0 Chaos
 
 ---
 
-#### Demonic Kingdoms — Epic to Legendary, Chaos, Top Tier (Prismatic Shard, 2 passes)
+#### Demonic Kingdoms — Epic to Legendary, Chaos, High Tier (Prismatic Shard, 2 passes)
 
 Reference image: previously evolved Epic-tier art (3 Chaos evolutions prior)
 Selected modifier: DF27 (Apocalypse Herald)
@@ -1239,11 +1239,11 @@ The batch pipeline generates all pre-launch Common-tier card art and text. Cost 
 |---|---|---|---|
 | Base card art (fal.ai flux/dev, txt2img) | 15 cards × 1.2 avg attempts (20% regen rate) | ~$0.03/image | ~$0.54 |
 | Base flavor text (GPT-4o Mini) | 15 cards × 1.1 avg attempts | ~$0.0001/call | ~$0.002 |
-| **Full launch set (367 cards per doc 05 estimates)** | 367 × 1.3 avg attempts | ~$0.03/image | ~$14.30 |
+| **Full launch set (358 cards per doc 05)** | 358 × 1.3 avg attempts | ~$0.03/image | ~$13.96 |
 | Post-launch player evolutions (first 1000 players, est. avg 5 evolutions/player) | 5000 evolutions | ~$0.03 avg (mixed tiers) | ~$150 |
 | GPT-4o Mini for 5000 evolutions (names + flavor text) | 10000 calls | ~$0.0001 | ~$1.00 |
 | fal.ai Pro subscription (optional, for faster throughput) | 1 month | $0 (pay-per-use) | $0 |
-| Cloudflare R2 storage (367 base cards + 5000 evolution images) | ~5400 webp files @ ~150KB avg | $0 (free tier: 10GB) | $0 |
+| Cloudflare R2 storage (358 base cards + 5000 evolution images) | ~5400 webp files @ ~150KB avg | $0 (free tier: 10GB) | $0 |
 | Cloudflare R2 egress | ~50GB/month reads | $0 (free egress) | $0 |
 | Railway (game server + admin dashboard) | 1 month | $5/month (Hobby plan) | $5 |
 | Supabase | 1 month | $0 (free tier sufficient for launch) | $0 |
@@ -1366,7 +1366,7 @@ async function callFalWithRetry(requestBody: object, attempt = 1): Promise<FalRe
     const response = await fetch('https://fal.run/fal-ai/flux/dev', {
       method: 'POST',
       headers: {
-        'Authorization': `Key ${process.env.FAL_API_KEY}`,
+        'Authorization': `Key ${process.env.FAL_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody),
@@ -1514,7 +1514,7 @@ async function runBatchPipeline(): Promise<void> {
 
 **Expected environment variables (Railway environment, not in git):**
 ```
-FAL_API_KEY=...
+FAL_KEY=...
 OPENAI_API_KEY=...
 CLOUDFLARE_R2_ACCOUNT_ID=...
 CLOUDFLARE_R2_ACCESS_KEY_ID=...
@@ -1850,11 +1850,11 @@ All batch-generated base cards go through owner approval in the Admin Dashboard 
 
 5. **Added exponential backoff and never-crash guarantees (Section 5.3).** The pipeline catches all errors per-card, logs them to the manifest, and continues. HTTP 429 triggers exponential backoff (`2^attempt` seconds). Any exception is caught and stored as `failed` in the manifest — the pipeline never crashes. The TypeScript implementation includes `AbortSignal.timeout(60000)` for hung requests.
 
-6. **Added $300 budget cost table (Section 5.1).** Full cost breakdown: batch generation (~$14.30 for 367 cards), first 1000 players' evolutions (~$150), infrastructure (~$5/month Railway + $99 Apple Developer), R2 storage ($0 on free tier). Total estimated launch spend: ~$270, leaving ~$30 headroom.
+6. **Added $300 budget cost table (Section 5.1).** Full cost breakdown: batch generation (~$13.96 for 358 cards), first 1000 players' evolutions (~$150), infrastructure (~$5/month Railway + $99 Apple Developer), R2 storage ($0 on free tier). Total estimated launch spend: ~$270, leaving ~$30 headroom.
 
 7. **Removed manual processes.** The "Export Approved Cards to Database" button now calls `POST /api/admin/batch/export` which writes directly to Supabase — no SQL file generation, no manual import step. "Regenerate" and "Regenerate All Failed" buttons call Railway API endpoints that trigger the pipeline — no owner terminal commands required.
 
-8. **CRIT-5 from REVIEW.md confirmed — doc 03 is canonical.** Section 1.5 now explicitly states it is the source of truth for all fal.ai parameters and that doc 06 must read from this table. The canonical values: `guidance_scale` max 8.0 (never 12.0), `strength` and `image_size` always present and shard-tier-specific, `num_inference_steps` differs between Free (28) and Mid (32) and Top (40).
+8. **CRIT-5 from REVIEW.md confirmed — doc 03 is canonical.** Section 1.5 now explicitly states it is the source of truth for all fal.ai parameters and that doc 06 must read from this table. The canonical values: `guidance_scale` max 8.0 (never 12.0), `strength` and `image_size` always present and shard-tier-specific, `num_inference_steps` differs between Free (28) and Mid (32) and High (40).
 
 9. **fal.ai error response format documented.** Added HTTP 429 rate limit response handling, error response JSON shape `{ detail, status }`, and `AbortSignal.timeout` for 60-second hung request detection.
 

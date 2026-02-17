@@ -8,7 +8,7 @@ This document defines the system architecture, service design, API contracts, da
 
 **Two applications are produced:**
 1. **Game Client** -- Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store.
-2. **Admin Dashboard** -- Web application (Node.js + static HTML/JS, deployed on Railway). What the owner uses to manage the game.
+2. **Admin Dashboard** -- Web application (React + Vite (TypeScript), deployed on Railway alongside the game server). What the owner uses to manage the game.
 
 ---
 
@@ -32,7 +32,7 @@ graph TB
 
     subgraph Railway
         GAME[Game Server<br/>Node.js / TypeScript<br/>Authoritative Match Engine]
-        ADMIN[Admin Dashboard<br/>Node.js + Static Web App]
+        ADMIN[Admin Dashboard<br/>React + Vite (TypeScript)]
     end
 
     subgraph Cloudflare
@@ -87,7 +87,7 @@ graph TB
 | **Analytics** | PostHog | Player behavior, retention, match data, economy health. Free tier covers launch. |
 | **Payments** | StoreKit 2 (native Apple API) | In-app subscriptions. No RevenueCat, no Stripe, no third-party payment SDK. Server-side receipt validation via App Store Server API v2. |
 | **App Distribution** | Xcode Cloud + App Store Connect | Automated builds triggered on git push. TestFlight for beta. App Store for release. |
-| **Admin Dashboard** | Node.js + Express + static HTML/JS on Railway | Simple web app for the owner to manage the game without touching code. Separate Railway service. |
+| **Admin Dashboard** | React + Vite (TypeScript), deployed on Railway alongside the game server | Single-page web app for the owner to manage the game without touching code. Separate Railway service. |
 | **Legal Pages** | Cloudflare Pages (free) | Privacy policy and Terms of Service hosted as static HTML. Required for App Store submission. |
 
 ### 1.3 Environment Variables
@@ -153,7 +153,7 @@ These are read in Swift via `Bundle.main.infoDictionary` after being referenced 
 |---|---|---|---|---|
 | Supabase | Free tier (dev), Pro $25/mo (launch) | $0-25 | $25 | Free tier for dev. Pro for launch month. |
 | Railway | Starter (free $5 credit), then usage | $5-10 | $15 | Game server + admin dashboard. Low traffic at launch. |
-| fal.ai | Pay-as-you-go | ~$0.02-0.08/image | $80 | ~367 base cards + testing + evolution testing. Budget 2000 generations. |
+| fal.ai | Pay-as-you-go | ~$0.02-0.08/image | $80 | ~358 base cards + testing + evolution testing. Budget 2000 generations. |
 | OpenAI | Pay-as-you-go | ~$0.0001/call | $2 | GPT-4o Mini is extremely cheap. ~2000 calls. |
 | Cloudflare R2 | Free 10GB storage, free egress | $0 | $0 | Free tier covers launch and beyond. |
 | PostHog | Free tier (1M events/mo) | $0 | $0 | Free tier covers launch. |
@@ -163,8 +163,8 @@ These are read in Swift via `Bundle.main.infoDictionary` after being referenced 
 | **TOTAL** | | | **~$233** | **$67 buffer remaining** |
 
 Build-phase AI generation budget breakdown:
-- 367 base card images at ~$0.04 avg = $14.68
-- 367 base card text generations at ~$0.0001 = $0.04
+- 358 base card images at ~$0.025/image using `portrait_4_3` (768x1024) = $8.95 (portrait_4_3 is a cost optimization vs square_hd; canonical per doc 03)
+- 358 base card text generations at ~$0.0001 = $0.04
 - Testing/iteration (3x multiplier for rejects and retries) = $44
 - Evolution testing (~200 test evolutions) = $10
 - App icon + store assets = $2
@@ -577,7 +577,7 @@ final class StoreKitService: ObservableObject {
 
     // Product IDs configured in App Store Connect
     static let midTierID = "com.chaoscreatures.subscription.mid"      // $6.99/mo
-    static let topTierID = "com.chaoscreatures.subscription.top"      // $12.99/mo
+    static let highTierID = "com.chaoscreatures.subscription.high"     // $12.99/mo
 
     private var transactionListener: Task<Void, Error>?
 
@@ -593,7 +593,7 @@ final class StoreKitService: ObservableObject {
         do {
             let products = try await Product.products(for: [
                 Self.midTierID,
-                Self.topTierID,
+                Self.highTierID,
             ])
             subscriptions = products.sorted { $0.price < $1.price }
         } catch {
@@ -718,7 +718,7 @@ serve(async (req) => {
       .update({
         subscription_tier: tier,
         max_cards_per_faction: tier === "HIGH" ? 200 : tier === "MID" ? 100 : 50,
-        max_deck_slots: tier === "HIGH" ? 10 : tier === "MID" ? 5 : 3,
+        max_deck_slots: tier === "HIGH" ? 10 : tier === "MID" ? 6 : 3,
       })
       .eq("auth_id", session.user.id);
 
@@ -748,7 +748,7 @@ serve(async (req) => {
       .update({
         subscription_tier: tier,
         max_cards_per_faction: tier === "HIGH" ? 200 : tier === "MID" ? 100 : 50,
-        max_deck_slots: tier === "HIGH" ? 10 : tier === "MID" ? 5 : 3,
+        max_deck_slots: tier === "HIGH" ? 10 : tier === "MID" ? 6 : 3,
       })
       .eq("auth_id", appAccountToken);
   } else if (
@@ -1541,6 +1541,82 @@ ALTER TABLE rate_limit_log ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role only" ON rate_limit_log FOR ALL USING (auth.role() = 'service_role');
 ```
 
+#### `seasons`
+
+```sql
+-- seasons: tracks game seasons for ranked play and battle pass
+CREATE TABLE seasons (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  season_number INT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  starts_at TIMESTAMPTZ NOT NULL,
+  ends_at TIMESTAMPTZ NOT NULL,
+  is_active BOOLEAN DEFAULT false,
+  battle_pass_tiers INT NOT NULL DEFAULT 50,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS: seasons are global read-only data
+ALTER TABLE seasons ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "seasons_read" ON seasons FOR SELECT USING (true);
+CREATE POLICY "Service role manages seasons" ON seasons FOR ALL USING (auth.role() = 'service_role');
+```
+
+#### `battle_pass_progress`
+
+```sql
+-- battle_pass_progress: tracks each player's battle pass progress per season
+CREATE TABLE battle_pass_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id UUID NOT NULL REFERENCES players(id),
+  season_id UUID NOT NULL REFERENCES seasons(id),
+  is_premium BOOLEAN DEFAULT false,
+  current_tier INT NOT NULL DEFAULT 0,
+  xp_in_current_tier INT NOT NULL DEFAULT 0,
+  purchased_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (player_id, season_id)
+);
+
+-- RLS: players can only access their own battle pass progress
+ALTER TABLE battle_pass_progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "bp_own" ON battle_pass_progress FOR ALL USING (player_id = auth.uid());
+CREATE POLICY "Service role manages battle pass" ON battle_pass_progress FOR ALL USING (auth.role() = 'service_role');
+```
+
+**Season-end processing (Railway cron job or Supabase Edge Function scheduled via pg_cron):**
+
+At season end, a scheduled job runs to handle:
+
+1. **Rank reset:** All players are demoted by 1 tier (e.g., Gold 1 becomes Silver 1), keeping division 3 as the floor within any tier. Players in Bronze 3 stay at Bronze 3. `season_rank_points` reset to 0.
+2. **Season reward distribution:** Each player receives a Chaos Dust bonus based on their peak rank achieved during the season (stored in a `peak_season_rank` field on the `players` table or derived from `match_records`). Reward tiers: Bronze = 100, Silver = 250, Gold = 500, Platinum = 1000, Diamond = 2000, Mythic = 5000 Chaos Dust.
+3. **Battle pass expiry:** Premium rewards for unclaimed tiers are locked and can no longer be claimed after the season ends. Free-track rewards remain claimable for 7 days after season end.
+
+```typescript
+// game-server/src/season-end.ts
+// Triggered by Railway cron or manual Admin Dashboard button
+async function processSeasonEnd(seasonId: string) {
+  // 1. Mark season inactive
+  await supabase.from('seasons').update({ is_active: false }).eq('id', seasonId);
+
+  // 2. Distribute season rewards based on peak rank
+  const { data: players } = await supabase.from('players').select('id, season_rank');
+  for (const player of players ?? []) {
+    const reward = rankToDustReward(player.season_rank);
+    await supabase.rpc('add_chaos_dust', { p_player_id: player.id, p_amount: reward });
+  }
+
+  // 3. Reset ranks (demote by 1 tier, floor at Bronze 3)
+  await supabase.rpc('reset_season_ranks');
+
+  // 4. Lock unclaimed premium battle pass tiers
+  await supabase.from('battle_pass_progress')
+    .update({ locked_at: new Date().toISOString() })
+    .eq('season_id', seasonId)
+    .eq('is_premium', true);
+}
+```
+
 ### 3.2 Database Migrations
 
 All migrations are managed by Supabase CLI. The file structure:
@@ -1563,11 +1639,13 @@ supabase/
     20260301000012_create_generation_jobs.sql
     20260301000013_create_rate_limit_log.sql
     20260301000014_create_matchmaking_queue.sql
-    20260301000015_seed_factions.sql
-    20260301000016_seed_avatars.sql
-    20260301000017_seed_event_definitions.sql
-    20260301000018_seed_economy_config.sql
-    20260301000019_create_triggers.sql
+    20260301000015_create_seasons.sql
+    20260301000016_create_battle_pass_progress.sql
+    20260301000017_seed_factions.sql
+    20260301000018_seed_avatars.sql
+    20260301000019_seed_event_definitions.sql
+    20260301000020_seed_economy_config.sql
+    20260301000021_create_triggers.sql
   seed.sql
 ```
 
@@ -1822,6 +1900,9 @@ async function generateEvolutionArt(params: {
   const guidanceScale = guidanceMap[params.shardQuality];
 
   // image_size per doc 03 Section 1.4
+  // PLANAR (Free tier) uses portrait_4_3 (768x1024) -- cost optimization at $0.025/image
+  // REFINED/PRISMATIC (Mid/High tier) use square_hd (1024x1024) -- higher quality for subscribers
+  // Base batch card art also uses portrait_4_3 intentionally (same cost optimization, canonical per doc 03)
   const imageSize = params.shardQuality === 'PLANAR' ? 'portrait_4_3' : 'square_hd';
 
   // strength (denoising) per doc 03 Section 1.4 table
@@ -1980,30 +2061,74 @@ async function validateGeneratedImage(
 - After 3 failures: apply programmatic fallback (color shift + overlay using Sharp on the game server) and set a flag for background retry
 - The game server processes retries every 30 seconds via setInterval (not pg_cron)
 
-**Fallback art:**
+**Fallback art (color-graded placeholder while real AI art generates):**
+
+When AI image generation fails all 3 attempts, or as an immediate placeholder while AI generation runs asynchronously, the game server produces a color-graded version of the card's existing art using the `sharp` npm library for server-side image processing.
+
+- **Order fallback:** Blue-white tint overlay (`tint({ r: 100, g: 150, b: 255 })` + `sharpen()`) -- suggests celestial refinement.
+- **Chaos fallback:** Red-purple tint overlay (`tint({ r: 200, g: 50, b: 150 })` + `modulate({ saturation: 1.3 })`) -- suggests corrupted transformation.
 
 ```typescript
 async function generateFallbackArt(
+  cardInstanceId: string,
   existingArtUrl: string,
-  evolutionOutcome: 'ORDER' | 'CHAOS'
+  evolutionOutcome: 'ORDER' | 'CHAOS',
+  step: number
 ): Promise<string> {
   // Download existing art
   const imageBuffer = await fetch(existingArtUrl).then(r => r.arrayBuffer());
 
-  // Apply color treatment using Sharp
+  // Apply color treatment using Sharp (server-side color grading)
   const sharp = (await import('sharp')).default;
   let processed = sharp(Buffer.from(imageBuffer));
 
   if (evolutionOutcome === 'ORDER') {
+    // Order: blue-white tint overlay
     processed = processed.tint({ r: 100, g: 150, b: 255 }).sharpen();
   } else {
+    // Chaos: red-purple tint overlay
     processed = processed.tint({ r: 200, g: 50, b: 150 }).modulate({ saturation: 1.3 });
   }
 
   const outputBuffer = await processed.webp().toBuffer();
-  return await uploadBufferToR2(outputBuffer, 'fallback');
+
+  // Store to R2 with _fallback suffix in key
+  const key = `evolution/${cardInstanceId}/step-${step}_fallback.webp`;
+  await r2Client.send(new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    Body: outputBuffer,
+    ContentType: 'image/webp',
+    CacheControl: 'public, max-age=3600',
+  }));
+
+  return `${R2_PUBLIC_URL}/${key}`;
 }
 ```
+
+**Fallback-to-real-art replacement flow:**
+
+1. Fallback images are stored to R2 with a `_fallback` suffix in the key (e.g., `step-2_fallback.webp`).
+2. When real AI art arrives (either from a retry or delayed initial generation), it is stored at the canonical key without the suffix (e.g., `step-2.webp`).
+3. The server pushes an `art_updated` event via Supabase Realtime on the `collection:{player_id}` channel:
+
+```typescript
+// After real AI art is stored to R2 and generation_job is marked COMPLETED
+await supabase.channel(`collection:${playerId}`).send({
+  type: 'broadcast',
+  event: 'art_updated',
+  payload: {
+    card_instance_id: cardInstanceId,
+    step: step,
+    new_art_url: canonicalR2Url,  // URL without _fallback suffix
+    replaced_fallback: true,
+  },
+});
+```
+
+4. The iOS client subscribes to `collection:{player_id}` and listens for `art_updated` events. When received, `ImageCacheService` evicts the old fallback URL from its cache and fetches the new canonical URL.
+5. The client identifies fallback art by checking for the `_fallback` suffix in the URL. Any card art URL containing `_fallback` renders with a subtle shimmer overlay in SpriteKit to indicate the art is temporary.
+6. The old fallback image in R2 is not deleted immediately -- a daily cleanup cron removes `_fallback` images older than 7 days where the canonical version exists.
 
 ---
 
@@ -3068,7 +3193,7 @@ async function uploadToR2(
 
 The Admin Dashboard is a **separate web application** deployed on Railway. It is NOT part of the iOS app. It is what the owner uses to manage the game without touching code or databases.
 
-**Technology:** Node.js + Express backend serving static HTML/JS/CSS. No React framework needed -- plain HTML with fetch() calls to the Express API. This keeps it simple and fast to build.
+**Technology:** React + Vite (TypeScript), deployed on Railway alongside the game server. The frontend is a single-page app built with `.tsx` components. A Node.js + Express backend serves the API endpoints and the built Vite output. This aligns with doc 07 Part B which specifies the full component tree in React/TSX.
 
 **URL:** `https://admin-chaos-creatures.up.railway.app` (Railway assigns this automatically)
 
@@ -3705,8 +3830,12 @@ const AssignBlockersSchema = z.object({
 | **rate_limit_log table** | Referenced in code but not in schema | Added to Section 3.1 with full CREATE TABLE, index, RLS, and pg_cron cleanup | Was missing from schema definition. |
 | **matchmaking_queue table** | Defined only in Section 3.5 | Also listed in migrations (Section 3.2) | Ensures migration file list is complete. |
 | **Docker compose** | Missing AI service env vars and host.docker.internal | Added FAL_KEY, OPENAI_API_KEY, R2 vars, and extra_hosts for macOS Docker | Game server needs AI keys for retry processing; macOS Docker needs extra_hosts. |
+| **Admin Dashboard technology (WARN-04)** | Node.js + Express + static HTML/JS | React + Vite (TypeScript), deployed on Railway alongside the game server | Audit WARN-04: Doc 07 Part B specifies React + Vite with .tsx components. Section 1.2, Mermaid diagram, and Section 9 intro updated for consistency. |
+| **Evolution fallback art details (WARN-07)** | Basic `generateFallbackArt` function with no R2 key convention or client replacement flow | Expanded with `_fallback` suffix in R2 key, Supabase Realtime `collection:{player_id}` push with `art_updated` event, client cache eviction and shimmer overlay for fallback art, 7-day cleanup cron | Audit WARN-07: Fallback art subsection now specifies full lifecycle from generation through client replacement. |
+| **Seasons and battle pass tables (WARN-08)** | Missing from schema | Added `seasons` and `battle_pass_progress` tables with RLS, plus season-end processing logic (rank reset, dust rewards, battle pass expiry) | Audit WARN-08: Required for ranked play seasons and battle pass progression per doc 04. Migration files renumbered. |
+| **Base art resolution note (WARN-09)** | No explicit mention of resolution rationale | Added clarification that base batch art uses `portrait_4_3` (768x1024) as cost optimization ($0.025/image); evolution Mid/High tier uses `square_hd` (1024x1024). Canonical per doc 03. Budget line updated. | Audit WARN-09: Makes resolution choice and cost trade-off explicit. |
 
 ---
 
 *Last updated: 2026-02-16*
-*Status: Complete revision for native iOS (Swift/SwiftUI/SpriteKit), iOS-only (App Store), StoreKit 2 payments, $300 budget cap. All fal.ai parameters match doc 03 Section 1.4 exactly. Admin Dashboard is a separate Railway web app. All schemas, API contracts, message formats, and deployment configs are code-ready.*
+*Status: Complete revision for native iOS (Swift/SwiftUI/SpriteKit), iOS-only (App Store), StoreKit 2 payments, $300 budget cap. All fal.ai parameters match doc 03 Section 1.4 exactly. Admin Dashboard is a React + Vite (TypeScript) web app on Railway. All schemas, API contracts, message formats, and deployment configs are code-ready.*

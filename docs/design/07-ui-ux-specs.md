@@ -2082,7 +2082,7 @@ var subscriptionSection: some View {
             HStack(spacing: 12) {
                 SubscriptionCardView(tier: .free, currentTier: vm.playerTier)
                 SubscriptionCardView(tier: .mid, currentTier: vm.playerTier)
-                SubscriptionCardView(tier: .top, currentTier: vm.playerTier)
+                SubscriptionCardView(tier: .high, currentTier: vm.playerTier)
             }
             .padding(.horizontal, 16)
         }
@@ -2094,7 +2094,7 @@ var subscriptionSection: some View {
 Each `SubscriptionCardView` — 260x320pt:
 - Free: background `Color(hex: "#1A1A1A")`, border `Color(hex: "#3A3A3A")`.
 - Mid ($6.99/mo): `LinearGradient(colors: [Color(hex: "#0D47A1"), Color(hex: "#1565C0")])`, border `Color(hex: "#2196F3")`.
-- Top ($12.99/mo): `LinearGradient(colors: [Color(hex: "#E65100"), Color(hex: "#F57F17")])`, border `Color(hex: "#FFD700")`.
+- High ($12.99/mo): `LinearGradient(colors: [Color(hex: "#E65100"), Color(hex: "#F57F17")])`, border `Color(hex: "#FFD700")`.
 
 Contents: tier name 20pt bold, price 16pt, benefits `ForEach` list (checkmark SF symbol + benefit text 13pt), action button.
 
@@ -3152,7 +3152,7 @@ All admin actions logged in `admin_audit_log` table: `admin_user_id`, `action`, 
 - Toggle quest on/off without deleting.
 
 **Subscription Overview:**
-- Player count per tier (Free / Mid / Top).
+- Player count per tier (Free / Mid / High).
 - Monthly revenue estimate.
 - Tier churn rate.
 

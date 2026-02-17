@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| **Document Version** | 3.0 |
+| **Document Version** | 3.1 |
 | **Date** | 2026-02-16 |
 | **Status** | Final -- Ready for Build |
 | **Owner** | Solo non-engineer owner, building with Claude Code |
@@ -50,7 +50,7 @@ Chaos Creatures is a mobile collectible card game where every card's art is AI-g
 - **Primary:** Native iOS app built with Swift + SwiftUI + SpriteKit. Ships to the Apple App Store only.
 - **Minimum target:** iOS 17+, iPhone 11 and newer.
 - **No Android.** No React Native. No Unity. No Expo. No cross-platform framework.
-- **Admin Dashboard:** Separate web application (Node.js + Express + static HTML/JS or React + Vite) deployed on Railway. Used by the owner only.
+- **Admin Dashboard:** Separate web application (React + Vite, TypeScript) deployed on Railway. Used by the owner only.
 
 ### 1.4 Core Differentiators
 
@@ -70,11 +70,11 @@ These decisions are finalized and must not be contradicted during implementation
 - Taunt = forced attack + forced block (two-part rule)
 - Main phase only spells -- no instant-speed, no response windows
 - PP-based modifier pools: 12 pools x (8 universal + 4 per faction) = 240 modifiers
-- Subscription-tiered modifier selection: Free (2 options), Mid (3), Top (4)
+- Subscription-tiered modifier selection: Free (2 options), Mid (3), High (4)
 - Chaos Dust economy: no real money on individual cards
 - CM cost is fixed forever through evolution
 - Evolution energy thresholds: 15/30/50/75; earn 2/win, 1/loss; all 20 deck cards earn simultaneously
-- Instability formula: avatar modifier + sum(creature base_instability + evolution changes + modifier adjustments), clamped 1-20
+- Instability formula: `player_instability = avatar_modifier + sum(max(0, creature_base_instability + evolution_changes + modifier_adjustments))`, clamped 1-20. Each creature's instability contribution floors at 0 before summing (per `01-battle-mechanics.md` Section 2).
 
 ### 1.6 Infrastructure Stack (Non-Negotiable)
 
@@ -92,7 +92,7 @@ These decisions are finalized and must not be contradicted during implementation
 | Analytics | PostHog | Player behavior, retention, economy health |
 | Payments | StoreKit 2 (native Apple framework) | No RevenueCat. No Stripe. No third-party payment SDK. |
 | App Build | Xcode Cloud | iOS builds and TestFlight distribution |
-| Admin | Node.js + Express + static HTML/JS on Railway | Dashboard for owner operations |
+| Admin | React + Vite (TypeScript) on Railway (served via Node.js + Express) | Dashboard for owner operations |
 | Legal Pages | Cloudflare Pages (free) | Privacy policy, Terms of Service |
 
 ### 1.7 Budget Constraint
@@ -145,10 +145,10 @@ Total build-to-launch budget: **$300 maximum**.
 
 | ID | Story | Acceptance Criteria |
 |---|---|---|
-| US-011 | As a subscriber, I want more modifier choices during evolution so I can refine my builds. | Free: 2 options (1 universal + 1 faction). Mid ($6.99/mo): 3 options (1 universal + 2 faction). Top ($12.99/mo): 4 options (2 universal + 2 faction). All tiers draw from the same pools -- no exclusive modifiers. |
-| US-012 | As a subscriber, I want higher-quality evolution art so my cards look visually distinct. | Free: FLUX Kontext Dev, 768x1024, 1 pass. Mid: FLUX Kontext Pro, 1024x1024, 1 pass, priority queue. Top: FLUX Kontext Pro, 1024x1024, 2 passes (generate + refine), priority queue. |
+| US-011 | As a subscriber, I want more modifier choices during evolution so I can refine my builds. | Free: 2 options (1 universal + 1 faction). Mid ($6.99/mo): 3 options (1 universal + 2 faction). High ($12.99/mo): 4 options (2 universal + 2 faction). All tiers draw from the same pools -- no exclusive modifiers. |
+| US-012 | As a subscriber, I want higher-quality evolution art so my cards look visually distinct. | Free: FLUX Kontext Dev, 768x1024, 1 pass. Mid: FLUX Kontext Pro, 1024x1024, 1 pass, priority queue. High: FLUX Kontext Pro, 1024x1024, 2 passes (generate + refine), priority queue. |
 | US-013 | As a subscriber, I want my subscription managed seamlessly through the App Store. | Subscription purchased via StoreKit 2 (native Apple API). `Transaction.currentEntitlements` and `Transaction.updates` detect tier changes. Sync to server via Supabase Edge Function. Grace period of 7 days on lapse before enforcing card limits. |
-| US-014 | As a subscriber, I want more collection capacity so I can explore all factions. | Free: 50 cards/faction, 3 deck slots. Mid: 100 cards/faction, 5 deck slots. Top: 200 cards/faction, 10 deck slots. |
+| US-014 | As a subscriber, I want more collection capacity so I can explore all factions. | Free: 50 cards/faction, 3 deck slots. Mid: 100 cards/faction, 6 deck slots. High: 200 cards/faction, 10 deck slots. |
 
 ### 2.5 Cross-Faction Unlock
 
@@ -165,10 +165,10 @@ Total build-to-launch budget: **$300 maximum**.
 | ID | Feature | Description | App | Reference |
 |---|---|---|---|---|
 | P0-001 | Core Battle System | 9-phase turn structure, D20 chaos roll, event resolution, MTG-style combat with all 7 keywords, simultaneous damage, timer management | iOS | `01-battle-mechanics.md` Sections 1-9 |
-| P0-002 | Card Evolution | 4-tier evolution (Common through Legendary), energy accumulation, shard consumption, 70/30 channeling roll, modifier selection, triggered ability grant, stat growth, AI art generation via fal.ai | iOS | `01-battle-mechanics.md` Section 1, `02-card-data-model.md` Section 20 |
+| P0-002 | Card Evolution | 4-tier evolution (Common through Legendary), energy accumulation, shard consumption, 70/30 channeling roll, modifier selection, triggered ability grant, stat growth, AI art generation via fal.ai | iOS | `01-battle-mechanics.md` Section 1, `02-card-data-model.md` Sections 2-5, 20 |
 | P0-003 | Card Collection | CardInstance CRUD, ownership tracking, collection browsing with filters/search, card detail view, card limit enforcement by subscription tier | iOS | `02-card-data-model.md` Sections 1-5, `07-ui-ux-specs.md` Section 5 |
 | P0-004 | Deck Building | 20-card deck construction, single-faction enforcement, copy limits (max 2 per template, max 2 Legendaries at 1 copy each), avatar selection, deck validation | iOS | `02-card-data-model.md` Section 11, `07-ui-ux-specs.md` Section 5.3 |
-| P0-005 | Matchmaking | Ranked and Casual queue via Supabase `matchmaking_queue` table, rank-based matching with expanding search, match creation and player assignment | Backend | `06-technical-architecture.md` Section 2.6 |
+| P0-005 | Matchmaking | Ranked and Casual queue via Supabase `matchmaking_queue` table, rank-based matching with expanding search, match creation and player assignment | Backend | `06-technical-architecture.md` Section 4.5 |
 | P0-006 | Economy Core | Chaos Dust earning (win/loss rewards), spending (card packs, shards, specific cards), shard inventory, transaction logging | Backend | `04-progression-economy.md` Sections 2-3 |
 | P0-007 | Authentication | Apple Sign-In via Supabase Auth, JWT session management, subscription tier verification via StoreKit 2 entitlements synced to server | iOS + Backend | `06-technical-architecture.md` Section 2.1, `09-monetization-details.md` Section 2 |
 | P0-008 | AI Art Generation | fal.ai FLUX Kontext integration for evolution art (img2img), FLUX Dev for batch base cards (txt2img), quality pipeline (fal.ai built-in NSFW filter, text-in-image prevention), fallback art via Sharp | Backend | `03-prompt-templates.md`, `06-technical-architecture.md` Section 3 |
@@ -176,7 +176,7 @@ Total build-to-launch budget: **$300 maximum**.
 | P0-010 | Battle UI | Battlefield layout (5 slots per side), hand display, mana crystals, HP bars, chaos roll animation, event overlay, turn phase indicator, timer bar, combat animations. SpriteKit `SKScene` for battlefield with SwiftUI overlay for HUD elements (opponent info, hand scroll, bottom controls). | iOS | `07-ui-ux-specs.md` Section 3 |
 | P0-011 | Core Navigation | 5-tab bottom bar (Home, Collection, Decks, Profile, Shop) via SwiftUI `TabView`, battle flow (mode select, matchmaking, battle via `.fullScreenCover`, post-match) via `NavigationStack` | iOS | `07-ui-ux-specs.md` Sections 1-2 |
 | P0-012 | Onboarding | Account creation via Supabase Auth (Apple Sign-In), faction trial (3 loaner decks), tutorial match (scripted), first evolution (guided), faction commitment | iOS | `07-ui-ux-specs.md` Section 7, `04-progression-economy.md` Section 6 |
-| P0-013 | Game Server | Server-authoritative game logic on Railway (Node.js/TypeScript), communicates via Supabase Realtime channels, reconnection handling, anti-cheat validation | Backend | `06-technical-architecture.md` Sections 4.1-4.6 |
+| P0-013 | Game Server | Server-authoritative game logic on Railway (Node.js/TypeScript), communicates via Supabase Realtime channels, reconnection handling, anti-cheat validation | Backend | `06-technical-architecture.md` Sections 4.6, 5.1-5.6 |
 | P0-014 | Real-Time Match Communication | Supabase Realtime channels (`match:{match_id}`), client-to-server actions via `player_action` broadcast, server-to-client state via `game_event` broadcast, match lifecycle. Swift client uses Supabase Swift SDK for Realtime subscription. | iOS + Backend | `06-technical-architecture.md` Section 5 |
 | P0-015 | Instability System | Player instability calculation (avatar + creature sum), clamped 1-20, recalculation on board changes, attunement state management | Backend | `01-battle-mechanics.md` Section 2 |
 
@@ -187,14 +187,14 @@ Total build-to-launch budget: **$300 maximum**.
 | P1-001 | Quest System | 3 daily quests (20 templates), 2 weekly quests (10 templates), quest generation algorithm, progress tracking, reward distribution, 1 free reroll/day | Backend + iOS | `04-progression-economy.md` Section 4 |
 | P1-002 | Rank Ladder | 17 tiers, points system (+25/-20 same tier), rank floors, season structure (8 weeks), season reset (drop 5 divisions), end-of-season rewards | Backend + iOS | `04-progression-economy.md` Section 5 |
 | P1-003 | Full Shop | Subscription tier display via StoreKit 2 paywall, card pack purchase (Dust), shard purchase (Dust), avatar unlock (Dust), subscription upgrade flow | iOS | `07-ui-ux-specs.md` Section 6, `09-monetization-details.md` Section 3 |
-| P1-004 | All 3 Factions Complete | ~120 card templates per faction (100 creatures, 17 spells, 7 faction stabilizers) + 7 universal stabilizers. 240 modifier definitions. **367 total cards across 8 batches.** | Backend (content pipeline) | `05-content-pipeline.md` Section 1 |
+| P1-004 | All 3 Factions Complete | 117 card templates per faction (100 creatures, 17 spells) + 7 universal stabilizers. 240 modifier definitions. **358 total cards across 8 batches.** | Backend (content pipeline) | `05-content-pipeline.md` Section 1 |
 | P1-005 | Cross-Faction Unlock | 150 Dust card pack unlocks new faction permanently | Backend | `04-progression-economy.md` Section 2.3 |
 | P1-006 | Post-Match Results | Victory/defeat display, chaos energy earned per card, Dust earned, quest progress, evolution-ready indicators, play again/evolve/home buttons | iOS | `07-ui-ux-specs.md` Section 15 |
 | P1-007 | Subscription Management | StoreKit 2 integration via `EntitlementManager` using `Transaction.currentEntitlements` and `Transaction.updates`. Server sync via Supabase Edge Function `/functions/v1/sync-entitlements`. App Store Server Notifications V2 webhook for subscription lifecycle events. Grace period on lapse. Restore Purchases button in Settings. | iOS + Backend | `09-monetization-details.md` Sections 2-5 |
 | P1-008 | Audio System | Faction-specific battle music, adaptive intensity system (4-stem architecture via `AVAudioEngine`), SFX via `SKAction.playSoundFileNamed` in SpriteKit, `AVAudioPlayer` for menus. Music CAF format, SFX CAF format, ambient AAC format. ~23 MB total. Volume controls in Settings. | iOS | `08-audio-design.md` |
 | P1-009 | Achievement System | Achievement definitions, progress tracking per player, one-time rewards, achievement display on profile | Backend + iOS | `02-card-data-model.md` Section 17 |
 | P1-010 | Settings Screen | Account, Audio (master/music/SFX volume), Visuals (reduced motion, colorblind mode, animation quality, screen shake), Gameplay (auto-end turn, timer extension for casual), Notifications, Privacy, **Restore Purchases** button | iOS | `07-ui-ux-specs.md` Section 14 |
-| P1-011 | Admin Dashboard | Web app on Railway: economy config editor, batch card generation trigger, generation review/approve/reject gallery, player lookup, match monitor, PostHog analytics embedding | Web (Admin) | `06-technical-architecture.md` Section 8 |
+| P1-011 | Admin Dashboard | Web app on Railway (React + Vite, TypeScript): economy config editor, batch card generation trigger, generation review/approve/reject gallery, player lookup, match monitor, PostHog analytics embedding | Web (Admin) | `06-technical-architecture.md` Section 9, `07-ui-ux-specs.md` Part B |
 
 ### 3.3 P2 -- Nice to Have (Post-Launch)
 
@@ -276,7 +276,7 @@ Total build-to-launch budget: **$300 maximum**.
 |---|---|---|
 | REQ-024 | A card shall be eligible for evolution when its chaos energy meets the tier threshold and the player owns a shard of the appropriate tier. | Thresholds: Common to Uncommon = 15, Uncommon to Rare = 30, Rare to Epic = 50, Epic to Legendary = 75. |
 | REQ-025 | The player shall choose to channel toward Order or Chaos. A 70/30 roll determines the actual outcome. | If player channels toward Order: 70% chance of Order outcome, 30% Chaos. If player channels toward Chaos: 70% chance of Chaos outcome, 30% Order. |
-| REQ-026 | Evolution shall grant exactly one modifier and one triggered ability per step. | Modifier options drawn from correct pool (PP budget from CM cost + step, tier bracket, attunement from 70/30 outcome, faction). Number of options based on subscription tier: Free=2, Mid=3, Top=4. |
+| REQ-026 | Evolution shall grant exactly one modifier and one triggered ability per step. | Modifier options drawn from correct pool (PP budget from CM cost + step, tier bracket, attunement from 70/30 outcome, faction). Number of options based on subscription tier: Free=2, Mid=3, High=4. |
 | REQ-027 | Stat growth at evolution shall follow the proportional PP scaling system. | PP at tier = base_PP x tier_multiplier (Common 1.0x, Uncommon 1.5x, Rare 2.0x, Epic 2.5x, Legendary 3.0x). Per-step PP split between stats and modifier budget per `01-battle-mechanics.md` Section 1. |
 | REQ-028 | Instability shall change at each evolution based on outcome. | Chaos outcome: +1 instability at every step. Order outcome: +0 at Common-to-Uncommon and Uncommon-to-Rare, -1 at Rare-to-Epic, -2 at Epic-to-Legendary. Creature instability floor is 0. |
 | REQ-029 | The system shall prevent duplicate modifiers on the same card. | No ModifierDefinition can be granted twice to the same CardInstance. Within a single evolution's options, no modifier can appear twice. |
@@ -290,10 +290,10 @@ Total build-to-launch budget: **$300 maximum**.
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-033 | Card collection shall enforce per-faction capacity limits based on subscription tier. | Free: 50 cards/faction. Mid: 100 cards/faction. Top: 200 cards/faction. Enforced at the Supabase Edge Function level on card creation. |
+| REQ-033 | Card collection shall enforce per-faction capacity limits based on subscription tier. | Free: 50 cards/faction. Mid: 100 cards/faction. High: 200 cards/faction. Enforced at the Supabase Edge Function level on card creation. |
 | REQ-034 | Card packs shall contain 3 random Commons from the target faction with duplicate protection. | If a pack would produce a 3rd+ copy of an owned Common, it rerolls to a different Common. Own-faction pack costs 100 Dust. Cross-faction pack costs 150 Dust and permanently unlocks the faction. |
 | REQ-035 | Deck validation shall enforce all construction rules before matchmaking. | Exactly 20 cards. Single faction (all cards share faction_id). Max 2 copies of any template. Max 2 Legendaries, max 1 copy of each Legendary. Avatar must match deck faction. At least 1 creature. |
-| REQ-036 | Players shall have deck slot limits based on subscription tier. | Free: 3 slots. Mid: 5 slots. Top: 10 slots. Invalid (work-in-progress) decks can be saved but not used in matchmaking. |
+| REQ-036 | Players shall have deck slot limits based on subscription tier. | Free: 3 slots. Mid: 6 slots. High: 10 slots. Invalid (work-in-progress) decks can be saved but not used in matchmaking. |
 
 ### 4.4 Economy
 
@@ -302,14 +302,14 @@ Total build-to-launch budget: **$300 maximum**.
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
 | REQ-037 | Players shall earn Chaos Dust from completed matches. | Win: 15 Dust. Loss: 5 Dust. Awarded at match end. All values read from `economy_config` table (not hardcoded). |
-| REQ-038 | Subscriber quest Dust bonuses shall apply to all quest rewards. | Mid tier: 1.5x quest Dust. Top tier: 2.0x quest Dust. Bonuses apply to daily and weekly quests only (not win/loss rewards). Bonus multipliers read from `economy_config` table. |
+| REQ-038 | Subscriber quest Dust bonuses shall apply to all quest rewards. | Mid tier: 1.5x quest Dust. High tier: 2.0x quest Dust. Bonuses apply to daily and weekly quests only (not win/loss rewards). Bonus multipliers read from `economy_config` table. |
 | REQ-039 | Shard costs shall be: Uncommon 30, Rare 60, Epic 120, Legendary 240 Chaos Dust. | Shard purchases are deducted atomically from player's Chaos Dust balance within a PostgreSQL transaction. All values read from `economy_config` table. |
 | REQ-040 | All currency operations shall use PostgreSQL transactions to prevent double-spend. | Every Dust deduction is atomic with the corresponding purchase (pack opening, shard purchase, avatar unlock). All transactions logged to `shard_transactions` table for audit. |
-| REQ-041 | Monthly Top-tier subscription benefits shall be granted automatically. | Top: 1 free Legendary Shard/month. Triggered by a `pg_cron` scheduled Edge Function (`0 0 1 * *`) that checks `user_subscriptions.tier = 'top'`. |
+| REQ-041 | Monthly High-tier subscription benefits shall be granted automatically. | High: 1 free Legendary Shard/month. Triggered by a `pg_cron` scheduled Edge Function (`0 0 1 * *`) that checks `user_subscriptions.tier = 'HIGH'`. |
 
 ### 4.5 Matchmaking
 
-**Reference:** `06-technical-architecture.md` Section 2.6
+**Reference:** `06-technical-architecture.md` Section 4.5
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
@@ -374,6 +374,34 @@ Total build-to-launch budget: **$300 maximum**.
 | REQ-065 | Total audio asset size shall not exceed 25 MB. | Music: ~18 MB (CAF). SFX: ~3 MB (CAF, ~40 files). Ambient: ~2 MB (AAC). Total ~23 MB. |
 | REQ-066 | Volume defaults shall be: Master 100%, Music 60%, SFX 80%. Max 16 concurrent audio channels. | Stored in UserDefaults. Adjustable in Settings screen. Priority: SFX > Music > Ambient. |
 
+### 4.11 Ranked Ladder
+
+**Reference:** `04-progression-economy.md` Sections 5.1-5.5
+
+| REQ | Requirement | Acceptance Criteria |
+|---|---|---|
+| REQ-175 | Rank points shall be awarded or deducted after each ranked match. | Win: +25 RP base at same rank. Adjusted by opponent rank differential: +30 vs higher (+1 to +2 divisions), +35 vs much higher (+3 divisions), +20 vs lower (-1 to -2 divisions), +15 vs much lower (-3 divisions). Loss: -20 RP base at same rank. Adjusted inversely: -15 vs higher, -10 vs much higher, -25 vs lower, -30 vs much lower. RP stored in `players.rank_points` column. RP cannot go below 0 within a rank floor. |
+| REQ-176 | Rank floors shall prevent demotion below key thresholds. | Floors at: Silver 3, Gold 3, Platinum 3, Diamond 3. Once a player reaches a floor rank for the first time in the current season, `players.season_rank_floor` is set. The rank-loss calculation must check: if `new_rank < season_rank_floor`, set `new_rank = season_rank_floor` instead. Master and Grandmaster have no floor (leaderboard-based). |
+| REQ-177 | Season reset shall demote all players by approximately one tier. | At season end (Monday 00:00 UTC), a scheduled Supabase Edge Function applies: Master/Grandmaster to Diamond 1, Diamond to Platinum 3, Platinum to Gold 3, Gold to Silver 3, Silver to Bronze 3, Bronze stays Bronze 3. `season_rank_floor` reset to null. `season_rank_points` reset to 0. |
+| REQ-178 | End-of-season rewards shall be distributed based on peak rank achieved. | Peak rank tracked in `players.peak_rank` column (updated on each promotion, never decremented). Rewards by final season rank: Bronze 100 Dust + 2 Uncommon Shards, Silver 200 Dust + 3 Uncommon + 1 Rare Shard, Gold 400 Dust + 2 Rare + 1 Epic Shard, Platinum 600 Dust + 2 Epic + 1 Legendary Shard, Diamond 800 Dust + 1 Epic + 2 Legendary Shards + exclusive card back, Master 1000 Dust + 3 Legendary Shards + Master card back + title, Grandmaster 1500 Dust + 5 Legendary Shards + GM card back + exclusive title + top 100 icon. Distributed by the same season-end Edge Function that handles rank reset. Rewards claimable via SwiftUI sheet on first app open after season end; expire after 7 days. |
+
+### 4.12 Admin Dashboard
+
+**Application:** Web (Admin Dashboard on Railway). **Not** part of the iOS game client.
+
+**Reference:** `06-technical-architecture.md` Section 9, CLAUDE.md ("Two Applications" section)
+
+| REQ | Requirement | Acceptance Criteria |
+|---|---|---|
+| REQ-179 | Admin Dashboard shall require authentication separate from game auth. | Railway-hosted web app (React + Vite, TypeScript). Auth via a single admin password stored as a Railway environment variable `ADMIN_PASSWORD`. No Supabase Auth integration for admin. Session expires after 8 hours. |
+| REQ-180 | Admin Dashboard shall provide an Economy Config editor. | Read/write interface for all rows in `economy_config` table. Changes take effect immediately (no app update required). Audit log of all changes with timestamp and previous value. |
+| REQ-181 | Admin Dashboard shall provide a batch generation trigger. | "Start Batch" button calls `POST /api/admin/batch/start` on the Railway server. Progress bar shows completed/total/failed counts updated every 5 seconds via polling. |
+| REQ-182 | Admin Dashboard shall provide a card review gallery. | Grid of generated cards with art preview, name, stats, and status (pending/approved/rejected). Approve/reject buttons per card. "Approve All Visible" bulk action. Filter by faction, rarity, status. |
+| REQ-183 | Admin Dashboard shall provide a player lookup tool. | Search by player ID or username. Display: subscription tier, Chaos Dust balance, card count per faction, match history (last 20), active decks, rank. Read-only -- no editing player data from admin. |
+| REQ-184 | Admin Dashboard shall provide a live match monitor. | List of active matches from `active_matches` table. Each row shows: match ID, player names, turn number, duration, status. Click to view game state snapshot. |
+| REQ-185 | Admin Dashboard shall embed PostHog dashboards. | Iframe embed of PostHog project dashboard for DAU, retention, economy health, and match metrics. PostHog project API key configured as Railway environment variable. |
+| REQ-186 | Admin Dashboard shall provide a season management interface. | Create new season (name, start date, end date, battle pass tier count). Activate/deactivate seasons. View current season stats (player count, battle pass purchases, rank distribution). |
+
 ---
 
 ## 5. Non-Functional Requirements
@@ -407,7 +435,7 @@ Total build-to-launch budget: **$300 maximum**.
 | REQ-079 | All game logic shall be server-authoritative. | Client sends action intents only. Server validates legality, applies state changes, broadcasts results. Client never computes game state, rolls dice, or resolves combat. Match PRNG seed is server-side only. Opponent hand and deck order never sent to client. |
 | REQ-080 | All network communication shall use TLS. | HTTPS for REST (Supabase enforces this). WSS for Realtime (Supabase enforces this). Cloudflare R2 serves art over HTTPS. Railway endpoints use HTTPS. |
 | REQ-081 | All data at rest shall be encrypted. | Supabase PostgreSQL: AES-256 managed encryption. Cloudflare R2: server-side encryption. Secrets stored as Railway environment variables and Supabase Edge Function secrets (encrypted at rest). |
-| REQ-082 | Rate limiting shall be enforced at the Edge Function level. | Auth: handled by Supabase Auth built-in rate limiting. General API: 100 req/min per user (Edge Function middleware using `rate_limit_log` table). Evolution start: tier-based (5/15/30 per day for Free/Mid/Top, checked via `generation_jobs` count). Card pack purchase: 20/hour. Matchmaking queue: 5/min. Returns HTTP 429 with Retry-After header. |
+| REQ-082 | Rate limiting shall be enforced at the Edge Function level. | Auth: handled by Supabase Auth built-in rate limiting. General API: 100 req/min per user (Edge Function middleware using `rate_limit_log` table). Evolution start: tier-based (5/15/30 per day for Free/Mid/High, checked via `generation_jobs` count). Card pack purchase: 20/hour. Matchmaking queue: 5/min. Returns HTTP 429 with Retry-After header. |
 | REQ-083 | Player-selected prompt modifiers shall be drawn from a curated whitelist only. | Players never type free-form text that reaches AI models. Prompt construction is entirely server-side from validated components stored in `modifier_definitions` and prompt modifier tables. |
 | REQ-084 | All generated images shall pass through NSFW filtering before storage. | fal.ai returns safety scores with generation results. Reject if any unsafe category is flagged. Retry with modified prompt up to 3 times, then apply programmatic fallback art via Sharp on the server. |
 
@@ -443,12 +471,12 @@ Total build-to-launch budget: **$300 maximum**.
 
 | Entity | Storage | Description |
 |---|---|---|
-| CardTemplate | Supabase PostgreSQL (immutable after approval) | Base card definition: name, faction, type, stats, keywords, art prompt, art URL. ~367 rows at launch. |
+| CardTemplate | Supabase PostgreSQL (immutable after approval) | Base card definition: name, faction, type, stats, keywords, art prompt, art URL. ~358 rows at launch. |
 | CardInstance | Supabase PostgreSQL (JSONB for evolution_history, modifiers, triggered_abilities) | Player-owned card: tier, current stats, instability, chaos energy, modifiers, abilities, art URL. High write frequency on evolution; moderate on energy gain. |
 | ModifierDefinition | Supabase PostgreSQL (global content) | Modifier pool entry: effects, attunement, PP cost, faction. 240 rows at launch. |
 | Deck / DeckEntry | Supabase PostgreSQL | Player's deck: 20 card entries, faction, avatar. Validated on save and queue entry. |
 | Player | Supabase PostgreSQL (row-level locking for currency) | Account, subscription tier, Chaos Dust balance, shard inventory, rank, settings, faction mastery. |
-| UserSubscription | Supabase PostgreSQL | Subscription state: tier (free/mid/top), cancel_at_period_end, grace_period_until, current_period_end. |
+| UserSubscription | Supabase PostgreSQL | Subscription state: tier (FREE/MID/HIGH), cancel_at_period_end, grace_period_until, current_period_end. |
 | GameState | In-memory on Railway game server (TTL = match duration) | Active match state: board, hands, decks, timers, combat state. Snapshotted to PostgreSQL on each phase transition for reconnection. |
 | MatchRecord | Supabase PostgreSQL | Completed match: players, result, duration, turns, compressed game log. |
 | Mission | Supabase PostgreSQL (TTL-indexed) | Active quests: type, target, progress, reward, expiry. |
@@ -501,7 +529,7 @@ CardInstance stores `evolution_history`, `modifiers`, and `triggered_abilities` 
 | Store | Launch Estimate | 1-Year Estimate |
 |---|---|---|
 | Supabase PostgreSQL | ~5 GB | ~50 GB |
-| Cloudflare R2 (card art) | ~5 GB (base art for ~367 templates) | ~500 GB - 2 TB (evolution art for all players) |
+| Cloudflare R2 (card art) | ~5 GB (base art for ~358 templates) | ~500 GB - 2 TB (evolution art for all players) |
 
 ### 6.6 Data Retention
 
@@ -653,9 +681,9 @@ Full error code table with codes, messages, and trigger conditions in `06-techni
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-129 | Base card art shall be generated via fal.ai FLUX Dev (txt2img) during the batch pipeline at 768x1024 resolution. | Exact fal.ai API endpoint: `POST https://fal.run/fal-ai/flux/dev`. Auth: `Authorization: Key ${FAL_API_KEY}`. Prompt structure: `[STYLE_ANCHOR] + [FACTION_PREFIX] + [CREATURE_TYPE] + [COMPOSITION_INSTRUCTION]`. Negative prompt always appended. Full prompt construction in `03-prompt-templates.md`. |
-| REQ-130 | Evolution art shall be generated via fal.ai FLUX Kontext (img2img) using the previous tier's art as reference. | Exact endpoint: Free = `POST https://fal.run/fal-ai/flux-kontext/dev`. Mid/Top = `POST https://fal.run/fal-ai/flux-kontext/pro`. Input: current card art URL as `input_image_url`. Prompt constructed server-side from STYLE_ANCHOR + faction prefix + evolution direction (Order = subtle refinement / Chaos = dramatic transformation) + composition instruction. Denoising strength varies by evolution step (see `03-prompt-templates.md` denoising table). |
-| REQ-131 | Shard quality shall determine AI model variant, resolution, and number of passes. | Free (PLANAR): FLUX Kontext Dev, 768x1024, 1 pass, ~$0.02. Mid (REFINED): FLUX Kontext Pro, 1024x1024, 1 pass, priority queue, ~$0.05. Top (PRISMATIC): FLUX Kontext Pro, 1024x1024, 2 passes (generate + refine), priority queue, ~$0.08. |
+| REQ-129 | Base card art shall be generated via fal.ai FLUX Dev (txt2img) during the batch pipeline at 768x1024 resolution. | Exact fal.ai API endpoint: `POST https://fal.run/fal-ai/flux/dev`. Auth: `Authorization: Key ${FAL_KEY}`. Prompt structure: `[STYLE_ANCHOR] + [FACTION_PREFIX] + [CREATURE_TYPE] + [COMPOSITION_INSTRUCTION]`. Negative prompt always appended. Full prompt construction in `03-prompt-templates.md`. |
+| REQ-130 | Evolution art shall be generated via fal.ai FLUX Kontext (img2img) using the previous tier's art as reference. | Exact endpoint: Free = `POST https://fal.run/fal-ai/flux-kontext/dev`. Mid/High = `POST https://fal.run/fal-ai/flux-kontext/pro`. Input: current card art URL as `input_image_url`. Prompt constructed server-side from STYLE_ANCHOR + faction prefix + evolution direction (Order = subtle refinement / Chaos = dramatic transformation) + composition instruction. Denoising strength varies by evolution step (see `03-prompt-templates.md` denoising table). |
+| REQ-131 | Shard quality shall determine AI model variant, resolution, and number of passes. | Free (PLANAR): FLUX Kontext Dev, 768x1024, 1 pass, ~$0.02. Mid (REFINED): FLUX Kontext Pro, 1024x1024, 1 pass, priority queue, ~$0.05. High (PRISMATIC): FLUX Kontext Pro, 1024x1024, 2 passes (generate + refine), priority queue, ~$0.08. |
 | REQ-132 | AI generation shall be tracked via the `generation_jobs` Supabase table with priority processing for subscribers. | Priority 1: subscriber evolution jobs. Priority 2: free evolution jobs. Priority 3: batch pipeline jobs. A pg_cron Edge Function processes pending jobs every 30 seconds, ordered by priority then created_at. |
 
 ### 8.2 Text Generation
@@ -677,9 +705,9 @@ Full error code table with codes, messages, and trigger conditions in `06-techni
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-138 | Per-user daily evolution caps shall be enforced. | Free: 5 evolutions/day. Mid: 15/day. Top: 30/day. Hard cap: 50 per user per day regardless of tier. Enforced by counting `generation_jobs` rows with `player_id` and `created_at > now() - interval '24 hours'`. |
+| REQ-138 | Per-user daily evolution caps shall be enforced. | Free: 5 evolutions/day. Mid: 15/day. High: 30/day. Hard cap: 50 per user per day regardless of tier. Enforced by counting `generation_jobs` rows with `player_id` and `created_at > now() - interval '24 hours'`. |
 | REQ-139 | Every AI generation call shall log cost data for tracking. | The `generation_jobs` row stores: model used, resolution, estimated cost, player_id, card_instance_id. PostHog receives `ai_generation_completed` events with cost data. |
-| REQ-140 | Target AI cost per evolution: Free ~$0.02, Mid ~$0.05, Top ~$0.08. | Monthly AI cost budget at 10K DAU: ~$3,900. Budget tracked via PostHog dashboard aggregating `generation_jobs` cost data. |
+| REQ-140 | Target AI cost per evolution: Free ~$0.02, Mid ~$0.05, High ~$0.08. | Monthly AI cost budget at 10K DAU: ~$3,900. Budget tracked via PostHog dashboard aggregating `generation_jobs` cost data. |
 
 ### 8.5 Art Storage (Cloudflare R2)
 
@@ -727,7 +755,7 @@ Full faction art prefixes, evolution direction instructions, and modifier pool d
 | Metric | Definition | Target |
 |---|---|---|
 | Evolution Rate | Evolutions per engaged player per week | 1-2 |
-| Time to First Legendary | Days from account creation to first Legendary evolution | Free Regular ~6 weeks, Top Regular ~3 weeks. |
+| Time to First Legendary | Days from account creation to first Legendary evolution | Free Regular ~6 weeks, High Regular ~3 weeks. |
 | Faction Popularity | % of active decks per faction | Each faction 25-40% (no faction below 20%). |
 | Card Tier Distribution | % of all CardInstances at each evolution tier | Healthy: majority at Uncommon/Rare in month 1-3. |
 
@@ -747,7 +775,7 @@ Full faction art prefixes, evolution direction instructions, and modifier pool d
 | Conversion Rate (Free to Paid) | % of DAU that subscribes | Month 1: 4-5%. Month 12: 7-9%. |
 | ARPU (All Players) | Monthly revenue / MAU | $0.85-$1.60 at maturity |
 | ARPPU (Paying Only) | Monthly revenue / paying users | $10-$18 at maturity |
-| Monthly Churn Rate | % of subscribers who cancel each month | < 5% Mid tier, < 3% Top tier |
+| Monthly Churn Rate | % of subscribers who cancel each month | < 5% Mid tier, < 3% High tier |
 
 #### AI Pipeline
 
@@ -789,11 +817,11 @@ Full event table with event names, trigger conditions, and required properties i
 
 | REQ | Category | Minimum | Target |
 |---|---|---|---|
-| REQ-146 | Card templates (total) | 300 (100/faction) | 367 (8 batches of ~50) |
+| REQ-146 | Card templates (total) | 300 (100/faction) | 358 (8 batches of ~45) |
 | REQ-147 | Creatures per faction | 80 | 100 |
 | REQ-148 | Spells per faction | 15 | 17 |
-| REQ-149 | Faction stabilizers per faction | 5 | 7 |
-| REQ-150 | Universal stabilizers | 7 | 7 |
+| REQ-149 | Universal stabilizers | 7 | 7 |
+| REQ-150 | _(removed — no faction-specific stabilizers at launch)_ | — | — |
 | REQ-151 | Modifier definitions | 240 (per PP pool structure) | 240 |
 | REQ-152 | Order events | 8 | 8 |
 | REQ-153 | Chaos events | 8 | 8 |
@@ -863,7 +891,7 @@ Full event table with event names, trigger conditions, and required properties i
 | **AI art quality inconsistency** | Medium | Medium -- player dissatisfaction with evolution art | Quality pipeline (NSFW filter + negative prompt). Prompt engineering with curated modifiers only (no free-form text). Evolution art uses img2img (preserves visual DNA). Owner reviews base card art in batch pipeline Admin Dashboard. |
 | **Mobile performance on older devices** | Medium | High -- poor retention | SpriteKit is hardware-accelerated on all iOS devices. Animation quality tiered by device capability (FULL / REDUCED / MINIMAL setting). Reduced Motion mode. 200MB local art cache. Delta-based Realtime updates (not full state on every action). Xcode Instruments profiling on iPhone 11 required before launch. |
 | **Game balance issues at launch** | High | Medium -- player frustration | Economy values in `economy_config` table (changeable via Admin Dashboard, no deploy needed). Automated balance validation suite. PostHog telemetry on win rates by faction, card, modifier. |
-| **Content volume insufficient for launch** | Medium | High -- repetitive experience | Batch generation pipeline targets 367 cards. Lower bound of 300 cards (100/faction) still provides viable deckbuilding. 240 modifiers provide evolution variety. Total batch generation cost: ~$71 in fal.ai + OpenAI API calls. |
+| **Content volume insufficient for launch** | Medium | High -- repetitive experience | Batch generation pipeline targets 358 cards. Lower bound of 300 cards (100/faction) still provides viable deckbuilding. 240 modifiers provide evolution variety. Total batch generation cost: ~$71 in fal.ai + OpenAI API calls. |
 | **Supabase Realtime reliability on mobile** | Medium | Medium -- disconnects during matches | Client reconnection via Supabase Swift SDK with exponential backoff per `06-technical-architecture.md` Section 5.4. Game state snapshotted to PostgreSQL on each phase transition. 3-turn grace period before auto-forfeit. Full state snapshot on reconnect. |
 | **Economy inflation/deflation** | Medium | Medium -- progression feels wrong | PostHog dashboard tracks Dust bank distribution, quest completion, evolution rate. Tunable via `economy_config` table through Admin Dashboard. See red flags in Section 9.2. |
 
@@ -935,7 +963,7 @@ All deployments use a single script:
 
 For iOS app updates, submit via Xcode Cloud to TestFlight, then promote to App Store.
 
-The owner runs `./deploy.sh` after Claude Code makes backend code changes. The script is defined in `06-technical-architecture.md` Section 9.3.
+The owner runs `./deploy.sh` after Claude Code makes backend code changes. The script is defined in `06-technical-architecture.md` Section 10.3.
 
 ---
 
@@ -968,8 +996,8 @@ No other configuration needed.
 | Apple Developer | $99 | Mandatory. Includes Xcode Cloud free tier. |
 | Supabase (Pro, 1 month) | $25 | Free tier during dev; Pro for launch. |
 | Railway (game server + admin, 1 month) | $15 | Dev environment minimal. |
-| fal.ai (content generation) | $80 | 367 base cards (~$14.68) + testing 3x (~$44) + evolution testing (~$10) + app icon/assets (~$2) + buffer (~$9) |
-| OpenAI (text generation) | $2 | 367 cards text + testing. Batch API for >100 cards (50% cheaper). |
+| fal.ai (content generation) | $80 | 358 base cards (~$14.30) + testing 3x (~$44) + evolution testing (~$10) + app icon/assets (~$2) + buffer (~$9) |
+| OpenAI (text generation) | $2 | 358 cards text + testing. Batch API for >100 cards (50% cheaper). |
 | Cloudflare R2 | $0 | Free tier covers launch. |
 | PostHog | $0 | Free tier covers launch (1M events/mo). |
 | Cloudflare Pages | $0 | Free tier for legal pages. |
@@ -1017,7 +1045,7 @@ All design documents are located in `docs/design/` and form the complete specifi
 | **02 - Card Data Model** | `docs/design/02-card-data-model.md` | Complete TypeScript-style entity definitions. CardTemplate, CardInstance, EvolutionRecord, ModifierDefinition, ModifierInstance, TriggeredAbility, SpellEffect, Effect, EventDefinition, Avatar, Faction, Deck, Player, GameState (runtime), MatchRecord, Mission, Achievement. All enums exhaustively defined. Entity relationships. Key indexes. Data flow diagrams. **Protected file -- read-only.** |
 | **03 - Prompt Templates** | `docs/design/03-prompt-templates.md` | Exact fal.ai API integration (endpoints, request/response JSON). Faction art style prefixes (exact strings). STYLE_ANCHOR (locked string). Evolution prompt templates (Order and Chaos). Denoising strength table by evolution step. Visual prompt modifier tables: 30 universal, 28 per faction. GPT-4o Mini text generation prompts. Complete TypeScript prompt construction algorithm. Batch generation spec with CSV format. |
 | **04 - Progression Economy** | `docs/design/04-progression-economy.md` | Chaos energy thresholds (15/30/50/75) and earning rates (2/win, 1/loss). Full Chaos Dust economy mathematical model with daily/weekly income tables. Quest system: 20 daily templates, 10 weekly templates with exact rewards (Easy: 20, Medium: 30, Hard: 45 Dust). Rank ladder: 17 tiers, 8-week seasons. New player economy and onboarding flow. `economy.config.json` full schema with all tunable values. |
-| **05 - Content Pipeline** | `docs/design/05-content-pipeline.md` | Launch content: 367 cards (300 creatures + 51 spells + 21 faction stabilizers + 7 universal). Batch generation pipeline with Admin Dashboard review gallery. Exact fal.ai and OpenAI API calls. Cloudflare R2 upload code with AWS SDK v3. Automated QA checks. Full launch plan: 4 days, 8 batches. Total launch content API cost: ~$71. App Store asset generation (icon, screenshots, description, privacy policy, nutrition labels). |
+| **05 - Content Pipeline** | `docs/design/05-content-pipeline.md` | Launch content: 358 cards (300 creatures + 51 spells + 7 universal stabilizers, no faction-specific stabilizers at launch). Batch generation pipeline with Admin Dashboard review gallery. Exact fal.ai and OpenAI API calls. Cloudflare R2 upload code with AWS SDK v3. Automated QA checks. Full launch plan: 4 days, 8 batches. Total launch content API cost: ~$71. App Store asset generation (icon, screenshots, description, privacy policy, nutrition labels). |
 | **06 - Technical Architecture** | `docs/design/06-technical-architecture.md` | Complete Supabase database schema with SQL CREATE TABLE statements, constraints, indexes, and Row Level Security policies. Service architecture for Swift/SwiftUI/SpriteKit client + Supabase + Railway. Full game server deep dive: state machine, turn resolution (TypeScript), combat resolution (TypeScript), timer management, anti-cheat, reconnection handling. AI pipeline code. Full REST API endpoint definitions. Full Supabase Realtime message type definitions. StoreKit 2 integration code (EntitlementManager, sync-entitlements Edge Function, apple-notifications webhook). Xcode project structure. Environment variables. Budget breakdown. Deploy script. |
 | **07 - UI/UX Specs** | `docs/design/07-ui-ux-specs.md` | Technology stack (Swift/SwiftUI/SpriteKit). Screen inventory with navigation map. Battlefield layout with SpriteKit scene + SwiftUI overlay architecture. Component specs (HPBarView, TimerBarView, EndTurnButton, etc.) with exact dimensions, colors, and animations. Evolution screen 9-step ceremony. Collection screen. Deck builder. Shop screen. Onboarding flow. Dark theme color palette. Settings screen. Post-match results. Admin Dashboard specs (Part B). |
 | **08 - Audio Design** | `docs/design/08-audio-design.md` | AVAudioEngine adaptive music system (4-stem architecture). Faction audio identities. SFX via SKAction.playSoundFileNamed in SpriteKit. Complete SFX inventory (~40 files, ~3 MB CAF). Music tracks (~18 MB CAF). Evolution ceremony audio (1:10 one-shot). Priority system (SFX > Music > Ambient). Audio sourcing via Suno AI. Total ~23 MB. |
@@ -1038,9 +1066,9 @@ The `_prd-input-summary.md` cross-doc reference states shard costs as "Uncommon=
 
 ### Gap 2: Deck Slots (Mid Tier)
 
-The `_prd-input-summary.md` states Mid tier = 5 deck slots. The US-014 user story from v2.0 stated Mid = 6 deck slots. `06-technical-architecture.md` webhook handler specifies Mid = 5.
+The protected docs `00-game-design-master.md` and `02-card-data-model.md` both state Mid = 6 deck slots. `06-technical-architecture.md` webhook handler has been corrected to match.
 
-**Resolution:** Implement **Mid = 5 deck slots**. Aligned with the technical architecture spec and input summary.
+**Resolution:** Implement **Mid = 6 deck slots**. Aligned with protected source-of-truth docs (00, 02).
 
 ### Gap 3: Card Pack Contents
 
@@ -1050,19 +1078,28 @@ The v2.0 PRD correctly resolved this as "3 Commons for 100 Dust." This remains c
 
 ### Gap 4: Modifier Pool Count
 
-CLAUDE.md states "12 pools x (8 universal + 4 per faction) = 240 modifiers." The input summary states "30 universal + 28 per faction x 3 = 114 faction modifiers = 144 modifier definitions." These describe different things: CLAUDE.md describes pool structure, the input summary describes individual modifier definitions.
+CLAUDE.md states "12 pools x (8 universal + 4 per faction) = 240 modifiers." This is the canonical figure from the protected design documents.
 
-**Resolution:** Implement **144 unique modifier definitions** (30 universal + 28 Ironwright + 28 Fey + 28 Demonic + remaining distributed across pools). The 240 figure from CLAUDE.md refers to pool slots (12 pools x 20 modifiers per pool). Both are correct at different levels of abstraction. Follow the specific definitions in `03-prompt-templates.md` Section 1.6.
+**Resolution:** Implement **240 modifier definitions** across 12 PP-based pools (8 universal + 4 per faction per pool). This matches the protected source-of-truth in CLAUDE.md. Follow the pool structure defined in `01-battle-mechanics.md` and specific definitions in `03-prompt-templates.md` Section 1.6.
 
-### Gap 5: Content Target -- 367 vs 379
+### Gap 5: Content Target -- 358 cards
 
-The `_prd-input-summary.md` doc 05 section lists 379 templates (300 creatures + 51 spells + 21 faction stabilizers + 7 universal = 379) but then says "Practical launch target: 367 cards (8 batches of ~50)."
+Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 51 spells (17/faction) + 7 universal stabilizers = **358 total cards**. No faction-specific stabilizers at launch — all 7 stabilizers are universal. Generation runs in 8 batches of ~45.
 
-**Resolution:** The **379 figure is the theoretical full set**; **367 is the practical target** accounting for batch-size rounding. Implement at least 300 (minimum) and target 367. If the pipeline produces more, that is acceptable.
+**Resolution:** Implement **358 card templates**. Minimum viable is 300 (100/faction creatures only). The pipeline may produce more if retries are needed; surplus is acceptable.
 
 ---
 
 ## Revision Log
+
+### v3.1 Changes (from v3.0) -- 2026-02-16
+
+| Change | Old (v3.0) | New (v3.1) | Reason |
+|---|---|---|---|
+| **Instability formula (Section 1.5)** | `avatar modifier + sum(creature base_instability + evolution changes + modifier adjustments), clamped 1-20` | `player_instability = avatar_modifier + sum(max(0, creature_base_instability + evolution_changes + modifier_adjustments))`, clamped 1-20 -- explicit per-creature floor of 0 | WARN-11 audit: formula must include the per-creature floor of 0 per `01-battle-mechanics.md` Section 2. |
+| **Admin Dashboard (Section 4.12)** | Admin Dashboard referenced in P1-011 but no detailed REQ entries | REQ-179 through REQ-186: auth, economy config editor, batch generation trigger, card review gallery, player lookup, live match monitor, PostHog embed, season management | WARN-12 audit: Admin Dashboard lacked formal functional requirements with acceptance criteria. |
+| **Ranked Ladder (Section 4.11)** | Ranked ladder referenced in P1-002 and US-008 but no detailed REQ entries for RP math, floors, reset, or rewards | REQ-175 through REQ-178: RP award/deduction per match with opponent differential, rank floors at Silver/Gold/Platinum/Diamond 3, season reset demotion rules, end-of-season rewards by peak rank | WARN-13 audit: ranked ladder mechanics from `04-progression-economy.md` Section 5.2 were not captured as testable requirements. |
+| **REQ numbering** | REQ-001 through REQ-174 | REQ-001 through REQ-186 | 12 new requirements added (4 ranked ladder + 8 admin dashboard). |
 
 ### v3.0 Changes (from v2.0) -- 2026-02-16
 
@@ -1081,7 +1118,7 @@ The `_prd-input-summary.md` doc 05 section lists 379 templates (300 creatures + 
 | **Orientation lock** | `app.json "orientation": "portrait"` | `Info.plist UISupportedInterfaceOrientations` | Native iOS config. |
 | **Platform support** | iOS 16+ and Android API 33+ | iOS 17+ only. No Android. | Simplified target. iOS 17 for SwiftUI features. |
 | **Tablet support** | Adaptive layout via `useWindowDimensions()` | iPhone only (MVP). Tablet post-launch. | Reduced scope for solo build. |
-| **Deck slot Mid tier** | 6 slots | 5 slots | Aligned with `06-technical-architecture.md` v3.0. |
+| **Deck slot Mid tier** | 5 slots | 6 slots | Aligned with protected files `00-game-design-master.md` and `02-card-data-model.md`. |
 | **Accounts removed** | Google Play ($25), RevenueCat, Expo/EAS | Not needed | iOS-only, StoreKit 2, Xcode Cloud. |
 | **Budget** | Not explicitly tracked | $300 cap with line-item breakdown | CLAUDE.md budget constraint. |
 | **App Store requirements** | Not detailed | Full section: privacy policy, screenshots, nutrition labels, age rating, bundle ID | Required for App Store submission. |
@@ -1109,5 +1146,5 @@ The `_prd-input-summary.md` doc 05 section lists 379 templates (300 creatures + 
 ---
 
 *Last updated: 2026-02-16*
-*Version: 3.0 -- Full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot.*
+*Version: 3.2 -- Full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot. v3.1 added ranked ladder + admin dashboard REQs + instability floor. v3.2 fixed 367→358 card count, admin infra table, stale "Top" references, cross-doc section references.*
 *All infrastructure decisions final per CLAUDE.md. All schemas, API contracts, message formats, and deployment configs are code-ready and defined in the referenced design documents.*
