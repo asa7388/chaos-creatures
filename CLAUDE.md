@@ -77,9 +77,9 @@ What's done:
 - iOS App: Builds and runs in Simulator, all screens implemented
 
 What's NOT done:
-- Practice match mode (no bot AI, no practice endpoint — next task)
-- AI content generation (no card art/text generated yet — needs fal.ai + OpenAI API spend)
-- App Store submission
+- Card art at scale (9 test cards + 3 evolutions generated locally; Edge Function pipeline blocked by auth bug)
+- Professional card frames, fonts, icons, audio (0% custom assets — all placeholder)
+- App Store submission (screenshots, legal pages, metadata)
 
 ## Two Applications
 
@@ -105,6 +105,25 @@ Total build-to-launch budget: $300 maximum. This covers all service signups, API
 
 Do not recommend any paid design tools, asset marketplaces, or premium services. All assets must be AI-generated or free/open-source.
 
+### Polish Budget (~$100 remaining)
+
+Approximately $185-209 has been spent on infrastructure. The remaining ~$100 is allocated to polish assets:
+- Visual assets (frames, icons, card backs): AI-generated via fal.ai (~$4 total)
+- Fonts: Google Fonts, free (Cinzel + Alegreya)
+- SFX: freesound.org CC0 licensed sounds, free
+- Music: Suno.ai free tier for faction battle tracks, free
+- Optional upgrades: itch.io SFX/music packs ($15-30 each if free options are insufficient)
+
+## Monetization Principle
+
+The game must NOT be pay-to-win. Spending money gives cosmetic variety and convenience, never raw power. A free player with skill must always be able to beat a paying player.
+
+Specifically:
+- All cards are earnable through gameplay alone (Chaos Dust economy)
+- Subscription tiers affect modifier selection breadth (2/3/4 options), not modifier quality — higher tiers see more choices but the choices are not inherently stronger
+- No exclusive gameplay content behind paywalls
+- Matchmaking must not pair free players against whales unfairly
+
 ## Launch Requirements (App Store)
 
 This ships to the App Store only. Every doc must account for:
@@ -118,9 +137,30 @@ This ships to the App Store only. Every doc must account for:
 
 The content-pipeline doc must include generating these store assets as part of the launch checklist.
 
+## Art Quality Target
+
+Card art and visual quality must match Magic: The Gathering. Every card must look hand-painted by a professional fantasy illustrator. If a card looks AI-generated, smooth, generic, or "digital art"-looking, it is a failed generation and must be rejected/regenerated.
+
+The locked style anchor (v3) references specific artists: Donato Giancola, Frank Frazetta, Brom, Keith Parkinson, Brian Froud, Alan Lee, Wayne Barlowe, Zdzislaw Beksinski. This produces traditional oil painting aesthetics with visible brushwork, textured surfaces, and muted earth tones.
+
 ## Art Consistency
 
 All card art must look like it belongs in the same game. The prompt-engineer doc must define a locked visual style anchor — a base prompt prefix that every single card image uses to enforce consistent rendering style, lighting, color palette, and framing. Individual cards vary in subject matter but must share the same artistic DNA. If a card looks like it came from a different game, it's a failed generation and must be rejected/regenerated.
+
+## Composition Variety
+
+Card art must use varied compositions — not every card should be a centered three-quarter portrait. The prompt system includes 12 composition templates (portraits, action shots, environmental, dramatic, narrative) selected automatically based on card tier, keywords, and mana cost. No two cards in a batch should have the same pose/composition. Each faction has 5 specific environment descriptions for rich, atmospheric backgrounds.
+
+## Card Visual System
+
+Decided asset strategy for professional card appearance:
+
+- **Card Frames**: AI-generated via fal.ai. 15 frame variants (3 factions x 3 rarity tiers for creatures, + spell and stabilizer frames). Faction-themed decorative borders with transparent art windows.
+- **Fonts**: Cinzel (card names, headers — classical display font) + Alegreya (body text, flavor text, stats — readable serif). Both from Google Fonts, free, OFL license.
+- **Keyword Icons**: 7 AI-generated icons (Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing). 256x256, transparent background.
+- **Faction Icons**: 3 AI-generated emblems (Ironwright gear-flower, Fey moon-tree, Demonic horned skull). 512x512.
+- **Card Backs**: 1 universal + 3 faction-specific, AI-generated.
+- **Rarity Treatments**: Common (matte), Uncommon (metallic sheen), Rare (energy glow, SKAction pulse), Epic (purple shimmer, SKShader), Legendary (gold prismatic, particle emitter).
 
 ## Animation & Polish
 
