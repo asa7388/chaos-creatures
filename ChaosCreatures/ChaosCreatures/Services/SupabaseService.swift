@@ -10,12 +10,28 @@ final class SupabaseService {
     static let shared = SupabaseService()
 
     let client: SupabaseClient
+    let isConfigured: Bool
 
     private init() {
-        client = SupabaseClient(
-            supabaseURL: URL(string: Secrets.supabaseURL)!,
-            supabaseKey: Secrets.supabaseAnonKey
-        )
+        let urlString = Secrets.supabaseURL
+        let key = Secrets.supabaseAnonKey
+
+        // Guard against placeholder/empty values to prevent crash on launch
+        if let url = URL(string: urlString),
+           url.host != nil,
+           !key.isEmpty,
+           key != "placeholder-key" {
+            client = SupabaseClient(supabaseURL: url, supabaseKey: key)
+            isConfigured = true
+        } else {
+            // Provide a dummy client so the app can still launch and show UI
+            client = SupabaseClient(
+                supabaseURL: URL(string: "https://localhost.invalid")!,
+                supabaseKey: "not-configured"
+            )
+            isConfigured = false
+            print("[SupabaseService] Not configured — set real values in Config.xcconfig")
+        }
     }
 
     // MARK: - Convenience Query Methods
