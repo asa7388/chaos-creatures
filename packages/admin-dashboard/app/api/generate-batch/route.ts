@@ -55,13 +55,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try to trigger game server batch processing
-    const serverResult = await startBatch({
-      faction_id,
-      count,
-      card_type,
-      creature_type_hint,
-    });
+    // Try to trigger game server batch processing.
+    // This is optional — jobs are already created in Supabase above.
+    // If the game server is unreachable, the batch still exists and can be
+    // picked up later (e.g. when the server comes back or via manual retry).
+    let serverNotified = false;
+    let serverError: string | null = null;
+    try {
+      const serverResult = await startBatch({
+        faction_id,
+        count,
+        card_type,
+        creature_type_hint,
+      });
+      serverNotified = serverResult.status === 200;
+      if (!serverNotified) {
+        serverError = serverResult.error || `Server responded with status ${serverResult.status}`;
+      }
+    } catch (err) {
+      serverError = err instanceof Error ? err.message : 'Game server unreachable';
+    }
 
     // Log admin action
     await supabase.from('admin_audit_log').insert({
@@ -75,14 +88,16 @@ export async function POST(request: NextRequest) {
         card_type,
         creature_type_hint,
         jobs_created: jobData?.length || 0,
-        server_status: serverResult.status,
+        server_notified: serverNotified,
+        server_error: serverError,
       },
     });
 
     return NextResponse.json({
       batch_id,
       jobs_created: jobData?.length || 0,
-      server_notified: serverResult.status === 200,
+      server_notified: serverNotified,
+      ...(serverError && { server_error: serverError }),
     });
   } catch {
     return NextResponse.json(
