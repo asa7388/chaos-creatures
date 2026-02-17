@@ -1,8 +1,7 @@
 # Chaos Creatures — Supabase Local Development Configuration
 # See: https://supabase.com/docs/guides/cli/config
 
-[project]
-id = "chaos-creatures-local"
+# project_id is set via supabase link, not in config.toml
 
 [api]
 enabled = true

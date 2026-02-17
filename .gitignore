@@ -1,7 +1,9 @@
 # Environment & Secrets
 .env
 .env.*
+!.env.example
 *.xcconfig
+!*.xcconfig.example
 *.secret
 *.p8
 
