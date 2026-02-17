@@ -1,17 +1,38 @@
-# Environment
+# Environment & Secrets
 .env
 .env.*
 *.xcconfig
 *.secret
+*.p8
 
 # Dependencies
 node_modules/
 
 # OS
 .DS_Store
+Thumbs.db
 
 # Xcode
 build/
 DerivedData/
 *.xcuserdata
 *.xcworkspace/xcuserdata/
+*.moved-aside
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Next.js
+.next/
+out/
+
+# TypeScript
+dist/
+
+# Supabase local
+.supabase/
+
+# Misc
+.vercel
+.turbo
+*.tsbuildinfo

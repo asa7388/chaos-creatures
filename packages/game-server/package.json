@@ -1,0 +1,33 @@
+{
+  "name": "chaos-creatures-game-server",
+  "version": "0.1.0",
+  "description": "Chaos Creatures authoritative game server (Railway)",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "validate-balance": "tsx src/scripts/validate-balance.ts"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.0",
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "tsx": "^4.19.0",
+    "vitest": "^2.1.0",
+    "@types/node": "^20.14.0",
+    "@types/express": "^4.17.21",
+    "@types/ws": "^8.5.12"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
