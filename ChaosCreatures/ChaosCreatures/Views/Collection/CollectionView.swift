@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Collection Sort Options
+
+enum CollectionSortOption: String, CaseIterable {
+    case newest = "Newest"
+    case oldest = "Oldest"
+    case name = "Name"
+    case manaCost = "Mana Cost"
+    case rarity = "Rarity"
+
+    var iconName: String {
+        switch self {
+        case .newest: return "clock.arrow.circlepath"
+        case .oldest: return "clock"
+        case .name: return "textformat"
+        case .manaCost: return "drop.fill"
+        case .rarity: return "star.fill"
+        }
+    }
+}
+
 // MARK: - Faction Filter
 
 enum FactionFilter: String, Hashable, CaseIterable {
@@ -37,8 +57,11 @@ struct CollectionView: View {
     @Environment(AppRouter.self) private var router
 
     @State private var cards: [CardInstance] = []
+    @State private var templateFactionMap: [UUID: UUID] = [:]  // templateId -> factionId
     @State private var selectedFaction: FactionFilter = .all
     @State private var searchQuery = ""
+    @State private var sortOption: CollectionSortOption = .newest
+    @State private var showSortMenu = false
     @State private var isLoading = false
     @State private var error: String?
     @State private var showSearch = false
@@ -125,6 +148,29 @@ struct CollectionView: View {
 
     private var filterBar: some View {
         HStack(spacing: 8) {
+            // Sort menu (S-45)
+            Menu {
+                ForEach(CollectionSortOption.allCases, id: \.self) { option in
+                    Button(action: {
+                        sortOption = option
+                    }) {
+                        Label(option.rawValue, systemImage: option.iconName)
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 12))
+                    Text(sortOption.rawValue)
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .foregroundColor(.textSecondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.bgTertiary)
+                .cornerRadius(6)
+            }
+
             Spacer()
 
             if showSearch {
@@ -162,6 +208,7 @@ struct CollectionView: View {
                     CardGridItemView(card: card)
                         .frame(height: 140)
                         .onTapGesture {
+                            router.selectedCardInstance = card
                             selectedCard = card
                         }
                 }
@@ -176,19 +223,51 @@ struct CollectionView: View {
     private var filteredCards: [CardInstance] {
         var result = cards
 
-        // Faction filter
+        // Faction filter (S-23): match template's factionId to faction IDs from appState
         if selectedFaction != .all {
-            // TODO: Filter by faction once CardInstance includes faction data
-            _ = selectedFaction
+            let matchingFactionIds = factionIdsForFilter(selectedFaction)
+            result = result.filter { card in
+                guard let factionId = templateFactionMap[card.templateId] else { return false }
+                return matchingFactionIds.contains(factionId)
+            }
         }
 
-        // Search filter
+        // Search filter (S-43)
         if !searchQuery.isEmpty {
             let query = searchQuery.lowercased()
-            result = result.filter { $0.currentName.lowercased().contains(query) }
+            result = result.filter {
+                $0.currentName.lowercased().contains(query)
+                || $0.effectiveKeywords.contains(where: { $0.displayName.lowercased().contains(query) })
+            }
+        }
+
+        // Sort (S-45)
+        switch sortOption {
+        case .newest:
+            result.sort { $0.createdAt > $1.createdAt }
+        case .oldest:
+            result.sort { $0.createdAt < $1.createdAt }
+        case .name:
+            result.sort { $0.currentName.localizedCaseInsensitiveCompare($1.currentName) == .orderedAscending }
+        case .manaCost:
+            result.sort { $0.currentManaCost < $1.currentManaCost }
+        case .rarity:
+            result.sort { $0.tier.tierIndex > $1.tier.tierIndex }
         }
 
         return result
+    }
+
+    /// Map FactionFilter to the set of matching faction UUIDs from appState.factions
+    private func factionIdsForFilter(_ filter: FactionFilter) -> Set<UUID> {
+        let targetShortName: FactionShortName
+        switch filter {
+        case .all: return Set(appState.factions.map(\.id))
+        case .ironwright: targetShortName = .ironwright
+        case .feyCourts: targetShortName = .feyCourts
+        case .demonic: targetShortName = .demonicKingdoms
+        }
+        return Set(appState.factions.filter { $0.shortName == targetShortName }.map(\.id))
     }
 
     // MARK: - Data Loading
@@ -200,11 +279,21 @@ struct CollectionView: View {
         defer { isLoading = false }
 
         do {
-            cards = try await SupabaseService.shared.fetchAll(
+            // Load cards and templates in parallel
+            async let cardsTask: [CardInstance] = SupabaseService.shared.fetchAll(
                 from: SupabaseService.Table.cardInstances,
-                filters: [("player_id", playerId.uuidString)],
+                filters: [("owner_id", playerId.uuidString)],
                 orderBy: "created_at",
                 ascending: false
+            )
+            async let templatesTask: [CardTemplate] = CollectionService.shared.fetchCardTemplates()
+
+            let (loadedCards, loadedTemplates) = try await (cardsTask, templatesTask)
+            cards = loadedCards
+
+            // Build templateId -> factionId map for faction filtering
+            templateFactionMap = Dictionary(
+                uniqueKeysWithValues: loadedTemplates.map { ($0.id, $0.factionId) }
             )
         } catch {
             self.error = "Failed to load collection: \(error.localizedDescription)"

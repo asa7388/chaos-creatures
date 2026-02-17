@@ -100,8 +100,22 @@ final class MatchService {
             return
         }
 
-        // Use the Codable overload so the server receives the expected format.
-        try? await channel.broadcast(event: "player_action", message: action)
+        // Build flat JSON dictionary the server expects (type + fields + player_id).
+        // PlayerAction.jsonPayload already produces the correct flat format.
+        var payload = action.jsonPayload
+        if let playerId = await supabase.currentUserID {
+            payload["player_id"] = playerId.uuidString
+        }
+
+        // Wrap the [String: Any] payload in a Codable container so the Supabase
+        // broadcast method sends it as flat JSON (not nested Swift enum encoding).
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload),
+              let rawMessage = try? JSONDecoder().decode(RawJSONMessage.self, from: jsonData) else {
+            connectionError = "Failed to encode action"
+            return
+        }
+
+        try? await channel.broadcast(event: "player_action", message: rawMessage)
     }
 
     /// Send end turn action
@@ -186,6 +200,61 @@ enum MatchServiceError: LocalizedError {
         case .notConnected: return "Not connected to match server."
         case .sendFailed: return "Failed to send action."
         }
+    }
+}
+
+// MARK: - Raw JSON Message (for flat dictionary broadcast)
+
+/// A Codable wrapper that preserves arbitrary flat JSON dictionaries.
+/// Used to send PlayerAction.jsonPayload through the Supabase broadcast API
+/// without the nested encoding that Swift enums produce.
+struct RawJSONMessage: Codable {
+    private var storage: [String: AnyCodableValue] = [:]
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: DynamicCodingKey.self)
+        for key in container.allKeys {
+            if let str = try? container.decode(String.self, forKey: key) {
+                storage[key.stringValue] = .string(str)
+            } else if let int = try? container.decode(Int.self, forKey: key) {
+                storage[key.stringValue] = .int(int)
+            } else if let bool = try? container.decode(Bool.self, forKey: key) {
+                storage[key.stringValue] = .bool(bool)
+            } else if let arr = try? container.decode([String].self, forKey: key) {
+                storage[key.stringValue] = .stringArray(arr)
+            } else if let arr = try? container.decode([[String: String]].self, forKey: key) {
+                storage[key.stringValue] = .dictArray(arr)
+            }
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: DynamicCodingKey.self)
+        for (key, value) in storage {
+            let codingKey = DynamicCodingKey(stringValue: key)!
+            switch value {
+            case .string(let s): try container.encode(s, forKey: codingKey)
+            case .int(let i): try container.encode(i, forKey: codingKey)
+            case .bool(let b): try container.encode(b, forKey: codingKey)
+            case .stringArray(let a): try container.encode(a, forKey: codingKey)
+            case .dictArray(let a): try container.encode(a, forKey: codingKey)
+            }
+        }
+    }
+
+    private enum AnyCodableValue {
+        case string(String)
+        case int(Int)
+        case bool(Bool)
+        case stringArray([String])
+        case dictArray([[String: String]])
+    }
+
+    private struct DynamicCodingKey: CodingKey {
+        var stringValue: String
+        var intValue: Int?
+        init?(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { self.stringValue = "\(intValue)"; self.intValue = intValue }
     }
 }
 

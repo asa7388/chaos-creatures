@@ -5,17 +5,16 @@
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
+import { verifyServiceRole } from "../_shared/auth.ts";
 import { errorResponse, handleCors, getCorsHeaders, ErrorCode } from "../_shared/errors.ts";
 
 serve(async (req: Request) => {
   const corsResp = handleCors(req);
   if (corsResp) return corsResp;
 
-  // This is a cron/admin function
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
-    return errorResponse(ErrorCode.UNAUTHORIZED, "Missing Authorization", 401);
-  }
+  // This is a cron/admin function — verify service role auth
+  const authError = verifyServiceRole(req);
+  if (authError) return authError;
 
   const supabase = createServiceClient();
 

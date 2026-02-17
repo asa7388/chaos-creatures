@@ -32,6 +32,7 @@ enum ServerEvent: Codable {
 
     enum CodingKeys: String, CodingKey {
         case type
+        case state
     }
 
     init(from decoder: Decoder) throws {
@@ -41,7 +42,9 @@ enum ServerEvent: Codable {
 
         switch type {
         case "STATE_SNAPSHOT":
-            self = .stateSnapshot(try singleContainer.decode(ClientGameState.self))
+            // Server wraps game state under a "state" key:
+            // { type: "STATE_SNAPSHOT", state: { ...fields... } }
+            self = .stateSnapshot(try container.decode(ClientGameState.self, forKey: .state))
         case "TURN_START":
             self = .turnStart(try singleContainer.decode(TurnStartData.self))
         case "CHAOS_ROLL":

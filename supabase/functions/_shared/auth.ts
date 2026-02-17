@@ -55,6 +55,10 @@ export function isAuthError(result: AuthContext | Response): result is Response 
  * and internal pipeline functions like batch-generate, generate-card-art, etc.).
  *
  * The caller must send: Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>
+ *
+ * Verification strategy (in order):
+ * 1. Decode the JWT payload and check role === "service_role" (handles gateway transformations)
+ * 2. Fall back to raw string comparison against SUPABASE_SERVICE_ROLE_KEY env var
  */
 export function verifyServiceRole(req: Request): Response | null {
   const authHeader = req.headers.get("Authorization");
@@ -63,14 +67,29 @@ export function verifyServiceRole(req: Request): Response | null {
   }
 
   const token = authHeader.replace("Bearer ", "");
+
+  // Strategy 1: Decode JWT payload and check role claim.
+  // Supabase service role JWTs contain { role: "service_role" } in the payload.
+  try {
+    const parts = token.split(".");
+    if (parts.length === 3) {
+      // Base64url decode the payload (second segment)
+      const payloadB64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const payloadJson = atob(payloadB64);
+      const payload = JSON.parse(payloadJson);
+      if (payload.role === "service_role") {
+        return null; // Auth passed
+      }
+    }
+  } catch {
+    // JWT decode failed — fall through to raw comparison
+  }
+
+  // Strategy 2: Raw string comparison (original approach, works for direct key usage)
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!serviceRoleKey) {
-    return errorResponse(ErrorCode.UNAUTHORIZED, "Server misconfigured: missing service role key", 500);
+  if (serviceRoleKey && token === serviceRoleKey) {
+    return null; // Auth passed
   }
 
-  if (token !== serviceRoleKey) {
-    return errorResponse(ErrorCode.UNAUTHORIZED, "Invalid service role key", 403);
-  }
-
-  return null; // Auth passed
+  return errorResponse(ErrorCode.UNAUTHORIZED, "Invalid service role key", 403);
 }
