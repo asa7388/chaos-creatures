@@ -102,6 +102,10 @@
 		FEC030408E9288E2AE3B7AF6 /* BoardNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = E45A302B119339A8359264CB /* BoardNode.swift */; };
 		FFDFABBC26E40C014A69A4A6 /* HandCardNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24D7E4B1CDCE29ED0753A839 /* HandCardNode.swift */; };
 		FFF4D092F85EA1E83A843334 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AFC359E4D67C950A59AC574 /* ProfileView.swift */; };
+		BB11111111111111BBBBBBBB /* Cinzel-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA11111111111111AAAAAAAA /* Cinzel-Variable.ttf */; };
+		BB22222222222222BBBBBBBB /* Alegreya-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAAAAAA /* Alegreya-Variable.ttf */; };
+		BB33333333333333BBBBBBBB /* Alegreya-Italic-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA33333333333333AAAAAAAA /* Alegreya-Italic-Variable.ttf */; };
+		DD11111111111111DDDDDDDD /* CardFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11111111111111CCCCCCCC /* CardFont.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -135,6 +139,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AA11111111111111AAAAAAAA /* Cinzel-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Cinzel-Variable.ttf"; sourceTree = "<group>"; };
+		AA22222222222222AAAAAAAA /* Alegreya-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Alegreya-Variable.ttf"; sourceTree = "<group>"; };
+		AA33333333333333AAAAAAAA /* Alegreya-Italic-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Alegreya-Italic-Variable.ttf"; sourceTree = "<group>"; };
+		CC11111111111111CCCCCCCC /* CardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFont.swift; sourceTree = "<group>"; };
 		045868C4CFB7E10DE62507F4 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		0A38E147622BB772FF5D2920 /* Deck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deck.swift; sourceTree = "<group>"; };
 		0C2F46F3E1D63BF639931F8B /* ManaBarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManaBarNode.swift; sourceTree = "<group>"; };
@@ -272,6 +280,9 @@
 		1B49F7CB5FADE74ECB6AA436 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
+				AA33333333333333AAAAAAAA /* Alegreya-Italic-Variable.ttf */,
+				AA22222222222222AAAAAAAA /* Alegreya-Variable.ttf */,
+				AA11111111111111AAAAAAAA /* Cinzel-Variable.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -324,6 +335,7 @@
 		3FD9A3D478CBAC6E4D5D1C74 /* Config */ = {
 			isa = PBXGroup;
 			children = (
+				CC11111111111111CCCCCCCC /* CardFont.swift */,
 				14063AF09253E984E1C75AE6 /* Secrets.swift */,
 			);
 			path = Config;
@@ -711,7 +723,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB33333333333333BBBBBBBB /* Alegreya-Italic-Variable.ttf in Resources */,
+				BB22222222222222BBBBBBBB /* Alegreya-Variable.ttf in Resources */,
 				5B3816B072A4804A58FBAEFC /* Assets.xcassets in Resources */,
+				BB11111111111111BBBBBBBB /* Cinzel-Variable.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -762,6 +777,7 @@
 				92BC197589C204CDEDA75CB2 /* CardPackOpeningView.swift in Sources */,
 				C25DF14A5DC08257272BC588 /* CardPlayAction.swift in Sources */,
 				D4DAB6A87FEDA69762F7CE31 /* CardTemplate.swift in Sources */,
+				DD11111111111111DDDDDDDD /* CardFont.swift in Sources */,
 				3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */,
 				11DCA5933CE01CADC1B34BA1 /* ChaosCreaturesApp.swift in Sources */,
 				8DA80DDB662FE44064989616 /* ChaosRollAction.swift in Sources */,

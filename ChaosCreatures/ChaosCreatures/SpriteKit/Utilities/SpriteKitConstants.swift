@@ -221,11 +221,17 @@ enum SK {
     }
 
     // MARK: - Fonts
+    // Cinzel for card names/headers, Alegreya for body/stats/flavor text.
+    // PostScript names from variable font files registered via Info.plist.
 
     enum Fonts {
-        static let bold = "AvenirNext-Bold"
-        static let heavy = "AvenirNext-Heavy"
-        static let medium = "AvenirNext-Medium"
-        static let regular = "AvenirNext-Regular"
+        /// Card names, titles — Cinzel Bold
+        static let bold = CardFont.spriteKitCardName        // "Cinzel-Bold"
+        /// Large display text — Cinzel Bold (heaviest available via PS name)
+        static let heavy = CardFont.spriteKitCardName       // "Cinzel-Bold"
+        /// Stats, emphasized body — Alegreya Bold
+        static let medium = CardFont.spriteKitStats         // "Alegreya-Bold"
+        /// Body text, descriptions — Alegreya Regular
+        static let regular = CardFont.spriteKitBody         // "Alegreya-Regular"
     }
 }
