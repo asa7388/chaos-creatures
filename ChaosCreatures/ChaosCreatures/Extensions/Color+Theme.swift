@@ -9,32 +9,33 @@ import UIKit
 // MARK: - Faction Colors
 
 extension Color {
-    // Ironwright Collective — steampunk brass/industrial
+    // Ironwright Collective -- steampunk brass/industrial
     static let ironwright = Color(hex: "#C9A84C")
     static let ironwrightDark = Color(hex: "#8B6914")
     static let ironwrightAccent = Color(hex: "#D4AF37")
 
-    // Fey Courts — ethereal green/nature
+    // Fey Courts -- ethereal green/nature
     static let feyCourts = Color(hex: "#4CAF50")
     static let feyCourtsDark = Color(hex: "#2E7D32")
     static let feyCourtsAccent = Color(hex: "#81C784")
 
-    // Demonic Kingdoms — hellfire red
+    // Demonic Kingdoms -- hellfire red
     static let demonic = Color(hex: "#E63946")
     static let demonicDark = Color(hex: "#B71C1C")
     static let demonicAccent = Color(hex: "#FF5252")
 
     // MARK: - UI Theme Colors
 
-    static let background = Color(hex: "#0D0D0D")
-    static let surface = Color(hex: "#141414")
-    static let surfaceLight = Color(hex: "#1A1A1A")
-    static let surfaceMid = Color(hex: "#2A2A2A")
-    static let surfaceHigh = Color(hex: "#3A3A3A")
+    static let bgPrimary = Color(hex: "#0D0D0D")
+    static let bgSecondary = Color(hex: "#141414")
+    static let bgTertiary = Color(hex: "#1A1A1A")
+    static let bgQuaternary = Color(hex: "#2A2A2A")
+    static let bgElevated = Color(hex: "#3A3A3A")
 
     static let textPrimary = Color.white
     static let textSecondary = Color(hex: "#AAAAAA")
     static let textTertiary = Color(hex: "#888888")
+    static let textDisabled = Color(hex: "#555555")
 
     // Battle HUD
     static let orderBlue = Color(hex: "#5BC0EB")
@@ -53,6 +54,10 @@ extension Color {
     static let rarityRare = Color(hex: "#2196F3")
     static let rarityEpic = Color(hex: "#9C27B0")
     static let rarityLegendary = Color(hex: "#FF9800")
+
+    // Borders
+    static let borderDefault = Color(hex: "#3A3A3A")
+    static let borderActive = Color(hex: "#4A90E2")
 
     // MARK: - Hex Initializer
 
@@ -78,6 +83,45 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+
+    // MARK: - Helpers
+
+    static func tierColor(_ tier: EvolutionTier) -> Color {
+        switch tier {
+        case .common: return .rarityCommon
+        case .uncommon: return .rarityUncommon
+        case .rare: return .rarityRare
+        case .epic: return .rarityEpic
+        case .legendary: return .rarityLegendary
+        }
+    }
+
+    static func factionPrimary(_ faction: FactionShortName) -> Color {
+        switch faction {
+        case .ironwright: return .ironwright
+        case .feyCourts: return .feyCourts
+        case .demonicKingdoms: return .demonic
+        }
+    }
+
+    static func rankColor(_ rank: SeasonRank) -> Color {
+        switch rank {
+        case .bronze3, .bronze2, .bronze1:
+            return Color(hex: "#CD7F32")
+        case .silver3, .silver2, .silver1:
+            return Color(hex: "#C0C0C0")
+        case .gold3, .gold2, .gold1:
+            return Color(hex: "#FFD700")
+        case .platinum3, .platinum2, .platinum1:
+            return Color(hex: "#E5E4E2")
+        case .diamond3, .diamond2, .diamond1:
+            return Color(hex: "#B9F2FF")
+        case .master:
+            return Color(hex: "#9C27B0")
+        case .grandmaster:
+            return Color(hex: "#FF4500")
+        }
     }
 }
 
@@ -108,22 +152,10 @@ extension UIColor {
     }
 }
 
-// MARK: - Faction Helper
+// MARK: - FactionShortName UIKit Extensions (for SpriteKit)
 
-enum Faction: String, Codable, CaseIterable {
-    case ironwright = "IRONWRIGHT"
-    case feyCourts = "FEY_COURTS"
-    case demonicKingdoms = "DEMONIC_KINGDOMS"
-
-    var displayName: String {
-        switch self {
-        case .ironwright: return "Ironwright Collective"
-        case .feyCourts: return "Fey Courts"
-        case .demonicKingdoms: return "Demonic Kingdoms"
-        }
-    }
-
-    var primaryColor: UIColor {
+extension FactionShortName {
+    var primaryUIColor: UIColor {
         switch self {
         case .ironwright: return UIColor(hex: "#C9A84C")
         case .feyCourts: return UIColor(hex: "#4CAF50")
@@ -131,7 +163,7 @@ enum Faction: String, Codable, CaseIterable {
         }
     }
 
-    var accentColor: UIColor {
+    var accentUIColor: UIColor {
         switch self {
         case .ironwright: return UIColor(hex: "#D4AF37")
         case .feyCourts: return UIColor(hex: "#81C784")

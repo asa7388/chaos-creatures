@@ -1,7 +1,7 @@
 // ErrorView.swift
 // Chaos Creatures
-// TODO: Implement in Wave 1
-// Standard error state with retry button.
+// Standard error state with retry button and dark theme styling.
+// Source: docs/design/07-ui-ux-specs.md Section 11
 
 import SwiftUI
 
@@ -10,9 +10,42 @@ struct ErrorView: View {
     let onRetry: () -> Void
 
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 44))
+                .foregroundColor(.warningYellow)
+
+            Text("Something went wrong")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.textPrimary)
+
             Text(message)
-            Button("Retry", action: onRetry)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Button(action: onRetry) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Retry")
+                }
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 28)
+                .padding(.vertical, 12)
+                .background(Color.borderActive)
+                .cornerRadius(10)
+            }
+            .padding(.top, 4)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.bgPrimary)
+    }
+}
+
+#Preview {
+    ErrorView(message: "Failed to load collection. Check your connection and try again.") {
+        print("Retry tapped")
     }
 }

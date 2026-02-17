@@ -1,7 +1,7 @@
 // LoadingView.swift
 // Chaos Creatures
-// TODO: Implement in Wave 1
-// Standard loading state (spinner + optional message).
+// Standard loading state with spinner, message, and dark theme styling.
+// Source: docs/design/07-ui-ux-specs.md Section 11
 
 import SwiftUI
 
@@ -13,9 +13,21 @@ struct LoadingView: View {
     }
 
     var body: some View {
-        VStack {
+        VStack(spacing: 16) {
             ProgressView()
+                .progressViewStyle(.circular)
+                .tint(.white)
+                .scaleEffect(1.3)
+
             Text(message)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.textSecondary)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.bgPrimary)
     }
+}
+
+#Preview {
+    LoadingView("Fetching your collection...")
 }
