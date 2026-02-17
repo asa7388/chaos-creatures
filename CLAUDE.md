@@ -183,4 +183,67 @@ docs/design/
 - Instability formula: avatar modifier + sum(creature base_instability + evolution changes + modifier adjustments), clamped 1-20
 
 ## Agent Workflow
-This project uses an orchestrator agent that delegates to specialized sub-agents. See `.claude/agents/` for all agent definitions. The orchestrator coordinates the production of docs 03-10.
+This project uses orchestrator agents that delegate to specialized sub-agents. See `.claude/agents/` for all agent definitions.
+
+- **Doc pipeline:** `orchestrator` coordinates doc agents (prompt-engineer, economy-designer, etc.) for docs 03-10. Complete.
+- **Build pipeline:** `build-orchestrator` coordinates build agents in waves (supabase-schema, game-server, ios-app-shell, etc.) with audit agents between waves.
+
+## Build Phase Protocol — Context Resilience
+
+Build agents write many files over long sessions. Context window compaction will happen. Every build agent MUST follow this protocol to survive compaction without losing progress.
+
+### Checkpoint Files
+
+Every build agent maintains a checkpoint file in its module directory:
+
+```
+server/CHECKPOINT.md          — game-server agent
+supabase/CHECKPOINT.md        — supabase-schema agent
+supabase/functions/CHECKPOINT.md — edge-functions agent
+admin/CHECKPOINT.md           — admin-dashboard agent
+ios/CHECKPOINT.md             — ios-app-shell + ios-battle agents
+```
+
+Format:
+```markdown
+# {Agent Name} Checkpoint
+## Status: in_progress | complete
+## Files Created
+- path/to/file.ts — description (complete | partial)
+## Current Task
+What is being worked on right now
+## Test Results
+- test_name: pass | fail | not_run
+## Decisions Made
+- Chose X pattern because Y
+## Next Steps
+- What remains to be done
+```
+
+Update the checkpoint after every file creation and every test run. This is the agent's recovery log.
+
+### Recovery After Compaction
+
+If context has been compacted (you don't remember prior work):
+1. Read your `CHECKPOINT.md`
+2. Run `git log --oneline -10` to see recent commits
+3. Glob your module directory to see what files exist
+4. Read any existing files before modifying or recreating them
+5. Continue from where the checkpoint says you left off
+
+### Commit Frequently
+
+- Commit after every 2-3 files that compile and pass tests
+- Commit message format: `build({module}): {what was added}`
+  - Examples: `build(server): add combat resolution engine`, `build(ios): add home screen and tab navigation`
+- Never let more than ~500 lines of uncommitted work accumulate
+- The build-orchestrator also commits after each wave, but agents should commit incrementally within their wave
+
+### Idempotent Execution
+
+Agents must be safe to re-run on a partially-built module:
+- Before creating a file, check if it already exists
+- If it exists and looks complete, skip it
+- If it exists but is partial, read it and continue from where it left off
+- If tests already pass for a section, don't rewrite it
+- Running an agent twice on the same module should produce the same result

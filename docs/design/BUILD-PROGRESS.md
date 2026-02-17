@@ -15,13 +15,20 @@
 | 2 | ios-battle | SpriteKit battlefield scene | Not started | — | — |
 | 2 | admin-dashboard | Next.js admin web app | Not started | — | — |
 
-## Code Reviews
+## Audit Gates
 
-| Wave | Review File | Critical | Warnings | Status |
-|---|---|---|---|---|
-| 0 | — | — | — | — |
-| 1 | — | — | — | — |
-| 2 | — | — | — | — |
+| Wave | Audit Agent | Report File | Critical | Warnings | Status |
+|---|---|---|---|---|---|
+| 0 | build-validator | — | — | — | Not started |
+| 1 | build-validator | — | — | — | Not started |
+| 1 | api-contract-auditor | — | — | — | Not started |
+| 1 | security-auditor | — | — | — | Not started |
+| 2 | build-validator | — | — | — | Not started |
+| 2 | api-contract-auditor | — | — | — | Not started |
+| 2 | security-auditor | — | — | — | Not started |
+| 2 | simulator-test | — | — | — | Not started |
+| 3 | e2e-test | — | — | — | Not started |
+| 3 | req-coverage-auditor | — | — | — | Not started |
 
 ## Wave Dependencies
 
@@ -31,6 +38,11 @@ Wave 0 (Foundation)     → Wave 1 (Backend)      → Wave 2 (Frontend)
                    ────→ game-server ───────────→ ios-battle
   project-scaffold ───→ all Wave 1               admin-dashboard
                         ai-pipeline ────────────→ admin-dashboard
+
+Between each wave:
+  build-validator → api-contract-auditor + security-auditor (parallel)
+  After Wave 2: + simulator-test
+  After Wave 3: + e2e-test + req-coverage-auditor
 ```
 
 ## Integration Milestones (Wave 3+)
@@ -49,13 +61,16 @@ Wave 0 (Foundation)     → Wave 1 (Backend)      → Wave 2 (Frontend)
 ## Prerequisites Checklist
 
 Before Wave 0 can start, the owner must:
-- [ ] Create Supabase project → get URL + anon key + service role key
-- [ ] Sign up for fal.ai → get FAL_KEY
-- [ ] Sign up for OpenAI → get OPENAI_API_KEY
-- [ ] Create Cloudflare R2 bucket → get R2 credentials
-- [ ] Sign up for Railway → link GitHub repo
-- [ ] Enroll in Apple Developer Program ($99/year)
-- [ ] Sign up for PostHog → get project API key
+- [x] Install Supabase CLI (`brew install supabase/tap/supabase`)
+- [x] Install Deno (`brew install deno`)
+- [x] Open Docker Desktop (Supabase local dev requires Docker)
+- [ ] Create Supabase project → get URL + anon key + service role key (NOT needed for code writing — only for cloud deploy)
+- [ ] Sign up for fal.ai → get FAL_KEY (NOT needed for code writing — mocked in tests)
+- [ ] Sign up for OpenAI → get OPENAI_API_KEY (NOT needed for code writing — mocked in tests)
+- [ ] Create Cloudflare R2 bucket → get R2 credentials (NOT needed for code writing — mocked in tests)
+- [ ] Sign up for Railway → link GitHub repo (NOT needed for code writing — local dev only)
+- [ ] Enroll in Apple Developer Program ($99/year) (NOT needed for Simulator builds)
+- [ ] Sign up for PostHog → get project API key (NOT needed for code writing)
 
 ## Blockers
 
