@@ -5,7 +5,9 @@ Chaos Creatures is a mobile-first collectible card game where every card's art i
 
 ## Build Context
 
-Critical: The entire Chaos Creatures project will be built by a solo non-engineer using Claude Code to vibe code the implementation. There is no engineering team. Every technical document must be specific enough that Claude Code can implement directly from it — no ambiguity, no "the engineer should decide," no hand-waving. If a doc says "use WebSockets for match communication," it needs to specify the exact message format, connection lifecycle, and error handling. If it says "use PostgreSQL," it needs the actual schema, not just entity names. Implementation details cannot be left to interpretation — there is no one to interpret them.
+The entire Chaos Creatures project is built by a solo non-engineer using Claude Code. There is no engineering team. Every technical document is specific enough that Claude Code can implement directly from it — no ambiguity, no "the engineer should decide," no hand-waving.
+
+The codebase is functionally complete (80+ Swift files, 28 game server files, 30 Edge Functions, 14 DB migrations, admin dashboard). The project is now in the **polish and audit phase** — adding professional visual assets, fixing bugs, and preparing for App Store submission.
 
 All build-phase agents must produce code-ready output: actual files, actual commands, actual configs. Not recommendations.
 
@@ -15,22 +17,15 @@ The owner's role is reviewer and decision-maker, not implementer. Every system s
 - Approve/reject with minimal effort
 - Never write code, configure infrastructure, or debug errors manually
 
-This means every doc must design for maximum automation:
-- Card generation is a batch pipeline the owner triggers, then reviews results in a grid/gallery and approves or rejects each card
-- Balance testing is automated simulation, not manual playtesting
-- Deployment is one command, not a runbook
-- Content updates (new cards, events, quests) go through a review UI, not raw database edits
-- The entire build process is Claude Code building from these docs with minimal human intervention
-
 If a process requires more than 3 clicks or one terminal command from the owner, redesign it.
 
 ## Infrastructure Stack
 
-These are the actual services the project will use. Do not recommend alternatives or say "consider X." These are decided.
+These are the actual services the project uses. Do not recommend alternatives or say "consider X." These are decided.
 
-- **Client**: Native iOS app. Swift + SwiftUI for UI, SpriteKit for battlefield/card animations. Xcode Cloud for builds. iOS 17+ minimum target.
-- **Backend**: Supabase (Postgres database, Auth, Realtime for WebSocket match communication, Edge Functions for serverless game logic, Storage for non-art assets)
-- **Game Server**: Railway (Node.js/TypeScript server for authoritative match resolution — the turn engine. Communicates with clients via Supabase Realtime channels or direct WebSocket. Auto-scales.)
+- **Client**: Native iOS app. Swift + SwiftUI for UI, SpriteKit for battlefield/card animations. iOS 17+ minimum target.
+- **Backend**: Supabase (Postgres database, Auth, Edge Functions for serverless game logic, Storage for non-art assets)
+- **Game Server**: Railway (Node.js/TypeScript server for authoritative match resolution — the turn engine. Communicates with clients via direct WebSocket.)
 - **Admin Dashboard**: Vercel (Next.js web app for owner workflows — card generation, balance review, analytics. Free tier.)
 - **AI Image Generation**: fal.ai (FLUX Kontext API for card art generation and evolution img2img)
 - **AI Text Generation**: OpenAI API (GPT-4o Mini for card names, flavor text, evolution narratives)
@@ -39,19 +34,17 @@ These are the actual services the project will use. Do not recommend alternative
 - **App Store**: Apple Developer Program (iOS only — no Android)
 - **Payments**: App Store native IAP via StoreKit 2 (no Stripe, no RevenueCat, no third-party payment SDK)
 
-All infrastructure must be deployable from the project repo. Local dev = Supabase CLI + Xcode Simulator. Production = one-command deploy scripts for backend services, Xcode Cloud for iOS builds. The owner signs up for accounts and sets API keys in a config file. Claude Code does everything else.
-
 All accounts are created and configured. Credentials are stored in gitignored files:
 - `/.env` — Root env with Supabase, fal.ai, OpenAI, R2, PostHog keys
 - `/packages/game-server/.env` — Game server credentials (Supabase service role, etc.)
 - `/packages/admin-dashboard/.env.local` — Admin dashboard credentials (admin password, JWT secret, game server URL)
-- `/ChaosCreatures/Config.xcconfig` — iOS client config (Supabase URL + anon key)
+- `/ChaosCreatures/Config.xcconfig` — iOS client config (Supabase URL, anon key, game server URL)
 
 ## Client Technology
 
 The client is a native iOS app built with Swift + SwiftUI + SpriteKit. NOT React Native. NOT Unity. NOT Expo. This is iOS only — no Android.
 
-- SwiftUI for all non-game screens (collection, deck builder, shop, settings, onboarding, admin)
+- SwiftUI for all non-game screens (collection, deck builder, shop, settings, onboarding)
 - SpriteKit for the battlefield scene (card rendering, attack animations, damage numbers, chaos roll, event overlays)
 - StoreKit 2 for in-app purchases and subscriptions (native Apple API, no third-party wrappers)
 - URLSession + Supabase Swift SDK for networking
@@ -70,16 +63,21 @@ All services are deployed and operational:
 ## Current Build State
 
 What's done:
-- Database: 25 tables, 51 RLS policies, 5 RPCs, seed data (3 factions, 6 avatars, 50 economy configs, 16 events, 30 quest templates, 23 achievements, 1 season)
+- Database: 33 tables, 51 RLS policies, 5 RPCs, seed data (3 factions, 6 avatars, 50 economy configs, 16 events, 30 quest templates, 23 achievements, 1 season)
 - Edge Functions: 24 deployed and active on Supabase
-- Game Server: Deployed on Railway, health check passing, match engine + matchmaking poller running
-- Admin Dashboard: Deployed on Vercel, login working
-- iOS App: Builds and runs in Simulator, all screens implemented
+- Game Server: Deployed on Railway, health check passing, match engine + bot AI + matchmaking poller running
+- Admin Dashboard: Deployed on Vercel, 8 pages (login, dashboard, cards, economy, analytics, batch generate, settings, generation jobs)
+- iOS App: Builds and runs in Simulator, all screens implemented, practice match mode working
+- Card Art: 9 test cards + 3 evolution variants generated locally (v3 style anchor with artist references)
 
 What's NOT done:
-- Card art at scale (9 test cards + 3 evolutions generated locally; Edge Function pipeline blocked by auth bug)
+- Card art at scale (Edge Function pipeline blocked by verifyServiceRole 403 auth bug; generation works via local scripts)
 - Professional card frames, fonts, icons, audio (0% custom assets — all placeholder)
 - App Store submission (screenshots, legal pages, metadata)
+
+Known bugs:
+- Edge Function `verifyServiceRole()` returns 403 consistently — `Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")` doesn't match deployed secret. Bypassed with local generation scripts.
+- fal.ai intermittently fails to download from R2 CDN — use base64 data URI workaround.
 
 ## Two Applications
 
@@ -87,23 +85,19 @@ The project produces TWO separate applications:
 
 1. **Game Client** — Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store. All gameplay, collection, deck building, shop, and player-facing features.
 
-2. **Admin Dashboard** — Next.js web app (deployed on Vercel, free tier). The owner uses this for workflows that require custom UI:
-   - Card generation batch trigger + review gallery (approve/reject/regenerate cards)
-   - Balance simulation runner + results graphs
-   - PostHog analytics embed / key metrics overview
-   - App Store screenshot preview
-   - Economy config editor (form fields, not raw JSON)
-   This is a lightweight app — 4-5 screens max. It is NOT a full admin portal.
-
-The owner also uses **Supabase Dashboard** (built-in, free, no code needed) for direct data tasks: viewing player accounts, editing economy config values, managing auth, viewing Realtime connections, and running one-off queries.
+2. **Admin Dashboard** — Next.js web app (deployed on Vercel, free tier). 8 pages built:
+   - Login, Dashboard overview, Card generation & review gallery
+   - Economy config editor, Analytics embed, Batch generation trigger
+   - Settings, Generation job history
+   The owner also uses **Supabase Dashboard** (built-in, free) for direct data tasks.
 
 Every doc must be clear about which application a feature belongs to. No doc should spec admin features inside the iOS app or game features inside the admin dashboard.
 
 ## Budget Constraint
 
-Total build-to-launch budget: $300 maximum. This covers all service signups, API usage for content generation, and first month of any paid tiers. Use free tiers where available during development, but paid tiers (e.g., Supabase Pro) are acceptable within the budget. Every doc that references infrastructure costs must include a dollar estimate and stay within this budget.
+Total build-to-launch budget: $300 maximum. This covers all service signups, API usage for content generation, and first month of any paid tiers. Every doc that references infrastructure costs must include a dollar estimate and stay within this budget.
 
-Do not recommend any paid design tools, asset marketplaces, or premium services. All assets must be AI-generated or free/open-source.
+All visual assets should be AI-generated or free/open-source. Optional paid asset purchases (e.g., itch.io SFX/music packs) are acceptable within budget if free alternatives are insufficient.
 
 ### Polish Budget (~$100 remaining)
 
@@ -127,15 +121,13 @@ Specifically:
 ## Launch Requirements (App Store)
 
 This ships to the App Store only. Every doc must account for:
-- Privacy policy hosted at a public URL (static page on Cloudflare Pages — free)
+- Privacy policy hosted at a public URL (static page on Cloudflare Pages or GitHub Pages — free)
 - Terms of service hosted at a public URL (same)
 - App icon (1024x1024, generated via fal.ai)
-- App Store screenshots (automated via Xcode UI tests or Fastlane snapshot)
+- App Store screenshots (captured from Xcode Simulator)
 - App Store description copy and keywords
 - Age rating questionnaire answers
 - App Store privacy nutrition labels (data collection declarations)
-
-The content-pipeline doc must include generating these store assets as part of the launch checklist.
 
 ## Art Quality Target
 
@@ -145,7 +137,7 @@ The locked style anchor (v3) references specific artists: Donato Giancola, Frank
 
 ## Art Consistency
 
-All card art must look like it belongs in the same game. The prompt-engineer doc must define a locked visual style anchor — a base prompt prefix that every single card image uses to enforce consistent rendering style, lighting, color palette, and framing. Individual cards vary in subject matter but must share the same artistic DNA. If a card looks like it came from a different game, it's a failed generation and must be rejected/regenerated.
+All card art must look like it belongs in the same game. The visual style anchor is locked — a base prompt prefix that every single card image uses to enforce consistent rendering style, lighting, color palette, and framing. Individual cards vary in subject matter but share the same artistic DNA. If a card looks like it came from a different game, it's a failed generation and must be rejected/regenerated.
 
 ## Composition Variety
 
@@ -170,9 +162,9 @@ The game must feel polished, not like a prototype. The tech architecture and UI 
 - Specific animation specs for: card play (hand to board), attack declaration (glow + movement), damage numbers (floating text), creature death (fade/shatter), chaos roll (D20 spin), event popup (slide in/out), evolution reveal (dramatic unveil)
 - Loading states, error states, and empty states for every screen — no blank screens ever
 
-## Testing & Validation (Build Phase)
+## Testing & Validation
 
-During the build phase, agents can and should use the Xcode Simulator to test their work. This includes:
+During development, agents can and should use the Xcode Simulator to test their work. This includes:
 - Building the iOS app and launching it in the Simulator to check for compilation errors
 - Visually inspecting UI layouts, animations, and screen flows in the Simulator
 - Running the app through gameplay scenarios to validate game logic
@@ -181,9 +173,9 @@ During the build phase, agents can and should use the Xcode Simulator to test th
 
 Agents are also expected to write and run unit tests and integration tests as they build. Code is not considered done until it compiles, runs in the Simulator without crashes, and passes its tests.
 
-## Safety Rules (Bypass Permissions Mode)
+## Safety Rules
 
-Claude Code is running in bypass permissions mode. These rules are absolute:
+These rules are absolute:
 - NEVER delete any file in docs/design/ — only edit in place
 - NEVER overwrite a file without appending to its Revision Log first
 - ALWAYS git commit before starting any major operation
@@ -210,9 +202,10 @@ ChaosCreatures/                 — iOS app (Swift/SwiftUI/SpriteKit, Xcode proj
 packages/game-server/           — Node.js/TS match engine (deployed on Railway)
 packages/admin-dashboard/       — Next.js admin web app (deployed on Vercel)
 supabase/                       — Migrations, seed data, Edge Functions
-  migrations/                   — 14 SQL migrations (25 tables)
-  functions/                    — 24 Edge Functions
+  migrations/                   — 14 SQL migrations (33 tables)
+  functions/                    — 24 Edge Functions + 6 shared modules
   seed.sql                      — Seed data (factions, avatars, economy configs, etc.)
+scripts/                        — Local generation scripts (card art, evolution, frames, icons)
 docs/design/
   00-game-design-master.md      — Master design doc (all systems, UI, decisions)
   01-battle-mechanics.md        — Battle mechanics (PP, instability, turn structure)
@@ -243,8 +236,9 @@ docs/design/
 ## Agent Workflow
 This project uses orchestrator agents that delegate to specialized sub-agents. See `.claude/agents/` for all agent definitions.
 
-- **Doc pipeline:** `orchestrator` coordinates doc agents (prompt-engineer, economy-designer, etc.) for docs 03-10. Complete.
-- **Build pipeline:** `build-orchestrator` coordinates build agents in waves (supabase-schema, game-server, ios-app-shell, etc.) with audit agents between waves.
+- **Doc pipeline:** Complete. Orchestrator coordinated doc agents for docs 03-10.
+- **Build pipeline:** Complete. Build-orchestrator coordinated build agents in waves with audit agents between waves.
+- **Current phase:** Audit and polish pipeline — comprehensive audit, visual asset generation, card rendering overhaul, audio integration, App Store prep.
 
 ## Build Phase Protocol — Context Resilience
 
@@ -255,11 +249,11 @@ Build agents write many files over long sessions. Context window compaction will
 Every build agent maintains a checkpoint file in its module directory:
 
 ```
-server/CHECKPOINT.md          — game-server agent
-supabase/CHECKPOINT.md        — supabase-schema agent
-supabase/functions/CHECKPOINT.md — edge-functions agent
-admin/CHECKPOINT.md           — admin-dashboard agent
-ios/CHECKPOINT.md             — ios-app-shell + ios-battle agents
+packages/game-server/CHECKPOINT.md       — game-server agent
+supabase/CHECKPOINT.md                   — supabase-schema agent
+supabase/functions/CHECKPOINT.md         — edge-functions agent
+packages/admin-dashboard/CHECKPOINT.md   — admin-dashboard agent
+ChaosCreatures/CHECKPOINT.md             — ios-app agents
 ```
 
 Format:
@@ -295,7 +289,6 @@ If context has been compacted (you don't remember prior work):
 - Commit message format: `build({module}): {what was added}`
   - Examples: `build(server): add combat resolution engine`, `build(ios): add home screen and tab navigation`
 - Never let more than ~500 lines of uncommitted work accumulate
-- The build-orchestrator also commits after each wave, but agents should commit incrementally within their wave
 
 ### Idempotent Execution
 
