@@ -31,6 +31,7 @@ These are the actual services the project will use. Do not recommend alternative
 - **Client**: Native iOS app. Swift + SwiftUI for UI, SpriteKit for battlefield/card animations. Xcode Cloud for builds. iOS 17+ minimum target.
 - **Backend**: Supabase (Postgres database, Auth, Realtime for WebSocket match communication, Edge Functions for serverless game logic, Storage for non-art assets)
 - **Game Server**: Railway (Node.js/TypeScript server for authoritative match resolution — the turn engine. Communicates with clients via Supabase Realtime channels or direct WebSocket. Auto-scales.)
+- **Admin Dashboard**: Vercel (Next.js web app for owner workflows — card generation, balance review, analytics. Free tier.)
 - **AI Image Generation**: fal.ai (FLUX Kontext API for card art generation and evolution img2img)
 - **AI Text Generation**: OpenAI API (GPT-4o Mini for card names, flavor text, evolution narratives)
 - **Card Art Storage + CDN**: Cloudflare R2 (stores generated card art, serves globally via built-in CDN)
@@ -40,16 +41,11 @@ These are the actual services the project will use. Do not recommend alternative
 
 All infrastructure must be deployable from the project repo. Local dev = Supabase CLI + Xcode Simulator. Production = one-command deploy scripts for backend services, Xcode Cloud for iOS builds. The owner signs up for accounts and sets API keys in a config file. Claude Code does everything else.
 
-Accounts the owner needs to create before build phase:
-1. Supabase (supabase.com) — create a project, get URL + anon key + service role key
-2. fal.ai (fal.ai) — sign up, get API key
-3. OpenAI (platform.openai.com) — sign up, get API key
-4. Cloudflare (cloudflare.com) — sign up, create R2 bucket
-5. Railway (railway.app) — sign up, link GitHub repo
-6. Apple Developer (developer.apple.com) — enroll ($99/year)
-7. PostHog (posthog.com) — sign up, get project API key
-
-All keys go in a single .xcconfig or environment config file. No other configuration needed.
+All accounts are created and configured. Credentials are stored in gitignored files:
+- `/.env` — Root env with Supabase, fal.ai, OpenAI, R2, PostHog keys
+- `/packages/game-server/.env` — Game server credentials (Supabase service role, etc.)
+- `/packages/admin-dashboard/.env.local` — Admin dashboard credentials (admin password, JWT secret, game server URL)
+- `/ChaosCreatures/Config.xcconfig` — iOS client config (Supabase URL + anon key)
 
 ## Client Technology
 
@@ -63,13 +59,35 @@ The client is a native iOS app built with Swift + SwiftUI + SpriteKit. NOT React
 
 All UI/UX specs, technical architecture, and PRD must be written for Swift/SwiftUI/SpriteKit. No React Native, no Expo, no TypeScript on the client side. The server remains Node.js/TypeScript on Railway.
 
-## Three Tools
+## Live Deployment
 
-The project uses THREE separate tools for different purposes:
+All services are deployed and operational:
+- **Game Server**: `https://game-server-production-88e5.up.railway.app` (Railway)
+- **Admin Dashboard**: `https://admin-dashboard-eight-sooty-40.vercel.app` (Vercel)
+- **Supabase**: `https://nglnypbxjiswtgaxrxfr.supabase.co` (project ref: `nglnypbxjiswtgaxrxfr`)
+- **R2 CDN**: `https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev`
+
+## Current Build State
+
+What's done:
+- Database: 25 tables, 51 RLS policies, 5 RPCs, seed data (3 factions, 6 avatars, 50 economy configs, 16 events, 30 quest templates, 23 achievements, 1 season)
+- Edge Functions: 24 deployed and active on Supabase
+- Game Server: Deployed on Railway, health check passing, match engine + matchmaking poller running
+- Admin Dashboard: Deployed on Vercel, login working
+- iOS App: Builds and runs in Simulator, all screens implemented
+
+What's NOT done:
+- Practice match mode (no bot AI, no practice endpoint — next task)
+- AI content generation (no card art/text generated yet — needs fal.ai + OpenAI API spend)
+- App Store submission
+
+## Two Applications
+
+The project produces TWO separate applications:
 
 1. **Game Client** — Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store. All gameplay, collection, deck building, shop, and player-facing features.
 
-2. **Admin Dashboard** — Custom web application (Next.js/TypeScript, deployed on Railway). The owner uses this for workflows that require custom UI:
+2. **Admin Dashboard** — Next.js web app (deployed on Vercel, free tier). The owner uses this for workflows that require custom UI:
    - Card generation batch trigger + review gallery (approve/reject/regenerate cards)
    - Balance simulation runner + results graphs
    - PostHog analytics embed / key metrics overview
@@ -77,14 +95,9 @@ The project uses THREE separate tools for different purposes:
    - Economy config editor (form fields, not raw JSON)
    This is a lightweight app — 4-5 screens max. It is NOT a full admin portal.
 
-3. **Supabase Dashboard** — Built-in, free, no code needed. The owner uses this for direct data tasks:
-   - View/search player accounts and match history
-   - Edit economy config values directly in database rows
-   - Manage auth (ban/unban players)
-   - View active Realtime connections
-   - Quick data fixes and one-off queries
+The owner also uses **Supabase Dashboard** (built-in, free, no code needed) for direct data tasks: viewing player accounts, editing economy config values, managing auth, viewing Realtime connections, and running one-off queries.
 
-Every doc must be clear about which tool a feature belongs to. No doc should spec admin features inside the iOS app, game features inside the admin dashboard, or custom UI for things Supabase dashboard already handles.
+Every doc must be clear about which application a feature belongs to. No doc should spec admin features inside the iOS app or game features inside the admin dashboard.
 
 ## Budget Constraint
 
@@ -142,31 +155,36 @@ Claude Code is running in bypass permissions mode. These rules are absolute:
 
 ## Protected Files
 
-These files are the source of truth for the entire project. After CLAUDE.md is updated in Step 1, the following files are READ-ONLY — no agent may modify them for the remainder of this operation:
-- CLAUDE.md
+These design files are the source of truth for game design. They are READ-ONLY — no agent may modify them:
 - docs/design/00-game-design-master.md
 - docs/design/01-battle-mechanics.md
 - docs/design/02-card-data-model.md
 
 If a downstream doc (03-10) contradicts a protected file, the downstream doc is wrong and must be fixed to match the protected file. Never the other way around.
 
-Exception: In Step 1 only, the core docs (00, 01, 02) receive a light platform-alignment pass (see below). After that, they are locked.
+CLAUDE.md may be updated for deployment state, infrastructure changes, and build status updates. Game design decisions in CLAUDE.md (Key Design Decisions section) remain locked.
 
 ## Repository Structure
 ```
+ChaosCreatures/                 — iOS app (Swift/SwiftUI/SpriteKit, Xcode project)
+packages/game-server/           — Node.js/TS match engine (deployed on Railway)
+packages/admin-dashboard/       — Next.js admin web app (deployed on Vercel)
+supabase/                       — Migrations, seed data, Edge Functions
+  migrations/                   — 14 SQL migrations (25 tables)
+  functions/                    — 24 Edge Functions
+  seed.sql                      — Seed data (factions, avatars, economy configs, etc.)
 docs/design/
-  00-game-design-master.md    — Master design doc (all systems, UI, decisions)
-  01-battle-mechanics.md      — Battle mechanics (PP, instability, turn structure, keywords, events, factions, modifiers)
-  02-card-data-model.md       — Data model (all entities, enums, game state, data flows)
-  03-prompt-templates.md      — AI generation pipeline (FLUX Kontext, GPT-4o Mini)
-  04-progression-economy.md   — XP curves, Chaos Dust economy, quest design
-  05-content-pipeline.md      — Batch generation tooling, QA, seasonal releases
-  06-technical-architecture.md — System design, APIs, infrastructure
-  07-ui-ux-specs.md           — Wireframes and interaction specs
-  08-audio-design.md          — Music, SFX, per-faction audio
-  09-monetization-details.md  — Subscription tiers, pricing, conversion funnels
-  10-prd.md                   — Formal PRD for engineering handoff
-  PROGRESS.md                 — Task tracking for orchestrator
+  00-game-design-master.md      — Master design doc (all systems, UI, decisions)
+  01-battle-mechanics.md        — Battle mechanics (PP, instability, turn structure)
+  02-card-data-model.md         — Data model (all entities, enums, game state)
+  03-prompt-templates.md        — AI generation pipeline (FLUX Kontext, GPT-4o Mini)
+  04-progression-economy.md     — XP curves, Chaos Dust economy, quest design
+  05-content-pipeline.md        — Batch generation tooling, QA, seasonal releases
+  06-technical-architecture.md  — System design, APIs, infrastructure
+  07-ui-ux-specs.md             — Wireframes and interaction specs
+  08-audio-design.md            — Music, SFX, per-faction audio
+  09-monetization-details.md    — Subscription tiers, pricing, conversion funnels
+  10-prd.md                     — Formal PRD for engineering handoff
 ```
 
 ## Key Design Decisions (Do Not Contradict)
