@@ -18,6 +18,7 @@ struct BattleContainerView: View {
     @Environment(AppRouter.self) private var router
 
     @StateObject private var viewModel = BattleViewModel()
+    @StateObject private var tutorialManager = TutorialManager()  // S-15
     @State private var matchService = MatchService.shared
     @State private var sceneSize: CGSize = .zero
     @State private var matchResult: MatchResultData?
@@ -135,6 +136,9 @@ struct BattleContainerView: View {
                 if !viewModel.isConnected {
                     ConnectionLostOverlay()
                 }
+
+                // S-15: Tutorial overlay
+                TutorialOverlayView(manager: tutorialManager)
             }
             .onAppear {
                 sceneSize = geo.size
@@ -144,6 +148,8 @@ struct BattleContainerView: View {
         .statusBarHidden()
         .task {
             await connectToMatch()
+            // S-15: Start tutorial for first practice match
+            tutorialManager.startIfNeeded(isPracticeMode: router.selectedGameMode == .practice)
         }
         .onDisappear {
             Task {
@@ -159,6 +165,9 @@ struct BattleContainerView: View {
             Text("You will lose this match if you surrender.")
         }
         .onChange(of: viewModel.currentPhase) { _, newPhase in
+            // S-15: Notify tutorial of phase changes
+            tutorialManager.onPhaseChange(newPhase)
+
             if newPhase == .gameOver {
                 // Build match result data from the view model's state
                 handleGameOver()
