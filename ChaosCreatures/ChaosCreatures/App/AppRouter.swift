@@ -48,6 +48,12 @@ final class AppRouter {
 
     /// Determine root screen based on app state
     func determineRootScreen(appState: AppState) {
+        #if DEBUG
+        if appState.isDevMode {
+            rootScreen = .main
+            return
+        }
+        #endif
         if appState.isInitializing {
             rootScreen = .splash
         } else if !appState.auth.isAuthenticated {

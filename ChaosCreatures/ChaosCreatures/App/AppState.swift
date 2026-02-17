@@ -117,6 +117,70 @@ final class AppState {
     var needsOnboarding: Bool {
         auth.isAuthenticated && !hasCompletedOnboarding
     }
+
+    // MARK: - Dev Mode (DEBUG only)
+
+    #if DEBUG
+    var isDevMode = false
+
+    /// Skip auth and load mock data so all screens are visible in Simulator
+    func enterDevMode() {
+        let ironwrightId = UUID()
+        let feyId = UUID()
+        let demonicId = UUID()
+        let now = Date()
+
+        player = Player(
+            id: UUID(),
+            authId: UUID(),
+            displayName: "DevPlayer",
+            friendCode: "CHAOS-1234",
+            subscriptionTier: .mid,
+            primaryFactionId: ironwrightId,
+            unlockedFactionIds: [ironwrightId, feyId, demonicId],
+            onboardingComplete: true,
+            playerLevel: 12,
+            playerXp: 2450,
+            seasonRank: .gold2,
+            seasonRankPoints: 340,
+            hiddenMmr: 1200,
+            chaosDust: 1500,
+            maxCardsPerFaction: 100,
+            maxDeckSlots: 6,
+            shardsUncommon: 8,
+            shardsRare: 3,
+            shardsEpic: 1,
+            shardsLegendary: 0,
+            showcaseCardIds: [],
+            activeTitle: "Chaos Adept",
+            totalGames: 47,
+            totalWins: 28,
+            totalLosses: 19,
+            currentWinStreak: 3,
+            bestWinStreak: 7,
+            cardsEvolvedTotal: 5,
+            highestTierReached: .rare,
+            friendIds: [],
+            settings: .default,
+            createdAt: now,
+            updatedAt: now
+        )
+
+        factions = [
+            Faction(id: ironwrightId, name: "The Ironwright Collective", shortName: .ironwright, exclusiveMechanic: .augment, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_ironwright", colorPrimary: "#C4A04E", colorSecondary: "#8B7635", colorBackground: "#1A1A2E", particleTheme: "sparks", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 40, createdAt: now),
+            Faction(id: feyId, name: "The Fey Courts", shortName: .feyCourts, exclusiveMechanic: .bond, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_fey", colorPrimary: "#7CB342", colorSecondary: "#558B2F", colorBackground: "#1A2E1A", particleTheme: "leaves", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 38, createdAt: now),
+            Faction(id: demonicId, name: "The Demonic Kingdoms", shortName: .demonicKingdoms, exclusiveMechanic: .corruption, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_demonic", colorPrimary: "#E53935", colorSecondary: "#B71C1C", colorBackground: "#2E1A1A", particleTheme: "embers", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 35, createdAt: now),
+        ]
+
+        activeMissions = [
+            Mission(id: UUID(), playerId: player!.id, missionType: .winGames, description: "Win 3 games", difficulty: .easy, period: .daily, targetValue: 3, currentValue: 1, isCompleted: false, isClaimed: false, rewardDust: 50, rewardShardTier: nil, rewardShardCount: 0, expiresAt: now.addingTimeInterval(86400), createdAt: now),
+            Mission(id: UUID(), playerId: player!.id, missionType: .playCreatures, description: "Play 10 creatures", difficulty: .medium, period: .daily, targetValue: 10, currentValue: 6, isCompleted: false, isClaimed: false, rewardDust: 30, rewardShardTier: .uncommon, rewardShardCount: 1, expiresAt: now.addingTimeInterval(86400), createdAt: now),
+        ]
+
+        isDevMode = true
+        isInitializing = false
+    }
+    #endif
 }
 
 // MARK: - App Tabs

@@ -28,6 +28,11 @@ struct ChaosCreaturesApp: App {
                         Task { await appState.loadPlayerData() }
                     }
                 }
+                #if DEBUG
+                .onChange(of: appState.isDevMode) {
+                    router.determineRootScreen(appState: appState)
+                }
+                #endif
         }
     }
 }
@@ -163,6 +168,24 @@ struct SignInView: View {
                         .padding(.horizontal, 40)
                 }
             }
+
+            #if DEBUG
+            Button(action: {
+                appState.enterDevMode()
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "hammer.fill")
+                        .font(.system(size: 14))
+                    Text("Dev Mode (Skip Auth)")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .foregroundColor(.textSecondary)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(10)
+            }
+            .padding(.horizontal, 40)
+            #endif
 
             // Legal links
             HStack(spacing: 4) {
