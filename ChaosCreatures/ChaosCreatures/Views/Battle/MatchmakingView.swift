@@ -177,6 +177,26 @@ struct MatchmakingView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 
+            // S-44: If the error is about no deck, show a "Build a Deck" button
+            if error.lowercased().contains("no valid deck") || error.lowercased().contains("build a deck") {
+                Button(action: {
+                    router.showMatchmaking = false
+                    appState.selectedTab = .decks
+                    router.decksNavigationPath.append(DecksDestination.deckBuilder(nil))
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.rectangle.on.rectangle")
+                        Text("Build a Deck")
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .background(Color.orderBlue)
+                    .cornerRadius(10)
+                }
+            }
+
             Button("Try Again") {
                 joinError = nil
                 Task { await joinQueue() }

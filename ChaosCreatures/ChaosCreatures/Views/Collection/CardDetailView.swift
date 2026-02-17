@@ -15,36 +15,53 @@ struct CardDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Card art
-                    cardArtSection
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Card art
+                        cardArtSection
 
-                    // Card info
-                    cardInfoSection
+                        // Card info
+                        cardInfoSection
 
-                    // Stats (creatures only)
-                    if let card = router.selectedCardInstance, card.currentAttack != nil {
-                        statsSection(card: card)
+                        // Stats (creatures only)
+                        if let card = router.selectedCardInstance, card.currentAttack != nil {
+                            statsSection(card: card)
+                        }
+
+                        // Keywords
+                        if let card = router.selectedCardInstance, !card.effectiveKeywords.isEmpty {
+                            keywordsSection(card: card)
+                        }
+
+                        // S-30: Triggered abilities
+                        if let card = router.selectedCardInstance, !card.triggeredAbilities.isEmpty {
+                            triggeredAbilitiesSection(card: card)
+                        }
+
+                        // S-30: Applied modifiers
+                        if let card = router.selectedCardInstance, !card.modifiers.isEmpty {
+                            modifiersSection(card: card)
+                        }
+
+                        // Evolution progress
+                        if let card = router.selectedCardInstance {
+                            evolutionSection(card: card)
+                        }
+
+                        // Evolution history
+                        if let card = router.selectedCardInstance, !card.evolutionHistory.isEmpty {
+                            evolutionHistorySection(card: card)
+                        }
                     }
-
-                    // Keywords
-                    if let card = router.selectedCardInstance, !card.effectiveKeywords.isEmpty {
-                        keywordsSection(card: card)
-                    }
-
-                    // Evolution progress
-                    if let card = router.selectedCardInstance {
-                        evolutionSection(card: card)
-                    }
-
-                    // Evolution history
-                    if let card = router.selectedCardInstance, !card.evolutionHistory.isEmpty {
-                        evolutionHistorySection(card: card)
-                    }
+                    .padding(16)
+                    .padding(.bottom, 100) // Space for action bar
                 }
-                .padding(16)
-                .padding(.bottom, 80)
+
+                // S-30: Sticky bottom action bar
+                if let card = router.selectedCardInstance {
+                    actionBar(card: card)
+                }
             }
             .background(Color.bgPrimary)
             .navigationTitle(router.selectedCardInstance?.currentName ?? "Card Detail")
@@ -231,6 +248,180 @@ struct CardDetailView: View {
         }
         .padding(16)
         .cardBackground()
+    }
+
+    // MARK: - S-30: Triggered Abilities
+
+    private func triggeredAbilitiesSection(card: CardInstance) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Triggered Abilities")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.textPrimary)
+
+            ForEach(card.triggeredAbilities) { ability in
+                HStack(spacing: 8) {
+                    // Trigger type icon
+                    Image(systemName: triggerIcon(ability.trigger))
+                        .font(.system(size: 14))
+                        .foregroundColor(triggerColor(ability.trigger))
+                        .frame(width: 24, height: 24)
+                        .background(triggerColor(ability.trigger).opacity(0.15))
+                        .cornerRadius(6)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(ability.name)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.textPrimary)
+
+                        Text(ability.description)
+                            .font(.system(size: 12))
+                            .foregroundColor(.textSecondary)
+                            .lineLimit(3)
+                    }
+                }
+                .padding(10)
+                .background(Color.bgTertiary)
+                .cornerRadius(8)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .cardBackground()
+    }
+
+    private func triggerIcon(_ trigger: TriggerType) -> String {
+        switch trigger {
+        case .onOrder: return "sun.max.fill"
+        case .onChaos: return "flame.fill"
+        case .onPlay: return "rectangle.portrait.arrowtriangle.2.outward"
+        case .onDeath: return "xmark.circle.fill"
+        case .onDamageTaken: return "bolt.heart.fill"
+        case .onAttack: return "arrowshape.right.fill"
+        case .onBlock: return "shield.fill"
+        }
+    }
+
+    private func triggerColor(_ trigger: TriggerType) -> Color {
+        switch trigger {
+        case .onOrder: return .orderBlue
+        case .onChaos: return .chaosRed
+        case .onPlay: return .ironwright
+        case .onDeath: return .textTertiary
+        case .onDamageTaken: return .damageOrange
+        case .onAttack: return .chaosRed
+        case .onBlock: return .orderBlue
+        }
+    }
+
+    // MARK: - S-30: Applied Modifiers
+
+    private func modifiersSection(card: CardInstance) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Applied Modifiers")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.textPrimary)
+
+            ForEach(card.modifiers) { modifier in
+                HStack(spacing: 8) {
+                    // Attunement icon
+                    Image(systemName: modifier.attunement == .order ? "sun.max.fill" : "flame.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(modifier.attunement == .order ? .orderBlue : .chaosRed)
+                        .frame(width: 22, height: 22)
+                        .background(
+                            (modifier.attunement == .order ? Color.orderBlue : Color.chaosRed).opacity(0.15)
+                        )
+                        .cornerRadius(6)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(modifier.name)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.textPrimary)
+
+                            if let keyword = modifier.grantsKeyword {
+                                Text(keyword.displayName)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 1)
+                                    .background(Color.ironwright)
+                                    .cornerRadius(4)
+                            }
+                        }
+
+                        HStack(spacing: 4) {
+                            Text("Step \(modifier.evolutionStep)")
+                                .font(.system(size: 11))
+                                .foregroundColor(.textTertiary)
+
+                            if modifier.instabilityAdjustment != 0 {
+                                let sign = modifier.instabilityAdjustment > 0 ? "+" : ""
+                                Text("Inst \(sign)\(modifier.instabilityAdjustment)")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(modifier.instabilityAdjustment > 0 ? .chaosRed : .orderBlue)
+                            }
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding(10)
+                .background(Color.bgTertiary)
+                .cornerRadius(8)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .cardBackground()
+    }
+
+    // MARK: - S-30: Action Bar
+
+    private func actionBar(card: CardInstance) -> some View {
+        HStack(spacing: 12) {
+            // Evolve button (if eligible)
+            if card.isEvolutionReady {
+                Button(action: {
+                    dismiss()
+                    router.navigateToEvolution(card)
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 16))
+                        Text("Evolve")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(Color.tauntGold)
+                    .cornerRadius(10)
+                }
+            }
+
+            // Add to Deck button
+            Button(action: {
+                dismiss()
+                appState.selectedTab = .decks
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.rectangle.on.rectangle")
+                        .font(.system(size: 14))
+                    Text("Add to Deck")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Color.orderBlue)
+                .cornerRadius(10)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            Color.bgSecondary
+                .shadow(color: .black.opacity(0.3), radius: 8, y: -4)
+        )
     }
 
     // MARK: - Evolution History
