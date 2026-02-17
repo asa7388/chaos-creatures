@@ -83,7 +83,7 @@ final class AppState {
                     from: SupabaseService.Table.missions,
                     filters: [
                         ("player_id", playerId.uuidString),
-                        ("completed", "false")
+                        ("is_completed", "false")
                     ],
                     orderBy: "expires_at"
                 )

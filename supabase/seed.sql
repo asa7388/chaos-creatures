@@ -52,7 +52,8 @@ INSERT INTO factions (id, name, short_name, exclusive_mechanic, art_prompt_prefi
   '#FF4444',
   '#1A0A0A',
   'hellfire_embers'
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- 2. AVATARS (6 avatars, 2 per faction from doc 00 Section 10 / doc 01 Section 5)
@@ -115,7 +116,8 @@ INSERT INTO avatars (id, name, faction_id, instability_modifier, title, lore_tex
   'The Unbound',
   'Lilith rejected every pact, every chain, every throne. She burns with uncontrolled Corruption — a walking cataclysm who traded safety for raw, untethered power. She will consume everything, herself included.',
   '{"type": "FREE_STARTER"}'::jsonb
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- 3. EVENT DEFINITIONS (16 events from doc 01 Sections 8-9)
@@ -236,7 +238,8 @@ INSERT INTO event_definitions (id, name, event_type, effect, description, design
   'A random friendly creature gains +2 ATK and Piercing this turn. If it already has Piercing, it gets +4 ATK instead.',
   'Keyword grant + burst. Temporary Piercing on a high-ATK creature can deal massive face damage through a blocker.',
   FALSE
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- 4. ECONOMY CONFIG (from doc 04 Section 9 / doc 06 Section 3.1)
@@ -315,7 +318,8 @@ INSERT INTO economy_config (key, value, description) VALUES
   ('season_reward_platinum_dust', '600', 'Season end dust reward for Platinum'),
   ('season_reward_diamond_dust', '800', 'Season end dust reward for Diamond'),
   ('season_reward_master_dust', '1000', 'Season end dust reward for Master'),
-  ('season_reward_grandmaster_dust', '1500', 'Season end dust reward for Grandmaster');
+  ('season_reward_grandmaster_dust', '1500', 'Season end dust reward for Grandmaster')
+ON CONFLICT (key) DO NOTHING;
 
 -- ============================================================================
 -- 5. QUEST TEMPLATES (30 total: 20 daily + 10 weekly from doc 04 Section 4)
@@ -342,7 +346,8 @@ INSERT INTO quest_templates (id, mission_type, difficulty, period, description, 
   ('D17', 'TRIGGER_CHAOS_EVENTS',   'HARD',   'DAILY', 'Trigger 10 Chaos Events',                 10,  45, 'RARE',     1, 0.30),
   ('D18', 'TRIGGER_ORDER_EVENTS',   'HARD',   'DAILY', 'Trigger 10 Order Events',                 10,  45, 'RARE',     1, 0.30),
   ('D19', 'WIN_WITH_STYLE',         'HARD',   'DAILY', 'Win a game with 3+ Legendary cards on board at end', 1, 45, 'RARE', 1, 0.30),
-  ('D20', 'WIN_WITH_STYLE',         'HARD',   'DAILY', 'Win a game without any of your creatures dying', 1, 45, 'RARE', 1, 0.30);
+  ('D20', 'WIN_WITH_STYLE',         'HARD',   'DAILY', 'Win a game without any of your creatures dying', 1, 45, 'RARE', 1, 0.30)
+ON CONFLICT (id) DO NOTHING;
 
 -- Weekly quests (10)
 INSERT INTO quest_templates (id, mission_type, difficulty, period, description, target_value, base_dust, shard_reward_tier, shard_reward_count, shard_reward_chance) VALUES
@@ -355,7 +360,8 @@ INSERT INTO quest_templates (id, mission_type, difficulty, period, description, 
   ('W07', 'DEAL_DAMAGE',            'MEDIUM', 'WEEKLY', 'Deal 200 damage to enemy creatures this week', 200, 150, 'RARE', 1, 1.00),
   ('W08', 'TRIGGER_CHAOS_EVENTS',   'MEDIUM', 'WEEKLY', 'Trigger 20 Chaos Events this week',       20, 150, 'RARE',  1, 1.00),
   ('W09', 'TRIGGER_ORDER_EVENTS',   'MEDIUM', 'WEEKLY', 'Trigger 20 Order Events this week',       20, 150, 'RARE',  1, 1.00),
-  ('W10', 'WIN_WITH_STYLE',         'HARD',   'WEEKLY', 'Win 5 games with 3+ Legendary cards on board', 5, 200, 'EPIC', 1, 1.00);
+  ('W10', 'WIN_WITH_STYLE',         'HARD',   'WEEKLY', 'Win 5 games with 3+ Legendary cards on board', 5, 200, 'EPIC', 1, 1.00)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
 -- 6. ACHIEVEMENTS (20+ from doc 00 Section 15 / doc 02 Section 17)
@@ -393,11 +399,13 @@ INSERT INTO achievements (name, description, category, target_value, reward_type
 -- Social achievements
 ('Friendly',              'Add a friend',                                          'SOCIAL',      1, 'XP',     50, NULL),
 ('Friendly Rivalry',      'Win a friendly match',                                  'SOCIAL',      1, 'XP',    100, NULL),
-('Stalker',               'View another players profile',                          'SOCIAL',      1, 'XP',     25, NULL);
+('Stalker',               'View another players profile',                          'SOCIAL',      1, 'XP',     25, NULL)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- 7. INITIAL SEASON (Season 1)
 -- ============================================================================
 
 INSERT INTO seasons (season_number, name, starts_at, ends_at, is_active) VALUES
-(1, 'Season of Awakening', '2026-03-01T00:00:00Z', '2026-04-26T23:59:59Z', TRUE);
+(1, 'Season of Awakening', '2026-03-01T00:00:00Z', '2026-04-26T23:59:59Z', TRUE)
+ON CONFLICT (season_number) DO NOTHING;

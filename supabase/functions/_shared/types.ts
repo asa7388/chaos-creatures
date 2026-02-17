@@ -277,11 +277,11 @@ export const SUBSCRIPTION_QUEST_MULTIPLIER: Record<SubscriptionTier, number> = {
   HIGH: 2.0,
 };
 
-/** Max deck slots by subscription tier. */
+/** Max deck slots by subscription tier. Source: docs/design/09-monetization-details.md */
 export const MAX_DECK_SLOTS: Record<SubscriptionTier, number> = {
   FREE: 3,
   MID: 6,
-  HIGH: 8,
+  HIGH: 10,
 };
 
 /** Deck validation constants. */
