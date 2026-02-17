@@ -1,5 +1,7 @@
 // Chaos Creatures Game Server — Entry Point
-// Express + WebSocket server for authoritative match resolution.
+// Express + Supabase Realtime server for authoritative match resolution.
+// Match communication uses Supabase Realtime channels (not raw WebSocket).
+// A lightweight WebSocket server remains on /ws for health/admin monitoring.
 // See docs/design/06-technical-architecture.md Sections 4-6 for full spec.
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -7,12 +9,11 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { loadConfig } from './config';
 import { initSupabase, getSupabase } from './services/supabase';
-import { handleConnection } from './ws/handler';
+import { setupMatchChannel, registerPlayer, startNextTurn } from './ws/handler';
 import { startMatchmakingPoller, stopMatchmakingPoller } from './services/matchmaking';
 import { createMatch, getActiveMatchCount } from './engine/match';
 import type { MatchParticipant } from './engine/match';
-import { createRoom, getActiveRoomCount } from './ws/rooms';
-import { startNextTurn } from './ws/handler';
+import { getActiveRoomCount } from './ws/rooms';
 import type { BattleCard, BattleModifier, TriggeredAbility } from './types/game-state';
 import type { SeasonRank, Keyword, CardType } from './types/enums';
 import { randomUUID } from 'crypto';
@@ -214,11 +215,32 @@ app.post('/api/admin/batch/start', async (req, res) => {
 
 const server = createServer(app);
 
-// WebSocket server for match communication
+// ---------------------------------------------------------------------------
+// WebSocket server for health/admin monitoring only.
+// Match communication now uses Supabase Realtime channels (see ws/handler.ts).
+// The /ws endpoint is retained for admin tooling and future monitoring.
+// ---------------------------------------------------------------------------
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-wss.on('connection', (ws, request) => {
-  handleConnection(ws, request);
+wss.on('connection', (ws, _request) => {
+  // Admin/monitoring WebSocket — just send health status
+  ws.send(JSON.stringify({
+    type: 'SERVER_INFO',
+    active_matches: getActiveMatchCount(),
+    active_rooms: getActiveRoomCount(),
+    uptime: process.uptime(),
+  }));
+
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'PING') {
+        ws.send(JSON.stringify({ type: 'PONG', timestamp: Date.now() }));
+      }
+    } catch {
+      // Ignore invalid messages
+    }
+  });
 });
 
 // Start matchmaking poller
@@ -269,8 +291,13 @@ if (config.NODE_ENV !== 'test') {
       const matchId = randomUUID();
       const state = createMatch(matchId, mode, participant1, participant2);
 
-      // Create WebSocket room for the match
-      createRoom(matchId);
+      // Set up Supabase Realtime channel for match communication
+      // This subscribes to match:<matchId> and listens for player_action broadcasts
+      await setupMatchChannel(matchId);
+
+      // Register both players in the room
+      registerPlayer(matchId, state.player_1.player_id);
+      registerPlayer(matchId, state.player_2.player_id);
 
       // Insert match record into Supabase matches table
       await supabase.from('matches').insert({
@@ -285,24 +312,61 @@ if (config.NODE_ENV !== 'test') {
       });
 
       // Broadcast MATCH_FOUND to both players via Supabase Realtime
-      // Each player listens on their own matchmaking:<playerId> channel
-      const matchFoundPayload = {
-        type: 'broadcast',
-        event: 'MATCH_FOUND',
-        payload: { match_id: matchId },
-      };
-
+      // Each player listens on their own matchmaking:<playerId> channel.
+      // We must subscribe before sending, then unsubscribe after.
       await Promise.all([
-        supabase.channel(`matchmaking:${p1.player_id}`)
-          .send(matchFoundPayload as any),
-        supabase.channel(`matchmaking:${p2.player_id}`)
-          .send(matchFoundPayload as any),
+        broadcastMatchFound(supabase, p1.player_id, matchId),
+        broadcastMatchFound(supabase, p2.player_id, matchId),
       ]);
 
       console.log(`Match ${matchId} created: ${p1.player_id} vs ${p2.player_id} (${mode})`);
     } catch (err) {
       console.error('Failed to create match from matchmaking:', err);
     }
+  });
+}
+
+/**
+ * Broadcast MATCH_FOUND to a player's matchmaking channel.
+ * Subscribes, sends, then unsubscribes.
+ */
+async function broadcastMatchFound(
+  supabase: ReturnType<typeof getSupabase>,
+  playerId: string,
+  matchId: string
+): Promise<void> {
+  const channel = supabase.channel(`matchmaking:${playerId}`);
+
+  return new Promise((resolve, reject) => {
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        try {
+          await channel.send({
+            type: 'broadcast',
+            event: 'MATCH_FOUND',
+            payload: { match_id: matchId },
+          });
+          // Small delay to ensure delivery before unsubscribe
+          setTimeout(async () => {
+            try {
+              await channel.unsubscribe();
+            } catch {
+              // Ignore unsubscribe errors
+            }
+            resolve();
+          }, 200);
+        } catch (err) {
+          try {
+            await channel.unsubscribe();
+          } catch {
+            // Ignore
+          }
+          reject(err);
+        }
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        reject(new Error(`Failed to subscribe to matchmaking:${playerId}: ${status}`));
+      }
+    });
   });
 }
 
@@ -394,7 +458,8 @@ const PORT = config.GAME_SERVER_PORT;
 server.listen(PORT, () => {
   console.log(`Chaos Creatures Game Server running on port ${PORT}`);
   console.log(`  Environment: ${config.NODE_ENV}`);
-  console.log(`  WebSocket path: /ws`);
+  console.log(`  Match transport: Supabase Realtime`);
+  console.log(`  Admin WebSocket: /ws`);
   console.log(`  Health check: http://localhost:${PORT}/health`);
 });
 
@@ -404,7 +469,7 @@ function gracefulShutdown(signal: string): void {
   stopMatchmakingPoller();
 
   wss.close(() => {
-    console.log('WebSocket server closed');
+    console.log('Admin WebSocket server closed');
   });
 
   server.close(() => {

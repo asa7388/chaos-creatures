@@ -1,12 +1,14 @@
-// Chaos Creatures Game Server — WebSocket Connection Handler
-// Routes incoming messages to the appropriate game engine functions
+// Chaos Creatures Game Server — Supabase Realtime Match Handler
+// Subscribes to Supabase Realtime channels for match communication.
+// Listens for `player_action` broadcasts from iOS clients.
+// Sends `game_event` broadcasts back.
 
-import type WebSocket from 'ws';
-import type { IncomingMessage } from 'http';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { ClientAction, ServerEvent } from '../types/messages';
 import type { PlayerSide } from '../types/enums';
-import { parseClientMessage, ProtocolError } from './protocol';
-import { joinRoom, leaveRoom, sendToPlayer, broadcastToRoom, getPlayerSide } from './rooms';
+import type { GameState } from '../types/game-state';
+import { parseAction, ProtocolError } from './protocol';
+import { createRoom, joinRoom, leaveRoom, sendToPlayer, broadcastToRoom, destroyRoom } from './rooms';
 import {
   getMatch,
   createClientGameState,
@@ -24,7 +26,6 @@ import {
   GameError,
 } from '../engine/turn';
 import {
-  onPlayerDisconnect,
   onPlayerReconnect,
   resetMissedTurns,
   trackMissedTurn,
@@ -34,27 +35,68 @@ import {
   getTimerManager,
   destroyTimerManager,
 } from '../services/timer';
-
-/** Map of WebSocket -> { matchId, playerId } for cleanup on disconnect */
-const wsToMatch = new Map<WebSocket, { matchId: string; playerId: string }>();
+import { getSupabase } from '../services/supabase';
 
 /**
- * Handle a new WebSocket connection.
+ * Set up a Supabase Realtime channel for a match.
+ * The server subscribes to `match:<matchId>` and listens for
+ * `player_action` broadcasts from iOS clients.
+ *
+ * Returns the RealtimeChannel once subscribed.
  */
-export function handleConnection(ws: WebSocket, request: IncomingMessage): void {
-  // Extract match_id and player_id from query string
-  const url = new URL(request.url ?? '', 'http://localhost');
-  const matchId = url.searchParams.get('match_id');
-  const playerId = url.searchParams.get('player_id');
+export function setupMatchChannel(matchId: string): Promise<RealtimeChannel> {
+  return new Promise((resolve, reject) => {
+    const supabase = getSupabase();
 
-  if (!matchId || !playerId) {
-    ws.close(4000, 'Missing match_id or player_id');
-    return;
-  }
+    // Create channel with self=true so the server receives its own
+    // broadcasts (the iOS client also subscribes to game_event on this
+    // same channel) and ack for reliability.
+    const channel = supabase.channel(`match:${matchId}`, {
+      config: {
+        broadcast: { self: true, ack: true },
+      },
+    });
 
+    // Listen for player actions
+    channel.on('broadcast', { event: 'player_action' }, (message) => {
+      try {
+        handleIncomingAction(matchId, message.payload);
+      } catch (err) {
+        console.error(`Error handling player_action in match ${matchId}:`, err);
+      }
+    });
+
+    // Listen for heartbeat (player presence tracking)
+    channel.on('broadcast', { event: 'heartbeat' }, (message) => {
+      const playerId = message.payload?.player_id;
+      if (playerId && typeof playerId === 'string') {
+        handleHeartbeat(matchId, playerId);
+      }
+    });
+
+    // Subscribe to the channel
+    channel.subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') {
+        // Create room with the subscribed channel
+        createRoom(matchId, channel);
+        console.log(`Match channel subscribed: match:${matchId}`);
+        resolve(channel);
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.error(`Failed to subscribe to match:${matchId}: ${status}`, err);
+        reject(new Error(`Channel subscription failed: ${status}`));
+      }
+    });
+  });
+}
+
+/**
+ * Register a player in a match room after the channel is set up.
+ * Sends an initial state snapshot.
+ */
+export function registerPlayer(matchId: string, playerId: string): void {
   const state = getMatch(matchId);
   if (!state) {
-    ws.close(4001, 'Match not found');
+    console.error(`Cannot register player ${playerId}: match ${matchId} not found`);
     return;
   }
 
@@ -65,13 +107,12 @@ export function handleConnection(ws: WebSocket, request: IncomingMessage): void 
   } else if (state.player_2.player_id === playerId) {
     side = 'PLAYER_2';
   } else {
-    ws.close(4002, 'Player not in match');
+    console.error(`Player ${playerId} not in match ${matchId}`);
     return;
   }
 
   // Register in room
-  joinRoom(matchId, playerId, side, ws);
-  wsToMatch.set(ws, { matchId, playerId });
+  joinRoom(matchId, playerId, side);
 
   // Send state snapshot on connect
   const snapshot = createClientGameState(state, side);
@@ -79,8 +120,52 @@ export function handleConnection(ws: WebSocket, request: IncomingMessage): void 
     type: 'STATE_SNAPSHOT',
     state: snapshot,
   });
+}
 
-  // Handle reconnection
+/**
+ * Handle an incoming player_action broadcast from a Supabase Realtime channel.
+ *
+ * The iOS client sends:
+ *   channel.broadcast(event: "player_action", message: dict)
+ * where dict is the action payload, e.g. { type: "PLAY_CARD", card_id: "..." }
+ *
+ * The Supabase Realtime JS SDK wraps that into:
+ *   { payload: <the dict>, event: "player_action", type: "broadcast" }
+ *
+ * We need `player_id` in the payload to identify the sender. The iOS client
+ * should include it in every action payload.
+ */
+function handleIncomingAction(matchId: string, payload: Record<string, unknown>): void {
+  if (!payload || typeof payload !== 'object') {
+    console.warn(`Invalid payload in match ${matchId}:`, payload);
+    return;
+  }
+
+  // The iOS client includes player_id in the action payload
+  const playerId = payload.player_id as string | undefined;
+  if (!playerId) {
+    console.warn(`Missing player_id in player_action for match ${matchId}`);
+    return;
+  }
+
+  const state = getMatch(matchId);
+  if (!state) {
+    sendErrorToPlayer(matchId, playerId, 'MATCH_NOT_FOUND', 'Match not found');
+    return;
+  }
+
+  // Validate player is in this match
+  let side: PlayerSide;
+  if (state.player_1.player_id === playerId) {
+    side = 'PLAYER_1';
+  } else if (state.player_2.player_id === playerId) {
+    side = 'PLAYER_2';
+  } else {
+    sendErrorToPlayer(matchId, playerId, 'PLAYER_NOT_IN_MATCH', 'Player not in match');
+    return;
+  }
+
+  // Handle reconnection if the player was marked as disconnected
   const reconnectState = onPlayerReconnect(matchId, playerId);
   if (reconnectState) {
     sendToPlayer(matchId, playerId, {
@@ -89,54 +174,67 @@ export function handleConnection(ws: WebSocket, request: IncomingMessage): void 
     });
   }
 
-  // Message handler
-  ws.on('message', (data) => {
-    try {
-      const raw = data.toString();
-      handleMessage(matchId, playerId, side, raw);
-    } catch (err) {
-      const errorEvent: ServerEvent = {
-        type: 'SERVER_ERROR',
-        code: err instanceof GameError ? err.code :
-              err instanceof ProtocolError ? err.code : 'INTERNAL_ERROR',
-        message: err instanceof Error ? err.message : 'Unknown error',
-      };
-      sendToPlayer(matchId, playerId, errorEvent);
-    }
-  });
+  // Parse the action from the payload (strip player_id before parsing)
+  try {
+    const { player_id: _pid, ...actionPayload } = payload;
+    const action = parseAction(actionPayload);
+    handleMessage(matchId, playerId, side, action);
+  } catch (err) {
+    const errorEvent: ServerEvent = {
+      type: 'SERVER_ERROR',
+      code: err instanceof GameError ? err.code :
+            err instanceof ProtocolError ? err.code : 'INTERNAL_ERROR',
+      message: err instanceof Error ? err.message : 'Unknown error',
+    };
+    sendToPlayer(matchId, playerId, errorEvent);
+  }
+}
 
-  // Disconnect handler
-  ws.on('close', () => {
-    handlePlayerDisconnect(matchId, playerId, side);
-    wsToMatch.delete(ws);
-  });
+/**
+ * Handle heartbeat from a player (keeps connection alive).
+ */
+function handleHeartbeat(matchId: string, playerId: string): void {
+  const state = getMatch(matchId);
+  if (!state) return;
 
-  ws.on('error', (err) => {
-    console.error(`WebSocket error for player ${playerId} in match ${matchId}:`, err);
+  // If player was disconnected, reconnect them
+  const reconnectState = onPlayerReconnect(matchId, playerId);
+  if (reconnectState) {
+    sendToPlayer(matchId, playerId, {
+      type: 'STATE_SNAPSHOT',
+      state: reconnectState,
+    });
+  }
+}
+
+/**
+ * Send an error event to a specific player.
+ */
+function sendErrorToPlayer(
+  matchId: string,
+  playerId: string,
+  code: string,
+  message: string
+): void {
+  sendToPlayer(matchId, playerId, {
+    type: 'SERVER_ERROR',
+    code,
+    message,
   });
 }
 
 /**
- * Process an incoming message from a player.
+ * Process a validated action from a player.
  */
 function handleMessage(
   matchId: string,
   playerId: string,
   side: PlayerSide,
-  raw: string
+  action: ClientAction
 ): void {
   const state = getMatch(matchId);
   if (!state) throw new GameError('MATCH_NOT_FOUND', 'Match not found');
   if (state.winner) throw new GameError('MATCH_OVER', 'Match is already over');
-
-  let action: ClientAction;
-  try {
-    const parsed = parseClientMessage(raw);
-    action = parsed.action;
-  } catch (err) {
-    if (err instanceof ProtocolError) throw err;
-    throw new ProtocolError('PARSE_ERROR', 'Failed to parse message');
-  }
 
   // Reset missed turns counter on any valid action
   resetMissedTurns(state, playerId);
@@ -207,7 +305,6 @@ function handlePlayCardAction(
   });
 
   // Send opponent hand count update
-  const opponentSide: PlayerSide = side === 'PLAYER_1' ? 'PLAYER_2' : 'PLAYER_1';
   const opponentPlayerId = side === 'PLAYER_1' ? state.player_2.player_id : state.player_1.player_id;
   const activePlayer = side === 'PLAYER_1' ? state.player_1 : state.player_2;
   sendToPlayer(matchId, opponentPlayerId, {
@@ -351,7 +448,7 @@ function handleSurrenderAction(
     throw new GameError('TOO_EARLY', 'Cannot surrender before turn 2');
   }
 
-  const result = forfeitMatch(state, playerId);
+  forfeitMatch(state, playerId);
   broadcastToRoom(matchId, {
     type: 'MATCH_END',
     winner: state.winner!,
@@ -377,7 +474,7 @@ function handleReconnectAction(
   });
 }
 
-// ─── Internal helpers ─────────────
+// --- Internal helpers ---
 
 function performCombatAndEndTurn(state: GameState, matchId: string): void {
   const combatResult = resolveCombatPhase(state);
@@ -490,7 +587,7 @@ export function startNextTurn(state: GameState, matchId: string): void {
           phase: state.phase,
         });
       },
-      onExpired: (mId, phase) => {
+      onExpired: (mId, _phase) => {
         broadcastToRoom(mId, {
           type: 'TIMER_EXPIRED',
           phase: state.phase,
@@ -541,6 +638,9 @@ function finishMatch(
 
   destroyTimerManager(matchId);
 
+  // Clean up the Realtime channel room
+  destroyRoom(matchId);
+
   // Save match record to Supabase and award chaos energy (fire and forget)
   saveMatchRecordAndAwardEnergy(result).catch((err) => {
     console.error(`Failed to save match record ${matchId}:`, err);
@@ -553,41 +653,45 @@ function finishMatch(
 async function saveMatchRecordAndAwardEnergy(
   result: ReturnType<typeof endMatch>
 ): Promise<void> {
-  const { getSupabase } = await import('../services/supabase');
   const supabase = getSupabase();
 
   const record = result.match_record;
 
-  // Insert match record
-  await supabase.from('match_records').insert({
-    id: record.id,
-    mode: record.mode,
-    player_1_id: record.player_1_id,
-    player_2_id: record.player_2_id,
-    winner_id: record.winner_id,
-    loser_id: record.loser_id,
-    player_1_deck_id: record.player_1_deck_id,
-    player_2_deck_id: record.player_2_deck_id,
-    player_1_avatar_id: record.player_1_avatar_id,
-    player_2_avatar_id: record.player_2_avatar_id,
-    player_1_faction_id: record.player_1_faction_id,
-    player_2_faction_id: record.player_2_faction_id,
-    end_reason: record.end_reason,
-    total_turns: record.total_turns,
-    duration_seconds: record.duration_seconds,
-    player_1_final_hp: record.player_1_final_hp,
-    player_2_final_hp: record.player_2_final_hp,
-    player_1_rank: record.player_1_rank,
-    player_2_rank: record.player_2_rank,
-    total_rolls: record.total_rolls,
-    order_events_p1: record.order_events_p1,
-    chaos_events_p1: record.chaos_events_p1,
-    order_events_p2: record.order_events_p2,
-    chaos_events_p2: record.chaos_events_p2,
-    started_at: record.started_at,
-    ended_at: record.ended_at,
-    season_id: record.season_id,
-  });
+  // Insert match record with retry (3 attempts, exponential backoff)
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const { error } = await supabase.from('match_records').insert({
+      id: record.id,
+      mode: record.mode,
+      player_1_id: record.player_1_id,
+      player_2_id: record.player_2_id,
+      winner_id: record.winner_id,
+      loser_id: record.loser_id,
+      player_1_deck_id: record.player_1_deck_id,
+      player_2_deck_id: record.player_2_deck_id,
+      player_1_avatar_id: record.player_1_avatar_id,
+      player_2_avatar_id: record.player_2_avatar_id,
+      player_1_faction_id: record.player_1_faction_id,
+      player_2_faction_id: record.player_2_faction_id,
+      end_reason: record.end_reason,
+      total_turns: record.total_turns,
+      duration_seconds: record.duration_seconds,
+      player_1_final_hp: record.player_1_final_hp,
+      player_2_final_hp: record.player_2_final_hp,
+      player_1_rank: record.player_1_rank,
+      player_2_rank: record.player_2_rank,
+      total_rolls: record.total_rolls,
+      order_events_p1: record.order_events_p1,
+      chaos_events_p1: record.chaos_events_p1,
+      order_events_p2: record.order_events_p2,
+      chaos_events_p2: record.chaos_events_p2,
+      started_at: record.started_at,
+      ended_at: record.ended_at,
+      season_id: record.season_id,
+    });
+    if (!error) break;
+    console.error(`match_records insert attempt ${attempt} failed:`, error.message);
+    if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1000));
+  }
 
   // Award chaos energy to all card instances in both decks
   // Winner earns 2 energy, loser earns 1 (per docs/design/04-progression-economy.md)
@@ -618,7 +722,7 @@ async function saveMatchRecordAndAwardEnergy(
 }
 
 async function awardEnergyToDeck(
-  supabase: ReturnType<typeof import('../services/supabase').getSupabase>,
+  supabase: ReturnType<typeof getSupabase>,
   deckId: string,
   energy: number
 ): Promise<void> {
@@ -632,34 +736,14 @@ async function awardEnergyToDeck(
 
   const instanceIds = deckCards.map((dc: { card_instance_id: string }) => dc.card_instance_id);
 
-  // Increment chaos_energy for each card instance via RPC or direct update
-  // Using raw SQL via rpc for atomic increment
+  // Increment chaos_energy for each card instance via RPC for atomic increment
   const { error: rpcError } = await supabase.rpc('increment_chaos_energy', {
     instance_ids: instanceIds,
     amount: energy,
   });
 
   if (rpcError) {
-    // RPC may not exist yet — log warning but don't fail the match
+    // RPC may not exist yet -- log warning but don't fail the match
     console.warn(`increment_chaos_energy RPC failed (${rpcError.message}), skipping energy award`);
   }
 }
-
-function handlePlayerDisconnect(
-  matchId: string,
-  playerId: string,
-  side: PlayerSide
-): void {
-  leaveRoom(matchId, playerId);
-
-  onPlayerDisconnect(matchId, playerId, side, (mId, pId) => {
-    const state = getMatch(mId);
-    if (state && !state.winner) {
-      forfeitMatch(state, pId);
-      finishMatch(state, mId, 'DISCONNECT');
-    }
-  });
-}
-
-// Type import for the handler function signature
-import type { GameState } from '../types/game-state';

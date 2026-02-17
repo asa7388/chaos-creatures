@@ -4,6 +4,7 @@
 // REQ-179: Single admin password, 8hr session, no Supabase Auth.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createHmac } from 'crypto';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 function getSessionToken(): string {
@@ -41,9 +42,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a simple session token: base64(timestamp:secret)
-    const timestamp = Date.now();
-    const token = Buffer.from(`${timestamp}:${getSessionToken()}`).toString('base64');
+    // Create HMAC-signed session token: base64(timestamp:hmac)
+    // The secret is never stored in the cookie — only the HMAC signature.
+    const timestamp = Date.now().toString();
+    const hmac = createHmac('sha256', getSessionToken()).update(timestamp).digest('hex');
+    const token = Buffer.from(`${timestamp}:${hmac}`).toString('base64');
 
     const response = NextResponse.json({ success: true });
     response.cookies.set('admin_session', token, {

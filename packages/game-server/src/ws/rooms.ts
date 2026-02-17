@@ -1,51 +1,56 @@
-// Chaos Creatures Game Server — Match Rooms
-// 2 players per room, message broadcasting
+// Chaos Creatures Game Server — Match Rooms (Supabase Realtime)
+// Manages Supabase Realtime channels for match communication.
+// Each match gets a single channel `match:<matchId>`.
+// Server broadcasts `game_event` to all players on the channel.
+// Server can also send targeted events to specific players via
+// `game_event_<playerId>` broadcast events.
 
-import type WebSocket from 'ws';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { ServerEvent } from '../types/messages';
 import type { PlayerSide } from '../types/enums';
 import { serializeServerEvent } from './protocol';
 
 interface RoomMember {
-  ws: WebSocket;
   playerId: string;
   side: PlayerSide;
 }
 
-/** Match room: contains connections for both players */
+/** Match room: the Realtime channel and registered players */
 interface MatchRoom {
   matchId: string;
+  channel: RealtimeChannel;
   members: Map<string, RoomMember>; // playerId -> RoomMember
+  subscribed: boolean;
 }
 
 const rooms = new Map<string, MatchRoom>();
 
 /**
- * Create a room for a match.
+ * Create a room for a match with a Supabase Realtime channel.
+ * The channel must already be subscribed before calling this.
  */
-export function createRoom(matchId: string): void {
+export function createRoom(matchId: string, channel: RealtimeChannel): void {
   rooms.set(matchId, {
     matchId,
+    channel,
     members: new Map(),
+    subscribed: true,
   });
 }
 
 /**
  * Join a player to a match room.
+ * No WebSocket needed — communication is via Supabase Realtime channel.
  */
 export function joinRoom(
   matchId: string,
   playerId: string,
-  side: PlayerSide,
-  ws: WebSocket
+  side: PlayerSide
 ): boolean {
-  let room = rooms.get(matchId);
-  if (!room) {
-    room = { matchId, members: new Map() };
-    rooms.set(matchId, room);
-  }
+  const room = rooms.get(matchId);
+  if (!room) return false;
 
-  room.members.set(playerId, { ws, playerId, side });
+  room.members.set(playerId, { playerId, side });
   return true;
 }
 
@@ -57,13 +62,20 @@ export function leaveRoom(matchId: string, playerId: string): void {
   if (!room) return;
   room.members.delete(playerId);
 
-  if (room.members.size === 0) {
-    rooms.delete(matchId);
-  }
+  // Don't auto-destroy the room when empty — the channel stays alive
+  // until the match ends (the server is the authority).
 }
 
 /**
  * Send an event to a specific player in a room.
+ * Uses a player-targeted broadcast event: `game_event_<playerId>`.
+ * The iOS client listens for both `game_event` (broadcast to all) and
+ * `game_event_<playerId>` (targeted to self).
+ *
+ * NOTE: On the iOS side, the client currently only listens for `game_event`.
+ * For player-targeted events, we embed a `target_player_id` field in the
+ * payload so the client can filter. We also broadcast on the shared
+ * `game_event` event name to ensure compatibility.
  */
 export function sendToPlayer(
   matchId: string,
@@ -71,16 +83,22 @@ export function sendToPlayer(
   event: ServerEvent
 ): void {
   const room = rooms.get(matchId);
-  if (!room) return;
+  if (!room || !room.subscribed) return;
 
-  const member = room.members.get(playerId);
-  if (!member || member.ws.readyState !== member.ws.OPEN) return;
+  const payload = JSON.parse(serializeServerEvent(event));
 
-  try {
-    member.ws.send(serializeServerEvent(event));
-  } catch (err) {
-    console.error(`Failed to send to player ${playerId}:`, err);
-  }
+  // Send as a targeted broadcast — include target_player_id so the iOS
+  // client can filter events meant only for it.
+  room.channel.send({
+    type: 'broadcast',
+    event: 'game_event',
+    payload: {
+      ...payload,
+      target_player_id: playerId,
+    },
+  }).catch((err: unknown) => {
+    console.error(`Failed to send to player ${playerId} in match ${matchId}:`, err);
+  });
 }
 
 /**
@@ -88,19 +106,17 @@ export function sendToPlayer(
  */
 export function broadcastToRoom(matchId: string, event: ServerEvent): void {
   const room = rooms.get(matchId);
-  if (!room) return;
+  if (!room || !room.subscribed) return;
 
-  const message = serializeServerEvent(event);
+  const payload = JSON.parse(serializeServerEvent(event));
 
-  for (const member of room.members.values()) {
-    if (member.ws.readyState === member.ws.OPEN) {
-      try {
-        member.ws.send(message);
-      } catch (err) {
-        console.error(`Failed to broadcast to player ${member.playerId}:`, err);
-      }
-    }
-  }
+  room.channel.send({
+    type: 'broadcast',
+    event: 'game_event',
+    payload,
+  }).catch((err: unknown) => {
+    console.error(`Failed to broadcast to match ${matchId}:`, err);
+  });
 }
 
 /**
@@ -112,20 +128,23 @@ export function broadcastToOthers(
   event: ServerEvent
 ): void {
   const room = rooms.get(matchId);
-  if (!room) return;
+  if (!room || !room.subscribed) return;
 
-  const message = serializeServerEvent(event);
+  const payload = JSON.parse(serializeServerEvent(event));
 
-  for (const member of room.members.values()) {
-    if (member.playerId === excludePlayerId) continue;
-    if (member.ws.readyState === member.ws.OPEN) {
-      try {
-        member.ws.send(message);
-      } catch (err) {
-        console.error(`Failed to broadcast to player ${member.playerId}:`, err);
-      }
-    }
-  }
+  // Send with an exclude marker so the client with this player_id can skip it.
+  // Since Supabase Realtime broadcast goes to all subscribers, we include
+  // an exclude field in the payload.
+  room.channel.send({
+    type: 'broadcast',
+    event: 'game_event',
+    payload: {
+      ...payload,
+      exclude_player_id: excludePlayerId,
+    },
+  }).catch((err: unknown) => {
+    console.error(`Failed to broadcast-to-others in match ${matchId}:`, err);
+  });
 }
 
 /**
@@ -137,19 +156,18 @@ export function getRoom(matchId: string): MatchRoom | undefined {
 
 /**
  * Destroy a room (match ended).
+ * Unsubscribes from the Supabase Realtime channel.
  */
 export function destroyRoom(matchId: string): void {
   const room = rooms.get(matchId);
   if (!room) return;
 
-  // Close all connections
-  for (const member of room.members.values()) {
-    try {
-      member.ws.close(1000, 'Match ended');
-    } catch {
-      // Ignore close errors
-    }
-  }
+  room.subscribed = false;
+
+  // Unsubscribe from the channel (async, fire and forget)
+  room.channel.unsubscribe().catch((err: unknown) => {
+    console.error(`Failed to unsubscribe channel for match ${matchId}:`, err);
+  });
 
   rooms.delete(matchId);
 }
@@ -165,16 +183,20 @@ export function getPlayerSide(matchId: string, playerId: string): PlayerSide | n
 }
 
 /**
- * Check if all players in a room are connected.
+ * Check if a player is registered in the room.
  */
-export function areAllPlayersConnected(matchId: string): boolean {
+export function isPlayerInRoom(matchId: string, playerId: string): boolean {
   const room = rooms.get(matchId);
   if (!room) return false;
-  if (room.members.size < 2) return false;
-  for (const member of room.members.values()) {
-    if (member.ws.readyState !== member.ws.OPEN) return false;
-  }
-  return true;
+  return room.members.has(playerId);
+}
+
+/**
+ * Get the Realtime channel for a match room.
+ */
+export function getRoomChannel(matchId: string): RealtimeChannel | null {
+  const room = rooms.get(matchId);
+  return room?.channel ?? null;
 }
 
 /**

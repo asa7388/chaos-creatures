@@ -103,26 +103,30 @@ serve(async (req: Request) => {
     }
   }
 
-  // Deduct dust atomically
-  const { data: deducted, error: dustError } = await supabase
-    .from("players")
-    .update({ chaos_dust: player.chaos_dust - cost })
-    .eq("id", auth.playerId)
-    .gte("chaos_dust", cost)
-    .select("id, chaos_dust")
-    .single();
-
-  if (dustError || !deducted) {
-    return errorResponse(ErrorCode.INSUFFICIENT_DUST, "Insufficient Chaos Dust (concurrent modification)");
-  }
-
-  // Record dust transaction
-  await supabase.rpc("add_chaos_dust", {
+  // Deduct dust atomically via RPC (handles both balance update and transaction log)
+  const { data: newBalance, error: dustError } = await supabase.rpc("add_chaos_dust", {
     p_player_id: auth.playerId,
     p_amount: -cost,
     p_source: "CARD_PACK",
     p_reference_id: faction_id,
   });
+
+  if (dustError || newBalance === null || newBalance === undefined) {
+    return errorResponse(ErrorCode.INSUFFICIENT_DUST, "Insufficient Chaos Dust (concurrent modification)");
+  }
+
+  // The add_chaos_dust RPC enforces the CHECK (chaos_dust >= 0) constraint on
+  // the players table, so if the balance would go negative the UPDATE fails.
+  if (newBalance < 0) {
+    // Shouldn't reach here due to CHECK constraint, but guard defensively
+    await supabase.rpc("add_chaos_dust", {
+      p_player_id: auth.playerId,
+      p_amount: cost,
+      p_source: "REFUND",
+      p_reference_id: "CARD_PACK_NEGATIVE_GUARD",
+    });
+    return errorResponse(ErrorCode.INSUFFICIENT_DUST, "Insufficient Chaos Dust");
+  }
 
   // If this is an other-faction unlock, add to unlocked_faction_ids
   if (!isOwnFaction && !isUnlocked) {

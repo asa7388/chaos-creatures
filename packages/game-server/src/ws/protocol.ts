@@ -1,11 +1,14 @@
-// Chaos Creatures Game Server — WebSocket Protocol
+// Chaos Creatures Game Server — Protocol
 // Message serialization/deserialization with Zod validation
+// Supports both envelope-based (legacy raw WS) and direct action parsing
+// (Supabase Realtime broadcast).
 
 import { z } from 'zod';
 import { ClientActionSchema, type ClientAction, type ServerEvent } from '../types/messages';
 
 /**
- * Parse and validate an incoming client message.
+ * Parse and validate an incoming client message (legacy envelope format).
+ * Used by the old raw WebSocket path.
  * Returns the validated action or throws with details.
  */
 export function parseClientMessage(raw: string): {
@@ -35,6 +38,20 @@ export function parseClientMessage(raw: string): {
     player_id: envelope.data.player_id,
     match_id: envelope.data.match_id,
   };
+}
+
+/**
+ * Parse and validate an action payload directly (no envelope).
+ * Used by the Supabase Realtime handler. The iOS client sends actions
+ * as flat objects: { type: "PLAY_CARD", card_id: "..." }
+ * The match_id comes from the channel name and player_id from the payload.
+ */
+export function parseAction(payload: Record<string, unknown>): ClientAction {
+  const actionResult = ClientActionSchema.safeParse(payload);
+  if (!actionResult.success) {
+    throw new ProtocolError('INVALID_ACTION', `Invalid action: ${actionResult.error.message}`);
+  }
+  return actionResult.data;
 }
 
 /**

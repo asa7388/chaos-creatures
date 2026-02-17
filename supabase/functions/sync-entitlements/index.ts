@@ -46,6 +46,34 @@ serve(async (req: Request) => {
 
   const supabase = createServiceClient();
 
+  // ── Receipt verification stub ──────────────────────────────────
+  // Validate transaction_id is a non-empty string
+  if (typeof transaction_id !== "string" || transaction_id.trim().length === 0) {
+    return errorResponse(ErrorCode.RECEIPT_INVALID, "transaction_id must be a non-empty string");
+  }
+
+  // Dedup check: ensure this transaction_id hasn't already been processed
+  const { data: existingTx } = await supabase
+    .from("admin_audit_log")
+    .select("id")
+    .eq("action", "SUBSCRIPTION_SYNC")
+    .contains("details", { transaction_id })
+    .limit(1);
+
+  if (existingTx && existingTx.length > 0) {
+    return errorResponse(ErrorCode.RECEIPT_INVALID, "transaction_id has already been processed (duplicate)");
+  }
+
+  // WARNING: Full JWS verification with Apple's App Store Server API is not yet
+  // implemented. This stub validates format and deduplicates, but does NOT
+  // cryptographically verify the transaction with Apple's certificates.
+  // TODO: Implement full server-side JWS verification before scaling.
+  // https://developer.apple.com/documentation/appstoreserverapi
+  console.warn(
+    `[sync-entitlements] Transaction ${transaction_id} accepted without full Apple JWS verification (TODO)`
+  );
+  // ── End receipt verification stub ─────────────────────────────
+
   // Determine subscription tier from product ID
   const tier = PRODUCT_TIER_MAP[product_id];
   if (!tier) {
@@ -53,19 +81,6 @@ serve(async (req: Request) => {
     // or an unknown product. For subscriptions, we require a known product.
     return errorResponse(ErrorCode.RECEIPT_INVALID, `Unknown product_id: ${product_id}`);
   }
-
-  // Verify with App Store Server API
-  // In production, this would call Apple's App Store Server API v2 to verify.
-  // For now, we trust the client-side StoreKit 2 verification (JWT-signed transactions).
-  // The transaction_id is a JWS-signed token from StoreKit 2 that can be verified
-  // using Apple's public key.
-  //
-  // TODO: Implement full server-side verification with App Store Server API
-  // https://developer.apple.com/documentation/appstoreserverapi
-  //
-  // For MVP, the auth JWT + client-side StoreKit 2 verification provides
-  // sufficient security. Server-side verification should be added before
-  // scaling to prevent receipt replay attacks.
 
   const maxDeckSlots = MAX_DECK_SLOTS[tier];
   const maxCardsPerFaction = MAX_CARDS_PER_FACTION[tier];
