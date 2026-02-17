@@ -216,6 +216,9 @@ export interface GameState {
   last_roll_event: EventType | null;
   last_roll_event_id: string | null;
 
+  // Pending event awaiting player choice (O2 Planar Ward, O5 Fortify)
+  pending_event_id?: string;
+
   // Turn timer
   turn_timer_started: string | null;
   turn_timer_seconds: number;

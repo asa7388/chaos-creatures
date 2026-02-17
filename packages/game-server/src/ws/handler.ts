@@ -25,6 +25,8 @@ import {
   resolveEndOfTurn,
   GameError,
 } from '../engine/turn';
+import { resolveEventWithTarget } from '../engine/events';
+import { SeededRNG } from '../engine/rng';
 import {
   onPlayerReconnect,
   resetMissedTurns,
@@ -271,11 +273,11 @@ function handleMessage(
       break;
 
     case 'MULLIGAN':
-      // Mulligan handling is done during GAME_SETUP
+      handleMulliganAction(state, matchId, playerId, side, action.keep);
       break;
 
     case 'CHOOSE_EVENT_TARGET':
-      // Event target choice is handled via event choice timer
+      handleChooseEventTarget(state, matchId, playerId, side, action.creature_id);
       break;
   }
 }
@@ -475,6 +477,94 @@ function handleReconnectAction(
     type: 'STATE_SNAPSHOT',
     state: snapshot,
   });
+}
+
+function handleMulliganAction(
+  state: GameState,
+  matchId: string,
+  playerId: string,
+  side: PlayerSide,
+  keep: boolean
+): void {
+  // Mulligan is only allowed during the opening draw before the first turn
+  if (state.current_turn > 0) {
+    throw new GameError('WRONG_PHASE', 'Mulligan only allowed before the first turn');
+  }
+
+  const player = side === 'PLAYER_1' ? state.player_1 : state.player_2;
+
+  if (keep) {
+    // Player keeps their hand — no action needed
+    sendToPlayer(matchId, playerId, {
+      type: 'MULLIGAN_RESULT',
+      kept: true,
+      new_hand: player.hand,
+    } as any);
+    return;
+  }
+
+  // Shuffle hand back into deck and draw the same number of cards
+  const handSize = player.hand.length;
+  player.deck.push(...player.hand);
+  player.hand = [];
+
+  // Shuffle the deck using the seeded RNG
+  const rng = SeededRNG.fromState(state.rng_seed, state.rng_counter);
+  for (let i = player.deck.length - 1; i > 0; i--) {
+    const j = rng.nextInt(0, i);
+    [player.deck[i], player.deck[j]] = [player.deck[j], player.deck[i]];
+  }
+  state.rng_counter = rng.getCounter();
+
+  // Draw the same number of cards
+  for (let i = 0; i < handSize && player.deck.length > 0; i++) {
+    player.hand.push(player.deck.shift()!);
+  }
+
+  // Send the new hand to the player
+  sendToPlayer(matchId, playerId, {
+    type: 'MULLIGAN_RESULT',
+    kept: false,
+    new_hand: player.hand,
+  } as any);
+}
+
+function handleChooseEventTarget(
+  state: GameState,
+  matchId: string,
+  playerId: string,
+  side: PlayerSide,
+  creatureId: string
+): void {
+  if (state.active_player !== side) {
+    throw new GameError('NOT_YOUR_TURN', 'Not your turn');
+  }
+
+  if (!state.pending_event_id) {
+    throw new GameError('NO_PENDING_EVENT', 'No event awaiting target choice');
+  }
+
+  const result = resolveEventWithTarget(state, state.pending_event_id, creatureId);
+
+  if (result) {
+    broadcastToRoom(matchId, {
+      type: 'EVENT_TRIGGERED',
+      event_id: result.event.id,
+      event_name: result.event.name,
+      event_type: result.event.event_type,
+      description: result.event.description,
+      effect_results: result.event_effect_results,
+      trigger_results: result.trigger_results,
+      requires_choice: false,
+      valid_targets: [],
+    });
+  }
+
+  // Check win condition after event resolution
+  if (state.winner) {
+    finishMatch(state, matchId, 'HP_ZERO');
+    return;
+  }
 }
 
 // --- Internal helpers ---

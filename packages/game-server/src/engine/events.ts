@@ -397,6 +397,97 @@ export function resolveEventPhase(
   };
 }
 
+/**
+ * Peek at which event would fire next without resolving it.
+ * Uses the same RNG logic as resolveEventPhase to determine the event,
+ * then advances the RNG counter so the same result isn't re-rolled.
+ */
+export function peekNextEvent(
+  state: GameState,
+  eventType: EventType
+): string | null {
+  const pool = getEventPool(eventType);
+  const rng = SeededRNG.fromState(state.rng_seed, state.rng_counter);
+  const eventIndex = rng.nextInt(0, EVENT_POOL_SIZE - 1);
+  state.rng_counter = rng.getCounter();
+
+  const selectedEvent = pool[eventIndex];
+  state.last_roll_event_id = selectedEvent.id;
+  return selectedEvent.id;
+}
+
+/**
+ * Resolve a pending event that required player choice.
+ * The player has chosen a target creature — apply the event's effect to that target.
+ */
+export function resolveEventWithTarget(
+  state: GameState,
+  eventId: string,
+  targetCreatureId: string
+): EventResolutionResult | null {
+  const eventDef = getEventById(eventId);
+  if (!eventDef) return null;
+
+  state.phase = 'EVENT_RESOLUTION';
+  const activePlayer = getActivePlayer(state);
+
+  // Find the chosen target creature on the active player's board
+  const targetCreature = activePlayer.board.find(
+    c => c && c.is_alive && c.instance_id === targetCreatureId
+  );
+  if (!targetCreature) return null;
+
+  // Resolve the event's effect with the specific target
+  const effectResults = resolveEffect(state, eventDef.effect, activePlayer, undefined, targetCreature);
+
+  // If O5 Fortify has secondary_effect, apply it to the same target
+  if (eventDef.effect.secondary_effect) {
+    const secondaryResults = resolveEffect(
+      state, eventDef.effect.secondary_effect, activePlayer, undefined, targetCreature
+    );
+    effectResults.push(...secondaryResults);
+  }
+
+  // Fire triggered abilities (ON_ORDER or ON_CHAOS)
+  const triggerType = eventDef.event_type === 'ORDER' ? 'ON_ORDER' as const : 'ON_CHAOS' as const;
+  const triggerResults: TriggerResult[] = [];
+
+  for (let slot = 0; slot < 5; slot++) {
+    const creature = activePlayer.board[slot];
+    if (!creature || !creature.is_alive) continue;
+
+    const abilityResults = resolveTriggeredAbilities(state, creature, triggerType, activePlayer);
+    if (abilityResults.length > 0) {
+      triggerResults.push({
+        creature_id: creature.instance_id,
+        ability_name: creature.triggered_abilities
+          .filter(a => a.trigger === triggerType)
+          .map(a => a.name)
+          .join(', '),
+        effect_results: abilityResults,
+      });
+    }
+  }
+
+  // Process deaths
+  processDeaths(state, activePlayer);
+  const opponent = getDefendingPlayer(state);
+  processDeaths(state, opponent);
+
+  // Recalculate instability
+  recalculateInstability(activePlayer);
+  recalculateInstability(opponent);
+
+  // Clear pending event
+  state.pending_event_id = undefined;
+
+  return {
+    event: eventDef,
+    event_effect_results: effectResults,
+    trigger_results: triggerResults,
+  };
+}
+
 /** Does the event require a player choice for targeting? */
 export function eventRequiresChoice(eventId: string): boolean {
   // O2 (Planar Ward) and O5 (Fortify) require player choice

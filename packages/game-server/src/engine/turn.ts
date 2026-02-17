@@ -30,7 +30,7 @@ import {
   resolveEffect,
   applyDamageToCreature,
 } from './effects';
-import { resolveEventPhase, eventRequiresChoice, getValidEventTargets } from './events';
+import { resolveEventPhase, eventRequiresChoice, getValidEventTargets, getEventById, peekNextEvent, resolveEventWithTarget } from './events';
 import { resolveCombat, validateDeclareAttackers, validateBlockerAssignments } from './combat';
 
 // ─── Helpers ─────────────
@@ -454,14 +454,27 @@ export function executeAutomaticPhases(state: GameState): {
   let validEventTargets: string[] = [];
 
   if (chaosRoll.result !== 'NOTHING') {
-    // Check if event needs player choice before resolving
-    // For events that require choice (O2, O5), we'll need to pause
-    // and wait for player input. For now, auto-resolve.
-    event = resolveEventResolution(state);
+    // Determine which event would fire (select but don't resolve yet for choice events)
+    const pendingEventId = peekNextEvent(state, chaosRoll.result);
 
-    if (event && eventRequiresChoice(event.event.id)) {
+    if (pendingEventId && eventRequiresChoice(pendingEventId)) {
+      // This event needs player choice — DON'T resolve it yet.
+      // Store the selected event ID so it can be resolved later via CHOOSE_EVENT_TARGET.
       requiresEventChoice = true;
-      validEventTargets = getValidEventTargets(state, event.event.id);
+      validEventTargets = getValidEventTargets(state, pendingEventId);
+      state.pending_event_id = pendingEventId;
+      // Create a partial result so the client knows which event was selected
+      const eventDef = getEventById(pendingEventId);
+      if (eventDef) {
+        event = {
+          event: eventDef,
+          event_effect_results: [],
+          trigger_results: [],
+        };
+      }
+    } else {
+      // Auto-resolve events that don't need player choice
+      event = resolveEventResolution(state);
     }
   }
 
