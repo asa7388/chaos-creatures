@@ -139,7 +139,7 @@ struct BattleContainerView: View {
         }
 
         // Connect to the match channel
-        await matchService.connect(matchId: matchId, playerId: playerId)
+        try? await matchService.connect(matchId: matchId, playerId: playerId)
 
         // Wire BattleScene delegate for player actions
         let bridge = ActionBridge(matchService: matchService, matchId: matchId, playerId: playerId)
@@ -182,7 +182,8 @@ struct BattleContainerView: View {
 
 /// Bridges BattleScene delegate actions to MatchService.
 /// BattleScene sends PlayerAction, this bridge forwards to the server.
-private class ActionBridge: BattleSceneDelegate {
+@MainActor
+private class ActionBridge: @preconcurrency BattleSceneDelegate {
     let matchService: MatchService
     let matchId: String
     let playerId: UUID
@@ -197,7 +198,6 @@ private class ActionBridge: BattleSceneDelegate {
         // Hand card selection is handled by BattleViewModel directly
     }
 
-    @MainActor
     func battleScene(_ scene: BattleScene, didRequestAction action: PlayerAction) {
         Task {
             await matchService.sendAction(action)

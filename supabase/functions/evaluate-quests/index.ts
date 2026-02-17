@@ -11,7 +11,7 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import { verifyServiceRole } from "../_shared/auth.ts";
-import { errorResponse, handleCors, corsHeaders, ErrorCode } from "../_shared/errors.ts";
+import { errorResponse, handleCors, getCorsHeaders, ErrorCode } from "../_shared/errors.ts";
 import { SUBSCRIPTION_QUEST_MULTIPLIER, SubscriptionTier } from "../_shared/types.ts";
 
 interface MatchData {
@@ -155,7 +155,7 @@ serve(async (req: Request) => {
         updated: updatedMissions,
       },
     }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   );
 });
 

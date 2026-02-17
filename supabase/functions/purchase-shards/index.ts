@@ -7,7 +7,7 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import { getAuthContext, isAuthError } from "../_shared/auth.ts";
-import { errorResponse, handleCors, corsHeaders, ErrorCode } from "../_shared/errors.ts";
+import { errorResponse, handleCors, getCorsHeaders, ErrorCode } from "../_shared/errors.ts";
 import { SHARD_DUST_COSTS, SHARD_COLUMN, ShardTier } from "../_shared/types.ts";
 
 const VALID_SHARD_TIERS = new Set<string>(["UNCOMMON", "RARE", "EPIC", "LEGENDARY"]);
@@ -115,7 +115,7 @@ serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({ data: { shard_tier: tier, dust_spent: cost } }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 
@@ -129,6 +129,6 @@ serve(async (req: Request) => {
 
   return new Response(
     JSON.stringify({ data: { shard_tier: tier, dust_spent: cost } }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   );
 });

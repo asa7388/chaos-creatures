@@ -82,7 +82,7 @@ final class MatchmakingService {
             guard let playerId = await supabase.currentUserID else {
                 throw MatchmakingError.notAuthenticated
             }
-            await subscribeToMatchFound(playerId: playerId)
+            try await subscribeToMatchFound(playerId: playerId)
 
             // Start search timer
             startSearchTimer()
@@ -144,12 +144,12 @@ final class MatchmakingService {
     // MARK: - Realtime Subscription
 
     /// Subscribe to MATCH_FOUND broadcast on the player-specific matchmaking channel
-    private func subscribeToMatchFound(playerId: UUID) async {
+    private func subscribeToMatchFound(playerId: UUID) async throws {
         let channel = supabase.client.realtimeV2.channel("matchmaking:\(playerId.uuidString)")
 
         let broadcastStream = channel.broadcastStream(event: "MATCH_FOUND")
 
-        await channel.subscribe()
+        try await channel.subscribeWithError()
 
         self.queueChannel = channel
 

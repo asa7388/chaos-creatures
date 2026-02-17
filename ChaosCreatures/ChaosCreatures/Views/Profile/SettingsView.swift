@@ -137,7 +137,7 @@ struct SettingsView: View {
             struct ExportResponse: Decodable {
                 let url: String
             }
-            let response: ExportResponse = try await SupabaseService.shared.callFunction("player/export-data")
+            let _: ExportResponse = try await SupabaseService.shared.callFunction("player/export-data")
             // In production, present ShareLink with the URL
             appState.showToast("Data export ready!", type: .success)
         } catch {

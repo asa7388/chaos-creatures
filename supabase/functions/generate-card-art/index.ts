@@ -19,7 +19,7 @@
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { createServiceClient } from '../_shared/supabase.ts';
 import { verifyServiceRole } from '../_shared/auth.ts';
-import { errorResponse, successResponse, handleCors, ErrorCode, corsHeaders } from '../_shared/errors.ts';
+import { errorResponse, successResponse, handleCors, ErrorCode, getCorsHeaders } from '../_shared/errors.ts';
 import {
   buildArtPrompt,
   STYLE_ANCHOR,

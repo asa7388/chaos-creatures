@@ -80,6 +80,8 @@ export function successResponse<T>(data: T, status: number = 200): Response {
 
 /**
  * CORS headers for all Edge Functions.
+ * @deprecated Use getCorsHeaders(req) for dynamic origin checking.
+ * Kept for backward compatibility.
  */
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,11 +89,37 @@ export const corsHeaders = {
 };
 
 /**
+ * Allowed CORS origins for the admin dashboard.
+ * The iOS app uses native HTTP (URLSession) and is not subject to CORS.
+ * Only the admin dashboard (web) needs CORS headers.
+ */
+const ALLOWED_ORIGINS = [
+  "https://admin.chaoscreatures.com",
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+
+/**
+ * Return CORS headers with a dynamic origin check.
+ * Only allows requests from known admin dashboard origins.
+ */
+export function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin") ?? "";
+  const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : "";
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
+  };
+}
+
+/**
  * Handle OPTIONS preflight requests.
+ * Uses dynamic CORS origin checking.
  */
 export function handleCors(req: Request): Response | null {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: getCorsHeaders(req) });
   }
   return null;
 }

@@ -6,7 +6,7 @@
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { getAuthContext, isAuthError } from "../_shared/auth.ts";
-import { errorResponse, handleCors, corsHeaders, ErrorCode } from "../_shared/errors.ts";
+import { errorResponse, handleCors, getCorsHeaders, ErrorCode } from "../_shared/errors.ts";
 
 serve(async (req: Request) => {
   const corsResp = handleCors(req);
@@ -43,6 +43,6 @@ serve(async (req: Request) => {
 
   return new Response(
     JSON.stringify(result),
-    { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    { status: response.status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   );
 });

@@ -35,7 +35,7 @@ struct ContentView: View {
                 CollectionView()
                     .navigationDestination(for: CollectionDestination.self) { destination in
                         switch destination {
-                        case .cardDetail(let id):
+                        case .cardDetail:
                             CardDetailView()
                         case .settings:
                             SettingsView()

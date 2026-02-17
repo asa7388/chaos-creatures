@@ -36,7 +36,7 @@ final class MatchService {
     // MARK: - Connection
 
     /// Connect to a match channel
-    func connect(matchId: String, playerId: UUID) async {
+    func connect(matchId: String, playerId: UUID) async throws {
         // Disconnect from any existing match
         await disconnect()
 
@@ -47,7 +47,7 @@ final class MatchService {
         // Listen for broadcast messages (game events from server)
         let events = channel.broadcastStream(event: "game_event")
 
-        await channel.subscribe()
+        try await channel.subscribeWithError()
         matchChannel = channel
         isConnected = true
         connectionError = nil

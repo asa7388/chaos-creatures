@@ -48,7 +48,7 @@ final class StoreKitService {
 
     // MARK: - Private
 
-    nonisolated(unsafe) private var transactionListener: Task<Void, Error>?
+    private var transactionListener: Task<Void, Error>?
 
     private init() {
         // Start listening for transactions on init
@@ -56,7 +56,9 @@ final class StoreKitService {
     }
 
     deinit {
-        transactionListener?.cancel()
+        MainActor.assumeIsolated {
+            transactionListener?.cancel()
+        }
     }
 
     // MARK: - Product Loading
@@ -168,7 +170,14 @@ final class StoreKitService {
 
     // MARK: - Backend Sync
 
-    /// Sync subscription status with Supabase backend via sync-entitlements Edge Function
+    /// Sync subscription status with Supabase backend via sync-entitlements Edge Function.
+    ///
+    /// NOTE (C-10): The sync-entitlements response contains `{ subscription_tier, max_deck_slots,
+    /// max_cards_per_faction }`, but we intentionally discard it. The client derives its tier from
+    /// the StoreKit `currentEntitlements` via `updateSubscriptionStatus()`, which is called before
+    /// this sync. The product-to-tier mapping in `currentTier` (ProductID -> SubscriptionTier)
+    /// mirrors the server-side mapping, so they are guaranteed to agree. If the mappings ever
+    /// diverge, this function should be updated to decode the response and reconcile.
     private func syncSubscriptionWithBackend(_ transaction: StoreKit.Transaction) async {
         struct EntitlementSync: Encodable {
             let transactionId: String

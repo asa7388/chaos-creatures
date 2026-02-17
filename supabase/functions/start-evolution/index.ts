@@ -8,7 +8,7 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import { getAuthContext, isAuthError } from "../_shared/auth.ts";
-import { errorResponse, handleCors, corsHeaders, ErrorCode } from "../_shared/errors.ts";
+import { errorResponse, handleCors, getCorsHeaders, ErrorCode } from "../_shared/errors.ts";
 import {
   NEXT_TIER,
   EVOLUTION_ENERGY_THRESHOLDS,
@@ -119,10 +119,15 @@ serve(async (req: Request) => {
 
   // 6. Generate modifier options (select from modifier_definitions pool)
   // 70/30 rule: 70% chance of stat modifier, 30% chance of keyword modifier
+  // S-11: Validate faction_id is a valid UUID before interpolation
+  const factionId = card.card_templates.faction_id;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(factionId)) {
+    return errorResponse(ErrorCode.INTERNAL_ERROR, "Invalid faction ID in card template", 500);
+  }
   const { data: modifiers, error: modError } = await supabase
     .from("modifier_definitions")
     .select("*")
-    .or(`pool_type.eq.UNIVERSAL,faction_id.eq.${card.card_templates.faction_id}`)
+    .or(`pool_type.eq.UNIVERSAL,faction_id.eq.${factionId}`)
     .limit(20);
 
   // Select 2-4 modifier options based on subscription tier
@@ -211,7 +216,7 @@ serve(async (req: Request) => {
         text_job_id: textJob?.id,
       },
     }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   );
 });
 

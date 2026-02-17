@@ -5,7 +5,7 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createServiceClient } from "../_shared/supabase.ts";
 import { getAuthContext, isAuthError } from "../_shared/auth.ts";
-import { errorResponse, successResponse, handleCors, corsHeaders, ErrorCode } from "../_shared/errors.ts";
+import { errorResponse, successResponse, handleCors, getCorsHeaders, ErrorCode } from "../_shared/errors.ts";
 
 serve(async (req: Request) => {
   const corsResp = handleCors(req);
@@ -93,6 +93,6 @@ serve(async (req: Request) => {
 
   return new Response(
     JSON.stringify({ data: { cards: cards || [], total: count || 0, page } }),
-    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   );
 });

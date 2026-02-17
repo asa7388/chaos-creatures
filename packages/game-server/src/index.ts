@@ -39,8 +39,16 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
   next();
 }
 
-// Health check endpoint (used by Railway)
+// Health check endpoint (used by Railway) — public, minimal info only
 app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Apply admin auth to all /api/admin routes
+app.use('/api/admin', requireAdminAuth);
+
+// Detailed health/metrics endpoint — admin-only (S-09)
+app.get('/api/admin/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -49,9 +57,6 @@ app.get('/health', (_req, res) => {
     uptime: process.uptime(),
   });
 });
-
-// Apply admin auth to all /api/admin routes
-app.use('/api/admin', requireAdminAuth);
 
 // ---------------------------------------------------------------------------
 // Admin API: validate card template balance (REQ-165)
@@ -314,6 +319,7 @@ if (config.NODE_ENV !== 'test') {
       // Broadcast MATCH_FOUND to both players via Supabase Realtime
       // Each player listens on their own matchmaking:<playerId> channel.
       // We must subscribe before sending, then unsubscribe after.
+      // TODO: S-10 — Consider adding a secret token component to channel names to prevent eavesdropping
       await Promise.all([
         broadcastMatchFound(supabase, p1.player_id, matchId),
         broadcastMatchFound(supabase, p2.player_id, matchId),
