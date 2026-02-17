@@ -38,6 +38,8 @@ final class BattleViewModel: ObservableObject {
     @Published var isAnimating: Bool = false
     @Published var showGraveyard: Bool = false
     @Published var isConnected: Bool = true
+    @Published var connectionQuality: ConnectionQuality = .good
+    private var lastServerEventTime: Date = .now
 
     @Published var selectedHandCardId: String?
 
@@ -124,6 +126,13 @@ final class BattleViewModel: ObservableObject {
 
     /// Called by MatchService when a server event arrives
     func handleServerEvent(_ event: ServerEvent) {
+        // S-64: Track last event time for connection quality indicator
+        lastServerEventTime = .now
+        if !isConnected {
+            isConnected = true
+        }
+        connectionQuality = .good
+
         stateMachine.handleServerEvent(event)
 
         // S-16: Handle timer events
@@ -279,6 +288,38 @@ final class BattleViewModel: ObservableObject {
         turnTimerActive = false
     }
 
+    // MARK: - S-64: Connection Quality Monitor
+
+    private var connectionMonitorTask: Task<Void, Never>?
+
+    func startConnectionMonitor() {
+        connectionMonitorTask?.cancel()
+        connectionMonitorTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+                guard let self, !Task.isCancelled else { return }
+
+                if !self.isConnected {
+                    self.connectionQuality = .disconnected
+                } else {
+                    let elapsed = Date().timeIntervalSince(self.lastServerEventTime)
+                    if elapsed < 10 {
+                        self.connectionQuality = .good
+                    } else if elapsed < 20 {
+                        self.connectionQuality = .degraded
+                    } else {
+                        self.connectionQuality = .poor
+                    }
+                }
+            }
+        }
+    }
+
+    func stopConnectionMonitor() {
+        connectionMonitorTask?.cancel()
+        connectionMonitorTask = nil
+    }
+
     // MARK: - S-32: Battle Log
 
     private func addLogEntry(type: BattleLogEntryType, message: String) {
@@ -327,6 +368,33 @@ final class BattleViewModel: ObservableObject {
         case .declareAttackers: confirmAttackers()
         case .assignBlockers: confirmBlockers()
         default: break
+        }
+    }
+}
+
+// MARK: - Connection Quality (S-64)
+
+enum ConnectionQuality {
+    case good       // Recent events received within 10s
+    case degraded   // No events for 10-20s
+    case poor       // No events for 20s+
+    case disconnected
+
+    var iconName: String {
+        switch self {
+        case .good: return "wifi"
+        case .degraded: return "wifi.exclamationmark"
+        case .poor: return "wifi.slash"
+        case .disconnected: return "wifi.slash"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .good: return "green"
+        case .degraded: return "yellow"
+        case .poor: return "red"
+        case .disconnected: return "gray"
         }
     }
 }

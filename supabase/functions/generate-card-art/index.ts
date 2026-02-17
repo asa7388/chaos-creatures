@@ -95,7 +95,8 @@ async function callFal(body: Record<string, unknown>): Promise<FalAiResponse> {
 }
 
 // =============================================================================
-// R2 Upload (S3-compatible, inline for Edge Function)
+// R2 Upload (S3-compatible via AWS Signature V4 with Authorization header)
+// Matches the working pattern from generate-evolution-art and batch-generate.
 // =============================================================================
 
 async function uploadToR2(imageBuffer: Uint8Array, key: string): Promise<string> {
@@ -109,34 +110,39 @@ async function uploadToR2(imageBuffer: Uint8Array, key: string): Promise<string>
     throw new Error('Missing R2 environment variables');
   }
 
-  // Use S3 PutObject via signed request
-  const endpoint = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`;
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const url = `https://${host}/${bucketName}/${key}`;
   const now = new Date();
   const dateStr = now.toISOString().replace(/[:-]/g, '').split('.')[0] + 'Z';
   const dateOnly = dateStr.substring(0, 8);
+  const region = 'auto';
+  const service = 's3';
+  const credentialScope = `${dateOnly}/${region}/${service}/aws4_request`;
 
-  // For Edge Functions, we use a simplified approach: call the game server's R2 upload endpoint
-  // In production, the game server handles R2 uploads. The Edge Function sends the image data
-  // to an internal endpoint. For now, we use the Supabase Storage as intermediary.
-  //
-  // Alternative: Use the AWS Signature V4 directly. Since Deno supports crypto.subtle,
-  // we implement minimal S3 signing here.
+  const canonicalUri = `/${bucketName}/${key}`;
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+  const payloadHash = 'UNSIGNED-PAYLOAD';
 
-  const { signedUrl } = await generateS3SignedUrl(
-    'PUT',
-    bucketName,
-    key,
-    accountId,
-    accessKeyId,
-    secretAccessKey,
-    now
-  );
+  const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${dateStr}\n`;
 
-  const uploadResponse = await fetch(signedUrl, {
+  const canonicalRequest = `PUT\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+
+  const stringToSign = `AWS4-HMAC-SHA256\n${dateStr}\n${credentialScope}\n${await sha256Hex(canonicalRequest)}`;
+
+  const signingKey = await getSigningKey(secretAccessKey, dateOnly, region, service);
+  const signature = await hmacHex(signingKey, stringToSign);
+
+  const authorization = `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  const uploadResponse = await fetch(url, {
     method: 'PUT',
     headers: {
+      'Authorization': authorization,
       'Content-Type': 'image/webp',
       'Cache-Control': 'public, max-age=31536000, immutable',
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': dateStr,
+      'Host': host,
     },
     body: imageBuffer,
   });
@@ -147,65 +153,6 @@ async function uploadToR2(imageBuffer: Uint8Array, key: string): Promise<string>
   }
 
   return `${publicUrl.replace(/\/$/, '')}/${key}`;
-}
-
-// Minimal AWS Signature V4 for R2
-async function generateS3SignedUrl(
-  method: string,
-  bucket: string,
-  key: string,
-  accountId: string,
-  accessKeyId: string,
-  secretAccessKey: string,
-  now: Date
-): Promise<{ signedUrl: string }> {
-  const region = 'auto';
-  const service = 's3';
-  const host = `${accountId}.r2.cloudflarestorage.com`;
-  const dateStr = now.toISOString().replace(/[:-]/g, '').split('.')[0] + 'Z';
-  const dateOnly = dateStr.substring(0, 8);
-  const credentialScope = `${dateOnly}/${region}/${service}/aws4_request`;
-  const credential = `${accessKeyId}/${credentialScope}`;
-
-  const canonicalUri = `/${bucket}/${key}`;
-  const canonicalQueryString = '';
-  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
-  const payloadHash = 'UNSIGNED-PAYLOAD';
-
-  const canonicalHeaders = [
-    `host:${host}`,
-    `x-amz-content-sha256:${payloadHash}`,
-    `x-amz-date:${dateStr}`,
-  ].join('\n') + '\n';
-
-  const canonicalRequest = [
-    method,
-    canonicalUri,
-    canonicalQueryString,
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join('\n');
-
-  const stringToSign = [
-    'AWS4-HMAC-SHA256',
-    dateStr,
-    credentialScope,
-    await sha256Hex(canonicalRequest),
-  ].join('\n');
-
-  const signingKey = await getSigningKey(secretAccessKey, dateOnly, region, service);
-  const signature = await hmacHex(signingKey, stringToSign);
-
-  const authorization = `AWS4-HMAC-SHA256 Credential=${credential}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-  // Build the signed URL with headers approach (non-presigned)
-  const signedUrl = `https://${host}${canonicalUri}`;
-
-  // We return the URL plus the headers that need to be set
-  // Actually, for a PUT request, we need to set headers. Let's use a different approach.
-  // Return a fetch-ready URL with all needed headers.
-  return { signedUrl: `https://${host}${canonicalUri}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(credential)}&X-Amz-Date=${dateStr}&X-Amz-SignedHeaders=${signedHeaders}&X-Amz-Signature=${signature}` };
 }
 
 async function sha256Hex(data: string): Promise<string> {

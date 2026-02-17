@@ -305,8 +305,8 @@ serve(async (req: Request) => {
     };
     const targetTier = TIER_MAP[body.from_tier] || 'unknown';
 
-    // Upload to R2
-    const r2Key = `cards/${body.faction_id.toLowerCase()}/${(body.rarity || 'common').toLowerCase()}/${body.card_instance_id}_${targetTier}_evo${body.evolution_number}.webp`;
+    // Upload to R2 — evolution art uses a separate path: evolution/{player_id}/{card_instance_id}/step-{n}.webp
+    const r2Key = `evolution/${body.player_id}/${body.card_instance_id}/step-${body.evolution_number}.webp`;
     const publicUrl = await uploadToR2(imageBuffer, r2Key);
 
     // Update job status

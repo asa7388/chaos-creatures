@@ -57,9 +57,13 @@ struct BattleContainerView: View {
                         .padding(.top, 4)
                     }
 
-                    // S-32: Battle log toggle button
+                    // S-32: Battle log toggle + S-64: Connection quality indicator
                     HStack {
+                        // S-64: Connection quality indicator
+                        ConnectionQualityIndicator(quality: viewModel.connectionQuality)
+
                         Spacer()
+
                         Button(action: { showBattleLog.toggle() }) {
                             Image(systemName: "text.bubble.fill")
                                 .font(.system(size: 14))
@@ -150,11 +154,14 @@ struct BattleContainerView: View {
             await connectToMatch()
             // S-15: Start tutorial for first practice match
             tutorialManager.startIfNeeded(isPracticeMode: router.selectedGameMode == .practice)
+            // S-64: Start connection quality monitoring
+            viewModel.startConnectionMonitor()
         }
         .onDisappear {
             Task {
                 await matchService.disconnect()
             }
+            viewModel.stopConnectionMonitor()
         }
         .alert("Surrender?", isPresented: $showSurrenderConfirm) {
             Button("Surrender", role: .destructive) {
@@ -763,6 +770,39 @@ struct BattleLogSheetView: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - S-64: Connection Quality Indicator
+
+struct ConnectionQualityIndicator: View {
+    let quality: ConnectionQuality
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: quality.iconName)
+                .font(.system(size: 12))
+                .foregroundColor(indicatorColor)
+
+            if quality == .poor || quality == .disconnected {
+                Text(quality == .disconnected ? "Offline" : "Weak")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(indicatorColor)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .background(Color.bgPrimary.opacity(0.7))
+        .cornerRadius(6)
+    }
+
+    private var indicatorColor: Color {
+        switch quality {
+        case .good: return .green
+        case .degraded: return .yellow
+        case .poor: return .red
+        case .disconnected: return .gray
+        }
     }
 }
 

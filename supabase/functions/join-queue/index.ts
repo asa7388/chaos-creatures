@@ -36,15 +36,37 @@ serve(async (req: Request) => {
 
   const supabase = createServiceClient();
 
-  // Check if already in queue
+  // Rate limit: prevent rapid re-queuing (max once per 5 seconds)
+  const QUEUE_COOLDOWN_SECONDS = 5;
   const { data: existingEntry } = await supabase
     .from("matchmaking_queue")
-    .select("id")
+    .select("id, queued_at")
     .eq("player_id", auth.playerId)
     .single();
 
   if (existingEntry) {
     return errorResponse(ErrorCode.ALREADY_IN_QUEUE, "Already in matchmaking queue");
+  }
+
+  // Check recent queue activity to prevent spam re-queuing after leave
+  const { data: recentMatch } = await supabase
+    .from("admin_audit_log")
+    .select("created_at")
+    .eq("action", "QUEUE_JOIN")
+    .eq("target_id", auth.playerId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (recentMatch) {
+    const lastJoinTime = new Date(recentMatch.created_at).getTime();
+    const now = Date.now();
+    if (now - lastJoinTime < QUEUE_COOLDOWN_SECONDS * 1000) {
+      return errorResponse(
+        ErrorCode.RATE_LIMITED,
+        `Please wait ${QUEUE_COOLDOWN_SECONDS} seconds before re-queuing`
+      );
+    }
   }
 
   // Validate the deck
@@ -101,6 +123,15 @@ serve(async (req: Request) => {
     console.error("join-queue error:", queueError);
     return errorResponse(ErrorCode.INTERNAL_ERROR, "Failed to join queue", 500);
   }
+
+  // Log queue join for rate-limiting and analytics
+  await supabase.from("admin_audit_log").insert({
+    admin_user: "SYSTEM",
+    action: "QUEUE_JOIN",
+    target_type: "player",
+    target_id: auth.playerId,
+    details: { mode: gameMode, deck_id: deck.id },
+  }).then(() => {}, (err: unknown) => console.warn("Audit log insert failed:", err));
 
   // Estimate wait time based on current queue size
   const { count: queueSize } = await supabase
