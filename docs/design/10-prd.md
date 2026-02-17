@@ -385,6 +385,7 @@ Total build-to-launch budget: **$300 maximum**.
 | REQ-176 | Rank floors shall prevent demotion below key thresholds. | Floors at: Silver 3, Gold 3, Platinum 3, Diamond 3. Once a player reaches a floor rank for the first time in the current season, `players.season_rank_floor` is set. The rank-loss calculation must check: if `new_rank < season_rank_floor`, set `new_rank = season_rank_floor` instead. Master and Grandmaster have no floor (leaderboard-based). |
 | REQ-177 | Season reset shall demote all players by approximately one tier. | At season end (Monday 00:00 UTC), a scheduled Supabase Edge Function applies: Master/Grandmaster to Diamond 1, Diamond to Platinum 3, Platinum to Gold 3, Gold to Silver 3, Silver to Bronze 3, Bronze stays Bronze 3. `season_rank_floor` reset to null. `season_rank_points` reset to 0. |
 | REQ-178 | End-of-season rewards shall be distributed based on peak rank achieved. | Peak rank tracked in `players.peak_rank` column (updated on each promotion, never decremented). Rewards by final season rank: Bronze 100 Dust + 2 Uncommon Shards, Silver 200 Dust + 3 Uncommon + 1 Rare Shard, Gold 400 Dust + 2 Rare + 1 Epic Shard, Platinum 600 Dust + 2 Epic + 1 Legendary Shard, Diamond 800 Dust + 1 Epic + 2 Legendary Shards + exclusive card back, Master 1000 Dust + 3 Legendary Shards + Master card back + title, Grandmaster 1500 Dust + 5 Legendary Shards + GM card back + exclusive title + top 100 icon. Distributed by the same season-end Edge Function that handles rank reset. Rewards claimable via SwiftUI sheet on first app open after season end; expire after 7 days. |
+| REQ-191 | Faction mastery shall track per-faction XP and unlock cosmetics at milestone levels. | +10 mastery XP per game played with faction, +5 bonus on win. Linear curve: 100 XP per level, max level 10. Unlocks: level 3 faction card back, level 5 faction avatar (per `02-card-data-model.md` `FACTION_MASTERY(level)` unlock), level 7 faction battlefield skin, level 10 faction title. XP granted server-side at match completion. Fields: `mastery_level`, `mastery_xp`, `games_played` in player-faction junction. Level-up check: `mastery_xp >= mastery_level * 100`. |
 
 ### 4.12 Admin Dashboard
 
@@ -402,6 +403,10 @@ Total build-to-launch budget: **$300 maximum**.
 | REQ-184 | Active match data shall be viewable via the built-in Supabase Dashboard table explorer. No custom admin UI required. | Owner uses Supabase Dashboard to view the `active_matches` table, which shows match ID, player names, turn number, duration, and status. Game state snapshots viewable via the `match_snapshots` table. Supabase Dashboard provides real-time table refresh and search. |
 | REQ-185 | Admin Dashboard shall embed PostHog dashboards. | Iframe embed of PostHog project dashboard for DAU, retention, economy health, and match metrics. PostHog project API key configured as Railway environment variable. |
 | REQ-186 | Admin Dashboard shall provide a season management interface. | Create new season (name, start date, end date, battle pass tier count). Activate/deactivate seasons. View current season stats (player count, battle pass purchases, rank distribution). |
+| REQ-187 | Achievement progress shall be evaluated server-side at match completion and evolution completion. | Railway game server calls `evaluate-achievements` Edge Function after match resolution and after evolution resolution. Edge Function checks all achievement conditions against `player_achievements` table. No client-side achievement logic. |
+| REQ-188 | Achievement rewards shall be granted automatically on unlock with no claim button. | On unlock: insert `player_achievements` row, grant reward (Chaos Dust or Evolution Shards) via atomic transaction, send push notification (APNs), display in-app toast on next client sync. One-time `granted` flag prevents double-grant. |
+| REQ-189 | Achievement evaluation shall be idempotent and support retroactive checks. | `check-missed-achievements` Edge Function runs on login. Evaluates all incomplete achievements against current player state. Safe to re-run — already-granted achievements skipped via `granted` flag. |
+| REQ-190 | Achievement seed data shall be included in Supabase migrations. | All achievement definitions from `00-game-design-master.md` Section 10 (20+ rows) seeded in `achievements` table via migration file. Categories: Collection, Battle, Evolution, Economy, Social. |
 
 ---
 
@@ -852,7 +857,7 @@ Full event table with event names, trigger conditions, and required properties i
 | REQ-162 | Economy test suite shall validate all currency operations are transactionally safe. | Double-spend prevention under concurrent requests. Shard deduction atomic with evolution. Dust deduction atomic with pack opening. Negative balance prevention. Automated tests using parallel requests to Edge Functions. |
 | REQ-163 | Reconnection shall restore full game state within 3 seconds. | Player reconnects to Supabase Realtime channel (via Supabase Swift SDK), receives `match:state` snapshot, rebuilds board in SpriteKit, resumes play. Timer continues from where it was. Opponent sees "Opponent reconnected." |
 | REQ-164 | Deck validation shall reject all invalid configurations. | Test: 19 cards, 21 cards, mixed factions, 3 copies of a template, 3 Legendaries, 2 copies of one Legendary, wrong-faction avatar. Each must produce a specific error message. |
-| REQ-165 | Balance validation suite shall run against all card templates. | Automated checks per `01-battle-mechanics.md` Section 14: PP budget validation (tolerance +/- 1), instability/stat profile consistency, keyword limits, modifier PP cost matching. Run as `npm run validate-balance` script in game server project. |
+| REQ-165 | Balance validation suite shall run against all card templates. | Automated checks per `01-battle-mechanics.md` Section 14: PP budget validation (tolerance +/- 1), instability/stat profile consistency, keyword limits, modifier PP cost matching. Run as `npm run validate-balance` script in game server project. Also available via Admin Dashboard "Validate Cards" button (calls `POST /api/admin/validate-balance`). |
 
 ### 10.5 App Store Launch Requirements
 
@@ -1093,6 +1098,15 @@ Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 5
 
 ## Revision Log
 
+### v3.4 Changes (from v3.3) -- 2026-02-16
+
+| Change | Old | New | Reason |
+|---|---|---|---|
+| **Achievement REQs (187-190)** | No achievement runtime REQs | REQ-187 (server-side evaluation), REQ-188 (auto-grant rewards), REQ-189 (idempotent/retroactive), REQ-190 (seed data in migrations) | NEW-06: Achievement data model existed (doc 02) but no requirements for trigger mechanism, reward flow, or seeding. |
+| **Faction Mastery REQ (191)** | No faction mastery REQ | REQ-191: Per-faction XP tracking (+10/game, +5 win), linear 100 XP/level (max 10), cosmetic unlocks at levels 3/5/7/10 | NEW-09: Data model scaffolded (doc 02) but no XP formula or level curve specified. |
+| **REQ-165 (validate-balance)** | CLI script only | CLI script + Admin Dashboard "Validate Cards" button (`POST /api/admin/validate-balance`) | NEW-11: Balance validation should be accessible to non-technical owner via Admin Dashboard. |
+| **REQ numbering** | REQ-001 through REQ-190 | REQ-001 through REQ-191 | 5 new requirements added (4 achievement + 1 faction mastery). |
+
 ### v3.3 Changes (from v3.2) -- 2026-02-16
 
 | Change | Old | New | Reason |
@@ -1156,5 +1170,5 @@ Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 5
 ---
 
 *Last updated: 2026-02-16*
-*Version: 3.3 -- v3.3 updated Admin Dashboard to Next.js, introduced Three Tools model (iOS + Admin Dashboard + Supabase Dashboard), moved player lookup and match monitoring to Supabase Dashboard. v3.2 fixed 367→358 card count, admin infra table, stale "Top" references, cross-doc section references. v3.1 added ranked ladder + admin dashboard REQs + instability floor. v3.0 full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot.*
+*Version: 3.4 -- v3.4 added achievement REQs (187-190), faction mastery REQ (191), Admin Dashboard validate-balance button (REQ-165). v3.3 updated Admin Dashboard to Next.js, introduced Three Tools model (iOS + Admin Dashboard + Supabase Dashboard), moved player lookup and match monitoring to Supabase Dashboard. v3.2 fixed 367→358 card count, admin infra table, stale "Top" references, cross-doc section references. v3.1 added ranked ladder + admin dashboard REQs + instability floor. v3.0 full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot.*
 *All infrastructure decisions final per CLAUDE.md. All schemas, API contracts, message formats, and deployment configs are code-ready and defined in the referenced design documents.*

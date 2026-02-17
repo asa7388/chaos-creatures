@@ -44,8 +44,8 @@
 - Doc 00 stale price ranges (~$5-8, ~$10-15): protected file, doc 09 supersedes
 - Doc 00 "Top (Prismatic Shard)": protected file, cannot modify
 - Doc 04 simulation persona labels "Top Casual/Regular/Hardcore": internal-only, no player impact
-- Missing REQs for achievements, quest generation, faction mastery: design holes for future iteration
-- REQ-005 "shared timer" vagueness: low priority, clarified by doc 01 turn structure
+- Missing REQs for quest generation infrastructure: deferred to build phase (doc 04 already has full algorithm + 30 templates; only Edge Function wiring needed)
+- REQ-005 "shared timer": reviewed and confirmed unambiguous — REQ-005 + REQ-006 together specify 60-second window for phases 5-6 combined. No change needed.
 
 ## Pipeline History
 
@@ -88,6 +88,13 @@
 - Admin Dashboard scoped to 4-5 custom screens only
 - All 7 affected docs (03, 04, 05, 06, 07, 09, 10) updated with revision log entries
 - _prd-input-summary.md updated
+
+### Step 9: LOW Audit Item Fixes -- COMPLETE
+- NEW-06: Added REQ-187 through REQ-190 (achievement system runtime behavior) to doc 10
+- NEW-07: Shared timer reviewed — confirmed unambiguous (REQ-005 + REQ-006). Closed.
+- NEW-08: Quest generation infrastructure — deferred to build phase (algorithm already complete in doc 04)
+- NEW-09: Added Section 6.5 Faction Mastery Progression to doc 04, REQ-191 to doc 10
+- NEW-11: Updated REQ-165 to include Admin Dashboard "Validate Cards" button
 
 ## Next Steps
 - Pipeline complete. Ready for build phase.

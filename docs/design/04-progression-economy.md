@@ -836,6 +836,43 @@ This grant executes via a Supabase Edge Function triggered on the `onboarding_co
 
 **Key principle:** Skill and strategy matter more than card tier. A well-played Rare deck can defeat a poorly-played Epic deck. The game's design ensures tier-gating does not prevent enjoyment of any game mode.
 
+### 6.5 Faction Mastery Progression
+
+**Question:** How does faction mastery work and what does it unlock?
+
+Faction mastery tracks a player's experience with each faction independently. Every game played with a faction's deck (avatar determines faction) earns mastery XP for that faction.
+
+| Source | Mastery XP |
+|---|---|
+| Game played (any mode) | +10 |
+| Win bonus | +5 |
+
+**Level curve:** Linear 100 XP per level, 10 levels maximum.
+
+| Level | Cumulative XP | Games to Reach (50% win rate) |
+|---|---|---|
+| 1 | 100 | 8 |
+| 2 | 200 | 16 |
+| 3 | 300 | 24 |
+| 4 | 400 | 32 |
+| 5 | 500 | 40 |
+| 6 | 600 | 48 |
+| 7 | 700 | 56 |
+| 8 | 800 | 64 |
+| 9 | 900 | 72 |
+| 10 | 1,000 | 80 |
+
+**Unlocks:**
+
+| Level | Unlock |
+|---|---|
+| 3 | Faction card back (cosmetic) |
+| 5 | Faction avatar (per `02-card-data-model.md` `FACTION_MASTERY(level)` unlock condition) |
+| 7 | Faction battlefield skin (cosmetic) |
+| 10 | Faction title (profile cosmetic) |
+
+**Implementation:** `mastery_level`, `mastery_xp`, and `games_played` fields already exist in the player-faction junction (per `02-card-data-model.md`). XP is granted server-side by the Railway game server at match completion alongside regular XP. Level-up check: `mastery_xp >= mastery_level * 100`. Unlock grants happen atomically with level-up.
+
 ---
 
 ## 7. Long-Term Economy Health
@@ -1643,3 +1680,7 @@ These are the screens and components the iOS app must implement. All data is rec
 
 1. **Admin Dashboard technology: Express/HTML → Next.js (TypeScript).** Section 10.4 updated: balance dashboard is now a page in the Next.js Admin Dashboard, not a standalone Express-served HTML page.
 2. **"Two Applications" → "Three Tools" alignment.** CLAUDE.md now defines three tools (Game Client, Admin Dashboard, Supabase Dashboard). This doc's admin references remain correct — economy administration belongs in the custom Admin Dashboard, not Supabase Dashboard.
+
+### Changes Made in Version 3.2 (2026-02-16)
+
+1. **Added Section 6.5 Faction Mastery Progression.** New section defining mastery XP sources (+10/game, +5 win bonus), linear level curve (100 XP/level, max 10), and unlock milestones (level 3 card back, level 5 avatar, level 7 battlefield skin, level 10 title). Closes NEW-09 audit item.
