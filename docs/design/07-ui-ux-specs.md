@@ -3,7 +3,7 @@
 **Chaos Creatures — Mobile Card Game Interface Design**
 **Version: 3.0 — Native iOS: Swift + SwiftUI + SpriteKit**
 
-This document is the complete UI/UX specification for engineering implementation. It covers every screen, interaction pattern, animation, and component in the player-facing iOS app AND the owner-facing admin dashboard web application. All iOS component names reference actual SwiftUI types or SpriteKit classes. The admin dashboard is a separate web application and is documented in Part B.
+This document is the complete UI/UX specification for engineering implementation. It covers every screen, interaction pattern, animation, and component in the player-facing iOS app AND the owner-facing admin dashboard web application. All iOS component names reference actual SwiftUI types or SpriteKit classes. The project produces Three Tools: (1) the iOS Game Client, (2) the Admin Dashboard (a custom Next.js web app on Railway), and (3) the Supabase Dashboard (built-in, used directly for player/data management). The Admin Dashboard is a separate web application and is documented in Part B.
 
 **Design Philosophy:** Clean, stylish, card-game-native. Dark theme default with faction-themed light accents. Think Balatro's clarity, Marvel Snap's speed, Slay the Spire's readability. Every screen serves one primary purpose with minimal navigation friction.
 
@@ -38,7 +38,7 @@ These are fixed decisions. Do not use alternatives.
 
 | Layer | Technology |
 |---|---|
-| Framework | React + Vite (TypeScript) |
+| Framework | Next.js (TypeScript) |
 | Deployment | Railway (same project, separate service) |
 | Auth | Supabase Auth (email/password, single owner account) |
 
@@ -3009,13 +3009,13 @@ Defeat: clean fade-in, no animation.
 
 ## Part B — Admin Dashboard (Web Application)
 
-The owner manages the game via a web dashboard. This is a **separate application** — NOT part of the iOS app. It is a React + Vite (TypeScript) web app deployed on Railway as a separate service in the same project.
+The owner manages the game via a web dashboard. This is a **separate application** — NOT part of the iOS app. It is a Next.js (TypeScript) web app deployed on Railway as a separate service in the same project. It is scoped to 4-5 custom screens covering content generation, review, economy controls, analytics, and season management. Player account lookup, match history browsing, auth management (ban/unban), and direct data inspection are handled via the built-in Supabase Dashboard — no custom UI is needed for those tasks.
 
 **This section describes a web application, not iOS. All component names are HTML/React, not SwiftUI.**
 
 **URL:** `admin.chaoscreatures.game` (or Railway-provided subdomain).
 **Auth:** Supabase Auth email/password. Single owner account. No public registration.
-**Stack:** React + Vite + TypeScript. No additional UI component library required — plain CSS or Tailwind CSS (both free). Deployed to Railway as a Node.js static server.
+**Stack:** Next.js + TypeScript. Deployed to Railway.
 
 ---
 
@@ -3031,13 +3031,15 @@ Persistent left sidebar (240px wide) — always visible on desktop.
 [Dashboard]     /admin
 [Cards]         /admin/cards
 [Evolution]     /admin/evolution
-[Players]       /admin/players
 [Economy]       /admin/economy
 [Analytics]     /admin/analytics
 [Settings]      /admin/settings
 ──────────────────────
+[Open Supabase Dashboard]  (external link — player/data management)
 [Sign Out]
 ```
+
+> Player account lookup, match history, auth management, and direct data queries are accessed via the external Supabase Dashboard link. No custom Player or Match Monitor screen is built.
 
 Main content area fills remaining width. Responsive: sidebar collapses to hamburger menu on screens < 768px.
 
@@ -3118,25 +3120,18 @@ Owner's entire workflow: open browser → two clicks → review grid → approve
 
 **Modifier Pool Management:** Table of all 240 modifiers. Inline editable: name, PP cost, effect text. Cannot delete modifiers already granted to players — only deprecate (marks unavailable for new evolutions, remains on existing cards).
 
-### 16.5 Players Management (`/admin/players`)
+### 16.5 Players Management — Handled via Supabase Dashboard
 
-**Search:** `<input>` field, search by username, player ID, or email.
+> **Note:** Player Lookup and Match Monitor screens are NOT built as custom admin screens. These tasks are handled directly via the built-in Supabase Dashboard at `app.supabase.com`. No custom UI is needed or built for the following:
+> - Searching and viewing player accounts (use Supabase Table Editor on `players` table)
+> - Browsing match history (use Supabase Table Editor on `matches` table)
+> - Banning or unbanning players (use Supabase Auth → Users)
+> - Viewing active Realtime connections (use Supabase Realtime inspector)
+> - Direct data fixes and one-off SQL queries (use Supabase SQL Editor)
+>
+> The Supabase Dashboard is free, always available, and purpose-built for these operations. Building a custom UI to duplicate it is out of scope.
 
-**Player list:** `<table>`. Columns: Username, Faction, Subscription tier, Total games, Cards owned, Last active, Join date, Actions.
-
-**Player detail page (click row):**
-- Player info: avatar, username, email, subscription tier, join date, last active.
-- Stats: total games, win rate, total evolutions, Chaos Dust balance, shard balances.
-- Card collection: grid of owned cards.
-- Activity log: recent actions.
-- Actions panel:
-  - "Grant Chaos Dust": `<input>` + "Grant" button. Reason field required. Logged.
-  - "Grant Shard": tier `<select>` + "Grant" button. Logged.
-  - "Suspend Account": reason + duration. Logged.
-  - "Unsuspend Account".
-  - "Reset Evolution": reverts a specific evolution, returns shard + energy.
-
-All admin actions logged in `admin_audit_log` table: `admin_user_id`, `action`, `target_player_id`, `reason`, `timestamp`.
+**Admin-triggered player actions that do require logging** (grant currency, grant shards, reset evolutions) are performed via the Economy screen (`/admin/economy`) with reason fields and automatic `admin_audit_log` entries. All admin actions log: `admin_user_id`, `action`, `target_player_id`, `reason`, `timestamp`.
 
 ### 16.6 Economy Management (`/admin/economy`)
 
@@ -3373,29 +3368,33 @@ ChaosCreatures/
 
 ### 18.2 Admin Dashboard Project Structure
 
+Next.js App Router convention. Deployed to Railway as a Node.js server (`next start`).
+
 ```
 admin-dashboard/
-├── src/
-│   ├── pages/
-│   │   ├── Dashboard.tsx
-│   │   ├── Cards.tsx
-│   │   ├── Evolution.tsx
-│   │   ├── Players.tsx
-│   │   ├── Economy.tsx
-│   │   ├── Analytics.tsx
-│   │   └── Settings.tsx
-│   ├── components/
-│   │   ├── Sidebar.tsx
-│   │   ├── CardGrid.tsx
-│   │   ├── GenerateBatchModal.tsx
-│   │   ├── PlayerTable.tsx
-│   │   └── StatCard.tsx
-│   ├── services/
-│   │   └── supabase.ts
-│   └── main.tsx
-├── index.html
+├── app/
+│   ├── layout.tsx                  Root layout (sidebar + auth guard)
+│   ├── page.tsx                    /admin — Dashboard landing
+│   ├── cards/
+│   │   └── page.tsx                /admin/cards — Card generation + review gallery
+│   ├── evolution/
+│   │   └── page.tsx                /admin/evolution — Evolution job monitor + modifier pool
+│   ├── economy/
+│   │   └── page.tsx                /admin/economy — Currency overview + quest management
+│   ├── analytics/
+│   │   └── page.tsx                /admin/analytics — PostHog embed
+│   └── settings/
+│       └── page.tsx                /admin/settings — Game config + maintenance + announcements
+├── components/
+│   ├── Sidebar.tsx
+│   ├── CardGrid.tsx
+│   ├── GenerateBatchModal.tsx
+│   └── StatCard.tsx
+├── lib/
+│   └── supabase.ts                 Supabase client (server-side + client-side)
+├── next.config.js
 ├── package.json
-└── vite.config.ts
+└── tsconfig.json
 ```
 
 ### 18.3 Asset Naming Convention
@@ -3422,7 +3421,7 @@ Sound files: `.caf` format (Core Audio Format) — Apple's recommended format fo
 
 - Orientation: portrait-only in battle and evolution. All others allow rotation.
 - Card flip interaction: implemented in Card Detail via `.rotation3DEffect`.
-- Admin dashboard: separate React + Vite web app on Railway.
+- Admin dashboard: separate Next.js web app on Railway (4-5 custom screens). Player/data management via Supabase Dashboard (built-in, no custom UI).
 - No RevenueCat: StoreKit 2 direct.
 - No React Native, no Expo, no TypeScript client.
 
@@ -3589,7 +3588,7 @@ This revision is a full rewrite of the technology-specific sections of the docum
 
 #### Admin Dashboard Changes (Section 16)
 
-55. **Admin dashboard clearly labeled as a separate web application** in its own Part B section. No SwiftUI or SpriteKit references. React + Vite + TypeScript stack confirmed.
+55. **Admin dashboard clearly labeled as a separate web application** in its own Part B section. No SwiftUI or SpriteKit references. Next.js + TypeScript stack confirmed.
 
 56. **IAP Products section updated:** removed Google Play references. iOS/App Store only. Managed in App Store Connect.
 
@@ -3613,6 +3612,15 @@ This revision is a full rewrite of the technology-specific sections of the docum
 
 ---
 
-*Document Version: 3.0*
+*Document Version: 3.1*
 *Last Updated: 2026-02-16*
-*Status: Revised — Native iOS Swift/SwiftUI/SpriteKit. StoreKit 2. App Store only. Admin dashboard as separate web application. All React Native / Expo / TypeScript client references removed. All SpriteKit and SwiftUI animation types specified. Ready for Claude Code iOS implementation.*
+*Status: Revised — Native iOS Swift/SwiftUI/SpriteKit. StoreKit 2. App Store only. Admin dashboard as separate Next.js web application (4-5 screens). Player/data management via Supabase Dashboard. All React Native / Expo / TypeScript client references removed. All SpriteKit and SwiftUI animation types specified. Ready for Claude Code iOS implementation.*
+
+---
+
+## Revision Log (Tabular)
+
+| Date | Change | Sections Affected |
+|---|---|---|
+| 2026-02-16 | Initial Version 3.0: full platform migration from React Native/Expo to Swift/SwiftUI/SpriteKit. Admin dashboard set as separate React + Vite web app. | All |
+| 2026-02-16 | Admin Dashboard technology: React + Vite → Next.js (TypeScript). Part B updated throughout. "Two Applications" → "Three Tools" (CLAUDE.md change). Player Lookup and Match Monitor reassigned to Supabase Dashboard. Admin Dashboard scoped to 4-5 custom screens. Project structure updated to Next.js conventions. | Part B (Sections 16-18) |

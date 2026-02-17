@@ -1,18 +1,18 @@
 # Chaos Creatures -- Documentation Pipeline Progress
 
-## Current Phase: Step 7 -- Resolution Loop (v3.2 fixes applied)
+## Current Phase: Step 8 -- Admin Dashboard Technology Update (v3.3)
 
 | # | Document | Agent | Status | Notes |
 |---|---|---|---|---|
-| 01 | battle-mechanics.md | (protected) | v3.2 PATCH | Void Lens fixed, Probability Anchor removed, "Faction-locked"→"Universal", Section 12 table completed (Warding Pillar + Entropy Engine), "Top"→"High" + canonical prices |
-| 03 | prompt-templates.md | prompt-engineer | v3.2 FIXED | FAL_KEY, High tier naming, 367→358 card count, inference steps |
-| 04 | progression-economy.md | economy-designer | v3.2 FIXED | Top→High tier naming throughout (including weekly quest table header) |
-| 05 | content-pipeline.md | content-pipeline | v3.2 FIXED | Faction stabilizers removed (universal only), 358 cards, FAL_KEY, "Top"→"High" in cost table |
-| 06 | technical-architecture.md | tech-architect | v3.2 FIXED | Deck slots 6, highTierID, React+Vite admin, 367→358 card count in budget, seasons/bp tables, fallback art spec |
-| 07 | ui-ux-specs.md | ui-spec-writer | v3.2 FIXED | .high tier, Free/Mid/High labels, subscription card "Top"→"High" |
-| 08 | audio-design.md | audio-designer | v3.0 (no changes needed) | No audit issues found |
-| 09 | monetization-details.md | monetization-analyst | v3.2 FIXED | HIGH enum, grace period section, topMonthly→highMonthly, product IDs updated |
-| 10 | prd.md | prd-writer | v3.2 FIXED | 367→358, faction stabilizers corrected, admin infra table, section references fixed, "Top"→"High", deck slot changelog, footer version |
+| 01 | battle-mechanics.md | (protected) | v3.2 PATCH | No changes in v3.3 |
+| 03 | prompt-templates.md | prompt-engineer | v3.3 FIXED | React→Next.js, Two Applications→Three Tools, Supabase Dashboard added |
+| 04 | progression-economy.md | economy-designer | v3.3 FIXED | Express/HTML→Next.js for balance dashboard |
+| 05 | content-pipeline.md | content-pipeline | v3.3 FIXED | Express→Next.js, Supabase Dashboard note added |
+| 06 | technical-architecture.md | tech-architect | v3.3 FIXED | React+Vite→Next.js, Three Tools model, Section 9 rewrite, feature tables split (Admin vs Supabase Dashboard), repo structure updated |
+| 07 | ui-ux-specs.md | ui-spec-writer | v3.3 FIXED | React+Vite→Next.js, Three Tools, Player Lookup/Match Monitor→Supabase Dashboard, Part B rewrite, project structure updated |
+| 08 | audio-design.md | audio-designer | v3.0 (no changes needed) | No admin references |
+| 09 | monetization-details.md | monetization-analyst | v3.3 FIXED | React→Next.js in cosmetics admin reference |
+| 10 | prd.md | prd-writer | v3.3 FIXED | Three Tools, Next.js, REQ-183/184→Supabase Dashboard, operations section updated, version v3.3 |
 
 ## Resolution Summary
 
@@ -81,5 +81,13 @@
 - Round 2: Fixed all HIGH/MEDIUM from v3 re-audit (REVIEW-numbers-v3, REVIEW-systems-v3, REVIEW-prd-v3)
 - Remaining items are LOW priority / accepted / in protected files
 
+### Step 8: Admin Dashboard Technology Update -- COMPLETE
+- CLAUDE.md updated: "Two Applications" → "Three Tools" (Game Client, Admin Dashboard, Supabase Dashboard)
+- Admin Dashboard technology: React/Express/HTML → Next.js (TypeScript) across all docs
+- Player Lookup, Match Monitor, Auth Management → Supabase Dashboard (built-in, free)
+- Admin Dashboard scoped to 4-5 custom screens only
+- All 7 affected docs (03, 04, 05, 06, 07, 09, 10) updated with revision log entries
+- _prd-input-summary.md updated
+
 ## Next Steps
-- Final commit and push
+- Pipeline complete. Ready for build phase.

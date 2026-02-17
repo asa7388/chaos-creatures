@@ -1493,7 +1493,7 @@ All graphs are rendered using Chart.js loaded from CDN (zero npm dependencies fo
 
 ### 10.4 Dashboard UI Specification
 
-The dashboard is a plain HTML page served by a local Express server. It is part of the Admin Dashboard application, but runs locally on the owner's machine during balance review — it is never deployed to Railway for live use.
+The dashboard is a page in the Admin Dashboard (Next.js/TypeScript web app on Railway). During development, it runs locally at `http://localhost:3000/admin/balance`. In production it is accessed at the Railway-provided URL.
 
 **Layout:**
 - Header: "Chaos Creatures Economy Balance Dashboard — Simulation run: [timestamp]"
@@ -1638,3 +1638,8 @@ These are the screens and components the iOS app must implement. All data is rec
 9. **Removed all "tune as needed" language.** Every config adjustment scenario (Section 7.4) now specifies the exact `economy.config.json` key to change, the exact new value to set, and the exact deploy command to run.
 
 10. **Updated Section 11 to separate iOS client tasks clearly.** The previous "React Native Client Responsibilities" bullet list has been replaced with Section 11.4 "iOS Client (Swift/SwiftUI) Economy UI Requirements" — a complete screen-by-screen specification with SwiftUI component names, data binding patterns, and Realtime channel names for each economy-related UI element.
+
+### Changes Made in Version 3.1 (2026-02-16)
+
+1. **Admin Dashboard technology: Express/HTML → Next.js (TypeScript).** Section 10.4 updated: balance dashboard is now a page in the Next.js Admin Dashboard, not a standalone Express-served HTML page.
+2. **"Two Applications" → "Three Tools" alignment.** CLAUDE.md now defines three tools (Game Client, Admin Dashboard, Supabase Dashboard). This doc's admin references remain correct — economy administration belongs in the custom Admin Dashboard, not Supabase Dashboard.

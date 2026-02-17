@@ -1136,7 +1136,7 @@ Estimated cosmetics ARPU: $0.65-$0.95 per player over lifetime. Secondary to sub
 
 ### Cosmetics Admin UI (Web Dashboard)
 
-The owner adds new cosmetics via the web Admin Dashboard (React app on Railway — separate from the iOS app). No database access required.
+The owner adds new cosmetics via the web Admin Dashboard (Next.js app on Railway — separate from the iOS app). No database access required.
 
 **Cosmetic record creation:**
 1. Owner opens the admin UI at `chaoscreatures-admin.railway.app`.
@@ -1651,3 +1651,7 @@ This revision resolves WARN-06 from the audit review by adding a complete, code-
 - Specified resubscription behavior: `sync-entitlements` Edge Function restores tier, clears grace columns; `EntitlementManager.refreshEntitlements()` immediately unlocks decks and restores capacity — no player action required, no data loss.
 - Added database column reference table summarizing `tier`, `cancel_at_period_end`, `grace_period_until`, and `updated_at` states across all three phases.
 - Confirmed no schema changes required — `grace_period_until timestamptz` column already present in `user_subscriptions` table (Section 2).
+
+### v3.1 → v3.2 (2026-02-16)
+
+**Admin Dashboard technology: React → Next.js (TypeScript).** Updated cosmetics admin UI reference in Section 7 from "React app on Railway" to "Next.js app on Railway." Aligns with CLAUDE.md "Three Tools" model update.

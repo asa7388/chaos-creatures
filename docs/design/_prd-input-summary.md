@@ -5,7 +5,7 @@
 
 **Project constraints (from CLAUDE.md):**
 - Solo non-engineer owner; Claude Code builds everything
-- Two apps: iOS game client (Swift/SwiftUI/SpriteKit, iOS 17+) + Admin Dashboard (React/Node.js on Railway, separate web app)
+- Three tools: iOS game client (Swift/SwiftUI/SpriteKit, iOS 17+) + Admin Dashboard (Next.js/TypeScript on Railway, 4-5 custom screens) + Supabase Dashboard (built-in, free — player lookup, match history, auth management)
 - Budget: $300 total build-to-launch
 - 3 factions: Ironwright Collective (Augment), Fey Courts (Bond), Demonic Kingdoms (Corruption)
 - 7 keywords: Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing
@@ -457,9 +457,10 @@ BottomControlsView (SwiftUI overlay): 56pt
 - Background color: `#141414` for HUD bars, `#1A1A1A` for empty elements, `#2A2A2A` for inactive elements
 
 ### Admin Dashboard (Part B)
-- Framework: React + Vite (TypeScript) on Railway
+- Framework: Next.js (TypeScript) on Railway
 - Auth: Supabase Auth (email/password, single owner account)
-- Features: batch generation trigger, review gallery grid, approve/reject/regenerate controls, economy config editor, PostHog analytics embed, balance patch tool
+- Custom screens (4-5): batch generation trigger + review gallery, economy config editor, PostHog analytics embed, season management, balance simulation
+- Player lookup, match history, auth management (ban/unban), direct data fixes → Supabase Dashboard (built-in, no custom UI)
 - Full Admin Dashboard specs in doc 07 Part B (screens, components, layout)
 
 ### Key Code Samples (Location References)

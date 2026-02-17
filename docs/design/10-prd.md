@@ -4,13 +4,13 @@
 
 | Field | Value |
 |---|---|
-| **Document Version** | 3.1 |
+| **Document Version** | 3.3 |
 | **Date** | 2026-02-16 |
 | **Status** | Final -- Ready for Build |
 | **Owner** | Solo non-engineer owner, building with Claude Code |
 | **Audience** | Claude Code (primary implementer), Owner (reviewer and decision-maker) |
 
-**Build context:** This entire product will be built by a solo non-engineer using Claude Code to vibe code the implementation. There is no engineering team. Every requirement is written so that Claude Code can build it without ambiguity. If a paragraph leaves a decision to "the engineer," it is a bug in this document. The project produces TWO separate applications: a native iOS game client and a web-based Admin Dashboard. Every requirement clearly identifies which application it belongs to.
+**Build context:** This entire product will be built by a solo non-engineer using Claude Code to vibe code the implementation. There is no engineering team. Every requirement is written so that Claude Code can build it without ambiguity. If a paragraph leaves a decision to "the engineer," it is a bug in this document. The project produces THREE separate tools: a native iOS game client, a web-based Admin Dashboard (Next.js on Railway), and the built-in Supabase Dashboard (for player data, match history, and auth management). Every requirement clearly identifies which tool it belongs to.
 
 ---
 
@@ -50,7 +50,8 @@ Chaos Creatures is a mobile collectible card game where every card's art is AI-g
 - **Primary:** Native iOS app built with Swift + SwiftUI + SpriteKit. Ships to the Apple App Store only.
 - **Minimum target:** iOS 17+, iPhone 11 and newer.
 - **No Android.** No React Native. No Unity. No Expo. No cross-platform framework.
-- **Admin Dashboard:** Separate web application (React + Vite, TypeScript) deployed on Railway. Used by the owner only.
+- **Admin Dashboard:** Separate web application (Next.js, TypeScript) deployed on Railway. Used by the owner only. Lightweight 4-5 screens: card generation batch trigger + review gallery, balance simulation, PostHog analytics embed, App Store screenshot preview, economy config editor.
+- **Supabase Dashboard:** Built-in, free. Used for: viewing/searching player accounts, match history, managing auth (ban/unban), viewing Realtime connections, direct data fixes. No custom UI needed for these operations.
 
 ### 1.4 Core Differentiators
 
@@ -92,7 +93,7 @@ These decisions are finalized and must not be contradicted during implementation
 | Analytics | PostHog | Player behavior, retention, economy health |
 | Payments | StoreKit 2 (native Apple framework) | No RevenueCat. No Stripe. No third-party payment SDK. |
 | App Build | Xcode Cloud | iOS builds and TestFlight distribution |
-| Admin | React + Vite (TypeScript) on Railway (served via Node.js + Express) | Dashboard for owner operations |
+| Admin | Next.js (TypeScript) on Railway | Dashboard for owner operations (4-5 screens). Player lookup and match monitoring handled via built-in Supabase Dashboard. |
 | Legal Pages | Cloudflare Pages (free) | Privacy policy, Terms of Service |
 
 ### 1.7 Budget Constraint
@@ -194,7 +195,7 @@ Total build-to-launch budget: **$300 maximum**.
 | P1-008 | Audio System | Faction-specific battle music, adaptive intensity system (4-stem architecture via `AVAudioEngine`), SFX via `SKAction.playSoundFileNamed` in SpriteKit, `AVAudioPlayer` for menus. Music CAF format, SFX CAF format, ambient AAC format. ~23 MB total. Volume controls in Settings. | iOS | `08-audio-design.md` |
 | P1-009 | Achievement System | Achievement definitions, progress tracking per player, one-time rewards, achievement display on profile | Backend + iOS | `02-card-data-model.md` Section 17 |
 | P1-010 | Settings Screen | Account, Audio (master/music/SFX volume), Visuals (reduced motion, colorblind mode, animation quality, screen shake), Gameplay (auto-end turn, timer extension for casual), Notifications, Privacy, **Restore Purchases** button | iOS | `07-ui-ux-specs.md` Section 14 |
-| P1-011 | Admin Dashboard | Web app on Railway (React + Vite, TypeScript): economy config editor, batch card generation trigger, generation review/approve/reject gallery, player lookup, match monitor, PostHog analytics embedding | Web (Admin) | `06-technical-architecture.md` Section 9, `07-ui-ux-specs.md` Part B |
+| P1-011 | Admin Dashboard | Web app on Railway (Next.js, TypeScript): economy config editor, batch card generation trigger, generation review/approve/reject gallery, PostHog analytics embedding, season management. Player lookup and match monitoring handled via built-in Supabase Dashboard (no custom UI). | Web (Admin) + Supabase Dashboard | `06-technical-architecture.md` Section 9, `07-ui-ux-specs.md` Part B |
 
 ### 3.3 P2 -- Nice to Have (Post-Launch)
 
@@ -389,16 +390,16 @@ Total build-to-launch budget: **$300 maximum**.
 
 **Application:** Web (Admin Dashboard on Railway). **Not** part of the iOS game client.
 
-**Reference:** `06-technical-architecture.md` Section 9, CLAUDE.md ("Two Applications" section)
+**Reference:** `06-technical-architecture.md` Section 9, CLAUDE.md ("Three Tools" section)
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-179 | Admin Dashboard shall require authentication separate from game auth. | Railway-hosted web app (React + Vite, TypeScript). Auth via a single admin password stored as a Railway environment variable `ADMIN_PASSWORD`. No Supabase Auth integration for admin. Session expires after 8 hours. |
+| REQ-179 | Admin Dashboard shall require authentication separate from game auth. | Railway-hosted web app (Next.js, TypeScript). Auth via a single admin password stored as a Railway environment variable `ADMIN_PASSWORD`. No Supabase Auth integration for admin. Session expires after 8 hours. |
 | REQ-180 | Admin Dashboard shall provide an Economy Config editor. | Read/write interface for all rows in `economy_config` table. Changes take effect immediately (no app update required). Audit log of all changes with timestamp and previous value. |
 | REQ-181 | Admin Dashboard shall provide a batch generation trigger. | "Start Batch" button calls `POST /api/admin/batch/start` on the Railway server. Progress bar shows completed/total/failed counts updated every 5 seconds via polling. |
 | REQ-182 | Admin Dashboard shall provide a card review gallery. | Grid of generated cards with art preview, name, stats, and status (pending/approved/rejected). Approve/reject buttons per card. "Approve All Visible" bulk action. Filter by faction, rarity, status. |
-| REQ-183 | Admin Dashboard shall provide a player lookup tool. | Search by player ID or username. Display: subscription tier, Chaos Dust balance, card count per faction, match history (last 20), active decks, rank. Read-only -- no editing player data from admin. |
-| REQ-184 | Admin Dashboard shall provide a live match monitor. | List of active matches from `active_matches` table. Each row shows: match ID, player names, turn number, duration, status. Click to view game state snapshot. |
+| REQ-183 | Player data shall be viewable via the built-in Supabase Dashboard table explorer. No custom admin UI required. | Owner uses Supabase Dashboard to search the `players` table by ID or username, view subscription tier, Chaos Dust balance, card count per faction, match history (via `match_records` table), active decks, and rank. Read-only browsing via Supabase's built-in table view and search. |
+| REQ-184 | Active match data shall be viewable via the built-in Supabase Dashboard table explorer. No custom admin UI required. | Owner uses Supabase Dashboard to view the `active_matches` table, which shows match ID, player names, turn number, duration, and status. Game state snapshots viewable via the `match_snapshots` table. Supabase Dashboard provides real-time table refresh and search. |
 | REQ-185 | Admin Dashboard shall embed PostHog dashboards. | Iframe embed of PostHog project dashboard for DAU, retention, economy health, and match metrics. PostHog project API key configured as Railway environment variable. |
 | REQ-186 | Admin Dashboard shall provide a season management interface. | Create new season (name, start date, end date, battle pass tier count). Activate/deactivate seasons. View current season stats (player count, battle pass purchases, rank distribution). |
 
@@ -909,7 +910,7 @@ Full event table with event names, trigger conditions, and required properties i
 
 ## 12. Owner's Operational Workflow
 
-This section describes how the owner manages the live game. Every operation is through the Admin Dashboard (web app on Railway) or a single terminal command. No code changes, no raw database edits, no infrastructure configuration.
+This section describes how the owner manages the live game. Every operation is through the Admin Dashboard (Next.js web app on Railway), the built-in Supabase Dashboard, or a single terminal command. No code changes, no infrastructure configuration.
 
 ### 12.1 Typical Week (Post-Launch)
 
@@ -951,7 +952,7 @@ This section describes how the owner manages the live game. Every operation is t
 | AI generation queue backup (>500 pending) | PostHog alert | Admin Dashboard > Generation Jobs > check for stuck jobs. Retry or clear failed jobs. If fal.ai is down, do nothing -- fallback art kicks in automatically after 3 failures per job. |
 | Match completion rate drops below 90% | PostHog alert | Check Railway logs for game server errors. If server crashed, Railway auto-restarts. Active matches are lost but players can requeue. |
 | Economy metric out of range (e.g., Dust inflation) | Weekly review | Admin Dashboard > Economy Controls. Adjust relevant values (e.g., reduce Dust per win from 15 to 12). Monitor for 48 hours. |
-| Player support request | Email to support address | Admin Dashboard > Player Lookup. Search by display name. View full profile, match history, collection. Grant compensation (Dust, shards) via player detail page if needed. |
+| Player support request | Email to support address | Supabase Dashboard > `players` table. Search by display name. View full profile, match history (via `match_records`), collection (via `card_instances`). Grant compensation (Dust, shards) via direct row edit in Supabase Dashboard if needed. |
 
 ### 12.6 Deploying Updates
 
@@ -1092,6 +1093,15 @@ Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 5
 
 ## Revision Log
 
+### v3.3 Changes (from v3.2) -- 2026-02-16
+
+| Change | Old | New | Reason |
+|---|---|---|---|
+| **Admin Dashboard technology** | React + Vite (TypeScript) | Next.js (TypeScript) | CLAUDE.md updated. |
+| **Three Tools model** | Two Applications (iOS + Admin) | Three Tools (iOS + Admin Dashboard + Supabase Dashboard) | CLAUDE.md "Three Tools" section. Supabase Dashboard handles player lookup, match monitoring, auth management natively. |
+| **REQ-183 (Player Lookup)** | Custom admin UI | Supabase Dashboard (built-in table explorer) | Don't build custom UI for native Supabase features. |
+| **REQ-184 (Match Monitor)** | Custom admin UI | Supabase Dashboard (built-in table view) | Don't build custom UI for native Supabase features. |
+
 ### v3.1 Changes (from v3.0) -- 2026-02-16
 
 | Change | Old (v3.0) | New (v3.1) | Reason |
@@ -1146,5 +1156,5 @@ Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 5
 ---
 
 *Last updated: 2026-02-16*
-*Version: 3.2 -- Full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot. v3.1 added ranked ladder + admin dashboard REQs + instability floor. v3.2 fixed 367→358 card count, admin infra table, stale "Top" references, cross-doc section references.*
+*Version: 3.3 -- v3.3 updated Admin Dashboard to Next.js, introduced Three Tools model (iOS + Admin Dashboard + Supabase Dashboard), moved player lookup and match monitoring to Supabase Dashboard. v3.2 fixed 367→358 card count, admin infra table, stale "Top" references, cross-doc section references. v3.1 added ranked ladder + admin dashboard REQs + instability floor. v3.0 full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot.*
 *All infrastructure decisions final per CLAUDE.md. All schemas, API contracts, message formats, and deployment configs are code-ready and defined in the referenced design documents.*

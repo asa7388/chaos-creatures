@@ -63,13 +63,28 @@ The client is a native iOS app built with Swift + SwiftUI + SpriteKit. NOT React
 
 All UI/UX specs, technical architecture, and PRD must be written for Swift/SwiftUI/SpriteKit. No React Native, no Expo, no TypeScript on the client side. The server remains Node.js/TypeScript on Railway.
 
-## Two Applications
+## Three Tools
 
-The project produces TWO separate applications:
-1. **Game Client** — Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store.
-2. **Admin Dashboard** — Web application (React or plain HTML, deployed on Railway). What the owner uses to manage the game: trigger card generation, review/approve content, adjust economy values, view analytics, push balance patches. This is NOT part of the iOS app. It is a separate web app.
+The project uses THREE separate tools for different purposes:
 
-Every doc must be clear about which application a feature belongs to. No doc should spec admin features inside the iOS app or game features inside the web dashboard.
+1. **Game Client** — Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store. All gameplay, collection, deck building, shop, and player-facing features.
+
+2. **Admin Dashboard** — Custom web application (Next.js/TypeScript, deployed on Railway). The owner uses this for workflows that require custom UI:
+   - Card generation batch trigger + review gallery (approve/reject/regenerate cards)
+   - Balance simulation runner + results graphs
+   - PostHog analytics embed / key metrics overview
+   - App Store screenshot preview
+   - Economy config editor (form fields, not raw JSON)
+   This is a lightweight app — 4-5 screens max. It is NOT a full admin portal.
+
+3. **Supabase Dashboard** — Built-in, free, no code needed. The owner uses this for direct data tasks:
+   - View/search player accounts and match history
+   - Edit economy config values directly in database rows
+   - Manage auth (ban/unban players)
+   - View active Realtime connections
+   - Quick data fixes and one-off queries
+
+Every doc must be clear about which tool a feature belongs to. No doc should spec admin features inside the iOS app, game features inside the admin dashboard, or custom UI for things Supabase dashboard already handles.
 
 ## Budget Constraint
 

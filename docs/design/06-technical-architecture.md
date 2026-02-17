@@ -6,9 +6,10 @@ This document defines the system architecture, service design, API contracts, da
 
 **Depends on:** `00-game-design-master.md`, `01-battle-mechanics.md`, `02-card-data-model.md`
 
-**Two applications are produced:**
+**Three tools are used to operate the game:**
 1. **Game Client** -- Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store.
-2. **Admin Dashboard** -- Web application (React + Vite (TypeScript), deployed on Railway alongside the game server). What the owner uses to manage the game.
+2. **Admin Dashboard** -- Custom web application (Next.js (TypeScript), deployed on Railway alongside the game server). Lightweight, 4-5 screens: card generation batch trigger + review gallery, economy config editor, PostHog analytics embed, season management, balance simulation. What the owner uses to manage game content and economy.
+3. **Supabase Dashboard** -- Built-in, free. For: viewing/searching player accounts, match history, managing auth (ban/unban), viewing Realtime connections, direct data fixes. No custom code needed.
 
 ---
 
@@ -32,7 +33,7 @@ graph TB
 
     subgraph Railway
         GAME[Game Server<br/>Node.js / TypeScript<br/>Authoritative Match Engine]
-        ADMIN[Admin Dashboard<br/>React + Vite (TypeScript)]
+        ADMIN[Admin Dashboard<br/>Next.js (TypeScript)]
     end
 
     subgraph Cloudflare
@@ -87,7 +88,7 @@ graph TB
 | **Analytics** | PostHog | Player behavior, retention, match data, economy health. Free tier covers launch. |
 | **Payments** | StoreKit 2 (native Apple API) | In-app subscriptions. No RevenueCat, no Stripe, no third-party payment SDK. Server-side receipt validation via App Store Server API v2. |
 | **App Distribution** | Xcode Cloud + App Store Connect | Automated builds triggered on git push. TestFlight for beta. App Store for release. |
-| **Admin Dashboard** | React + Vite (TypeScript), deployed on Railway alongside the game server | Single-page web app for the owner to manage the game without touching code. Separate Railway service. |
+| **Admin Dashboard** | Next.js (TypeScript), deployed on Railway alongside the game server | Lightweight 4-5 screen web app for the owner to manage game content and economy. Separate Railway service. Player/match lookup handled by Supabase Dashboard (built-in). |
 | **Legal Pages** | Cloudflare Pages (free) | Privacy policy and Terms of Service hosted as static HTML. Required for App Store submission. |
 
 ### 1.3 Environment Variables
@@ -3191,19 +3192,23 @@ async function uploadToR2(
 
 ## 9. Admin Dashboard (Separate Web Application)
 
-The Admin Dashboard is a **separate web application** deployed on Railway. It is NOT part of the iOS app. It is what the owner uses to manage the game without touching code or databases.
+The project uses a **Three Tools** model for game operations:
 
-**Technology:** React + Vite (TypeScript), deployed on Railway alongside the game server. The frontend is a single-page app built with `.tsx` components. A Node.js + Express backend serves the API endpoints and the built Vite output. This aligns with doc 07 Part B which specifies the full component tree in React/TSX.
+1. **Game Client** -- iOS app. What players use.
+2. **Admin Dashboard** (this section) -- Custom web app on Railway. What the owner uses for content management, economy tuning, analytics, and generation pipelines.
+3. **Supabase Dashboard** -- Built-in, free. What the owner uses for player lookup, match history, auth management (ban/unban), Realtime connection monitoring, and direct data fixes. No custom code needed -- Supabase provides table views, search, filtering, and row editing out of the box.
+
+The Admin Dashboard is a **separate web application** deployed on Railway. It is NOT part of the iOS app. It is scoped to 4-5 custom screens that require purpose-built UI (batch generation gallery, economy config forms, analytics embeds). Everything that is just "view/search database tables" lives in Supabase Dashboard instead.
+
+**Technology:** Next.js (TypeScript), deployed on Railway alongside the game server. Next.js provides server-side rendering, API routes, and static optimization in a single framework -- no separate Express server needed. This aligns with doc 07 Part B which specifies the full component tree in React/TSX.
 
 **URL:** `https://admin-chaos-creatures.up.railway.app` (Railway assigns this automatically)
 
 ### 9.1 Features
 
-| Feature | Description | Application |
+| Feature | Description | Tool |
 |---|---|---|
-| **Dashboard** | Active matches count, players online, daily signups, revenue, AI generation cost | Admin Dashboard |
-| **Player Lookup** | Search by display_name or friend_code. View full profile, collection, match history. | Admin Dashboard |
-| **Match Monitor** | List active matches. View match state in real-time (spectator mode). | Admin Dashboard |
+| **Dashboard** | Metrics overview: active matches count, players online, daily signups, revenue, AI generation cost | Admin Dashboard |
 | **Card Templates** | Browse all templates. View art, stats, approval status. | Admin Dashboard |
 | **Card Generation** | Trigger batch card generation. Set faction, count, creature type. Review/approve/reject in grid view. | Admin Dashboard |
 | **Economy Controls** | Form fields for all `economy_config` values. Change dust rewards, shard costs, energy thresholds. Changes take effect immediately. | Admin Dashboard |
@@ -3212,6 +3217,16 @@ The Admin Dashboard is a **separate web application** deployed on Railway. It is
 | **Analytics** | Embedded PostHog dashboards -- DAU/MAU, retention, match stats, economy health. | Admin Dashboard |
 | **Season Management** | Start/end seasons. Configure rewards. Push season reset. | Admin Dashboard |
 | **Generation Jobs** | View AI generation queue. See pending/failed/completed jobs. Retry failed jobs. | Admin Dashboard |
+
+**Handled by Supabase Dashboard (built-in, no custom code):**
+
+| Feature | Description | Tool |
+|---|---|---|
+| **Player Lookup** | Search by display_name or friend_code. View full profile, collection, match history. Use Supabase table views with built-in search and filtering. | Supabase Dashboard |
+| **Match Monitor** | View match records and active match state. Filter by status, player, date. Use Supabase table views on `matches` and `match_actions` tables. | Supabase Dashboard |
+| **Auth Management** | Ban/unban players, view auth sessions, manage user accounts. | Supabase Dashboard |
+| **Direct Data Fixes** | Edit individual rows in any table (e.g., grant dust, fix stuck match state, adjust player data). | Supabase Dashboard |
+| **Realtime Monitoring** | View active Realtime connections and channel subscriptions. | Supabase Dashboard |
 
 ### 9.2 Auth
 
@@ -3428,28 +3443,28 @@ chaos-creatures/
       railway.json
       package.json
       tsconfig.json
-    admin-dashboard/              # Admin web app (Railway)
-      src/
-        server.ts                 # Express server
-        routes/
-          dashboard.ts
-          players.ts
-          economy-config.ts
-          generation-review.ts
-          match-monitor.ts
-          season-management.ts
-      public/
-        index.html
-        login.html
-        dashboard.html
-        players.html
-        economy.html
-        generation.html
-        style.css
-        app.js
+    admin-dashboard/              # Admin web app (Next.js on Railway)
+      app/
+        layout.tsx                # Root layout (auth check, nav)
+        page.tsx                  # Dashboard (metrics overview)
+        login/page.tsx            # Login screen
+        generation/page.tsx       # Card generation + review gallery
+        economy/page.tsx          # Economy config editor
+        analytics/page.tsx        # PostHog analytics embed
+        seasons/page.tsx          # Season management
+        balance/page.tsx          # Balance patch / simulation
+      api/
+        health/route.ts           # Health check endpoint
+        auth/route.ts             # Admin login (JWT)
+        economy-config/route.ts   # Economy config CRUD
+        generate-batch/route.ts   # Batch card generation trigger
+        generation-jobs/route.ts  # Generation queue management
+        season/route.ts           # Season management
+      next.config.ts
       Dockerfile
       railway.json
       package.json
+      tsconfig.json
     shared/                       # Shared TypeScript types
       src/
         types.ts                  # All game types, enums, interfaces
@@ -3505,8 +3520,8 @@ chaos-creatures/
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "node dist/server.js",
-    "healthcheckPath": "/health"
+    "startCommand": "npm start",
+    "healthcheckPath": "/api/health"
   }
 }
 ```
@@ -3834,8 +3849,9 @@ const AssignBlockersSchema = z.object({
 | **Evolution fallback art details (WARN-07)** | Basic `generateFallbackArt` function with no R2 key convention or client replacement flow | Expanded with `_fallback` suffix in R2 key, Supabase Realtime `collection:{player_id}` push with `art_updated` event, client cache eviction and shimmer overlay for fallback art, 7-day cleanup cron | Audit WARN-07: Fallback art subsection now specifies full lifecycle from generation through client replacement. |
 | **Seasons and battle pass tables (WARN-08)** | Missing from schema | Added `seasons` and `battle_pass_progress` tables with RLS, plus season-end processing logic (rank reset, dust rewards, battle pass expiry) | Audit WARN-08: Required for ranked play seasons and battle pass progression per doc 04. Migration files renumbered. |
 | **Base art resolution note (WARN-09)** | No explicit mention of resolution rationale | Added clarification that base batch art uses `portrait_4_3` (768x1024) as cost optimization ($0.025/image); evolution Mid/High tier uses `square_hd` (1024x1024). Canonical per doc 03. Budget line updated. | Audit WARN-09: Makes resolution choice and cost trade-off explicit. |
+| **Admin Dashboard technology + Three Tools model** | React + Vite (TypeScript); "Two Applications" model; Player Lookup and Match Monitor in custom Admin Dashboard | Next.js (TypeScript); "Three Tools" model (Game Client, Admin Dashboard, Supabase Dashboard); Player Lookup and Match Monitor reassigned to Supabase Dashboard (built-in table views); Admin Dashboard scoped to 4-5 custom screens: card generation + review gallery, economy config editor, PostHog analytics embed, season management, balance simulation | CLAUDE.md updated: "Two Applications" -> "Three Tools." Supabase Dashboard handles player/match lookup natively. Admin Dashboard reduced to purpose-built screens only. Sections 1.2 and 9 updated. |
 
 ---
 
 *Last updated: 2026-02-16*
-*Status: Complete revision for native iOS (Swift/SwiftUI/SpriteKit), iOS-only (App Store), StoreKit 2 payments, $300 budget cap. All fal.ai parameters match doc 03 Section 1.4 exactly. Admin Dashboard is a React + Vite (TypeScript) web app on Railway. All schemas, API contracts, message formats, and deployment configs are code-ready.*
+*Status: Complete revision for native iOS (Swift/SwiftUI/SpriteKit), iOS-only (App Store), StoreKit 2 payments, $300 budget cap. All fal.ai parameters match doc 03 Section 1.4 exactly. Admin Dashboard is a Next.js (TypeScript) web app on Railway. Player/match lookup handled by Supabase Dashboard (built-in). All schemas, API contracts, message formats, and deployment configs are code-ready.*

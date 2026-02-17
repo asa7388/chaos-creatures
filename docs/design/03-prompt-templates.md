@@ -16,11 +16,12 @@ This document defines the complete AI generation pipeline for Chaos Creatures. I
 - Art storage: Cloudflare R2 (CDN delivery)
 - Backend: Supabase Edge Functions (trigger generation jobs from game server events)
 - Game server: Railway Node.js/TypeScript (batch pipeline runner, evolution job queue)
-- Admin Dashboard: Railway web app (React, separate from iOS game client — see Two Applications below)
+- Admin Dashboard: Railway web app (Next.js/TypeScript, separate from iOS game client — see Three Tools below)
 
-**Two Applications — Which App Owns What:**
-- **iOS game client** (Swift/SwiftUI/SpriteKit): Displays card art, triggers evolution requests, presents modifier choices, shows evolution ceremony. Does NOT call fal.ai or OpenAI directly. All generation is server-side.
-- **Admin Dashboard** (React web app on Railway): Batch card generation pipeline, review gallery for QA, approve/reject/regenerate controls, export to database. The owner accesses this in a browser. It is NOT part of the iOS app.
+**Three Tools — Which Tool Owns What:**
+- **iOS Game Client** (Swift/SwiftUI/SpriteKit): Displays card art, triggers evolution requests, presents modifier choices, shows evolution ceremony. Does NOT call fal.ai or OpenAI directly. All generation is server-side.
+- **Admin Dashboard** (Next.js/TypeScript web app on Railway): Batch card generation pipeline, review gallery for QA, approve/reject/regenerate controls, export to database. The owner accesses this in a browser. It is NOT part of the iOS app.
+- **Supabase Dashboard** (built-in, free): Player lookup, match history, auth management (ban/unban), direct data fixes. No custom code needed.
 
 **Key Principles:**
 - Players never type freeform prompts — they pick from curated lists surfaced by the iOS app
@@ -1529,9 +1530,9 @@ SUPABASE_SERVICE_ROLE_KEY=...
 
 ### 5.4 Admin Dashboard Review Gallery
 
-The review gallery is a feature of the **Admin Dashboard** — a React web app deployed on Railway. It is not part of the iOS game client. The owner accesses it at `https://admin.chaos-creatures.com` (or the Railway-provided URL before a custom domain is configured).
+The review gallery is a feature of the **Admin Dashboard** — a Next.js/TypeScript web app deployed on Railway. It is not part of the iOS game client. The owner accesses it at `https://admin.chaos-creatures.com` (or the Railway-provided URL before a custom domain is configured).
 
-**Technology:** React (TypeScript), deployed on Railway as a separate service from the game server. Uses the same Railway project, different service. No separate account needed.
+**Technology:** Next.js (TypeScript), deployed on Railway as a separate service from the game server. Uses the same Railway project, different service. No separate account needed.
 
 **Review gallery data source:** The gallery reads from the manifest at `scripts/batch/output/manifest.json` via a Railway API endpoint (`GET /api/admin/batch/results`). It does not read the file system directly from the browser.
 
@@ -1863,3 +1864,15 @@ All batch-generated base cards go through owner approval in the Admin Dashboard 
 11. **iOS push notification path documented.** Fallback art completion triggers APNs push notification via Supabase Realtime → Supabase Edge Function → APNs. iOS client polls `GET /api/cards/{id}/art-status` every 30 seconds when displaying fallback art.
 
 12. **StoreKit 2 / App Store compliance.** Confirmed no payment logic touches this doc (prompt templates are unrelated to payments). All mentions of "app" refer to the native iOS app. No RevenueCat, no Stripe, no Google Play references anywhere in this document.
+
+### Changes Made in Version 3.1 (2026-02-16)
+
+1. **Admin Dashboard technology: React → Next.js (TypeScript).** Updated all references in Sections 1, 5.4 to reflect Next.js as the admin dashboard framework.
+2. **"Two Applications" → "Three Tools."** CLAUDE.md updated to a Three Tools model (Game Client, Admin Dashboard, Supabase Dashboard). Overview section updated to list all three tools with ownership assignments.
+3. **Added Supabase Dashboard as third tool.** Player lookup, match history, auth management, and direct data fixes are handled via Supabase Dashboard (built-in, free) — no custom UI needed for those tasks.
+
+### Changes Made in Version 3.1 (2026-02-16)
+
+1. **Admin Dashboard technology: React → Next.js (TypeScript).** Updated all references to the Admin Dashboard web app from "React" to "Next.js/TypeScript" (Sections 0 overview, 5.4 review gallery). Matches CLAUDE.md and doc 06 Section 9.
+2. **"Two Applications" → "Three Tools."** CLAUDE.md now defines Three Tools: Game Client (iOS), Admin Dashboard (Next.js on Railway), Supabase Dashboard (built-in). Updated overview section to include Supabase Dashboard as the third tool for player lookup, match history, and auth management.
+3. **No content changes.** All prompt templates, API shapes, and pipeline logic are unchanged. This is a technology label and tooling model update only.

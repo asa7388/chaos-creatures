@@ -8,7 +8,7 @@ This document is the owner's operating manual for generating, reviewing, and pub
 
 **Client platform:** Native iOS only. Swift + SwiftUI + SpriteKit. App Store only. No Android, no React Native, no Expo.
 
-**Admin dashboard:** Separate web application deployed on Railway. The owner accesses it in a browser. It is not part of the iOS app.
+**Admin dashboard:** Separate Next.js/TypeScript web application deployed on Railway. The owner accesses it in a browser. It is not part of the iOS app. Player lookup, match history, and auth management are handled via the built-in Supabase Dashboard (no custom code needed).
 
 ---
 
@@ -104,7 +104,7 @@ The owner runs one command in a terminal. The system generates all card art and 
          |
          v
 [Review Gallery — http://localhost:3001]
-  - Express server (Node.js, Railway-hosted or local)
+  - Next.js server (TypeScript, Railway-hosted or local)
   - displays all generated cards in a grid
   - owner clicks Approve / Reject (Art) / Reject (Name) / Edit
   - approved cards: uploaded to Cloudflare R2 --> inserted into Supabase
@@ -591,7 +591,7 @@ To view a previous batch: `npx ts-node scripts/review-gallery.ts --batch=batch_2
 
 ### 5b. Gallery Layout
 
-The gallery is a Node.js Express server with server-rendered HTML. Claude Code builds this as part of the admin dashboard web application.
+The gallery is a Next.js (TypeScript) web app with server-rendered pages. Claude Code builds this as part of the admin dashboard web application.
 
 **Header bar:**
 - Batch name and date
@@ -1617,3 +1617,8 @@ This section records every change made to the document.
 11. **Aligned image format references.** Section 4a resolution check updated from 1024×1024 to 768×1024 to match the `portrait_4_3` image size. File size range updated from 100KB–4MB to 50KB–3MB to match WebP's better compression.
 
 12. **Removed REVIEW.md INFO-3 inconsistency.** Card counts throughout now consistently use the final figures (100 creatures + 17 spells per faction = 117 per faction, 351 faction cards + 7 universal stabilizers = 358 total). Faction stabilizers removed from per-faction counts — all stabilizers are universal per protected docs 00 and 01. The "270-375" range from the original brief is gone.
+
+### Changes Made in Version 3.1 (2026-02-16)
+
+1. **Admin Dashboard technology: Express/HTML → Next.js (TypeScript).** Updated header, pipeline diagram (Section 1), and Section 5b gallery description. Review gallery is now a Next.js web app, not a Node.js Express server with server-rendered HTML.
+2. **Added Supabase Dashboard note.** Header now clarifies that player lookup, match history, and auth management are handled via built-in Supabase Dashboard — no custom admin UI needed for those tasks.
