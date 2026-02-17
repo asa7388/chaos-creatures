@@ -4,10 +4,10 @@
 
 ## Executive Summary
 - Total unique findings: **78** (after deduplication from ~160 raw findings)
-- **CRITICAL**: 14
+- **CRITICAL**: 13 (S-09 Taunt moved to LOW per owner decision)
 - **HIGH**: 22
 - **MEDIUM**: 28
-- **LOW**: 14
+- **LOW**: 15
 
 The codebase is structurally complete — all four projects build, navigation paths exist, and core game loops are implemented. However, there are 14 critical issues that block either core gameplay, online play, security, or App Store submission. The most urgent cluster is the **WebSocket/Realtime action pipeline** (player actions are silently dropped by the game server), followed by **missing card play interaction in SpriteKit**, and **8 missing Edge Functions** the iOS client expects. Security issues in Edge Functions (unauthenticated cron endpoints, public player data exposure) and App Store blockers (no app icon, missing privacy manifest) round out the critical tier.
 
@@ -27,7 +27,7 @@ The codebase is structurally complete — all four projects build, navigation pa
 | S-06 | Spell resolution is a stub on game server | W2A | turn.ts:259-268 | MEDIUM |
 | S-07 | Audio never triggered — BattleAudioManager disconnected from pipeline | W1B | BattleAudioManager.swift, all Action files | MEDIUM |
 | S-08 | No audio asset files exist | W1B, W4C | Resources/Audio/ (empty) | MEDIUM |
-| S-09 | Taunt forced-block not implemented in SpriteKit touch handling | W1B | BattleScene.swift | MEDIUM |
+| ~~S-09~~ | ~~Taunt forced-block~~ — **moved to LOW (post-launch per owner decision)** | W1B | BattleScene.swift | MEDIUM |
 | S-10 | verifyServiceRole() 403 bug blocks content pipeline | W2B, W4C | _shared/auth.ts | SMALL |
 | S-11 | Missing auth on monthly-rewards and refresh-daily-quests | W2B | monthly-rewards/index.ts, refresh-daily-quests/index.ts | SMALL |
 | S-12 | Players table exposes all columns to all authenticated users | W2C | 00011 migration (RLS policy) | SMALL |
@@ -90,12 +90,8 @@ The codebase is structurally complete — all four projects build, navigation pa
 **Fix complexity**: MEDIUM (source/generate 18 SFX + 12 music stems)
 **Remediation**: Deferred to Impl W3 (Audio Integration)
 
-#### S-09: Taunt Forced-Block Not Implemented in SpriteKit
-**Description**: The Assign Blockers phase has no Taunt auto-assignment, no Taunt banner, no forced-block enforcement in the SpriteKit touch handling. The game server correctly enforces Taunt, but the client UI does not reflect it — no auto-drawn block lines, no "Your Taunt creature must block" banner.
-**Source audits**: W1B (CRITICAL-05, HIGH-05)
-**Files**: `ChaosCreatures/ChaosCreatures/SpriteKit/Scenes/BattleScene.swift`
-**Fix complexity**: MEDIUM (1-2 files, 1-2 hours — add auto-block logic and banner at Block phase start)
-**Remediation**: Agent 6B
+#### ~~S-09: Taunt Forced-Block Not Implemented in SpriteKit~~ — MOVED TO LOW
+**Owner decision**: Taunt client-side enforcement deferred to post-launch. Server already enforces Taunt correctly; client will simply not show forced-block UI hints for now. Moved to LOW tier.
 
 #### S-10: verifyServiceRole() 403 Bug Blocks Content Pipeline
 **Description**: The raw string comparison of `Authorization` bearer token against `Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")` fails consistently in production. This blocks all 7 service-role-protected Edge Functions (batch-generate, generate-card-art, etc.). Root cause: JWT gateway transformation or key mismatch.
@@ -552,6 +548,7 @@ The codebase is structurally complete — all four projects build, navigation pa
 
 | ID | Title | Source | Complexity |
 |---|---|---|---|
+| S-09 | Taunt forced-block UI in SpriteKit (server enforces, client deferred) | W1B | MEDIUM |
 | S-65 | No haptic feedback anywhere in app | W1B, W3B, W4A | MEDIUM |
 | S-66 | Keywords use plain colored squares instead of icons in SpriteKit | W1B | SMALL |
 | S-67 | Profile missing showcase cards and active title | W1A | SMALL |
@@ -592,8 +589,8 @@ The codebase is structurally complete — all four projects build, navigation pa
 9. S-51, S-52, S-53, S-55, S-57 (database/config cleanup)
 
 ### Agent 6B: Gameplay Gap Fixer
-**Scope**: S-02, S-06, S-09, S-18, S-19, S-20, S-21, S-22, S-29, S-33, S-34, S-35, S-36, S-46, S-47, S-48, S-49, S-50, S-59, S-64
-**Estimated findings**: 20
+**Scope**: S-02, S-06, S-18, S-19, S-20, S-21, S-22, S-29, S-33, S-34, S-35, S-36, S-46, S-47, S-48, S-49, S-50, S-59, S-64
+**Estimated findings**: 19 (S-09 Taunt deferred to post-launch)
 **Key files**:
 - Game Server: turn.ts, events.ts, handler.ts, combat.ts (spell resolution, event bugs, mulligan, event choice)
 - iOS SpriteKit: BattleScene.swift, ChaosRollAction.swift, EventBannerNode.swift, TimerNode.swift
@@ -603,7 +600,7 @@ The codebase is structurally complete — all four projects build, navigation pa
 **Priority order**:
 1. S-02 (card play interaction — blocks ALL gameplay)
 2. S-06 (spell resolution — blocks spell cards)
-3. S-09 (Taunt forced-block — breaks core keyword)
+3. ~~S-09~~ (Taunt forced-block — deferred to post-launch per owner decision)
 4. S-18 (C6/C8 event bugs)
 5. S-19 (event choice pipeline)
 6. S-22 (evolution job processor)
