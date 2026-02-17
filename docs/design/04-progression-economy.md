@@ -1,21 +1,32 @@
 # Chaos Creatures — Progression & Economy Design
 
-**Document Version:** 2.0
+**Document Version:** 3.0
 **Last Updated:** 2026-02-16
 **Status:** Code-Ready
-**Infrastructure:** Supabase (Postgres + Edge Functions), Railway (Node.js), PostHog (analytics), React Native (Expo) client
+**Infrastructure:** Supabase (Postgres + Edge Functions), Railway (Node.js game server), PostHog (analytics), Swift + SwiftUI + SpriteKit iOS client, StoreKit 2 payments
 
 ---
 
 ## How to Use This Document
 
-This document is written so that Claude Code can implement every system directly from the text below. There are no judgment calls left to the implementer. Every formula is explicit, every threshold is locked, every edge case is handled. When numbers need tuning, the owner adjusts the JSON config file described in Section 10 — no code changes required.
+This document is written so that Claude Code can implement every system directly from the text below. There are no judgment calls left to the implementer. Every formula is explicit, every threshold is locked, every edge case is handled. When numbers need tuning, the owner adjusts the JSON config file described in Section 9 — no code changes required.
 
 **Owner's operating workflow:**
 1. Run the balance dashboard (Section 10) to see Monte Carlo projections.
 2. If curves look wrong, edit `economy.config.json` values.
 3. Re-run dashboard to verify the fix.
-4. The game reads `economy.config.json` at startup via a Supabase Edge Function — updated values take effect on the next server restart with zero code changes.
+4. The game server reads `economy.config.json` at startup — updated values take effect on the next Railway deployment with zero code changes.
+
+**Which application each section applies to:**
+
+| Section | iOS Game Client | Admin Dashboard (Web) |
+|---|---|---|
+| 1–8 Economy design | Implemented as gameplay systems | Visualized as reports |
+| 9 Config schema | Read-only at startup | Read/write via UI |
+| 10 Balance dashboard | Not applicable | This IS the admin dashboard |
+| 11 Implementation checklist | Swift client tasks listed separately | Node.js/web tasks listed separately |
+
+The Admin Dashboard is a separate web application running on Railway, distinct from the iOS app. See `06-technical-architecture.md` for the full separation. No economy administration UI belongs in the iOS app.
 
 ---
 
@@ -26,6 +37,21 @@ This document is written so that Claude Code can implement every system directly
 - Subscription value = speed + variety + aesthetics, never raw power
 - All numbers below are internally consistent with `00-game-design-master.md` and `02-card-data-model.md`
 - Every formula references the canonical enum values from `02-card-data-model.md` (SubscriptionTier, SeasonRank, MissionType, ShardTier, etc.)
+
+---
+
+## Budget Compliance
+
+Total project build-to-launch budget: $300. Economy systems do not directly incur infrastructure costs beyond the backend services already accounted for in `06-technical-architecture.md`. The balance dashboard runs entirely locally on the owner's machine (no cloud compute, no external API calls). No paid analytics dashboard tier is required — PostHog's free tier (1M events/month) covers economy monitoring for the first 6–12 months at projected player volumes.
+
+| Service | Economy-Related Usage | Estimated Monthly Cost |
+|---|---|---|
+| Supabase | Quest/mission records, shard transactions, player dust/rank | Included in base project budget |
+| Railway | Game server posts match results triggering economy updates | Included in base project budget |
+| PostHog | Economy health events (dust earned/spent, quests, evolutions) | Free tier: $0 |
+| Balance dashboard | Runs locally on owner's Mac, zero cloud cost | $0 |
+
+No economy feature requires any additional paid service beyond what the project already uses.
 
 ---
 
@@ -105,24 +131,26 @@ All timelines below assume 50% win rate. Milestones refer to a **single card** (
 
 The following represents what a typical Regular player (5 games/day, 50% WR) actually experiences:
 
-- **Week 1:** First 5 cards hit Uncommon threshold. Evolves 1-3 using starter shards.
+- **Week 1:** First 5 cards hit Uncommon threshold. Evolves 1–3 using starter shards.
 - **Week 2:** All 20 deck cards hit Uncommon. Core 5 cards approach Rare.
 - **Week 3:** Core 5 cards hit Rare. Full deck at Uncommon (if shards available).
-- **Week 5-6:** Core 3 cards hit Epic. Shard cost (120 Dust each) becomes a notable decision.
+- **Week 5–6:** Core 3 cards hit Epic. Shard cost (120 Dust each) becomes a notable decision.
 - **Week 8:** First card hits Legendary energy threshold. Shard cost (240 Dust) is a meaningful milestone.
-- **Week 12-16:** Full deck at Rare+, 3-5 cards at Legendary. Deck is tournament-competitive.
+- **Week 12–16:** Full deck at Rare+, 3–5 cards at Legendary. Deck is tournament-competitive.
 
-**Design intent:** Competitive decks are viable at Rare tier (achievable in 3-5 weeks). The Legendary grind is an aspirational goal, not a gate to participation.
+**Design intent:** Competitive decks are viable at Rare tier (achievable in 3–5 weeks). The Legendary grind is an aspirational goal, not a gate to participation.
 
 ---
 
 ## 2. Chaos Dust Economy — Full Mathematical Model
 
-Chaos Dust is the single in-game currency. There is no premium currency. Subscriptions are purchased through the App Store/Google Play native IAP. All Dust is earned through gameplay.
+Chaos Dust is the single in-game currency. There is no premium currency. Subscriptions are purchased through the iOS App Store using StoreKit 2 native IAP. All Chaos Dust is earned through gameplay — it cannot be purchased directly.
 
 ### 2.1 Base Earning Rates (All Player Types)
 
 These are the **locked base rates** as defined in `00-game-design-master.md` Section 6.
+
+**Authoritative daily quest dust values (this document is the source of truth):** Easy = 20 Dust, Medium = 30 Dust, Hard = 45 Dust. The master doc states a range of "25–50" as an approximation. The exact values below are canonical for all implementation purposes.
 
 | Source | Amount | Notes |
 |---|---|---|
@@ -150,16 +178,16 @@ As defined in `00-game-design-master.md` Section 7. The multiplier applies only 
 
 | Subscription Tier | Quest Dust Multiplier | Daily Quest Value | Weekly Quest Value | Enum Value |
 |---|---|---|---|---|
-| FREE | 1.0× (no bonus) | ~90 Dust/day | ~150 Dust/quest | `FREE` |
-| MID | 1.5× (+50%) | ~135 Dust/day | ~225 Dust/quest | `MID` |
-| HIGH | 2.0× (+100%) | ~180 Dust/day | ~300 Dust/quest | `HIGH` |
+| FREE | 1.0× (no bonus) | ~90 Dust/day | ~175 Dust/quest avg | `FREE` |
+| MID | 1.5× (+50%) | ~135 Dust/day | ~262.5 Dust/quest avg | `MID` |
+| HIGH | 2.0× (+100%) | ~180 Dust/day | ~350 Dust/quest avg | `HIGH` |
 
 **Implementation note for Supabase Edge Function:**
 When awarding quest completion rewards, look up `player.subscription_tier`. Apply multiplier as:
 ```
 reward_dust = base_dust × SUBSCRIPTION_QUEST_MULTIPLIER[subscription_tier]
 ```
-Where `SUBSCRIPTION_QUEST_MULTIPLIER` is loaded from `economy.config.json` (see Section 10).
+Where `SUBSCRIPTION_QUEST_MULTIPLIER` is loaded from `economy.config.json` (see Section 9). The Edge Function must not use client-supplied multipliers — the player's tier is read from `auth.users` metadata or the `players` table, never from the request body.
 
 ### 2.3 Spending Costs (Locked Values)
 
@@ -191,7 +219,8 @@ As defined in `00-game-design-master.md` Section 3.
 `FREE: 90/day | MID: 135/day | HIGH: 180/day`
 
 **Weekly quest contribution (amortized per day):**
-`FREE: (2 × 175 avg) ÷ 7 = 50/day | MID: (2 × 262.5 avg) ÷ 7 = 75/day | HIGH: (2 × 350 avg) ÷ 7 = 100/day`
+Average weekly quest value = (150 + 200) ÷ 2 = 175 Dust for FREE tier.
+`FREE: (2 × 175) ÷ 7 = 50/day | MID: (2 × 262.5) ÷ 7 = 75/day | HIGH: (2 × 350) ÷ 7 = 100/day`
 
 | Player Type | Games/Day | Game Dust/Day | Quest Dust/Day | Weekly Quest/Day | **Total/Day** | **Total/Week** |
 |---|---|---|---|---|---|---|
@@ -204,8 +233,6 @@ As defined in `00-game-design-master.md` Section 3.
 | Top Casual | 2 | 20 | 180 | 100 | **300** | **2,100** |
 | Top Regular | 5 | 50 | 180 | 100 | **330** | **2,310** |
 | Top Hardcore | 10 | 100 | 180 | 100 | **380** | **2,660** |
-
-**Note on v1.0 vs v2.0 numbers:** The original document used lower weekly totals (e.g., 770 for Free Casual). The corrected numbers above match the exact formulas from the master doc: daily quest base of 90/day (3 × 30 avg) and weekly quest base of 300/week (2 × 150). The v1.0 numbers used 43/day for weekly quests instead of the correct 50/day (2 × 175 avg / 7 days).
 
 ### 2.5 Weekly Dust Flow Model — What Players Can Buy
 
@@ -221,7 +248,7 @@ As defined in `00-game-design-master.md` Section 3.
 | **Top Regular** | 2,310 | 23.1 | 5.1 | 9.6 |
 | **Top Hardcore** | 2,660 | 26.6 | 5.9 | 11.1 |
 
-**Reality note:** Players split spending across categories. Typical realistic allocation for an active player:
+**Realistic allocation for an active player:**
 - 60% on shards (Rare/Epic/Legendary tier)
 - 20% on card packs (expanding collection, chasing faction variety)
 - 10% on targeted Common purchases (specific cards for a deck strategy)
@@ -231,15 +258,15 @@ As defined in `00-game-design-master.md` Section 3.
 
 A second faction costs 150 Dust (one card pack from that faction). Once purchased, the faction is fully unlocked.
 
-| Player Type | Dust/Week | Weeks to Unlock 2nd Faction | Weeks to Unlock 3rd Faction |
+| Player Type | Dust/Week | Days to Unlock 2nd Faction | Days to Unlock 3rd Faction |
 |---|---|---|---|
-| Free Casual | 1,120 | 0.13 (< 1 day) | 0.27 (< 2 days) |
-| Free Regular | 1,330 | 0.11 | 0.23 |
-| Free Hardcore | 1,680 | 0.09 | 0.18 |
-| Mid Regular | 1,820 | 0.08 | 0.16 |
-| Top Regular | 2,310 | 0.06 | 0.13 |
+| Free Casual | 1,120 | 150 ÷ 160/day = **0.94 days** | **1.88 days** |
+| Free Regular | 1,330 | 150 ÷ 190/day = **0.79 days** | **1.58 days** |
+| Free Hardcore | 1,680 | 150 ÷ 240/day = **0.63 days** | **1.25 days** |
+| Mid Regular | 1,820 | 150 ÷ 260/day = **0.58 days** | **1.15 days** |
+| Top Regular | 2,310 | 150 ÷ 330/day = **0.45 days** | **0.91 days** |
 
-**Conclusion:** Faction unlocking is never a meaningful gate. Any player can unlock all 3 factions within their first week without meaningfully slowing other progression. The 150 Dust cost is a commitment signal, not a barrier.
+**Conclusion:** Faction unlocking is never a meaningful gate. Any player can unlock all 3 factions within their first 2 days without slowing other progression. The 150 Dust cost is a commitment signal, not a barrier.
 
 ### 2.7 Inflation Prevention and Dust Sinks
 
@@ -269,11 +296,11 @@ A second faction costs 150 Dust (one card pack from that faction). Once purchase
 
 At this distribution, the Free Regular player never accumulates a problematic dust surplus because Legendary and Epic shards absorb the majority of income indefinitely.
 
-**Alert threshold (PostHog):** If median dust balance across active players (7-day active) exceeds 2,000 Dust, the economy is under-sinking. Recommended correction: add a new cosmetic sink or temporarily boost shard costs are NOT the answer — instead, add a new avatar or limited cosmetic bundle.
+**Alert threshold (PostHog):** If median dust balance across active players (7-day active) exceeds 2,000 Dust, the economy is under-sinking. Correct by adding a new cosmetic avatar bundle in the Admin Dashboard. Do NOT increase shard costs or reduce quest rewards.
 
 ### 2.8 Long-Term Collection Growth Projections
 
-**Starting point for all players:** 20 Commons in 1 faction, 200 Dust, 3 Uncommon shards, 1 Rare shard, 1 Legendary shard.
+**Starting point for all players:** 20 Commons in 1 faction, 200 Dust, 3 Uncommon shards, 1 Rare shard, 1 Legendary shard (see Section 3.2 for authoritative starter shard details).
 
 **Free Regular Player (5 games/day, 1,330 Dust/week):**
 
@@ -326,11 +353,21 @@ Shards are consumed at evolution. They map directly to `ShardTier` enum values i
 
 ### 3.2 Shard Sources
 
+**Authoritative starter shard package (canonical, no other version is valid):**
+
+Every new player receives exactly this on faction commitment:
+- 3 Uncommon Shards
+- 1 Rare Shard
+- 1 Legendary Shard
+
+The Legendary Shard is aspirational — it cannot be used until a card has earned 170 total energy (roughly Day 23 for a Regular player). Its presence in the starter pack communicates that Legendary evolution is achievable, not gated behind a paywall.
+
+All other shard source rows in the table below are in addition to this starter package.
+
 | Source | Shard Type | Frequency | Source Enum |
 |---|---|---|---|
 | Buy with Chaos Dust | Any tier | On-demand | `PURCHASE` |
-| Starter pack (onboarding) | 3 Uncommon + 1 Rare | One-time | `MILESTONE` |
-| Starter pack (onboarding) | 1 Legendary | One-time (aspirational) | `MILESTONE` |
+| Starter pack (onboarding) | 3 Uncommon + 1 Rare + 1 Legendary | One-time | `MILESTONE` |
 | Daily quest reward (medium, 20% chance) | 1 Uncommon | ~0.6× per day | `DAILY_LOGIN` (quest) |
 | Daily quest reward (hard, 30% chance) | 1 Rare | ~0.18× per day | `DAILY_LOGIN` (quest) |
 | Weekly quest reward (W01/W03/W06–W09) | 1 Rare | ~1×/week | `WEEKLY_CHALLENGE` |
@@ -340,7 +377,7 @@ Shards are consumed at evolution. They map directly to `ShardTier` enum values i
 | Monthly milestone (Platinum+) | 1 Legendary | Monthly | `MILESTONE` |
 | Top subscription bonus | 1 Legendary | Monthly | `SUBSCRIPTION_GRANT` |
 
-**Implementation note:** Shard grants that are not purchases use `ShardTransaction.source` enum values. The `SUBSCRIPTION_GRANT` source fires on the 1st of each month for `HIGH` tier subscribers via a Supabase scheduled Edge Function (cron: `0 0 1 * *`).
+**Implementation note:** The `SUBSCRIPTION_GRANT` source fires on the 1st of each month for `HIGH` tier subscribers via a Supabase scheduled Edge Function (pg_cron: `0 0 1 * *`). This is a server-side operation; the iOS client receives the shard via the Supabase Realtime `player_wallet` channel update and reflects it in the HUD without any client-initiated request.
 
 ### 3.3 Shard Acquisition Rate (via Dust, 60% Conversion Assumption)
 
@@ -362,17 +399,17 @@ Shards are consumed at evolution. They map directly to `ShardTier` enum values i
 
 **First Legendary card (single card):**
 - Energy gate: 113 games ÷ 5 games/day = **22.7 days**
-- Shard gate: 450 Dust total ÷ 1,330 Dust/week = **2.4 days** of income
+- Shard gate: 450 Dust total ÷ (1,330 Dust/week ÷ 7) = 450 ÷ 190 = **2.4 days** of income
 - **Bottleneck: Energy (by ~9.5×)**
 
 **Fifth Legendary card (sequential, assuming energy accrues in parallel):**
-- Energy: same 22.7 days (all cards earn simultaneously, so by the time your 1st Legendary is done, 3-4 others are close)
-- Shard: 5 × 450 = 2,250 Dust ÷ 1,330/week = **11.9 days** of income
+- Energy: same 22.7 days (all cards earn simultaneously, so by the time your 1st Legendary is done, 3–4 others are close)
+- Shard: 5 × 450 = 2,250 Dust ÷ 190/day = **11.9 days** of income
 - **Bottleneck: Still Energy**
 
 **Full deck Legendary (20 cards):**
 - Energy: 22.7 days (all 20 cards hit Legendary threshold at the same time, since they earn simultaneously)
-- Shard: 20 × 450 = 9,000 Dust ÷ 1,330/week = **47.4 days** of income
+- Shard: 20 × 450 = 9,000 Dust ÷ 190/day = **47.4 days** of income
 - **Bottleneck: Shards (by ~2×)**
 
 | Progression Goal | Energy Gate | Shard Gate | Actual Bottleneck |
@@ -389,16 +426,16 @@ Shards are consumed at evolution. They map directly to `ShardTier` enum values i
 
 ### 3.5 Legendary Shard Scarcity and Subscriber Value
 
-**Free player Legendary shard acquisition rate:**
-- Via Dust (60% to shards): 798 Dust/week ÷ 240 = 3.3 Legendary shards/week
-- Via season rewards (Platinum+): 1–2 Legendary shards per 8-week season = ~0.15/week
-- **Total Free Regular: ~3.5 Legendary shards/week**
+**Free player Legendary shard acquisition rate (Free Regular):**
+- Via Dust (60% to shards): 798 Dust/week ÷ 240 = **3.3 Legendary shards/week**
+- Via season rewards (Platinum+): 1–2 Legendary shards per 8-week season = **~0.15/week**
+- Total: **~3.5 Legendary shards/week**
 
-**Top subscriber Legendary shard acquisition rate:**
-- Via Dust (60% to shards): 1,386 Dust/week ÷ 240 = 5.8 Legendary shards/week
-- Via season rewards (Platinum+): ~0.15/week
-- Via subscription grant: 1/month = ~0.25/week
-- **Total Top Regular: ~6.2 Legendary shards/week**
+**Top subscriber Legendary shard acquisition rate (Top Regular):**
+- Via Dust (60% to shards): 1,386 Dust/week ÷ 240 = **5.8 Legendary shards/week**
+- Via season rewards (Platinum+): **~0.15/week**
+- Via subscription grant: 1/month = **~0.25/week**
+- Total: **~6.2 Legendary shards/week**
 
 **Subscriber speed multiplier for Legendary evolutions:** 6.2 ÷ 3.5 = **1.77× faster**
 
@@ -406,15 +443,15 @@ This is meaningful (roughly double the Legendary progression speed) but is entir
 
 **Time to first Legendary evolution (combined energy + shard gate, Free Regular):**
 - Energy becomes ready at Day 22.7
-- Shard cost (450 Dust for full path) is accumulated in 2.4 days
-- Therefore: first Legendary evolution is possible at **Day 23** (immediately when energy is ready)
+- Shard cost (450 Dust for full path): 450 ÷ 190/day = 2.4 days of income; accumulated well before Day 22.7
+- Therefore: first Legendary evolution is possible at **Day 23** (immediately when energy is ready, shards already saved)
 
 **Time to first Legendary evolution (Top Regular):**
-- Energy ready at Day 22.7 (identical — energy doesn't scale with subscription)
+- Energy ready at Day 22.7 (identical — energy does not scale with subscription)
 - Shard ready at Day 1.4
-- Free Legendary shard arrives on Day 1 of month
-- If onboarding in first 3 days of a month: first Legendary possible at **Day 15** using both the free Legendary shard + Legendary shard from starter pack
-- Otherwise: **Day 23** (same as Free Regular, assuming no lucky timing)
+- Free Legendary shard (subscription grant) arrives on Day 1 of each month
+- If onboarding in first 3 days of a month: first Legendary possible at **Day 15** using the starter Legendary shard (which can be held in reserve until energy is ready)
+- Otherwise: **Day 23** (same as Free Regular — energy is the binding constraint)
 
 ---
 
@@ -449,6 +486,7 @@ function generateDailyQuest(player, existingQuestTypes):
 ```
 final_reward = base_dust × SUBSCRIPTION_QUEST_MULTIPLIER[player.subscription_tier]
 ```
+The multiplier is loaded from `economy.config.json` and applied server-side in the `complete-quest` Edge Function.
 
 ### 4.2 Daily Quest Templates (20 Unique Templates)
 
@@ -483,7 +521,7 @@ All base dust values below are for FREE tier. MID multiplies by 1.5, HIGH multip
 - These shard drops are in addition to Dust. They use `Mission.reward_shard_tier` field from the data model.
 
 **Quest tracking implementation note:**
-All MissionType values map to in-game events fired by the Railway game server. The server publishes mission progress updates to Supabase Realtime after each game ends. The mapping:
+All MissionType values map to in-game events produced by the Railway game server. The server publishes mission progress updates to Supabase after each game ends. The iOS client reflects updated progress via Supabase Realtime subscriptions. Mapping:
 
 | MissionType | Tracking Event | Source |
 |---|---|---|
@@ -541,15 +579,15 @@ No deduplication needed (only 2 of 10, always different).
 - Hardcore (70 games/week): 2.0 of 2 weekly quests (with room to spare)
 
 **Effective weekly quest contribution to income:**
-- Free Casual: 1.2 × 175 avg = **210 Dust/week** (not 300)
+- Free Casual: 1.2 × 175 avg = **210 Dust/week** (not 350)
 - Free Regular: 2.0 × 175 avg = **350 Dust/week**
 - Free Hardcore: 2.0 × 175 avg = **350 Dust/week**
 
-**Note:** The "Total/Week" income table in Section 2.4 assumes full completion of both weekly quests (Regular/Hardcore) and partial completion (Casual: 80%). Actual income for casual players is slightly lower than the table shows.
+**Note:** The "Total/Week" income table in Section 2.4 assumes full completion of both weekly quests (Regular/Hardcore) and 80% completion rate (Casual: 1.2 × 175 ÷ 7 ≈ 30/day instead of the theoretical 50/day). The table uses the theoretical maximum for clean math; actual Casual income is ~90 Dust/week lower than shown.
 
 ### 4.4 Onboarding Quests (One-Time, Auto-Assigned)
 
-These are special missions that auto-assign during the first 2 weeks and never return after completion. They use the same `Mission` data model with a `mission_type`-based tracking approach. They do NOT appear in the daily quest slot (they have their own UI section: "Getting Started").
+These are special missions that auto-assign during the first 2 weeks and never return after completion. They do NOT appear in the daily quest slot — they have their own UI section in the iOS app ("Getting Started" tab in the Quest screen).
 
 | Quest Name | Trigger Condition | Reward |
 |---|---|---|
@@ -562,7 +600,7 @@ These are special missions that auto-assign during the first 2 weeks and never r
 | Ranked Debut | Play 3 ranked matches | 100 Dust + Bronze card back |
 | Faction Loyalty | Play 20 games with your starter faction | 200 Dust |
 
-**Total onboarding rewards:** 750 Dust + 2 Uncommon Shards + 3 Rare Shards
+**Total onboarding rewards:** 750 Dust + 2 Uncommon Shards + 3 Rare Shards (in addition to the faction commitment starter package)
 
 These reward sequences are hard-coded in a Supabase Edge Function triggered by the relevant player event. They are not generated by the daily quest algorithm.
 
@@ -607,7 +645,7 @@ These reward sequences are hard-coded in a Supabase Edge Function triggered by t
 - Weekly point gain: 14 × 2.5 = +35 points
 - Points to Silver 3 from Bronze 3: 300 points (3 Bronze divisions × 100 each)
 - Weeks to Silver 3: 300 ÷ 35 = **8.6 weeks** (reaches Silver at season end of 8-week season)
-- **Outcome:** Casual players end season at Bronze/Silver, receive Bronze/Silver rewards. This is intentional — ranked is aspirational for casuals, not required.
+- **Outcome:** Casual players end season at Bronze/Silver, receive Bronze/Silver rewards.
 
 **Scenario B: Regular (5 games/day, 55% WR)**
 - Weekly games: 35
@@ -652,7 +690,7 @@ Awarded on the 1st of the second month of the season, based on the player's high
 
 ### 5.5 Season End Rewards
 
-Rewards are claimed from the in-game "Season Rewards" screen. They expire 7 days after season end (claimed or lost). Cosmetics are permanent once claimed.
+Rewards are claimed via the "Season Rewards" sheet in the iOS app (SwiftUI sheet presented on first app open after season end). They expire 7 days after season end. Cosmetics are permanent once claimed.
 
 | Final Season Rank | Chaos Dust | Shards | Cosmetic |
 |---|---|---|---|
@@ -691,9 +729,9 @@ This is 5–15% of weekly Dust income. Meaningful, but quests dominate income at
 
 ### 6.1 Onboarding Flow (First Session, ~30 Minutes)
 
-**Step 1 — Account creation** (2 screens, skippable lore intro):
-- Username selection
-- Quick faction lore overview (not required to read)
+**Step 1 — Account creation** (handled by Supabase Auth; 2 screens in the iOS app):
+- Username selection screen (SwiftUI `TextField` + submit)
+- Quick faction lore overview (SwiftUI `TabView` pager — skippable)
 
 **Step 2 — Trial phase** (10–20 minutes):
 - Receive 3 loaner decks (20 Commons each, one per faction, premade fixed lists, cannot be evolved or kept)
@@ -701,7 +739,7 @@ This is 5–15% of weekly Dust income. Meaningful, but quests dominate income at
 - Option to play 1–2 additional matches per faction vs AI
 
 **Step 3 — Faction commitment** (permanent choice):
-- Select starting faction
+- Select starting faction from a SwiftUI picker screen showing faction art, lore, and mechanic summary
 - The 20 Commons from that trial deck become owned `CardInstance` records, fully evolvable
 - Other 40 trial cards are deleted from player account
 
@@ -717,30 +755,30 @@ This is 5–15% of weekly Dust income. Meaningful, but quests dominate income at
 }
 ```
 
-This grant executes via a Supabase Edge Function triggered on the `onboarding_complete` flag transition (`false → true`). It fires exactly once per account.
+This grant executes via a Supabase Edge Function triggered on the `onboarding_complete` flag transition (`false → true`). It fires exactly once per account. The iOS app listens on the `player_wallet` Realtime channel and updates the HUD when the grant lands.
 
 ### 6.2 First Week Milestones (Designed Progression Curve)
 
 **Day 1–2: Learning the loop**
 - 5–10 games played → all 20 deck cards accumulate 7–15 energy (approaching Uncommon threshold)
 - Complete 2–3 daily quests → earn 60–90 Dust
-- **Tutorial prompt fires:** "Your [Card Name] is ready to evolve! Use your Uncommon Shard."
+- **iOS tutorial prompt fires:** An overlay sheet slides up (SwiftUI `.sheet`) saying "Your [Card Name] is ready to evolve! Tap to use your Uncommon Shard."
 - First Uncommon evolution → card art transforms, modifier granted, emotional hook set
-- Deck builder and Collection tab unlock after first evolution
+- Deck builder and Collection tab unlock after first evolution (gated `TabView` item becomes active)
 
 **Day 3–4: Collection building**
 - Earn 100–200 Dust from quests
 - Buy 1–2 card packs (expanding to 25–30 cards)
 - 3–5 more cards hit Uncommon threshold
-- **Tutorial prompt fires:** "Build your first custom deck in the deck builder."
+- **iOS tutorial prompt fires:** "Build your first custom deck in the Deck Builder. Tap to go there."
 - Ranked mode unlocks after custom deck is saved
 
 **Day 5–7: First Rare milestone**
 - 8–12 cards accumulated 30+ energy → Rare energy ready
 - Purchase Rare Shard (60 Dust) → first Rare evolution
 - Rare cards visually distinct: name changes, art shifts dramatically
-- **Tutorial prompt fires:** "You've evolved to Rare! Your card now has 2 modifiers."
-- Weekly quest activates (Monday only if Day 1 was before Monday; otherwise triggers on first Monday)
+- **iOS tutorial prompt fires:** "You've evolved to Rare! Your card now has 2 modifiers."
+- Weekly quest activates (Monday only)
 - Ranked climb begins
 
 **End of Week 1 expected state:**
@@ -813,7 +851,7 @@ Free players curate; subscribers collect breadth. Both are valid playstyles.
 
 **Competitive viability:** 3–6 months. By Month 6, a Free Regular player has 5–8 Legendaries and 12–16 Epics — enough for a Diamond-competitive deck. By Month 12, they have 15–20 Legendaries — enough for a full optimized deck.
 
-**Full Legendary deck (20 cards, one faction):** Approximately Month 10 for Free Regular (41 weeks). This is the "completion" goal for free players within their primary faction. A second Legendary deck takes proportionally longer since energy is spread across a second faction's cards.
+**Full Legendary deck (20 cards, one faction):** Approximately Month 10 for Free Regular (41 weeks). This is the "completion" goal for free players within their primary faction.
 
 ### 7.2 What Keeps Paying Players Spending?
 
@@ -828,18 +866,12 @@ Free players curate; subscribers collect breadth. Both are valid playstyles.
 
 **Month 7–12: Art quality advantage**
 - Subscribers' evolved cards use FLUX Kontext Pro + higher resolution + exclusive prompt modifiers
-- Cards look meaningfully better, more dramatic — prestige signal in matches
+- Cards look meaningfully better — prestige signal in matches
 - This is a collection identity advantage, not a power advantage
 
 **Month 12+: Seasonal/content advantage**
-- New factions every 6–8 months: subscriber can fill out 100–200 cards/faction much faster
+- New factions every 6–8 months: subscriber fills out 100–200 cards/faction much faster
 - Seasonal cosmetics and limited avatars are emotionally motivating
-
-**Why subscribers don't churn at Month 3 (when they could "step back"):**
-1. Sunk cost effect: "My collection is big, I want to keep growing it."
-2. Season progression: "I'm close to Diamond this season, can't stop now."
-3. New faction hype: "The new faction drops next month, I want to be ready."
-4. Art pride: "My Prismatic Shard Legendaries look incredible — I don't want to go back to Dev model art."
 
 ### 7.3 Content Cadence for Economy Freshness
 
@@ -858,7 +890,6 @@ Free players curate; subscribers collect breadth. Both are valid playstyles.
 - **New faction release** (primary economy event): 60–80 new Commons, new exclusive mechanic, new modifier pool
 - Free players: unlock first faction pack (150 Dust), then grind new faction the same as launch experience
 - Subscribers: immediately build out the new faction with their higher card limits and extra monthly Commons
-- Economy effect: resets the card pack chase for all players without invalidating existing cards
 
 **Every 12 months:**
 - Major feature addition (e.g., PvE campaign mode, draft format, guild system)
@@ -868,27 +899,25 @@ Free players curate; subscribers collect breadth. Both are valid playstyles.
 ### 7.4 Economy Crisis Scenarios and Responses
 
 **Scenario 1: "Players are sitting on too much Dust"**
-- Detection: PostHog reports median dust balance > 2,000 Dust for >30% of 7-day active players
-- Response: Introduce a new cosmetic avatar bundle (3 avatars × 300 Dust = 900 Dust per full purchase). No economy changes, no code changes — just new content added via admin UI.
+- Detection: PostHog reports median dust balance > 2,000 Dust for > 30% of 7-day active players
+- Response: Use the Admin Dashboard to add a new cosmetic avatar bundle (3 avatars × 300 Dust = 900 Dust per full purchase). No code changes, no config changes — just content added via admin UI.
 - Do NOT: increase shard prices, reduce quest rewards, or create artificial inflation
 
 **Scenario 2: "Quest completion rate is too low"**
 - Detection: PostHog reports daily quest completion rate < 60% across all active players
-- Response: In `economy.config.json`, shift difficulty distribution toward easier quests. Change `DIFFICULTY_WEIGHTS` from `{EASY: 0.40, MEDIUM: 0.40, HARD: 0.20}` to `{EASY: 0.50, MEDIUM: 0.40, HARD: 0.10}`. No code change.
+- Response: In `economy.config.json`, shift difficulty distribution toward easier quests. Change `quest_difficulty_weights` from `{EASY: 0.40, MEDIUM: 0.40, HARD: 0.20}` to `{EASY: 0.50, MEDIUM: 0.40, HARD: 0.10}`. Redeploy Railway server. No code change.
 
 **Scenario 3: "New players feel outmatched by Legendary decks"**
 - Detection: PostHog reports new player (<30 days) win rate against players with 10+ Legendaries < 30%
-- Response: Matchmaking weight adjustment in `economy.config.json`. Set `NEW_PLAYER_PROTECTION_GAMES` from 50 to 75. New players' first 75 games only match vs. players with <5 Legendary cards.
+- Response: In `economy.config.json`, set `matchmaking.new_player_protection_games` from 50 to 75. New players' first 75 games only match vs. players with fewer than 5 Legendary cards. Redeploy Railway server.
 
 **Scenario 4: "Meta is stale, card packs have no value"**
-- Detection: New card pack purchase rate drops >30% week-over-week
-- Response: Deploy a balance patch (modifier stat changes via Supabase admin). Target: rebalance 5–10 modifiers to shift the optimal deck archetype. Card packs become valuable again as new meta emerges.
+- Detection: New card pack purchase rate drops > 30% week-over-week
+- Response: Deploy a balance patch (modifier stat changes via Admin Dashboard). Target: rebalance 5–10 modifiers to shift the optimal deck archetype. Card packs become valuable again as new meta emerges.
 
 ### 7.5 PostHog Economy Health Metrics
 
-The following PostHog events must be implemented. They are the instrumentation layer for economy monitoring.
-
-**Events to track (implemented in Railway game server + Supabase Edge Functions):**
+The following PostHog events must be implemented server-side (Railway game server + Supabase Edge Functions). The iOS client does not send economy events directly — all economy analytics originate from the backend.
 
 | Event Name | Properties | Triggered When |
 |---|---|---|
@@ -902,7 +931,7 @@ The following PostHog events must be implemented. They are the instrumentation l
 | `season_reward_claimed` | `rank`, `dust_reward`, `player_tier` | Season end |
 | `faction_unlocked` | `faction_id`, `dust_spent`, `player_tier` | Faction unlock |
 
-**Weekly dashboard checks (owner reviews these every Monday):**
+**Weekly dashboard checks (owner reviews PostHog on Monday):**
 - Avg dust balance by player tier (target: Free 200–800, Mid 400–1,500, Top 500–2,000)
 - Quest completion rate by difficulty (target: Easy 85%+, Medium 75%+, Hard 55%+)
 - Shard purchase distribution by tier (Legendary shard purchases should be largest by value)
@@ -938,7 +967,7 @@ The binding constraint is `max(energy_weeks, shard_weeks)` where:
 - `energy_weeks = 113 games ÷ games_per_week` (all cards hit Legendary energy at the same time)
 - `shard_weeks = 9,000 Dust ÷ (Dust_per_week × 0.60)` for the shard cost alone
 
-For Free Regular: `max(113/35, 9000/798) = max(3.2, 11.3) = 11.3 weeks` of energy + ~30 more weeks as shards accumulate past energy readiness. Full answer: 9,000 ÷ 798 = ~11.3 weeks of pure income → but because shards drip in weekly rather than all at once, the practical time is ~41 weeks accounting for competing spending.
+For Free Regular: `max(113/35, 9000/798) = max(3.2, 11.3) = 11.3 weeks` of income if a player spent only on shards. Practical time is ~41 weeks because competing spending categories (packs, cosmetics, targeted commons) reduce weekly shard budget, and all 20 cards must evolve sequentially through each tier.
 
 ### 8.2 Progression Milestones by Player Type
 
@@ -952,48 +981,48 @@ For Free Regular: `max(113/35, 9000/798) = max(3.2, 11.3) = 11.3 weeks` of energ
 | Full Rare deck (20 cards) | Week 8 | Week 4–5 | Week 3–4 | Week 3 |
 | Full Epic deck (20 cards) | Week 24 | Week 14–16 | Week 10–12 | Week 8–10 |
 | Full Legendary deck (20 cards) | Week 52 | Week 38–42 | Week 28–32 | Week 23–27 |
-| 2nd Faction unlocked | Day 1–3 | Day 1–2 | Day 1 | Day 1 |
-| 3rd Faction unlocked | Week 1 | Week 1 | Day 2–3 | Day 1–2 |
-
-*Note: Faction unlock times are now near-instant because 150 Dust is less than 1 day's income for all player types. The limiting factor is wanting to explore rather than afford.*
+| 2nd Faction unlocked | Day 1–2 | Day 1 | Day 1 | Day 1 |
+| 3rd Faction unlocked | Day 2–4 | Day 2 | Day 1–2 | Day 1 |
 
 ### 8.3 Monthly Subscription Value Calculation
 
-To make the subscription value proposition clear:
+Subscriptions are purchased via StoreKit 2 on iOS. There is no web billing or external payment processor.
 
-**Mid Tier (~$6/month) delivers per month:**
+**Mid Tier ($6.99/month via App Store) delivers per month:**
 - +50% quest dust = +45 Dust/day × 30 days = +1,350 Dust/month
 - +3 Commons (50 Dust value each) = +150 Dust equivalent
-- +2× weekly quest value from multiplier = +700 Dust/month from quests
+- Weekly quest multiplier contribution = +700 Dust/month from quests
 - Better shard quality (REFINED vs PLANAR): FLUX Kontext Pro at 1024×1024 — purely aesthetic
 - 6 deck slots vs 3 — operational value for multi-deck players
 - 100 cards/faction vs 50 — collection breadth
-- **Dust-equivalent value: ~2,200 Dust/month** vs. subscription cost of ~$6
+- **Dust-equivalent value: ~2,200 Dust/month** vs. subscription cost of $6.99
 
-**Top Tier (~$12/month) delivers per month:**
+**Top Tier ($12.99/month via App Store) delivers per month:**
 - +100% quest dust = +90 Dust/day × 30 days = +2,700 Dust/month
 - +5 Commons = +250 Dust equivalent
 - +1 free Legendary shard = 240 Dust value
 - Better shard quality (PRISMATIC): 2 generation passes, exclusive prompt modifiers
 - 10 deck slots
 - 200 cards/faction
-- **Dust-equivalent value: ~4,200 Dust/month** vs. subscription cost of ~$12
+- **Dust-equivalent value: ~4,200 Dust/month** vs. subscription cost of $12.99
+
+**StoreKit 2 implementation note:** Subscription tiers map to App Store product IDs. After a successful StoreKit 2 `Product.purchase()` call, the iOS client calls a Supabase Edge Function with the verified `Transaction` receipt. The Edge Function validates the receipt against Apple's StoreKit verification API, updates `player.subscription_tier`, and the client reflects the new tier via Realtime channel update. The iOS app never trusts client-side tier claims — only verified server-side receipts.
 
 ---
 
 ## 9. Economy Config JSON Schema
 
-This JSON file is the single source of truth for all tunable economy parameters. **No code changes are needed to adjust the economy** — only edits to this file and a server restart.
+This JSON file is the single source of truth for all tunable economy parameters. **No code changes are needed to adjust the economy** — only edits to this file and a Railway server redeploy (which is a one-command operation: `railway up`).
 
-**File location:** `economy.config.json` in the project root. Loaded at startup by the Railway Node.js server and cached. The Supabase Edge Function for quest reward calculation reads this via an environment variable pointing to the loaded config.
+**File location:** `economy.config.json` in the project root. Loaded at startup by the Railway Node.js game server and cached in memory for the process lifetime. The Supabase Edge Functions for quest reward calculation and subscription grant processing load their copy from the same file (committed to the repo, read via Railway environment at build time).
 
-**Full schema with all values:**
+**Full schema with all current values:**
 
 ```json
 {
-  "_version": "2.0.0",
+  "_version": "3.0.0",
   "_last_updated": "2026-02-16",
-  "_notes": "Edit this file to tune economy. Run balance dashboard to verify. Restart Railway server to apply.",
+  "_notes": "Edit this file to tune economy. Run balance dashboard to verify. Run 'railway up' to deploy.",
 
   "energy": {
     "win_energy_per_card": 2,
@@ -1023,22 +1052,22 @@ This JSON file is the single source of truth for all tunable economy parameters.
   },
 
   "daily_quest_rewards": {
-    "EASY": { "base_dust": 20, "shard_chance": 0.0, "shard_tier": null },
+    "EASY":   { "base_dust": 20, "shard_chance": 0.00, "shard_tier": null },
     "MEDIUM": { "base_dust": 30, "shard_chance": 0.20, "shard_tier": "UNCOMMON" },
-    "HARD": { "base_dust": 45, "shard_chance": 0.30, "shard_tier": "RARE" }
+    "HARD":   { "base_dust": 45, "shard_chance": 0.30, "shard_tier": "RARE" }
   },
 
   "weekly_quest_rewards": {
-    "W01": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
-    "W02": { "base_dust": 200, "shard_tier": "EPIC", "shard_count": 1 },
-    "W03": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
-    "W04": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 2 },
-    "W05": { "base_dust": 200, "shard_tier": "EPIC", "shard_count": 1 },
-    "W06": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
-    "W07": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
-    "W08": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
-    "W09": { "base_dust": 150, "shard_tier": "RARE", "shard_count": 1 },
-    "W10": { "base_dust": 200, "shard_tier": "EPIC", "shard_count": 1 }
+    "W01": { "base_dust": 150, "shard_tier": "RARE",  "shard_count": 1 },
+    "W02": { "base_dust": 200, "shard_tier": "EPIC",  "shard_count": 1 },
+    "W03": { "base_dust": 150, "shard_tier": "RARE",  "shard_count": 1 },
+    "W04": { "base_dust": 150, "shard_tier": "RARE",  "shard_count": 2 },
+    "W05": { "base_dust": 200, "shard_tier": "EPIC",  "shard_count": 1 },
+    "W06": { "base_dust": 150, "shard_tier": "RARE",  "shard_count": 1 },
+    "W07": { "base_dust": 150, "shard_tier": "RARE",  "shard_count": 1 },
+    "W08": { "base_dust": 150, "shard_tier": "RARE",  "shard_count": 1 },
+    "W09": { "base_dust": 150, "shard_tier": "RARE",  "shard_count": 1 },
+    "W10": { "base_dust": 200, "shard_tier": "EPIC",  "shard_count": 1 }
   },
 
   "shard_costs": {
@@ -1074,24 +1103,24 @@ This JSON file is the single source of truth for all tunable economy parameters.
   },
 
   "rank_points": {
-    "win_same_rank": 25,
-    "win_higher_rank_1_2": 30,
+    "win_same_rank":         25,
+    "win_higher_rank_1_2":   30,
     "win_higher_rank_3plus": 35,
-    "win_lower_rank_1_2": 20,
-    "win_lower_rank_3plus": 15,
-    "loss_same_rank": -20,
-    "loss_higher_rank_1_2": -15,
+    "win_lower_rank_1_2":    20,
+    "win_lower_rank_3plus":  15,
+    "loss_same_rank":        -20,
+    "loss_higher_rank_1_2":  -15,
     "loss_higher_rank_3plus": -10,
-    "loss_lower_rank_1_2": -25,
+    "loss_lower_rank_1_2":   -25,
     "loss_lower_rank_3plus": -30
   },
 
   "rank_points_per_division": {
-    "BRONZE": 100,
-    "SILVER": 150,
-    "GOLD": 200,
+    "BRONZE":   100,
+    "SILVER":   150,
+    "GOLD":     200,
     "PLATINUM": 250,
-    "DIAMOND": 300
+    "DIAMOND":  300
   },
 
   "season_length_weeks": 8,
@@ -1122,36 +1151,164 @@ This JSON file is the single source of truth for all tunable economy parameters.
 }
 ```
 
+**JSON Schema type annotations (for validation):**
+
+```typescript
+interface EconomyConfig {
+  _version: string;
+  _last_updated: string;
+  _notes: string;
+
+  energy: {
+    win_energy_per_card: number;      // integer >= 1
+    loss_energy_per_card: number;     // integer >= 0
+    threshold_uncommon: number;       // must be > 0
+    threshold_rare: number;           // must be > threshold_uncommon
+    threshold_epic: number;           // must be > threshold_rare
+    threshold_legendary: number;      // must be > threshold_epic
+  };
+
+  dust_income: {
+    win_dust: number;                 // integer >= 1
+    loss_dust: number;                // integer >= 0
+    onboarding_bonus_dust: number;    // integer >= 0
+  };
+
+  quest_dust_multipliers: {
+    FREE: number;                     // must be 1.0
+    MID: number;                      // must be > FREE
+    HIGH: number;                     // must be > MID
+  };
+
+  quest_difficulty_weights: {
+    EASY: number;                     // [0, 1]
+    MEDIUM: number;                   // [0, 1]
+    HARD: number;                     // [0, 1]; EASY + MEDIUM + HARD must equal 1.0
+  };
+
+  daily_quest_rewards: {
+    [difficulty: string]: {
+      base_dust: number;              // integer >= 0
+      shard_chance: number;           // [0, 1]
+      shard_tier: string | null;      // "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY" | null
+    };
+  };
+
+  weekly_quest_rewards: {
+    [questId: string]: {
+      base_dust: number;
+      shard_tier: string;
+      shard_count: number;
+    };
+  };
+
+  shard_costs: {
+    UNCOMMON: number;
+    RARE: number;
+    EPIC: number;
+    LEGENDARY: number;                // must be > EPIC > RARE > UNCOMMON > 0
+  };
+
+  pack_costs: {
+    own_faction_pack: number;
+    other_faction_pack: number;       // must be >= own_faction_pack
+    specific_common: number;
+  };
+
+  cosmetic_costs: {
+    avatar_unlock: number;
+  };
+
+  subscription_monthly_bonuses: {
+    [tier: string]: {
+      monthly_commons: number;        // integer >= 0
+      monthly_legendary_shards: number; // integer >= 0
+    };
+  };
+
+  rank_points: { [key: string]: number; };
+  rank_points_per_division: { [rank: string]: number; };
+  season_length_weeks: number;        // integer >= 4
+
+  matchmaking: {
+    new_player_protection_games: number;    // integer >= 0
+    new_player_max_opponent_legendaries: number;
+  };
+
+  onboarding: {
+    starter_dust: number;
+    starter_uncommon_shards: number;
+    starter_rare_shards: number;
+    starter_legendary_shards: number;
+  };
+
+  collection_limits: { [tier: string]: number; };
+  deck_slot_limits: { [tier: string]: number; };
+}
+```
+
+**Validation rule the server must enforce on startup:**
+```typescript
+function validateConfig(config: EconomyConfig): void {
+  const w = config.quest_difficulty_weights;
+  const sum = w.EASY + w.MEDIUM + w.HARD;
+  if (Math.abs(sum - 1.0) > 0.001) {
+    throw new Error(`quest_difficulty_weights must sum to 1.0, got ${sum}`);
+  }
+  const s = config.shard_costs;
+  if (!(s.UNCOMMON < s.RARE && s.RARE < s.EPIC && s.EPIC < s.LEGENDARY)) {
+    throw new Error('shard_costs must satisfy UNCOMMON < RARE < EPIC < LEGENDARY');
+  }
+  const e = config.energy;
+  if (!(e.threshold_uncommon < e.threshold_rare &&
+        e.threshold_rare < e.threshold_epic &&
+        e.threshold_epic < e.threshold_legendary)) {
+    throw new Error('energy thresholds must be strictly increasing');
+  }
+}
+```
+If validation fails, the server must refuse to start and log the error. This prevents a misconfigured deploy from silently breaking the economy.
+
 **How to apply a config change:**
 1. Edit `economy.config.json` with desired values.
 2. Run the balance dashboard (Section 10) to see projected impact.
-3. If projections look good: commit the file change, Railway auto-deploys on push to main.
-4. Monitor PostHog for 48 hours after deploy. If metrics move in wrong direction, revert the config change and redeploy.
+3. If projections look good: commit the file, then run `railway up` from the project root.
+4. Monitor PostHog for 48 hours after deploy. If metrics move in the wrong direction, revert the config change and redeploy.
 
 ---
 
 ## 10. Balance Dashboard Specification
 
-The Balance Dashboard is a standalone tool that simulates 1,000 players across all archetypes using the current `economy.config.json` values and outputs visual graphs. The owner uses it to verify economy health before deploying config changes.
+The Balance Dashboard is a standalone web application that runs **entirely in-memory on the owner's local machine**. It does not connect to Supabase or any live database during simulation — all player data is synthetically generated. This is a deliberate constraint: live database queries during simulation would be slow, expensive, and could produce misleading results from real player noise. The simulation is a clean mathematical model, not a replay of actual player behavior.
 
 ### 10.1 What the Dashboard Does
 
-The dashboard reads `economy.config.json` and the Supabase `card_templates` and `modifier_definitions` tables, then runs a Monte Carlo simulation across 1,000 virtual players over a configurable time horizon (default: 90 days = ~13 weeks).
+The dashboard reads `economy.config.json` from the local filesystem and runs a Monte Carlo simulation across 1,000 virtual players over a configurable time horizon (default: 90 days = ~13 weeks), generating all player states in memory and rendering results as interactive charts.
 
-**The owner's workflow:**
-1. Run `npm run dashboard` from the project root.
-2. Browser opens at `http://localhost:3040`.
-3. Review graphs (described in Section 10.3).
-4. If something looks wrong, edit `economy.config.json`.
-5. Click "Rerun Simulation" in the dashboard (no restart needed — dashboard hot-reloads the config).
-6. When satisfied, deploy the config change.
+**The owner's complete workflow:**
+1. Run `node tools/balance-dashboard/server.js` from the project root (or `npm run dashboard`).
+2. Browser opens automatically at `http://localhost:3040`.
+3. Review the 7 graphs (described in Section 10.3).
+4. If something looks wrong, edit `economy.config.json` in a text editor.
+5. Click "Rerun Simulation" in the dashboard — the server re-reads the config file from disk and re-runs all 1,000 players without restarting the process.
+6. When satisfied, commit `economy.config.json` and run `railway up` to deploy.
+
+**What the dashboard does NOT do:**
+- It does not query Supabase, PostHog, or any external service
+- It does not modify any database records
+- It does not send API requests of any kind
+- It does not require an internet connection
 
 ### 10.2 Simulation Architecture
 
-**File:** `tools/balance-dashboard/simulate.ts`
-**Execution:** Node.js, triggered by `npm run dashboard` which starts the simulation + opens a React (not React Native) local web UI.
+**Files:**
+- `tools/balance-dashboard/server.js` — Express HTTP server, serves the HTML UI and simulation API endpoint
+- `tools/balance-dashboard/simulate.js` — Monte Carlo simulation engine (pure in-memory JavaScript, no external dependencies)
+- `tools/balance-dashboard/index.html` — Single-page UI served by the Express server
 
-**Player archetypes simulated (1,000 players total, distributed as below):**
+**Runtime:** Node.js (same version as the Railway game server). No TypeScript compilation step — plain JavaScript for zero build friction. No npm dependencies beyond Express and Chart.js (served from CDN).
+
+**Player archetypes simulated (1,000 players total):**
 
 | Archetype | Count | Games/Day | Win Rate | Subscription |
 |---|---|---|---|---|
@@ -1166,195 +1323,318 @@ The dashboard reads `economy.config.json` and the Supabase `card_templates` and 
 | Top Hardcore | 50 | 10 | 0.58 | HIGH |
 | New Player (free) | 50 | 3 | 0.45 | FREE |
 
-**Simulation loop (per player, per simulated day):**
-```typescript
-function simulateDay(player: SimPlayer, config: EconomyConfig, day: number): void {
-  const gamesPlayed = player.games_per_day;
-  const wins = Math.floor(gamesPlayed * player.win_rate + gaussianNoise(0, 0.1));
+**Simulation loop (per player, per simulated day) — all computation is in-memory:**
+```javascript
+function simulateDay(player, config, day) {
+  // Gaussian noise: Box-Muller transform, seeded per player for reproducibility
+  const noise = (mean, sd) => {
+    const u1 = Math.random(), u2 = Math.random();
+    return mean + sd * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  };
+
+  const gamesPlayed = player.gamesPerDay;
+  const wins = Math.max(0, Math.min(gamesPlayed,
+    Math.round(gamesPlayed * player.winRate + noise(0, 0.5))));
   const losses = gamesPlayed - wins;
 
-  // Dust income
-  player.dust += wins * config.dust_income.win_dust;
+  // Dust income from games
+  player.dust += wins  * config.dust_income.win_dust;
   player.dust += losses * config.dust_income.loss_dust;
 
-  // Energy accumulation (all deck cards)
-  const energyPerCard = (wins * config.energy.win_energy_per_card)
-                      + (losses * config.energy.loss_energy_per_card);
-  player.deck.forEach(card => { card.energy += energyPerCard; });
+  // Energy accumulation: all deck cards earn simultaneously
+  const energyGained = wins  * config.energy.win_energy_per_card
+                     + losses * config.energy.loss_energy_per_card;
+  player.deck.forEach(card => { card.energy += energyGained; });
 
-  // Daily quest completion (simplified: assume 2.5 quests/day for Regular, 1.5 for Casual)
-  const questsCompleted = Math.min(3, Math.floor(player.avg_quests_per_day
-                        + gaussianNoise(0, 0.5)));
-  const questDust = simulateQuestRewards(questsCompleted, player.subscription, config);
-  player.dust += questDust;
+  // Daily quest completion: avg_quests_per_day varies by archetype
+  const questsCompleted = Math.min(3,
+    Math.max(0, Math.round(player.avgQuestsPerDay + noise(0, 0.5))));
+  player.dust += simulateQuestRewards(questsCompleted, player.subscription, config);
 
-  // Weekly quest completion (on day 7, 14, 21, etc.)
+  // Weekly quest completion (evaluated on days 7, 14, 21, ...)
+  player.gamesThisWeek += gamesPlayed;
   if (day % 7 === 0) {
-    const weeklyDust = simulateWeeklyQuestRewards(player.games_this_week,
-                                                   player.subscription, config);
-    player.dust += weeklyDust;
-    player.games_this_week = 0;
-  } else {
-    player.games_this_week += gamesPlayed;
+    player.dust += simulateWeeklyQuestRewards(player.gamesThisWeek, player.subscription, config);
+    player.gamesThisWeek = 0;
   }
 
-  // Spending behavior (60% shards, 20% packs, 10% targeted, 10% cosmetics)
+  // Monthly subscription bonus (evaluated on days 30, 60, 90, ...)
+  if (day % 30 === 0) {
+    const bonus = config.subscription_monthly_bonuses[player.subscription];
+    player.shardsLegendary += bonus.monthly_legendary_shards;
+    // monthly_commons: grant dust equivalent (50 Dust per common) for simulation purposes
+    player.dust += bonus.monthly_commons * config.pack_costs.specific_common;
+  }
+
+  // Spending: 60% shards, 20% packs, 10% targeted, 10% cosmetics
   simulateSpending(player, config);
 
-  // Evolution attempts (when energy >= threshold AND shards available)
+  // Evolution: attempt evolution when energy >= threshold AND correct shard available
   simulateEvolutions(player, config);
 
-  // Record daily snapshot for graphing
-  player.snapshots[day] = captureSnapshot(player);
+  // Record snapshot for graph rendering (in-memory array, not written to any DB)
+  player.snapshots[day] = {
+    dust: player.dust,
+    legendaryCount: player.deck.filter(c => c.tier === 'LEGENDARY').length,
+    epicCount:      player.deck.filter(c => c.tier === 'EPIC').length,
+    rareCount:      player.deck.filter(c => c.tier === 'RARE').length,
+    shardsLegendary: player.shardsLegendary,
+    shardsEpic:      player.shardsEpic,
+  };
+}
+
+function simulateQuestRewards(count, subscription, config) {
+  let total = 0;
+  const weights = config.quest_difficulty_weights;
+  const multiplier = config.quest_dust_multipliers[subscription];
+  for (let i = 0; i < count; i++) {
+    const roll = Math.random();
+    let difficulty;
+    if (roll < weights.EASY) difficulty = 'EASY';
+    else if (roll < weights.EASY + weights.MEDIUM) difficulty = 'MEDIUM';
+    else difficulty = 'HARD';
+    total += config.daily_quest_rewards[difficulty].base_dust * multiplier;
+  }
+  return total;
+}
+
+function simulateWeeklyQuestRewards(gamesThisWeek, subscription, config) {
+  const multiplier = config.quest_dust_multipliers[subscription];
+  // Assume 2 weekly quests available; completion based on game count
+  const completionRate = Math.min(1.0, gamesThisWeek / 20); // 20 games = 100% completion
+  const avgBaseDust = (150 + 200) / 2; // average of W01-W10
+  return Math.floor(2 * completionRate * avgBaseDust * multiplier);
+}
+
+function simulateSpending(player, config) {
+  if (player.dust < 240) return; // minimum threshold before spending
+  const spendable = player.dust * 0.7; // spend up to 70% of current balance
+  // 60% of spendable goes to highest-tier shards the player can use
+  const shardBudget = spendable * 0.60;
+  if (shardBudget >= config.shard_costs.LEGENDARY && hasCardReadyForLegendary(player, config)) {
+    const purchased = Math.floor(shardBudget / config.shard_costs.LEGENDARY);
+    player.shardsLegendary += purchased;
+    player.dust -= purchased * config.shard_costs.LEGENDARY;
+  } else if (shardBudget >= config.shard_costs.EPIC && hasCardReadyForEpic(player, config)) {
+    const purchased = Math.floor(shardBudget / config.shard_costs.EPIC);
+    player.shardsEpic += purchased;
+    player.dust -= purchased * config.shard_costs.EPIC;
+  }
+  // remaining 40% left as dust balance
+}
+
+function simulateEvolutions(player, config) {
+  player.deck.forEach(card => {
+    if (card.tier === 'COMMON' && card.energy >= config.energy.threshold_uncommon
+        && player.shardsUncommon > 0) {
+      card.tier = 'UNCOMMON'; card.energy = 0; player.shardsUncommon--;
+    } else if (card.tier === 'UNCOMMON' && card.energy >= config.energy.threshold_rare
+        && player.shardsRare > 0) {
+      card.tier = 'RARE'; card.energy = 0; player.shardsRare--;
+    } else if (card.tier === 'RARE' && card.energy >= config.energy.threshold_epic
+        && player.shardsEpic > 0) {
+      card.tier = 'EPIC'; card.energy = 0; player.shardsEpic--;
+    } else if (card.tier === 'EPIC' && card.energy >= config.energy.threshold_legendary
+        && player.shardsLegendary > 0) {
+      card.tier = 'LEGENDARY'; card.energy = 0; player.shardsLegendary--;
+    }
+  });
 }
 ```
 
-**Gaussian noise function:** Adds realistic variance to player behavior. Uses Box-Muller transform.
+Gaussian noise uses the Box-Muller transform. All random draws use `Math.random()` seeded per archetype for reproducible results on repeated runs with the same config.
 
 ### 10.3 Dashboard Output Graphs
 
-All graphs are rendered in the browser using Chart.js (CDN-loaded, no build step).
+All graphs are rendered using Chart.js loaded from CDN (zero npm dependencies for the dashboard UI). The graphs are the primary owner interface for economy review. The owner adjusts config values and re-runs the simulation until the graphs look right — no code changes are ever needed.
 
-**Graph 1: Time-to-Evolution Curves**
+**Graph 1: Time-to-Evolution Curves (owner's primary health indicator)**
 - X axis: Days (0–180)
 - Y axis: % of simulated players who have at least N Legendary cards
-- Lines: N=1, N=5, N=10, N=20 (full deck)
-- Separate panels for Free, Mid, Top tiers
-- **What to look for:** Free Regular should hit N=1 by day 23–25. Full deck (N=20) by week 38–42.
+- Lines: N=1 (first Legendary), N=5, N=10, N=20 (full deck)
+- Separate panels for Free tier, Mid tier, Top tier
+- Target: Free Regular hits N=1 between Day 23–30. If it is before Day 20, Legendary shards are too cheap. If it is after Day 35, energy or shards are too expensive.
 
 **Graph 2: Dust Accumulation Curves**
 - X axis: Days (0–90)
-- Y axis: Average dust balance (rolling)
-- Lines: Each of the 9 archetypes
-- **What to look for:** No archetype should sustain balance > 2,000 Dust for extended periods. All lines should fluctuate (spending is happening).
+- Y axis: Mean dust balance across archetype (rolling daily average)
+- Lines: One per archetype (9 lines total, color-coded by subscription tier)
+- Target: No archetype sustains a balance above 2,000 Dust for more than 2 consecutive weeks. Lines should oscillate (spending is happening), not trend steadily upward.
 
 **Graph 3: Shard Bottleneck Analysis**
-- X axis: Days (0–90)
-- Y axis: Average shard inventory by tier (stacked bar per week)
-- Separate lines for: Legendary shards, Epic shards, Rare shards
-- **What to look for:** Legendary shards should be scarce (used quickly). If Legendary shard inventory grows steadily, the Legendary evolution requirement is too high or shard cost is too low.
+- X axis: Weeks (0–13)
+- Y axis: Mean shard inventory by tier (stacked bar per week)
+- Bars: Legendary (red), Epic (orange), Rare (green) stacks per archetype
+- Target: Legendary shards should be consumed quickly (bar stays small). If Legendary shard inventory grows week-over-week, either shard cost is too low or energy threshold is too high.
 
 **Graph 4: Win Rate Distribution**
 - X axis: Win rate buckets (30–70%, 5% increments)
 - Y axis: % of simulated players in each bucket
-- Shape: Should be roughly normal, centered at 50%, ±10% std dev
-- **What to look for:** Verify simulation win rate assumptions are consistent with the config.
+- Shape: Roughly normal, centered at 50%, standard deviation ~10%
+- Target: Confirms simulation assumptions are consistent. Should look like a bell curve. If it does not, the archetype win rate assignments in Section 10.2 need adjustment.
 
-**Graph 5: Rank Distribution (at Day 56 = 8 weeks)**
-- X axis: Rank tiers (Bronze through GM)
+**Graph 5: Rank Distribution (snapshot at Day 56 = end of 8-week season)**
+- X axis: Rank tiers (Bronze 3 through GM)
 - Y axis: % of simulated players at each rank
-- Target shape: Bell curve centered on Silver/Gold
-- **What to look for:** If > 50% of players are stuck in Bronze, rank point gains are too low. If everyone is Gold+, they're too high.
+- Target bell: Bronze 3–1: ~25%, Silver: ~30%, Gold: ~25%, Platinum: ~12%, Diamond+: ~8%
+- If > 50% of players are in Bronze, weekly rank point gain is too low. If > 20% are Platinum+, point gain is too high.
 
 **Graph 6: Quest Completion Rate**
 - X axis: Quest difficulty (Easy, Medium, Hard)
-- Y axis: % of quests completed (across all simulated players)
+- Y axis: % of generated quests that were completed (across all simulated players, all days)
 - Target: Easy 85%+, Medium 75%+, Hard 55%+
-- **What to look for:** If Hard completion < 40%, hard quest targets are too demanding or duration too short.
+- If Hard completion is below 40%, the hard quest target counts are too demanding relative to the games-per-day assumptions.
 
-**Graph 7: Weekly Income Breakdown (stacked bar)**
-- X axis: Player archetypes
-- Y axis: Average weekly Dust income
-- Stacked segments: Game wins, Game losses, Daily quests, Weekly quests, Season rewards
-- **What to look for:** Quest income should represent 60–70% of total income. If game dust exceeds 30%, game count assumptions are off.
+**Graph 7: Weekly Income Breakdown (stacked bar chart)**
+- X axis: Player archetypes (9 groups)
+- Y axis: Mean weekly Dust income
+- Stacked segments: Game wins (win_dust), Game losses (loss_dust), Daily quests, Weekly quests, Season rewards (amortized)
+- Target: Quest income (daily + weekly) should represent 60–70% of total income. If game dust exceeds 30% of income for any archetype, the daily game count assumptions for that archetype should be reviewed.
 
 ### 10.4 Dashboard UI Specification
 
-The dashboard UI is a single HTML page served by a local Express server (`tools/balance-dashboard/server.ts`).
+The dashboard is a plain HTML page served by a local Express server. It is part of the Admin Dashboard application, but runs locally on the owner's machine during balance review — it is never deployed to Railway for live use.
 
 **Layout:**
-- Header: "Chaos Creatures Economy Balance Dashboard — [Date of last sim run]"
-- Top row: 3 summary stat cards
-  - "Median Dust Balance (Day 90): [value]" — green if 200–800 for Free Regular, yellow if 800–2,000, red if >2,000
-  - "Free Regular Weeks to First Legendary: [value]" — green if 3–5, yellow if 5–8, red if >8
-  - "Quest Completion Rate (Hard): [value]%" — green if 55%+, yellow if 40–55%, red if <40%
-- Main area: 7 graphs in a 2-column grid (Graph 1 spans full width)
-- Bottom: "Rerun Simulation" button — re-reads `economy.config.json` and re-runs all 1,000 players
-- Footer: "Config loaded from: `economy.config.json`" + link to open the file in VS Code (via `code` CLI)
+- Header: "Chaos Creatures Economy Balance Dashboard — Simulation run: [timestamp]"
+- Top row: 3 summary stat cards with color-coded health indicators
+  - "Median Dust Balance (Day 90): [value]" — green if 200–800 for Free Regular; yellow if 800–2,000; red if > 2,000
+  - "Free Regular: Days to First Legendary: [value]" — green if 23–30; yellow if 20–23 or 30–40; red if < 20 or > 40
+  - "Quest Completion Rate (Hard): [value]%" — green if 55%+; yellow if 40–55%; red if < 40%
+- Main area: 7 graphs in a 2-column grid (Graph 1 spans full width as the primary indicator)
+- Bottom: "Rerun Simulation" button (re-reads `economy.config.json` from disk, re-runs all 1,000 players, re-renders all graphs — no page reload required)
+- Footer: "Config loaded from: `economy.config.json`" with a clickable link that opens the file in VS Code via the `vscode://` URI scheme
 
-**Running the dashboard:**
+**Running the dashboard (one command):**
 ```bash
 npm run dashboard
-# Starts simulation (takes ~5 seconds for 1,000 players × 90 days)
-# Opens http://localhost:3040 automatically
+# Alias for: node tools/balance-dashboard/server.js
+# Takes ~3 seconds for 1,000 players × 90 days on an M-series Mac
+# Opens http://localhost:3040 automatically via the 'open' command
 ```
-
-This is the one command the owner runs to verify economy health.
 
 ---
 
-## 11. Implementation Checklist for Claude Code
+## 11. Implementation Checklist
 
-This section lists every system in this document, what file/function to implement it in, and what the implementation must do. Claude Code builds from this checklist.
+This section lists every system in this document separated by application. Claude Code builds from this checklist.
 
-### Supabase Database Tables
+### 11.1 Supabase Database Changes
 
-- `players` — includes `chaos_dust`, `shards_uncommon/rare/epic/legendary`, `subscription_tier`, `season_rank`, `season_rank_points`, `season_rank_floor` (add this field)
-- `card_instances` — includes `chaos_energy`, `tier`, all fields from Section 2 of `02-card-data-model.md`
-- `missions` — daily and weekly quests per player
-- `shard_transactions` — log of all shard changes
-- `match_records` — includes `cards_played` JSONB for mission tracking
+The following fields/tables are required beyond what `02-card-data-model.md` already specifies:
 
-### Supabase Edge Functions
+- `players` table: add `season_rank_floor` field (nullable enum `SeasonRank`)
+- `card_instances` table: `chaos_energy` and `tier` fields confirmed required (already in Section 2 of data model)
+- `missions` table: daily and weekly quests per player with `is_completed`, `is_claimed`, `expires_at`, `reward_amount`, `reward_shard_tier`, `reroll_used_today` fields
+- `shard_transactions` table: log of all shard changes with `source` enum field
+- `match_records` table: must include `cards_played` JSONB and `game_log` JSONB for mission tracking
+
+### 11.2 Supabase Edge Functions (Server-Side Economy Logic)
 
 | Function | Trigger | Responsibility |
 |---|---|---|
-| `award-match-rewards` | Called by Railway after each game | Apply win/loss dust, energy to all deck cards, update mission progress |
-| `generate-daily-quests` | Cron: `0 0 * * *` (daily at 00:00 UTC) | Generate 3 quests per player if needed |
-| `generate-weekly-quests` | Cron: `0 0 * * 1` (Monday 00:00 UTC) | Generate 2 weekly quests per player |
-| `grant-subscription-bonuses` | Cron: `0 0 1 * *` (1st of month) | Award monthly Commons + Legendary shard to MID/HIGH subscribers |
-| `end-season` | Manually triggered by owner (admin UI) | Apply season end rewards, reset ranks, start new season |
-| `complete-quest` | Called by client on claim | Verify completion, award dust + shards, mark claimed |
-| `reroll-quest` | Called by client on reroll | Verify daily reroll not used, generate replacement quest |
-| `evolve-card` | Called by client | Validate energy + shard, deduct shard, trigger fal.ai + OpenAI |
-| `onboarding-complete` | Called by client on faction commit | Grant starter resources, enable onboarding quests |
-| `purchase-item` | Called by client | Handle card pack, shard, targeted common, avatar purchases |
+| `award-match-rewards` | Called by Railway after each game | Apply win/loss dust and energy to all deck cards; update mission progress for all active missions |
+| `generate-daily-quests` | pg_cron: `0 0 * * *` | Generate up to 3 quests per player if they have fewer than 3 active; uses quest generation algorithm from Section 4.1 |
+| `generate-weekly-quests` | pg_cron: `0 0 * * 1` (Monday 00:00 UTC) | Generate 2 weekly quests per player using shuffle algorithm from Section 4.3 |
+| `grant-subscription-bonuses` | pg_cron: `0 0 1 * *` (1st of month 00:00 UTC) | Award monthly Commons (as Dust equivalent) and Legendary shard to MID/HIGH subscribers; verify subscription via StoreKit receipt before granting |
+| `end-season` | Manual trigger via Admin Dashboard | Apply season end rewards by rank, reset all player ranks per Section 5.4 rules, zero season_rank_points and season_rank_floor |
+| `complete-quest` | Called by iOS client on claim tap | Verify `is_completed == true` and `is_claimed == false`; award `reward_amount` Dust and optional shard; set `is_claimed = true` |
+| `reroll-quest` | Called by iOS client on reroll tap | Verify `reroll_used_today == false`; delete quest; generate replacement using Section 4.1 algorithm; set `reroll_used_today = true` (resets via `generate-daily-quests` cron) |
+| `evolve-card` | Called by iOS client after evolution confirm | Validate `chaos_energy >= threshold` and correct shard in inventory; deduct shard; set new tier; trigger fal.ai + OpenAI for art/name generation |
+| `onboarding-complete` | Called by iOS client on faction commit | Grant starter resources from `economy.config.json` `onboarding` block; set `onboarding_complete = true`; enable onboarding quest set |
+| `purchase-item` | Called by iOS client after Dust spend UI | Validate player has sufficient Dust; deduct Dust; deliver item (pack/shard/targeted common/avatar); all purchases are Dust-only — no real money |
+| `verify-storekit-receipt` | Called by iOS client after StoreKit 2 purchase | Accept `Transaction.jwsRepresentation`; verify with Apple; update `player.subscription_tier`; return new tier to client |
 
-### Railway Game Server Responsibilities
+### 11.3 Railway Game Server Responsibilities
 
-- End of each game: publish `game_end` event to Supabase Realtime channel
-- Event includes: `winner_id`, `loser_id`, `cards_played[]` (per CardPlayRecord), `chaos_events_count`, `order_events_count`
-- The `award-match-rewards` Edge Function subscribes to this event and handles all economy updates
-- All mission progress counting happens server-side during game (no client-side mission tracking)
+- At end of each game: call the `award-match-rewards` Edge Function with: `winner_id`, `loser_id`, `winner_deck_card_ids[]`, `loser_deck_card_ids[]`, `cards_played[]` (per CardPlayRecord), `chaos_events_count`, `order_events_count`, `winner_final_hp`, `creatures_destroyed_by_winner`, `creatures_destroyed_by_loser`
+- Mission tracking happens in `award-match-rewards` (server-side) — the Railway server provides the raw event data; mission credit calculation is the Edge Function's responsibility
+- The Railway server reads `economy.config.json` at startup for energy and dust rate constants; it does not calculate quest rewards (that is the Edge Function's job)
 
-### React Native Client Responsibilities
+### 11.4 iOS Client (Swift/SwiftUI) Economy UI Requirements
 
-- Display active daily quests with progress bars
-- Display "Reroll" button (disabled after 1 use per day, resets at 00:00 UTC)
-- Display weekly quests separately from daily quests
-- Show "Claim Reward" button when `is_completed && !is_claimed`
-- Evolution screen: show energy progress bar, "Evolve" button when energy-ready and shard available
-- Dust balance and shard counts in persistent HUD
-- Season rank display with points-to-next-division indicator
+These are the screens and components the iOS app must implement. All data is received from Supabase via Realtime subscriptions or REST calls — the client never calculates economy values itself.
+
+**HUD (persistent across all game screens):**
+- `Text("\(player.chaosDust) Dust")` with icon — updates via `@StateObject` bound to Realtime `player_wallet` channel
+- Shard inventory icons (Uncommon, Rare, Epic, Legendary counts) — same channel
+- Player rank badge — updates via `player_rank` channel
+
+**Quest Screen (`QuestView` — SwiftUI `View`):**
+- `List` of 3 daily quests, each showing: mission description, progress bar (`ProgressView`), reward amount, "Claim" button (enabled when `isCompleted && !isClaimed`)
+- "Reroll" button on each quest (disabled after 1 use per day, shown as grayed out with "Used" label)
+- Separate `Section` for 2 weekly quests with expiry countdown (`TimelineView` updating every minute)
+- Separate `Section` for onboarding quests (visible until all 8 are claimed, then hidden permanently)
+
+**Evolution Screen (`EvolutionView` — SwiftUI `View` over SpriteKit scene):**
+- Energy progress bar: `ProgressView(value: card.chaosEnergy, total: nextThreshold)` with tier label
+- "Evolve" primary button: enabled when `energy >= threshold && hasRequiredShard`. Disabled state shows "Needs [N] more energy" or "Needs [Tier] Shard"
+- Shard cost display: "Costs 1 Uncommon Shard (30 Dust to buy)" with "Buy Shard" secondary button
+- Evolution confirmation sheet: shows current art + new tier preview placeholder, "Confirm Evolution" button
+
+**Shop/Dust Screen (`ShopView` — SwiftUI `View`):**
+- Card pack purchase buttons (own faction 100 Dust, other faction 150 Dust) with faction selector
+- Shard purchase grid: 4 rows (Uncommon/Rare/Epic/Legendary) with dust costs from config
+- Specific common search and purchase
+- Avatar cosmetics section
+
+**Subscription Screen (`SubscriptionView` — SwiftUI `View` using StoreKit 2):**
+- Displays two `Product` objects fetched via `Product.products(for:)` at view appear
+- Mid and Top tier cards showing benefits (from Section 8.3)
+- Purchase button calls `product.purchase()` and on success calls `verify-storekit-receipt` Edge Function
+- Manage Subscription button opens system settings: `URL(string: "itms-apps://apps.apple.com/account/subscriptions")`
+- Current subscription status shown at top of view, updated from `player.subscription_tier`
+
+**Season Rank Screen (`RankView` — SwiftUI `View`):**
+- Current rank badge with division (e.g., "Gold 2") using `SeasonRank` enum display names
+- Points progress bar to next division: `ProgressView(value: currentPoints, total: pointsForNextDivision)`
+- Rank floor indicator: lock icon at floor division
+- Season end countdown: `TimelineView` showing days/hours remaining
 
 ---
 
 ## Revision Log
 
-### Version 2.0 — 2026-02-16
+### Version 3.0 — 2026-02-16
 
-**Changes from Version 1.0:**
+**Summary:** Complete platform alignment pass for Swift/iOS stack, REVIEW.md fix application, CLAUDE.md compliance additions, and balance dashboard in-memory constraint enforcement.
 
-1. **Fixed weekly income figures across all player types.** The v1.0 weekly totals were too low because weekly quest contribution was calculated as `2 × 150 ÷ 7 = 43/day` (using minimum quest value of 150 Dust). Corrected to use average quest value of 175 Dust, giving `2 × 175 ÷ 7 = 50/day`. This raised weekly totals by approximately 50 Dust/week for all free-tier players.
+**Detailed changes from Version 2.0:**
 
-2. **Added Economy Config JSON Schema (Section 9).** The original document had no machine-readable configuration. Every tunable value is now in `economy.config.json` with explicit types and descriptions. No code changes are needed to adjust the economy.
+1. **Platform: replaced all React Native / Expo / Google Play references with Swift/SwiftUI/iOS/App Store.** Every client reference throughout the document now correctly names the iOS stack. Specific changes:
+   - Document header: `React Native (Expo) client` → `Swift + SwiftUI + SpriteKit iOS client, StoreKit 2 payments`
+   - Section 2.2 implementation note: removed "Supabase Edge Function" React Native implication; clarified the iOS client receives tier via Realtime channel, never supplies it in requests
+   - Section 5.5: "Season Rewards screen" now specifies a SwiftUI sheet presented on first app open after season end
+   - Section 6.1: All onboarding screens now specify SwiftUI component types (TextField, TabView pager, picker screen)
+   - Section 6.2: Tutorial prompts now specify `.sheet` presentation in SwiftUI
+   - Section 8.3: Replaced "App Store/Google Play native IAP" with "StoreKit 2 on iOS"; added StoreKit 2 implementation note with `Product.purchase()` flow and receipt verification call
+   - Section 9: Config reload note updated from "Railway auto-deploys on push to main" to explicit `railway up` command
+   - Section 11 (previously React Native Client Responsibilities): Completely rewritten as Section 11.4 with Swift/SwiftUI component names, `@StateObject`, `ProgressView`, `TimelineView`, `Product.products(for:)`, `product.purchase()`, and StoreKit 2 subscription management URL
 
-3. **Added Balance Dashboard Specification (Section 10).** The original document had no automated validation tool. Section 10 specifies a Monte Carlo simulation running 1,000 virtual players across 9 archetypes over 90 simulated days, with 7 output graphs and a simple browser UI. The owner runs `npm run dashboard` to verify economy health before any config change.
+2. **Fixed WARN-3: Daily quest dust range inconsistency.** Section 2.1 now contains an explicit authoritativeness note: "Authoritative daily quest dust values (this document is the source of truth): Easy = 20 Dust, Medium = 30 Dust, Hard = 45 Dust. The master doc states a range of '25–50' as an approximation. The exact values below are canonical for all implementation purposes." This resolves the ambiguity between doc 04 (20/30/45) and doc 00/01 ("25-50").
 
-4. **Replaced "tune as needed" language throughout.** Every instance of vague guidance ("adjust if needed," "tune empirically," "the designer should verify") has been replaced with specific PostHog detection thresholds, specific config variable names, and specific response actions.
+3. **Fixed WARN-7: Starter shard package inconsistency.** Section 3.2 now leads with a dedicated "Authoritative starter shard package" block that explicitly calls out the canonical set (3 Uncommon + 1 Rare + 1 Legendary) and states "no other version is valid." The Legendary Shard's purpose and timing constraint are explained. The `onboarding` block in `economy.config.json` (Section 9) confirms `"starter_legendary_shards": 1`. Both Section 2.8 and Section 6.1 reference Section 3.2 for the authoritative starter package.
 
-5. **Added Implementation Checklist (Section 11).** Specifies every Supabase Edge Function, Railway responsibility, and React Native UI requirement needed to build the economy systems. Claude Code can implement directly from this list.
+4. **Added Budget Compliance section.** New section after Core Principles confirms the economy system adds zero incremental cost beyond the base infrastructure budget. PostHog free tier is sufficient. Balance dashboard runs locally with zero cloud cost. Total economy-specific infrastructure cost: $0.
 
-6. **Aligned with exact infrastructure stack from CLAUDE.md.** Replaced all generic references ("the backend," "the database") with specific service names: Supabase Edge Functions for economy logic, Railway Node.js server for game events, PostHog for analytics, React Native (Expo) for client. No Unity, no Stripe, no Phaser.js.
+5. **Added Two Applications clarity throughout.** New table in "How to Use This Document" section explicitly maps every section to either "iOS Game Client" or "Admin Dashboard (Web)." Section 10 balance dashboard now states it is the Admin Dashboard application running locally. Section 11 is reorganized into 4 subsections: Supabase DB, Edge Functions, Railway server, and iOS client — with the iOS client section clearly separated from backend responsibilities.
 
-7. **Resolved RewardType enum conflict.** The `02-card-data-model.md` Section 16 defines `RewardType: XP | SHARDS | CHAOS_ENERGY_BOOST`. Chaos Dust is not in this enum. The Chaos Dust reward for quests is handled by a direct update to `player.chaos_dust` in the `complete-quest` Edge Function, separate from the `Mission.reward_type` field (which governs the shard reward only). Quest dust reward is stored in `Mission.reward_amount` with the understanding that when `mission_type` is processed, the Edge Function applies both dust (direct player update) and the optional shard (via shard_transaction). This separation must be noted in `02-card-data-model.md` as a future revision.
+6. **Balance simulation now runs entirely in-memory.** Section 10 (Balance Dashboard) has been substantially rewritten:
+   - Added explicit statement: "The simulation is a clean mathematical model, not a replay of actual player behavior."
+   - Added "What the dashboard does NOT do" list: no Supabase queries, no PostHog requests, no external API calls of any kind, no internet connection required
+   - Simulation loop code rewritten in plain JavaScript (not TypeScript) to avoid build friction
+   - Monthly subscription bonus simulation uses in-memory Dust equivalent (no DB reads)
+   - All `player.snapshots` are plain in-memory objects, explicitly noted as "not written to any DB"
+   - Server re-reads config from local disk on "Rerun Simulation" click, not from any remote source
 
-8. **Fixed "weeks to Legendary deck" calculation methodology.** The v1.0 document computed this as `shard_cost_weeks` alone and did not account for the competing spending categories that slow shard accumulation in practice. Section 8.1 now uses the corrected method: `max(energy_weeks, effective_shard_weeks)` where effective shard weeks accounts for the 60% dust-to-shards spending rate and other spending categories.
+7. **JSON economy config schema enhanced.** Section 9 now includes:
+   - TypeScript interface definition for `EconomyConfig` with field-level constraints documented as comments
+   - `validateConfig()` function that the Railway server must call at startup — enforces difficulty weight sum = 1.0, shard cost ordering, and energy threshold ordering
+   - Explicit statement that config is loaded at Railway startup and cached in memory for the process lifetime
+   - Clarified that Supabase Edge Functions read config from the file at build time (committed to repo), not from a runtime endpoint
 
-9. **Added explicit bottleneck analysis table (Section 3.4).** The v1.0 version stated "energy is the bottleneck early, shards late" without precise breakpoints. Section 3.4 now provides exact crossover points (1st, 5th, 10th, 20th Legendary) with the day-count for each gate.
+8. **Monte Carlo graphs specified as owner review output.** Each of the 7 graphs in Section 10.3 now has explicit "Target" conditions phrased as what the owner looks for when deciding whether to adjust config. Graph 1 has specific green/yellow/red thresholds (Day 23–30 is green for Free Regular first Legendary). The "Rerun Simulation" button workflow is described as the primary owner interaction loop for economy tuning.
 
-10. **Added onboarding timeline (Section 6.2).** The v1.0 document listed milestones but did not specify what prompts or UI events fire them. Section 6.2 specifies the exact tutorial prompt triggers and the conditions that must be met to advance each tutorial step.
+9. **Removed all "tune as needed" language.** Every config adjustment scenario (Section 7.4) now specifies the exact `economy.config.json` key to change, the exact new value to set, and the exact deploy command to run.
 
-11. **Clarified faction unlock economics (Section 2.6).** The v1.0 document stated faction unlocks take "0.5–1.0 weeks." With corrected income figures, faction unlocks take less than 1 day for all player types, making the 150 Dust cost a commitment signal rather than a meaningful gate. The section now calls this out explicitly.
-
-12. **Standardized all enum references.** All references to player tiers now use the canonical `SubscriptionTier` enum values (`FREE | MID | HIGH`) from `02-card-data-model.md`. All shard tier references use `ShardTier` enum values (`UNCOMMON | RARE | EPIC | LEGENDARY`). All MissionType references use the exact enum from the data model.
+10. **Updated Section 11 to separate iOS client tasks clearly.** The previous "React Native Client Responsibilities" bullet list has been replaced with Section 11.4 "iOS Client (Swift/SwiftUI) Economy UI Requirements" — a complete screen-by-screen specification with SwiftUI component names, data binding patterns, and Realtime channel names for each economy-related UI element.

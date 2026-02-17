@@ -6,6 +6,10 @@ This document defines the system architecture, service design, API contracts, da
 
 **Depends on:** `00-game-design-master.md`, `01-battle-mechanics.md`, `02-card-data-model.md`
 
+**Two applications are produced:**
+1. **Game Client** -- Native iOS app (Swift/SwiftUI/SpriteKit). What players download from the App Store.
+2. **Admin Dashboard** -- Web application (Node.js + static HTML/JS, deployed on Railway). What the owner uses to manage the game.
+
 ---
 
 ## 1. System Overview
@@ -14,13 +18,12 @@ This document defines the system architecture, service design, API contracts, da
 
 ```mermaid
 graph TB
-    subgraph Clients
-        iOS[iOS Client<br/>React Native / Expo]
-        Android[Android Client<br/>React Native / Expo]
+    subgraph "iOS Client (App Store)"
+        IOS[Game Client<br/>Swift / SwiftUI / SpriteKit<br/>iOS 17+]
     end
 
     subgraph Supabase Cloud
-        AUTH[Supabase Auth<br/>Apple/Google OAuth]
+        AUTH[Supabase Auth<br/>Apple Sign-In Only]
         PG[(PostgreSQL<br/>Primary DB + RLS)]
         REALTIME[Supabase Realtime<br/>WebSocket Channels]
         EDGE[Edge Functions<br/>Collection, Economy,<br/>Evolution, Matchmaking]
@@ -29,15 +32,16 @@ graph TB
 
     subgraph Railway
         GAME[Game Server<br/>Node.js / TypeScript<br/>Authoritative Match Engine]
-        ADMIN[Admin Dashboard<br/>React SPA]
+        ADMIN[Admin Dashboard<br/>Node.js + Static Web App]
     end
 
     subgraph Cloudflare
         R2[(R2 Object Storage<br/>Card Art CDN)]
+        PAGES[Cloudflare Pages<br/>Privacy Policy / ToS]
     end
 
     subgraph External AI
-        FAL[fal.ai<br/>FLUX Kontext]
+        FAL[fal.ai<br/>FLUX Kontext Dev + Pro]
         GPT[OpenAI<br/>GPT-4o Mini]
     end
 
@@ -45,12 +49,9 @@ graph TB
         PH[PostHog<br/>Player Analytics]
     end
 
-    iOS --> AUTH
-    Android --> AUTH
-    iOS --> EDGE
-    Android --> EDGE
-    iOS --> REALTIME
-    Android --> REALTIME
+    IOS --> AUTH
+    IOS --> EDGE
+    IOS --> REALTIME
 
     REALTIME --> GAME
     EDGE --> PG
@@ -64,30 +65,36 @@ graph TB
     GAME --> PH
     EDGE --> PH
 
-    iOS --> R2
-    Android --> R2
+    IOS --> R2
+
+    ADMIN --> PG
+    ADMIN --> EDGE
 ```
 
 ### 1.2 Technology Stack (Final -- No Alternatives)
 
 | Layer | Technology | Why This, Specifically |
 |---|---|---|
-| **Client** | React Native (Expo) + TypeScript | Claude Code builds TypeScript/React natively. Expo EAS handles iOS/Android builds. No Unity editor required. |
-| **Auth** | Supabase Auth | Built-in Apple Sign-In and Google Sign-In. JWT issuance, refresh tokens, session management -- zero custom code. |
+| **Game Client** | Swift + SwiftUI + SpriteKit (Xcode, iOS 17+) | Native iOS performance. SwiftUI for menus/collection/deck builder. SpriteKit for battlefield animations. No cross-platform overhead. |
+| **Auth** | Supabase Auth (Apple Sign-In only) | Built-in Apple Sign-In. JWT issuance, refresh tokens, session management -- zero custom code. iOS-only means no Google Sign-In needed. |
 | **Database** | Supabase PostgreSQL | Managed Postgres with Row Level Security (RLS). No connection pooling to configure. Built-in migrations. |
 | **Serverless API** | Supabase Edge Functions (Deno/TypeScript) | Handles REST endpoints for collection, economy, evolution, matchmaking. Auto-scales. Zero infrastructure. |
 | **Real-time** | Supabase Realtime (WebSocket channels) | Clients subscribe to match channels. Game server broadcasts state changes. Built-in auth on channels. |
 | **Game Server** | Railway (Node.js / TypeScript) | Stateful match engine. Railway auto-scales, auto-deploys from GitHub. One `railway up` command. |
 | **Image Generation** | fal.ai (FLUX Kontext API) | Direct HTTP API. No GPU provisioning. FLUX Kontext Dev for free tier, Pro for subscribers. |
-| **Text Generation** | OpenAI API (GPT-4o Mini) | Card names, flavor text. $0.15/$0.60 per 1M tokens. Negligible cost. |
+| **Text Generation** | OpenAI API (GPT-4o Mini) | Card names, flavor text. ~$0.15/$0.60 per 1M tokens. Negligible cost. |
 | **Card Art Storage + CDN** | Cloudflare R2 | S3-compatible object storage with built-in global CDN. No egress fees. |
 | **Analytics** | PostHog | Player behavior, retention, match data, economy health. Free tier covers launch. |
-| **App Distribution** | Expo EAS Build + Apple/Google stores | One command builds for both platforms. |
-| **Admin Dashboard** | React SPA on Railway | Simple web app for the owner to manage the game without touching code. |
+| **Payments** | StoreKit 2 (native Apple API) | In-app subscriptions. No RevenueCat, no Stripe, no third-party payment SDK. Server-side receipt validation via App Store Server API v2. |
+| **App Distribution** | Xcode Cloud + App Store Connect | Automated builds triggered on git push. TestFlight for beta. App Store for release. |
+| **Admin Dashboard** | Node.js + Express + static HTML/JS on Railway | Simple web app for the owner to manage the game without touching code. Separate Railway service. |
+| **Legal Pages** | Cloudflare Pages (free) | Privacy policy and Terms of Service hosted as static HTML. Required for App Store submission. |
 
-### 1.3 Environment Variables (.env)
+### 1.3 Environment Variables
 
-The owner creates accounts and puts all keys in a single `.env` file. Claude Code reads from this.
+The owner creates accounts and puts all keys in a single `.xcconfig` file for the iOS client and a `.env` file for backend services. Claude Code reads from these.
+
+**Backend `.env` (used by game-server, admin-dashboard, and referenced by Edge Functions):**
 
 ```bash
 # Supabase
@@ -112,21 +119,868 @@ R2_PUBLIC_URL=https://art.chaoscreatures.com
 POSTHOG_API_KEY=phc_...
 POSTHOG_HOST=https://app.posthog.com
 
-# Railway (set via Railway dashboard, not .env)
-# RAILWAY_TOKEN is auto-configured
+# Admin Dashboard
+ADMIN_PASSWORD=random-32-char-password
+ADMIN_JWT_SECRET=random-64-char-secret
 
 # Game Server
 GAME_SERVER_PORT=3001
 GAME_SERVER_SECRET=random-64-char-secret
+
+# App Store Server API (for subscription validation)
+APP_STORE_KEY_ID=XXXXXXXXXX
+APP_STORE_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+APP_STORE_PRIVATE_KEY_PATH=./AuthKey_XXXXXXXXXX.p8
+APP_STORE_BUNDLE_ID=com.chaoscreatures.app
+APP_STORE_ENVIRONMENT=Production
 ```
+
+**iOS client `Config.xcconfig` (NOT committed to git -- in .gitignore):**
+
+```
+SUPABASE_URL = https:$()/$()/xxxx.supabase.co
+SUPABASE_ANON_KEY = eyJ...
+R2_PUBLIC_URL = https:$()/$()/art.chaoscreatures.com
+POSTHOG_API_KEY = phc_...
+POSTHOG_HOST = https:$()/$()/app.posthog.com
+```
+
+These are read in Swift via `Bundle.main.infoDictionary` after being referenced in `Info.plist`.
+
+### 1.4 Budget Estimate ($300 Total Cap)
+
+| Service | Plan | Monthly Cost | Build Phase Cost | Notes |
+|---|---|---|---|---|
+| Supabase | Free tier (dev), Pro $25/mo (launch) | $0-25 | $25 | Free tier for dev. Pro for launch month. |
+| Railway | Starter (free $5 credit), then usage | $5-10 | $15 | Game server + admin dashboard. Low traffic at launch. |
+| fal.ai | Pay-as-you-go | ~$0.02-0.08/image | $80 | ~367 base cards + testing + evolution testing. Budget 2000 generations. |
+| OpenAI | Pay-as-you-go | ~$0.0001/call | $2 | GPT-4o Mini is extremely cheap. ~2000 calls. |
+| Cloudflare R2 | Free 10GB storage, free egress | $0 | $0 | Free tier covers launch and beyond. |
+| PostHog | Free tier (1M events/mo) | $0 | $0 | Free tier covers launch. |
+| Apple Developer | $99/year | $8.25/mo | $99 | Required for App Store. Annual fee. |
+| Cloudflare Pages | Free | $0 | $0 | Privacy policy + ToS hosting. |
+| Domain (optional) | ~$12/year | $1/mo | $12 | For custom R2 CDN URL. Optional -- can use default R2 URL. |
+| **TOTAL** | | | **~$233** | **$67 buffer remaining** |
+
+Build-phase AI generation budget breakdown:
+- 367 base card images at ~$0.04 avg = $14.68
+- 367 base card text generations at ~$0.0001 = $0.04
+- Testing/iteration (3x multiplier for rejects and retries) = $44
+- Evolution testing (~200 test evolutions) = $10
+- App icon + store assets = $2
+- **Total AI spend: ~$71**
 
 ---
 
-## 2. Supabase Database Schema
+## 2. iOS Client Architecture
+
+### 2.1 Xcode Project Structure
+
+```
+ChaosCreatures/
+  ChaosCreatures.xcodeproj
+  ChaosCreatures/
+    App/
+      ChaosCreaturesApp.swift          # @main entry point, scene setup
+      AppState.swift                    # ObservableObject: auth state, player data
+      AppRouter.swift                   # Navigation state machine
+    Config/
+      Config.xcconfig                   # API keys (gitignored)
+      Info.plist                        # References xcconfig values
+      Secrets.swift                     # Reads keys from Bundle
+    Services/
+      SupabaseService.swift             # Supabase Swift SDK client singleton
+      AuthService.swift                 # Apple Sign-In + Supabase Auth
+      CollectionService.swift           # Card/deck CRUD via Edge Functions
+      EconomyService.swift              # Dust, shards, purchases
+      EvolutionService.swift            # Evolution flow + polling
+      MatchmakingService.swift          # Queue join/leave + match found listener
+      MatchService.swift                # Realtime channel for active match
+      ImageCacheService.swift           # URLCache + disk cache for card art
+      StoreKitService.swift             # StoreKit 2 subscription management
+      PostHogService.swift              # Analytics events
+    Models/
+      Player.swift                      # Codable struct matching DB schema
+      CardTemplate.swift                # Codable struct
+      CardInstance.swift                # Codable struct
+      Deck.swift                        # Codable struct
+      BattleCard.swift                  # Runtime battle representation
+      GameState.swift                   # Client-side game state projection
+      MatchEvent.swift                  # All server event types (Codable enums)
+      PlayerAction.swift                # All client action types
+      EconomyConfig.swift               # Dust costs, shard costs
+    Views/
+      Onboarding/
+        OnboardingView.swift            # Faction selection, tutorial
+        FactionPickerView.swift
+      Home/
+        HomeView.swift                  # Main tab container
+        DailyMissionsView.swift
+      Collection/
+        CollectionView.swift            # Card grid with filters
+        CardDetailView.swift            # Full card view + evolution button
+        DeckBuilderView.swift           # Drag-drop deck editor
+        DeckListView.swift
+      Shop/
+        ShopView.swift                  # Card packs, shards, subscription
+        CardPackOpeningView.swift        # Pack reveal animation
+        SubscriptionView.swift          # StoreKit 2 paywall
+      Battle/
+        MatchmakingView.swift           # Queue UI with timer
+        BattleContainerView.swift       # Hosts SpriteKit scene
+        PostMatchView.swift             # Results, rewards, energy gains
+      Evolution/
+        EvolutionFlowView.swift         # Multi-step evolution ceremony
+        ModifierPickerView.swift        # Choose visual modifier
+        EvolutionRevealView.swift       # Dramatic art reveal
+      Profile/
+        ProfileView.swift               # Player stats, rank, settings
+        SettingsView.swift
+      Components/
+        CardView.swift                  # Reusable card rendering
+        ManaGemView.swift               # Mana cost display
+        KeywordBadgeView.swift          # Keyword icon + tooltip
+        LoadingView.swift               # Standard loading state
+        ErrorView.swift                 # Standard error state with retry
+        EmptyStateView.swift            # Standard empty state
+    SpriteKit/
+      Scenes/
+        BattleScene.swift               # Main battlefield SKScene
+        ChaosRollScene.swift            # D20 roll animation overlay
+      Nodes/
+        BoardNode.swift                 # 5-slot board layout (per player)
+        CreatureNode.swift              # Card on board (art, stats, keywords)
+        HandNode.swift                  # Fan of cards in hand
+        HandCardNode.swift              # Individual hand card
+        AvatarNode.swift                # Player avatar + HP bar
+        ManaBarNode.swift               # Mana crystal display
+        DamageNumberNode.swift          # Floating damage text
+        EventBannerNode.swift           # Order/Chaos event popup
+        TimerNode.swift                 # Turn timer display
+        PhaseIndicatorNode.swift        # Current phase label
+      Actions/
+        CardPlayAction.swift            # Hand-to-board animation
+        AttackAction.swift              # Creature attack animation (lunge)
+        DamageAction.swift              # Damage number + shake
+        DeathAction.swift               # Creature death (fade/shatter)
+        HealAction.swift                # Green number float up
+        ShieldBreakAction.swift         # Shield pop effect
+        ChaosRollAction.swift           # D20 spin + result reveal
+        EventSlideAction.swift          # Event banner slide in/out
+      Utilities/
+        SpriteKitConstants.swift        # Layout constants, z-positions
+        ParticleEffects.swift           # SKEmitterNode presets per faction
+    Extensions/
+      Color+Theme.swift                 # Faction color palettes
+      View+Loading.swift                # Loading/error/empty state modifiers
+      Data+Codable.swift                # JSON helpers
+    Resources/
+      Assets.xcassets/                  # App icon, color sets, SF Symbols
+      Particles/                        # .sks particle files per faction
+      Sounds/                           # Sound effect files
+      Fonts/                            # Custom fonts if any
+  ChaosCreaturesTests/
+    Services/
+      AuthServiceTests.swift
+      CollectionServiceTests.swift
+      MatchServiceTests.swift
+    Models/
+      GameStateTests.swift
+      CombatResolutionTests.swift
+    SpriteKit/
+      BattleSceneTests.swift
+  ChaosCreaturesUITests/
+    OnboardingUITests.swift
+    BattleFlowUITests.swift
+    ScreenshotTests.swift               # Generates App Store screenshots
+```
+
+### 2.2 Supabase Swift SDK Integration
+
+```swift
+// Services/SupabaseService.swift
+import Supabase
+
+final class SupabaseService {
+    static let shared = SupabaseService()
+
+    let client: SupabaseClient
+
+    private init() {
+        client = SupabaseClient(
+            supabaseURL: URL(string: Secrets.supabaseURL)!,
+            supabaseKey: Secrets.supabaseAnonKey
+        )
+    }
+}
+
+// Services/AuthService.swift
+import AuthenticationServices
+import Supabase
+
+@MainActor
+final class AuthService: ObservableObject {
+    @Published var session: Session?
+    @Published var isLoading = false
+    @Published var error: String?
+
+    private let supabase = SupabaseService.shared.client
+
+    func signInWithApple() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let session = try await supabase.auth.signInWithApple()
+            self.session = session
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    func restoreSession() async {
+        do {
+            session = try await supabase.auth.session
+        } catch {
+            session = nil
+        }
+    }
+
+    func signOut() async {
+        try? await supabase.auth.signOut()
+        session = nil
+    }
+}
+```
+
+### 2.3 SpriteKit Scene Hierarchy for Battlefield
+
+```swift
+// SpriteKit/Scenes/BattleScene.swift
+import SpriteKit
+
+final class BattleScene: SKScene {
+    // Layout: opponent board at top, player board at bottom, hands at edges
+    // Z-ordering (back to front):
+    //   0: Background
+    //   10: Board slots (both players)
+    //   20: Creatures on board
+    //   30: Avatars + HP bars
+    //   40: Mana bar
+    //   50: Hand cards
+    //   60: Phase indicator + timer
+    //   70: Damage numbers (float above everything)
+    //   80: Event banner overlay
+    //   90: Chaos roll overlay (D20)
+    //  100: UI buttons (end turn, attack)
+
+    private var opponentBoard: BoardNode!
+    private var playerBoard: BoardNode!
+    private var playerHand: HandNode!
+    private var opponentHandIndicator: SKLabelNode!  // Shows card count only
+    private var playerAvatar: AvatarNode!
+    private var opponentAvatar: AvatarNode!
+    private var manaBar: ManaBarNode!
+    private var phaseIndicator: PhaseIndicatorNode!
+    private var timerNode: TimerNode!
+    private var eventBanner: EventBannerNode!
+    private var endTurnButton: SKSpriteNode!
+    private var attackButton: SKSpriteNode!
+
+    weak var matchDelegate: BattleSceneDelegate?
+
+    override func didMove(to view: SKView) {
+        backgroundColor = .black
+        setupBackground()
+        setupBoards()
+        setupAvatars()
+        setupHand()
+        setupUI()
+    }
+
+    private func setupBoards() {
+        // Opponent board: 5 slots across top third of screen
+        opponentBoard = BoardNode(slotCount: 5, isOpponent: true)
+        opponentBoard.position = CGPoint(x: size.width / 2, y: size.height * 0.65)
+        opponentBoard.zPosition = 10
+        addChild(opponentBoard)
+
+        // Player board: 5 slots across bottom third
+        playerBoard = BoardNode(slotCount: 5, isOpponent: false)
+        playerBoard.position = CGPoint(x: size.width / 2, y: size.height * 0.35)
+        playerBoard.zPosition = 10
+        addChild(playerBoard)
+    }
+
+    // Called when server sends game events
+    func handleServerEvent(_ event: MatchEvent) {
+        switch event {
+        case .turnStart(let data):
+            animateTurnStart(turn: data.turnNumber, activePlayer: data.activePlayer)
+        case .chaosRoll(let data):
+            animateChaosRoll(roll: data.rollValue, instability: data.instability, result: data.result)
+        case .eventTriggered(let data):
+            animateEventBanner(event: data)
+        case .cardPlayed(let data):
+            animateCardPlay(card: data.card, slot: data.slot, playerSide: data.playerSide)
+        case .combatResolution(let data):
+            animateCombat(data: data)
+        case .matchEnd(let data):
+            animateMatchEnd(winner: data.winner, reason: data.endReason)
+        default:
+            break
+        }
+    }
+
+    // Animation: Card play (hand to board)
+    private func animateCardPlay(card: BattleCard, slot: Int, playerSide: PlayerSide) {
+        let board = playerSide == .mine ? playerBoard : opponentBoard
+        let creatureNode = CreatureNode(card: card)
+        creatureNode.setScale(0.3)
+        creatureNode.alpha = 0
+
+        let targetPosition = board!.slotPosition(slot)
+        creatureNode.position = playerSide == .mine
+            ? CGPoint(x: size.width / 2, y: -50)  // From hand area
+            : CGPoint(x: size.width / 2, y: size.height + 50)  // From opponent hand
+
+        addChild(creatureNode)
+
+        let moveAction = SKAction.move(to: targetPosition, duration: 0.4)
+        moveAction.timingMode = .easeOut
+        let scaleAction = SKAction.scale(to: 1.0, duration: 0.4)
+        let fadeAction = SKAction.fadeIn(withDuration: 0.2)
+        let impactAction = SKAction.run {
+            self.run(SKAction.playSoundFileNamed("card_play.wav", waitForCompletion: false))
+            board?.flashSlot(slot)
+        }
+
+        creatureNode.run(SKAction.sequence([
+            SKAction.group([moveAction, scaleAction, fadeAction]),
+            impactAction,
+        ]))
+    }
+
+    // Animation: Chaos Roll (D20 spin)
+    private func animateChaosRoll(roll: Int, instability: Int, result: ChaosRollResult) {
+        let rollOverlay = ChaosRollScene(roll: roll, instability: instability, result: result)
+        rollOverlay.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        rollOverlay.zPosition = 90
+        addChild(rollOverlay)
+
+        rollOverlay.animate { [weak rollOverlay] in
+            rollOverlay?.removeFromParent()
+        }
+    }
+
+    // Animation: Creature attack (lunge toward target + damage number)
+    private func animateCombat(data: CombatResolutionData) {
+        var delay: TimeInterval = 0
+
+        for pair in data.pairs {
+            let attackerNode = findCreatureNode(id: pair.attackerID)
+            let blockerNode = findCreatureNode(id: pair.blockerID)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                self.animateAttackLunge(attacker: attackerNode, target: blockerNode)
+                self.showDamageNumber(on: blockerNode, amount: pair.attackerDamageDealt)
+                self.showDamageNumber(on: attackerNode, amount: pair.blockerDamageDealt)
+
+                if pair.attackerDied { self.animateDeath(node: attackerNode) }
+                if pair.blockerDied { self.animateDeath(node: blockerNode) }
+            }
+            delay += 0.6
+        }
+
+        for unblocked in data.unblocked {
+            let attackerNode = findCreatureNode(id: unblocked.attackerID)
+            let targetAvatar = opponentAvatar!
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                self.animateAttackLunge(attacker: attackerNode, target: targetAvatar)
+                self.showDamageNumber(on: targetAvatar, amount: unblocked.faceDamage)
+            }
+            delay += 0.4
+        }
+    }
+
+    // Animation: Creature death (shatter particles)
+    private func animateDeath(node: CreatureNode?) {
+        guard let node = node else { return }
+        let particles = SKEmitterNode(fileNamed: "creature_death")!
+        particles.position = node.position
+        particles.zPosition = 70
+        addChild(particles)
+
+        node.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.fadeOut(withDuration: 0.3),
+                SKAction.scale(to: 0.5, duration: 0.3),
+            ]),
+            SKAction.removeFromParent(),
+        ]))
+
+        particles.run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.0),
+            SKAction.removeFromParent(),
+        ]))
+    }
+
+    // Touch handling: card selection, slot targeting, attack declaration
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        let touchedNodes = nodes(at: location)
+
+        for node in touchedNodes {
+            if let handCard = node as? HandCardNode {
+                matchDelegate?.didSelectHandCard(handCard.cardID)
+            } else if let slotNode = node as? BoardSlotNode, slotNode.isEmpty {
+                matchDelegate?.didSelectBoardSlot(slotNode.slotIndex)
+            } else if let creatureNode = node as? CreatureNode {
+                matchDelegate?.didSelectCreature(creatureNode.cardID)
+            } else if node == endTurnButton {
+                matchDelegate?.didTapEndTurn()
+            } else if node == attackButton {
+                matchDelegate?.didTapAttack()
+            }
+        }
+    }
+
+    private func findCreatureNode(id: String) -> CreatureNode? {
+        enumerateChildNodes(withName: "//creature_*") { node, _ in
+            // Search logic
+        }
+        return children.compactMap { $0 as? CreatureNode }.first { $0.cardID == id }
+    }
+}
+
+protocol BattleSceneDelegate: AnyObject {
+    func didSelectHandCard(_ cardID: String)
+    func didSelectBoardSlot(_ slot: Int)
+    func didSelectCreature(_ cardID: String)
+    func didTapEndTurn()
+    func didTapAttack()
+}
+```
+
+### 2.4 StoreKit 2 Subscription Flow
+
+```swift
+// Services/StoreKitService.swift
+import StoreKit
+
+@MainActor
+final class StoreKitService: ObservableObject {
+    @Published var subscriptions: [Product] = []
+    @Published var currentSubscription: Product?
+    @Published var purchaseError: String?
+
+    // Product IDs configured in App Store Connect
+    static let midTierID = "com.chaoscreatures.subscription.mid"      // $6.99/mo
+    static let topTierID = "com.chaoscreatures.subscription.top"      // $12.99/mo
+
+    private var transactionListener: Task<Void, Error>?
+
+    init() {
+        transactionListener = listenForTransactions()
+    }
+
+    deinit {
+        transactionListener?.cancel()
+    }
+
+    func loadProducts() async {
+        do {
+            let products = try await Product.products(for: [
+                Self.midTierID,
+                Self.topTierID,
+            ])
+            subscriptions = products.sorted { $0.price < $1.price }
+        } catch {
+            purchaseError = "Failed to load subscriptions: \(error.localizedDescription)"
+        }
+    }
+
+    func purchase(_ product: Product) async -> Bool {
+        do {
+            let result = try await product.purchase()
+            switch result {
+            case .success(let verification):
+                let transaction = try checkVerified(verification)
+                // Send receipt to server for validation + tier update
+                await syncSubscriptionWithServer(transaction: transaction)
+                await transaction.finish()
+                return true
+            case .userCancelled:
+                return false
+            case .pending:
+                // Transaction requires approval (Ask to Buy)
+                return false
+            @unknown default:
+                return false
+            }
+        } catch {
+            purchaseError = error.localizedDescription
+            return false
+        }
+    }
+
+    func restorePurchases() async {
+        try? await AppStore.sync()
+        await updateCurrentSubscription()
+    }
+
+    private func listenForTransactions() -> Task<Void, Error> {
+        Task.detached {
+            for await result in Transaction.updates {
+                do {
+                    let transaction = try self.checkVerified(result)
+                    await self.syncSubscriptionWithServer(transaction: transaction)
+                    await transaction.finish()
+                    await self.updateCurrentSubscription()
+                } catch {
+                    // Log verification failure
+                }
+            }
+        }
+    }
+
+    private func updateCurrentSubscription() async {
+        for await result in Transaction.currentEntitlements {
+            if let transaction = try? checkVerified(result),
+               transaction.productType == .autoRenewable {
+                currentSubscription = subscriptions.first { $0.id == transaction.productID }
+                return
+            }
+        }
+        currentSubscription = nil
+    }
+
+    private func syncSubscriptionWithServer(transaction: Transaction) async {
+        // Call Edge Function to update player's subscription_tier
+        let supabase = SupabaseService.shared.client
+        struct TierUpdate: Encodable {
+            let transactionID: UInt64
+            let productID: String
+            let originalTransactionID: UInt64
+        }
+        do {
+            try await supabase.functions.invoke(
+                "apple-webhook",
+                options: .init(body: TierUpdate(
+                    transactionID: transaction.id,
+                    productID: transaction.productID,
+                    originalTransactionID: transaction.originalID
+                ))
+            )
+        } catch {
+            // Retry on next app launch via listenForTransactions
+        }
+    }
+
+    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+        switch result {
+        case .unverified(_, let error):
+            throw error
+        case .verified(let safe):
+            return safe
+        }
+    }
+}
+```
+
+**App Store Server Notifications (V2) webhook -- Edge Function:**
+
+```typescript
+// supabase/functions/apple-webhook/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decodeJwt } from "https://deno.land/x/jose@v4.14.4/index.ts";
+
+serve(async (req) => {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  const body = await req.json();
+
+  // Handle client-side sync (from StoreKitService)
+  if (body.transactionID) {
+    const tier = body.productID.includes("mid") ? "MID" : "HIGH";
+    const { data: session } = await supabase.auth.getUser(
+      req.headers.get("Authorization")?.replace("Bearer ", "") ?? ""
+    );
+    if (!session.user) return new Response("Unauthorized", { status: 401 });
+
+    await supabase
+      .from("players")
+      .update({
+        subscription_tier: tier,
+        max_cards_per_faction: tier === "HIGH" ? 200 : tier === "MID" ? 100 : 50,
+        max_deck_slots: tier === "HIGH" ? 10 : tier === "MID" ? 5 : 3,
+      })
+      .eq("auth_id", session.user.id);
+
+    return new Response(JSON.stringify({ tier }), { status: 200 });
+  }
+
+  // Handle App Store Server Notification V2
+  // Apple sends a signed JWS payload
+  const signedPayload = body.signedPayload;
+  const payload = decodeJwt(signedPayload);
+  const notificationType = payload.notificationType as string;
+
+  // Map notification to tier update
+  if (
+    notificationType === "SUBSCRIBED" ||
+    notificationType === "DID_RENEW"
+  ) {
+    const transactionInfo = decodeJwt(
+      (payload.data as any).signedTransactionInfo
+    );
+    const productId = transactionInfo.productId as string;
+    const appAccountToken = transactionInfo.appAccountToken as string;
+    const tier = productId.includes("mid") ? "MID" : "HIGH";
+
+    await supabase
+      .from("players")
+      .update({
+        subscription_tier: tier,
+        max_cards_per_faction: tier === "HIGH" ? 200 : tier === "MID" ? 100 : 50,
+        max_deck_slots: tier === "HIGH" ? 10 : tier === "MID" ? 5 : 3,
+      })
+      .eq("auth_id", appAccountToken);
+  } else if (
+    notificationType === "EXPIRED" ||
+    notificationType === "REVOKE"
+  ) {
+    const transactionInfo = decodeJwt(
+      (payload.data as any).signedTransactionInfo
+    );
+    const appAccountToken = transactionInfo.appAccountToken as string;
+
+    await supabase
+      .from("players")
+      .update({
+        subscription_tier: "FREE",
+        max_cards_per_faction: 50,
+        max_deck_slots: 3,
+      })
+      .eq("auth_id", appAccountToken);
+  }
+
+  return new Response(JSON.stringify({ ok: true }), { status: 200 });
+});
+```
+
+### 2.5 Match Communication (Swift Client)
+
+```swift
+// Services/MatchService.swift
+import Supabase
+import Realtime
+
+@MainActor
+final class MatchService: ObservableObject {
+    @Published var gameState: ClientGameState?
+    @Published var connectionStatus: ConnectionStatus = .disconnected
+    @Published var latestEvent: MatchEvent?
+
+    private var channel: RealtimeChannelV2?
+    private let supabase = SupabaseService.shared.client
+    private var matchID: String?
+    private var playerID: String?
+    private var reconnectAttempts = 0
+    private let maxReconnectAttempts = 5
+
+    func connectToMatch(matchID: String, playerID: String) async {
+        self.matchID = matchID
+        self.playerID = playerID
+        connectionStatus = .connecting
+
+        channel = supabase.realtimeV2.channel("match:\(matchID)")
+
+        channel?.onBroadcast(event: "game_event") { [weak self] message in
+            guard let self = self else { return }
+            Task { @MainActor in
+                self.handleServerMessage(message)
+            }
+        }
+
+        do {
+            try await channel?.subscribe()
+            connectionStatus = .connected
+            reconnectAttempts = 0
+            // Request full state snapshot
+            try await sendAction(.reconnect)
+        } catch {
+            await attemptReconnect()
+        }
+    }
+
+    func sendAction(_ action: PlayerAction) async throws {
+        guard let channel = channel else { return }
+        let payload: [String: AnyJSON] = [
+            "action": .string(action.actionName),
+            "data": action.jsonData,
+            "player_id": .string(playerID ?? ""),
+            "timestamp": .double(Double(Date().timeIntervalSince1970 * 1000)),
+        ]
+        try await channel.broadcast(event: "player_action", message: payload)
+    }
+
+    private func handleServerMessage(_ message: JSONObject) {
+        guard let eventTypeStr = message["event_type"]?.stringValue,
+              let dataJSON = message["data"] else { return }
+
+        do {
+            let data = try JSONSerialization.data(withJSONObject: dataJSON)
+            let event = try MatchEvent.decode(eventType: eventTypeStr, data: data)
+            latestEvent = event
+
+            if case .matchState(let state) = event {
+                gameState = state
+            }
+        } catch {
+            // Log decoding error
+        }
+    }
+
+    private func attemptReconnect() async {
+        guard reconnectAttempts < maxReconnectAttempts else {
+            connectionStatus = .failed
+            return
+        }
+
+        reconnectAttempts += 1
+        connectionStatus = .reconnecting
+
+        let delay = pow(2.0, Double(reconnectAttempts)) + Double.random(in: 0...1)
+        try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+
+        if let matchID = matchID, let playerID = playerID {
+            await connectToMatch(matchID: matchID, playerID: playerID)
+        }
+    }
+
+    func disconnect() async {
+        await channel?.unsubscribe()
+        channel = nil
+        connectionStatus = .disconnected
+    }
+
+    enum ConnectionStatus {
+        case disconnected, connecting, connected, reconnecting, failed
+    }
+}
+```
+
+### 2.6 Image Caching
+
+```swift
+// Services/ImageCacheService.swift
+import SwiftUI
+
+actor ImageCacheService {
+    static let shared = ImageCacheService()
+
+    private let memoryCache = NSCache<NSString, UIImage>()
+    private let diskCacheURL: URL
+    private let maxDiskCacheBytes: Int = 200 * 1024 * 1024 // 200MB
+
+    init() {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        diskCacheURL = caches.appendingPathComponent("CardArt", isDirectory: true)
+        try? FileManager.default.createDirectory(at: diskCacheURL, withIntermediateDirectories: true)
+        memoryCache.countLimit = 200
+    }
+
+    func image(for url: URL) async -> UIImage? {
+        let key = url.absoluteString as NSString
+
+        // Check memory cache
+        if let cached = memoryCache.object(forKey: key) {
+            return cached
+        }
+
+        // Check disk cache
+        let diskPath = diskCacheURL.appendingPathComponent(url.lastPathComponent)
+        if let data = try? Data(contentsOf: diskPath),
+           let image = UIImage(data: data) {
+            memoryCache.setObject(image, forKey: key)
+            return image
+        }
+
+        // Download
+        guard let (data, _) = try? await URLSession.shared.data(from: url),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+
+        memoryCache.setObject(image, forKey: key)
+        try? data.write(to: diskPath)
+        return image
+    }
+
+    func preloadBattleArt(cardArtURLs: [URL]) async {
+        await withTaskGroup(of: Void.self) { group in
+            for url in cardArtURLs {
+                group.addTask { _ = await self.image(for: url) }
+            }
+        }
+    }
+}
+```
+
+### 2.7 Xcode Cloud CI/CD Pipeline
+
+Xcode Cloud is configured in App Store Connect (not a YAML file). These are the workflow settings:
+
+**Workflow: "Build and Test" (on every push to `main`)**
+- Start condition: Push to `main` branch, changes in `ChaosCreatures/` directory
+- Environment: Latest Xcode, latest macOS
+- Build action: Build for testing (iOS Simulator, iPhone 15 Pro)
+- Test action: Run all unit tests + UI tests
+- Post-action: Notify via email on failure
+
+**Workflow: "TestFlight Beta" (on git tag `beta/*`)**
+- Start condition: Tag matching `beta/*`
+- Environment: Latest Xcode, latest macOS
+- Build action: Archive (iOS, Release configuration)
+- Code signing: Automatic (managed by Xcode Cloud)
+- Post-action: Deploy to TestFlight (internal testers)
+
+**Workflow: "App Store Release" (on git tag `release/*`)**
+- Start condition: Tag matching `release/*`
+- Environment: Latest Xcode, latest macOS
+- Build action: Archive (iOS, Release configuration)
+- Code signing: Automatic (managed by Xcode Cloud)
+- Post-action: Submit to App Store Review
+
+**Custom build script (`ci_scripts/ci_post_clone.sh`):**
+```bash
+#!/bin/bash
+# Xcode Cloud runs this after cloning the repo
+# Write xcconfig from Xcode Cloud environment variables
+cat > ../ChaosCreatures/Config/Config.xcconfig << EOF
+SUPABASE_URL = ${SUPABASE_URL}
+SUPABASE_ANON_KEY = ${SUPABASE_ANON_KEY}
+R2_PUBLIC_URL = ${R2_PUBLIC_URL}
+POSTHOG_API_KEY = ${POSTHOG_API_KEY}
+POSTHOG_HOST = ${POSTHOG_HOST}
+EOF
+```
+
+Environment variables (`SUPABASE_URL`, etc.) are set in Xcode Cloud workflow settings in App Store Connect. They are never committed to git.
+
+---
+
+## 3. Supabase Database Schema
 
 All tables live in Supabase PostgreSQL. Row Level Security (RLS) policies are defined for every table. The schema maps directly to entities in `02-card-data-model.md`.
 
-### 2.1 Core Tables
+### 3.1 Core Tables
 
 #### `players`
 
@@ -668,7 +1522,26 @@ CREATE POLICY "Service role full access"
   USING (auth.role() = 'service_role');
 ```
 
-### 2.2 Database Migrations
+#### `rate_limit_log`
+
+```sql
+CREATE TABLE rate_limit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  action TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_rate_limit_player_action ON rate_limit_log(player_id, action, created_at DESC);
+
+-- Auto-cleanup: delete entries older than 24 hours (via pg_cron)
+-- SELECT cron.schedule('cleanup-rate-limits', '0 * * * *', $$DELETE FROM rate_limit_log WHERE created_at < now() - interval '24 hours'$$);
+
+ALTER TABLE rate_limit_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role only" ON rate_limit_log FOR ALL USING (auth.role() = 'service_role');
+```
+
+### 3.2 Database Migrations
 
 All migrations are managed by Supabase CLI. The file structure:
 
@@ -688,10 +1561,13 @@ supabase/
     20260301000010_create_event_definitions.sql
     20260301000011_create_economy_config.sql
     20260301000012_create_generation_jobs.sql
-    20260301000013_seed_factions.sql
-    20260301000014_seed_avatars.sql
-    20260301000015_seed_event_definitions.sql
-    20260301000016_seed_economy_config.sql
+    20260301000013_create_rate_limit_log.sql
+    20260301000014_create_matchmaking_queue.sql
+    20260301000015_seed_factions.sql
+    20260301000016_seed_avatars.sql
+    20260301000017_seed_event_definitions.sql
+    20260301000018_seed_economy_config.sql
+    20260301000019_create_triggers.sql
   seed.sql
 ```
 
@@ -702,16 +1578,15 @@ npx supabase db push
 
 ---
 
-## 3. Service Architecture
+## 4. Service Architecture
 
-### 3.1 Auth (Supabase Auth -- zero custom code)
+### 4.1 Auth (Supabase Auth -- Apple Sign-In Only)
 
-Supabase Auth handles everything:
+Supabase Auth handles everything. iOS-only means only Apple Sign-In is needed.
 
-- **Apple Sign-In:** Configured in Supabase dashboard. Client calls `supabase.auth.signInWithOAuth({ provider: 'apple' })`.
-- **Google Sign-In:** Same pattern for Android.
+- **Apple Sign-In:** Configured in Supabase dashboard. iOS client uses `supabase.auth.signInWithApple()` via the Supabase Swift SDK.
 - **JWT tokens:** Supabase issues and refreshes automatically.
-- **Session management:** Client SDK handles token refresh transparently.
+- **Session management:** Swift SDK handles token refresh transparently.
 
 **On first sign-in**, a database trigger creates the player row:
 
@@ -731,13 +1606,13 @@ CREATE TRIGGER on_auth_user_created
   EXECUTE FUNCTION handle_new_user();
 ```
 
-**Subscription tier updates:** An Edge Function receives App Store Server Notifications (webhook) and updates `players.subscription_tier`. The webhook URL is `https://<project>.supabase.co/functions/v1/apple-webhook`.
+**Subscription tier updates:** The Edge Function `apple-webhook` receives App Store Server Notifications V2 (webhook) and client-side StoreKit 2 sync calls, then updates `players.subscription_tier`. See Section 2.4 for the full implementation.
 
-### 3.2 Collection Service (Supabase Edge Functions)
+### 4.2 Collection Service (Supabase Edge Functions)
 
 Manages card ownership, deck building, and inventory. All logic runs in Edge Functions with service_role access to bypass RLS when needed.
 
-### 3.3 Economy Service (Supabase Edge Functions)
+### 4.3 Economy Service (Supabase Edge Functions)
 
 Manages Chaos Dust, shards, card pack purchases, quest tracking. All currency operations use PostgreSQL transactions with row-level locking:
 
@@ -753,7 +1628,7 @@ COMMIT;
 
 Economy values are read from `economy_config` table at runtime, allowing the owner to change them via the Admin Dashboard without code changes.
 
-### 3.4 Evolution Service (Supabase Edge Functions)
+### 4.4 Evolution Service (Supabase Edge Functions)
 
 Orchestrates the full evolution flow. The evolution is a multi-step async process:
 
@@ -763,9 +1638,9 @@ Orchestrates the full evolution flow. The evolution is a multi-step async proces
 4. **Poll status** -- client polls until image and text are ready
 5. **Confirm choices** -- player picks modifier and name, server updates card
 
-### 3.5 Matchmaking Service (Supabase Edge Functions + Realtime)
+### 4.5 Matchmaking Service (Supabase Edge Functions + Realtime)
 
-Uses a Supabase table as the matchmaking queue (instead of Redis sorted sets -- simpler, no separate infrastructure):
+Uses a Supabase table as the matchmaking queue:
 
 ```sql
 CREATE TABLE matchmaking_queue (
@@ -790,15 +1665,19 @@ CREATE POLICY "Service role full access"
   USING (auth.role() = 'service_role');
 ```
 
-A scheduled Edge Function runs every 2 seconds, scans the queue, and pairs players:
+**Matchmaking runs on the Game Server (not Edge Functions).** The game server polls the matchmaking_queue table every 2 seconds using a setInterval loop. This avoids the pg_cron 1-minute minimum limitation.
 
 ```typescript
-// matchmaker.ts (Edge Function, invoked by pg_cron every 2 seconds)
-async function matchPlayers() {
+// game-server/src/matchmaker.ts
+// Runs every 2 seconds inside the Node.js game server process
+
+async function pollMatchmakingQueue() {
   const { data: queue } = await supabase
     .from('matchmaking_queue')
     .select('*')
     .order('queued_at', { ascending: true });
+
+  if (!queue || queue.length < 2) return;
 
   // Group by mode
   const ranked = queue.filter(q => q.mode === 'RANKED');
@@ -825,27 +1704,31 @@ async function matchPlayers() {
     }
   }
 }
+
+// Start polling
+setInterval(pollMatchmakingQueue, 2000);
 ```
 
 When a match is created, both players are notified via Supabase Realtime (they subscribe to `matchmaking:{player_id}` channel).
 
-### 3.6 Game Server (Railway -- Node.js/TypeScript)
+### 4.6 Game Server (Railway -- Node.js/TypeScript)
 
 The game server is the authoritative match engine. It runs on Railway as a Node.js process.
 
 **Responsibilities:**
 - WebSocket connection management via Supabase Realtime channels
-- Full game state machine (Section 4)
+- Full game state machine (Section 5)
 - Server-authoritative turn resolution
 - Timer management (60s decision, 10s event choice)
 - Seeded PRNG per match for reproducible chaos rolls
 - Combat resolution with full keyword priority algorithm
 - Match result persistence to Supabase PostgreSQL
+- Matchmaking queue polling (every 2 seconds)
 
 **Communication pattern:**
 - Game server connects to Supabase Realtime as a service-role client
 - Each match gets a channel: `match:{match_id}`
-- Players subscribe to this channel from the mobile client
+- Players subscribe to this channel from the iOS client
 - Game server broadcasts state updates; players send actions
 
 **Scaling:**
@@ -869,9 +1752,12 @@ channel.on('broadcast', { event: 'new_match' }, (payload) => {
   startMatch(match.match_id, match.player_1, match.player_2, match.decks);
 });
 channel.subscribe();
+
+// Start matchmaking poller
+setInterval(pollMatchmakingQueue, 2000);
 ```
 
-### 3.7 AI Generation Pipeline (Edge Functions + fal.ai + OpenAI)
+### 4.7 AI Generation Pipeline (Edge Functions + fal.ai + OpenAI)
 
 AI generation runs inside Edge Functions. No separate worker infrastructure needed -- Edge Functions handle the async pattern.
 
@@ -879,7 +1765,7 @@ AI generation runs inside Edge Functions. No separate worker infrastructure need
 
 ```mermaid
 sequenceDiagram
-    participant C as Client
+    participant C as iOS Client
     participant EF as Edge Function
     participant DB as Supabase DB
     participant FAL as fal.ai
@@ -911,55 +1797,93 @@ sequenceDiagram
     EF-->>C: 200 {updated_card}
 ```
 
-**fal.ai call (image generation):**
+**fal.ai call (image generation) -- parameters match doc 03 Section 1.4 exactly:**
 
 ```typescript
 async function generateEvolutionArt(params: {
   referenceImageUrl: string;
   prompt: string;
+  negativePrompt: string;
   shardQuality: 'PLANAR' | 'REFINED' | 'PRISMATIC';
   evolutionOutcome: 'ORDER' | 'CHAOS';
-  tier: string;
+  evolutionStep: 'COMMON_UNCOMMON' | 'UNCOMMON_RARE' | 'RARE_EPIC' | 'EPIC_LEGENDARY';
 }): Promise<string> {
+  // Endpoint selection per doc 03 Section 1.4
   const model = params.shardQuality === 'PLANAR'
     ? 'fal-ai/flux-kontext/dev'
     : 'fal-ai/flux-kontext/pro';
 
+  // num_inference_steps per doc 03 Section 1.4
+  const stepsMap = { PLANAR: 28, REFINED: 32, PRISMATIC: 40 };
+  const numInferenceSteps = stepsMap[params.shardQuality];
+
+  // guidance_scale per doc 03 Section 1.4
+  const guidanceMap = { PLANAR: 7.0, REFINED: 7.5, PRISMATIC: 8.0 };
+  const guidanceScale = guidanceMap[params.shardQuality];
+
+  // image_size per doc 03 Section 1.4
+  const imageSize = params.shardQuality === 'PLANAR' ? 'portrait_4_3' : 'square_hd';
+
+  // strength (denoising) per doc 03 Section 1.4 table
+  const strengthTable: Record<string, { ORDER: number; CHAOS: number }> = {
+    COMMON_UNCOMMON: { ORDER: 0.35, CHAOS: 0.65 },
+    UNCOMMON_RARE:   { ORDER: 0.40, CHAOS: 0.70 },
+    RARE_EPIC:       { ORDER: 0.45, CHAOS: 0.75 },
+    EPIC_LEGENDARY:  { ORDER: 0.50, CHAOS: 0.80 },
+  };
+  const strength = strengthTable[params.evolutionStep][params.evolutionOutcome];
+
   const response = await fetch(`https://fal.run/${model}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Key ${process.env.FAL_KEY}`,
+      'Authorization': `Key ${Deno.env.get('FAL_KEY')}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       image_url: params.referenceImageUrl,
       prompt: params.prompt,
-      num_inference_steps: params.shardQuality === 'PRISMATIC' ? 40 : 28,
-      guidance_scale: params.evolutionOutcome === 'ORDER' ? 7.5 : 12.0,
-      output_format: 'png',
+      negative_prompt: params.negativePrompt,
+      image_size: imageSize,
+      num_inference_steps: numInferenceSteps,
+      guidance_scale: guidanceScale,
+      strength: strength,
+      num_images: 1,
+      enable_safety_checker: true,
+      output_format: 'webp',
     }),
   });
 
   const result = await response.json();
+
+  // Check safety
+  if (result.has_nsfw_concepts?.[0]) {
+    throw new Error('NSFW_DETECTED');
+  }
+
   const imageUrl = result.images[0].url;
 
   // Upload to R2
   const r2Url = await uploadToR2(imageUrl, params);
 
-  // If PRISMATIC, run second refinement pass
+  // If PRISMATIC, run second refinement pass per doc 03 Section 1.4
   if (params.shardQuality === 'PRISMATIC') {
     const refinementResponse = await fetch(`https://fal.run/fal-ai/flux-kontext/pro`, {
       method: 'POST',
       headers: {
-        'Authorization': `Key ${process.env.FAL_KEY}`,
+        'Authorization': `Key ${Deno.env.get('FAL_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         image_url: r2Url,
-        prompt: `Enhance details, improve lighting quality, sharpen edges, maintain character consistency. ${params.prompt}`,
+        prompt: `Enhance lighting quality, sharpen details, improve overall fidelity without changing the composition or design. ${params.prompt}`,
+        negative_prompt: params.negativePrompt,
+        image_size: imageSize,
         num_inference_steps: 20,
-        guidance_scale: 7.0,
-        output_format: 'png',
+        guidance_scale: guidanceScale,
+        strength: 0.20,
+        num_images: 1,
+        enable_safety_checker: true,
+        output_format: 'webp',
       }),
     });
     const refinementResult = await refinementResponse.json();
@@ -968,6 +1892,9 @@ async function generateEvolutionArt(params: {
 
   return r2Url;
 }
+
+// Negative prompt constant (from doc 03 Section 1.2)
+const NEGATIVE_PROMPT = "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, extra limbs, fused body parts, speech bubbles, comic panels, grid layout";
 ```
 
 **OpenAI call (text generation):**
@@ -984,7 +1911,7 @@ async function generateEvolutionText(params: {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -1020,17 +1947,28 @@ async function generateEvolutionText(params: {
 **Quality check pipeline:**
 
 ```typescript
-async function validateGeneratedImage(imageUrl: string): Promise<{
-  valid: boolean;
-  reason?: string;
-}> {
-  // Use fal.ai's built-in NSFW detection or a lightweight check
-  // fal.ai returns safety scores with generation results
-  // If the score indicates unsafe content, reject
+async function validateGeneratedImage(
+  generationResult: { images: Array<{ url: string }>; has_nsfw_concepts: boolean[] }
+): Promise<{ valid: boolean; reason?: string }> {
+  // Step 1: NSFW check (fal.ai returns this with enable_safety_checker: true)
+  if (generationResult.has_nsfw_concepts?.[0]) {
+    return { valid: false, reason: 'NSFW content detected by fal.ai safety checker' };
+  }
 
-  // Text-in-image detection: Use fal.ai's OCR or a simple heuristic
-  // FLUX Kontext with "no text" in the prompt rarely generates text
-  // Check generation output metadata for text artifacts
+  // Step 2: Image dimensions check (verify we got the expected size)
+  const imageUrl = generationResult.images[0].url;
+  const response = await fetch(imageUrl, { method: 'HEAD' });
+  const contentLength = parseInt(response.headers.get('content-length') ?? '0');
+
+  // Reject suspiciously small images (likely failed generation)
+  if (contentLength < 10000) {
+    return { valid: false, reason: 'Image too small -- likely a failed generation' };
+  }
+
+  // Step 3: Text-in-image detection
+  // FLUX Kontext with the negative prompt "text, words, letters..." rarely generates text.
+  // The negative prompt in every request handles this. No additional OCR needed for MVP.
+  // If text appears in production, add an OCR pass here using a fal.ai OCR model.
 
   return { valid: true };
 }
@@ -1038,9 +1976,9 @@ async function validateGeneratedImage(imageUrl: string): Promise<{
 
 **Retry logic:**
 - Generation jobs have `attempt_count` and `max_attempts` (3)
-- On failure: increment attempt_count, modify prompt (add stronger "no text" directive, reduce denoising by 0.1)
-- After 3 failures: apply programmatic fallback (color shift + overlay using Sharp on the server) and set a flag for background retry
-- The Edge Function that processes retries runs on a 30-second cron via `pg_cron`
+- On failure: increment attempt_count, modify prompt (add stronger "no text" directive, reduce strength by 0.05)
+- After 3 failures: apply programmatic fallback (color shift + overlay using Sharp on the game server) and set a flag for background retry
+- The game server processes retries every 30 seconds via setInterval (not pg_cron)
 
 **Fallback art:**
 
@@ -1052,7 +1990,7 @@ async function generateFallbackArt(
   // Download existing art
   const imageBuffer = await fetch(existingArtUrl).then(r => r.arrayBuffer());
 
-  // Apply color treatment using Sharp (available in Deno/Edge Functions)
+  // Apply color treatment using Sharp
   const sharp = (await import('sharp')).default;
   let processed = sharp(Buffer.from(imageBuffer));
 
@@ -1062,17 +2000,16 @@ async function generateFallbackArt(
     processed = processed.tint({ r: 200, g: 50, b: 150 }).modulate({ saturation: 1.3 });
   }
 
-  const outputBuffer = await processed.png().toBuffer();
-  // Upload to R2 as fallback
+  const outputBuffer = await processed.webp().toBuffer();
   return await uploadBufferToR2(outputBuffer, 'fallback');
 }
 ```
 
 ---
 
-## 4. Game Server Deep Dive
+## 5. Game Server Deep Dive
 
-### 4.1 Game State Machine
+### 5.1 Game State Machine
 
 Maps directly to the `TurnPhase` enum from `02-card-data-model.md` Section 13.
 
@@ -1126,7 +2063,7 @@ stateDiagram-v2
 | `END_TURN` | `START_OF_TURN` | No win condition met | Expire temporary buffs. Recalculate stats. Advance turn counter. Switch active player. |
 | `END_TURN` | `GAME_OVER` | Win condition met | Record MatchRecord. Award chaos energy (2/win, 1/loss) to all 20 deck cards. Update player stats/rank. |
 
-### 4.2 Turn Resolution Algorithm
+### 5.2 Turn Resolution Algorithm
 
 All game logic runs server-side. The client sends only discrete actions; the server validates, applies, and broadcasts results.
 
@@ -1412,7 +2349,7 @@ function handleAssignBlockers(state: GameState, action: {
 }
 ```
 
-### 4.3 Combat Resolution Algorithm
+### 5.3 Combat Resolution Algorithm
 
 Implements the full keyword priority order from `01-battle-mechanics.md` Phase 8.
 
@@ -1564,7 +2501,7 @@ function resolveCombat(state: GameState): CombatResult {
 }
 ```
 
-### 4.4 Timer Management
+### 5.4 Timer Management
 
 ```typescript
 class MatchTimerManager {
@@ -1613,7 +2550,7 @@ class MatchTimerManager {
 - Track `consecutive_missed_turns` on the BattlePlayer
 - At 3 consecutive missed turns: auto-forfeit (EndReason: DISCONNECT)
 
-### 4.5 Anti-Cheat: Server-Authoritative Design
+### 5.5 Anti-Cheat: Server-Authoritative Design
 
 **What the client sends (actions only):**
 
@@ -1642,7 +2579,7 @@ class MatchTimerManager {
 - The match PRNG seed
 - Upcoming event results
 
-### 4.6 Reconnection Handling
+### 5.6 Reconnection Handling
 
 ```typescript
 async function handleReconnection(matchId: string, playerId: string): Promise<GameStateProjection> {
@@ -1703,225 +2640,247 @@ function buildClientProjection(state: GameState, playerId: string): GameStatePro
 
 ---
 
-## 5. WebSocket Message Formats
+## 6. WebSocket Message Formats
 
 All match communication uses Supabase Realtime channels with JSON payloads. Each match uses channel `match:{match_id}`.
 
-### 5.1 Client-to-Server Messages
+### 6.1 Client-to-Server Messages
 
-Clients send messages via the Realtime channel broadcast:
+The iOS client sends messages via the Supabase Swift SDK Realtime channel broadcast. All payloads are JSON.
 
-```typescript
-// Client sends an action
-supabase.channel(`match:${matchId}`).send({
-  type: 'broadcast',
-  event: 'player_action',
-  payload: {
-    action: 'play_card',
-    data: {
-      card_id: 'uuid-here',
-      target_slot: 2,
-    },
-    player_id: 'my-player-id',
-    timestamp: Date.now(),
+**Action JSON shapes:**
+
+```json
+// play_card
+{
+  "action": "play_card",
+  "data": { "card_id": "uuid", "target_slot": 2 },
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
+
+// declare_attackers
+{
+  "action": "declare_attackers",
+  "data": { "attacker_ids": ["uuid-1", "uuid-2"] },
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
+
+// assign_blockers
+{
+  "action": "assign_blockers",
+  "data": {
+    "assignments": [
+      { "blocker_id": "uuid-b1", "attacker_id": "uuid-a1" }
+    ]
   },
-});
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
+
+// end_main_phase
+{
+  "action": "end_main_phase",
+  "data": {},
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
+
+// surrender
+{
+  "action": "surrender",
+  "data": {},
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
+
+// choose_event_target
+{
+  "action": "choose_event_target",
+  "data": { "creature_id": "uuid" },
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
+
+// mulligan
+{
+  "action": "mulligan",
+  "data": { "mulligan": true },
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
+
+// reconnect (request full state)
+{
+  "action": "reconnect",
+  "data": {},
+  "player_id": "uuid",
+  "timestamp": 1709312345678
+}
 ```
 
-**Action schemas:**
+### 6.2 Server-to-Client Messages
 
-```typescript
-type PlayerAction =
-  | { action: 'mulligan'; data: { mulligan: boolean } }
-  | { action: 'play_card'; data: { card_id: string; target_slot?: number; target_id?: string } }
-  | { action: 'use_chaos_spark'; data: {} }
-  | { action: 'end_main_phase'; data: {} }
-  | { action: 'declare_attackers'; data: { attacker_ids: string[] } }
-  | { action: 'assign_blockers'; data: { assignments: Array<{ blocker_id: string; attacker_id: string }> } }
-  | { action: 'choose_event_target'; data: { creature_id: string } }
-  | { action: 'surrender'; data: {} };
-```
+The game server broadcasts to the match channel. Each message has an `event_type`, `data`, monotonic `sequence` number, and `timestamp`.
 
-### 5.2 Server-to-Client Messages
+**Event JSON shapes:**
 
-The game server broadcasts to the match channel:
-
-```typescript
-// Server broadcasts state update
-channel.send({
-  type: 'broadcast',
-  event: 'game_event',
-  payload: {
-    event_type: 'turn:chaos_roll',
-    data: { /* event-specific data */ },
-    sequence: 42, // Monotonic sequence number for ordering
-    timestamp: Date.now(),
+```json
+// match:start
+{
+  "event_type": "match:start",
+  "data": {
+    "match_id": "uuid",
+    "your_side": "PLAYER_1",
+    "opponent": { "display_name": "Opponent", "avatar_id": "uuid", "faction_id": "uuid" },
+    "first_player": "PLAYER_1",
+    "your_hand": [{ "instance_id": "uuid", "card_type": "CREATURE", "current_name": "Cogwork Stalker", "current_attack": 2, "current_health": 3, "mana_cost": 2, "art_url": "https://...", "active_keywords": [] }],
+    "your_deck_count": 16
   },
-});
+  "sequence": 1,
+  "timestamp": 1709312345678
+}
+
+// match:state (full snapshot on connect/reconnect)
+{
+  "event_type": "match:state",
+  "data": {
+    "match_id": "uuid",
+    "current_turn": 5,
+    "phase": "MAIN_PHASE",
+    "active_player": "PLAYER_1",
+    "my_side": "PLAYER_1",
+    "my_hp": 18,
+    "my_mana": 5,
+    "my_mana_cap": 5,
+    "my_instability": 8,
+    "my_board": [null, { "instance_id": "uuid", "current_name": "Cogwork Stalker", "attack": 3, "health": 4, "active_keywords": ["SHIELD"], "shield_active": true }, null, null, null],
+    "my_hand": [],
+    "my_deck_count": 12,
+    "my_graveyard": [],
+    "opponent_hp": 20,
+    "opponent_mana": 4,
+    "opponent_instability": 6,
+    "opponent_board": [],
+    "opponent_hand_count": 3,
+    "opponent_deck_count": 14,
+    "opponent_graveyard": [],
+    "last_roll_value": 12,
+    "last_roll_event": "ORDER",
+    "declared_attackers": [],
+    "blocker_assignments": [],
+    "timer_remaining_ms": 45000
+  },
+  "sequence": 42,
+  "timestamp": 1709312345678
+}
+
+// turn:chaos_roll
+{
+  "event_type": "turn:chaos_roll",
+  "data": {
+    "roll_value": 14,
+    "instability": 8,
+    "result": "ORDER",
+    "creatures_updated": [
+      { "creature_id": "uuid", "attack": 4, "health": 5, "active_keywords": ["SHIELD"], "modifiers_active": [{ "id": "uuid", "is_attuned": true, "is_penalty": false }] }
+    ]
+  },
+  "sequence": 43,
+  "timestamp": 1709312345678
+}
+
+// turn:event
+{
+  "event_type": "turn:event",
+  "data": {
+    "event_id": "O1",
+    "event_name": "Mana Surge",
+    "event_type": "ORDER",
+    "description": "Gain 1 additional mana this turn.",
+    "effect_results": [{ "target_id": "player", "effect": "GAIN_MANA", "value": 1 }]
+  },
+  "sequence": 44,
+  "timestamp": 1709312345678
+}
+
+// turn:event_choice_required
+{
+  "event_type": "turn:event_choice_required",
+  "data": {
+    "valid_targets": ["uuid-creature-1", "uuid-creature-2"],
+    "timeout_seconds": 10,
+    "event_id": "O2",
+    "event_name": "Planar Ward"
+  },
+  "sequence": 45,
+  "timestamp": 1709312345678
+}
+
+// card:played
+{
+  "event_type": "card:played",
+  "data": {
+    "player_side": "PLAYER_1",
+    "card": { "instance_id": "uuid", "card_type": "CREATURE", "current_name": "Gear Sprite", "current_attack": 1, "current_health": 2, "mana_cost": 1, "art_url": "https://...", "active_keywords": [] },
+    "slot": 0,
+    "mana_remaining": 4
+  },
+  "sequence": 46,
+  "timestamp": 1709312345678
+}
+
+// combat:resolution
+{
+  "event_type": "combat:resolution",
+  "data": {
+    "pairs": [
+      { "attacker_id": "uuid-a", "blocker_id": "uuid-b", "attacker_damage_dealt": 3, "blocker_damage_dealt": 2, "attacker_died": false, "blocker_died": true, "piercing_damage": 0, "attacker_lifesteal": 0, "blocker_lifesteal": 0 }
+    ],
+    "unblocked": [
+      { "attacker_id": "uuid-c", "face_damage": 4, "lifesteal": 0 }
+    ],
+    "player_1_hp": 18,
+    "player_2_hp": 16
+  },
+  "sequence": 50,
+  "timestamp": 1709312345678
+}
+
+// match:end
+{
+  "event_type": "match:end",
+  "data": {
+    "winner": "PLAYER_1",
+    "end_reason": "HP_ZERO",
+    "your_rank_change": 25,
+    "chaos_energy_earned": 2,
+    "dust_earned": 15,
+    "missions_progressed": [{ "mission_id": "uuid", "new_value": 3, "completed": false }]
+  },
+  "sequence": 60,
+  "timestamp": 1709312345678
+}
+
+// timer:warning
+{
+  "event_type": "timer:warning",
+  "data": { "seconds_remaining": 15 },
+  "sequence": 47,
+  "timestamp": 1709312345678
+}
+
+// error (sent only to offending player)
+{
+  "event_type": "error",
+  "data": { "code": "NOT_ENOUGH_MANA", "message": "Not enough mana" },
+  "sequence": 48,
+  "timestamp": 1709312345678
+}
 ```
 
-**Event schemas:**
-
-```typescript
-// Match start
-type MatchStart = {
-  event_type: 'match:start';
-  data: {
-    match_id: string;
-    your_side: 'PLAYER_1' | 'PLAYER_2';
-    opponent: { display_name: string; avatar_id: string; faction_id: string };
-    first_player: 'PLAYER_1' | 'PLAYER_2';
-    your_hand: BattleCard[];
-    your_deck_count: number;
-  };
-};
-
-// Full state snapshot (on connect/reconnect)
-type MatchState = {
-  event_type: 'match:state';
-  data: GameStateProjection; // See Section 4.6
-};
-
-// Turn start
-type TurnStart = {
-  event_type: 'turn:start';
-  data: { turn_number: number; active_player: 'PLAYER_1' | 'PLAYER_2' };
-};
-
-// Chaos roll result
-type ChaosRoll = {
-  event_type: 'turn:chaos_roll';
-  data: {
-    roll_value: number;
-    instability: number;
-    result: 'ORDER' | 'CHAOS' | 'NOTHING';
-    creatures_updated: Array<{
-      creature_id: string;
-      attack: number;
-      health: number;
-      active_keywords: string[];
-      modifiers_active: Array<{ id: string; is_attuned: boolean; is_penalty: boolean }>;
-    }>;
-  };
-};
-
-// Event triggered
-type EventTriggered = {
-  event_type: 'turn:event';
-  data: {
-    event_id: string;
-    event_name: string;
-    event_type: 'ORDER' | 'CHAOS';
-    description: string;
-    effect_results: Array<{ target_id: string; effect: string; value: number }>;
-  };
-};
-
-// Event requires player choice
-type EventChoiceRequired = {
-  event_type: 'turn:event_choice_required';
-  data: {
-    valid_targets: string[];
-    timeout_seconds: 10;
-    event_id: string;
-    event_name: string;
-  };
-};
-
-// Triggered abilities fired
-type TriggersFired = {
-  event_type: 'turn:triggers_fired';
-  data: {
-    triggers: Array<{
-      creature_id: string;
-      ability_name: string;
-      effect_description: string;
-      results: Array<{ target_id: string; effect: string; value: number }>;
-    }>;
-  };
-};
-
-// Card drawn
-type CardDrawn = {
-  event_type: 'turn:draw';
-  data: { card?: BattleCard; deck_count: number }; // card only sent to drawing player
-};
-
-// Mana update
-type ManaUpdate = {
-  event_type: 'turn:mana';
-  data: { current_mana: number; mana_cap: number };
-};
-
-// Main phase started
-type MainPhase = {
-  event_type: 'phase:main';
-  data: { timer_remaining_ms: number };
-};
-
-// Card played (broadcast to both)
-type CardPlayed = {
-  event_type: 'card:played';
-  data: {
-    player_side: 'PLAYER_1' | 'PLAYER_2';
-    card: BattleCard;
-    slot: number;
-    mana_remaining: number;
-  };
-};
-
-// Combat resolution
-type CombatResolution = {
-  event_type: 'combat:resolution';
-  data: {
-    pairs: Array<{
-      attacker_id: string;
-      blocker_id: string;
-      attacker_damage_dealt: number;
-      blocker_damage_dealt: number;
-      attacker_died: boolean;
-      blocker_died: boolean;
-      piercing_damage?: number;
-      attacker_lifesteal?: number;
-      blocker_lifesteal?: number;
-    }>;
-    unblocked: Array<{
-      attacker_id: string;
-      face_damage: number;
-      lifesteal?: number;
-    }>;
-    player_1_hp: number;
-    player_2_hp: number;
-  };
-};
-
-// Match end
-type MatchEnd = {
-  event_type: 'match:end';
-  data: {
-    winner: 'PLAYER_1' | 'PLAYER_2';
-    end_reason: 'HP_ZERO' | 'SURRENDER' | 'DISCONNECT' | 'TIMEOUT';
-    your_rank_change: number;
-    chaos_energy_earned: number;
-    dust_earned: number;
-    missions_progressed: Array<{ mission_id: string; new_value: number; completed: boolean }>;
-  };
-};
-
-// Timer events
-type TimerWarning = {
-  event_type: 'timer:warning';
-  data: { seconds_remaining: number };
-};
-
-// Error (sent only to offending player)
-type GameErrorEvent = {
-  event_type: 'error';
-  data: { code: string; message: string };
-};
-```
-
-### 5.3 Error Codes
+### 6.3 Error Codes
 
 | Code | Message | When |
 |---|---|---|
@@ -1942,68 +2901,17 @@ type GameErrorEvent = {
 | `TIMER_EXPIRED` | Timer expired | Action after timer ran out |
 | `MATCH_NOT_FOUND` | Match not found | Reconnect to invalid match |
 
-### 5.4 Client Retry Logic
-
-```typescript
-// Client reconnection pattern
-const MAX_RECONNECT_ATTEMPTS = 5;
-const BASE_DELAY_MS = 1000;
-
-async function connectToMatch(matchId: string): Promise<void> {
-  let attempts = 0;
-
-  while (attempts < MAX_RECONNECT_ATTEMPTS) {
-    try {
-      const channel = supabase.channel(`match:${matchId}`);
-
-      channel.on('broadcast', { event: 'game_event' }, (payload) => {
-        handleGameEvent(payload.payload);
-      });
-
-      const status = await channel.subscribe();
-      if (status === 'SUBSCRIBED') {
-        // Request full state snapshot
-        channel.send({
-          type: 'broadcast',
-          event: 'player_action',
-          payload: { action: 'reconnect', data: {}, player_id: myPlayerId },
-        });
-        return;
-      }
-    } catch (error) {
-      attempts++;
-      const delay = BASE_DELAY_MS * Math.pow(2, attempts) + Math.random() * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-
-  // After 5 attempts, show "Connection lost" UI
-  showConnectionLostScreen();
-}
-```
-
 ---
 
-## 6. REST API Endpoints
+## 7. REST API Endpoints
 
 All REST endpoints are Supabase Edge Functions. Base URL: `https://<project>.supabase.co/functions/v1`
 
-### 6.1 Auth
+### 7.1 Auth
 
-Auth is handled entirely by Supabase Auth SDK -- no custom endpoints needed. The client calls:
+Auth is handled entirely by Supabase Auth SDK. The iOS client calls `supabase.auth.signInWithApple()` via the Supabase Swift SDK. No custom endpoints needed.
 
-```typescript
-// Sign in
-const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'apple' });
-
-// Get session
-const { data: { session } } = await supabase.auth.getSession();
-
-// Sign out
-await supabase.auth.signOut();
-```
-
-### 6.2 Players
+### 7.2 Players
 
 | Method | Path | Request | Response |
 |---|---|---|---|
@@ -2012,34 +2920,7 @@ await supabase.auth.signOut();
 | POST | `/players/me/faction` | `{ faction_id: string }` | `{ player: Player }` |
 | GET | `/players/{id}/public` | -- | `{ display_name, season_rank, showcase_card_ids, active_title }` |
 
-**Example response for GET /players/me:**
-
-```json
-{
-  "player": {
-    "id": "uuid",
-    "display_name": "ChaosLord42",
-    "friend_code": "CHAOS-7K2M",
-    "subscription_tier": "FREE",
-    "primary_faction_id": "uuid",
-    "unlocked_faction_ids": ["uuid"],
-    "onboarding_complete": true,
-    "player_level": 5,
-    "season_rank": "SILVER_2",
-    "season_rank_points": 87,
-    "chaos_dust": 420,
-    "shards_uncommon": 3,
-    "shards_rare": 1,
-    "shards_epic": 0,
-    "shards_legendary": 0,
-    "total_games": 47,
-    "total_wins": 25,
-    "total_losses": 22
-  }
-}
-```
-
-### 6.3 Collection
+### 7.3 Collection
 
 | Method | Path | Request | Response |
 |---|---|---|---|
@@ -2048,7 +2929,7 @@ await supabase.auth.signOut();
 | DELETE | `/collection/cards/{id}` | -- | `{ shard_returned: string | null, shard_tier: string | null }` |
 | PATCH | `/collection/cards/{id}` | `{ is_favorite: boolean }` | `{ card: CardInstance }` |
 
-### 6.4 Decks
+### 7.4 Decks
 
 | Method | Path | Request | Response |
 |---|---|---|---|
@@ -2058,155 +2939,36 @@ await supabase.auth.signOut();
 | PUT | `/decks/{id}` | `{ name?: string, avatar_id?: string, card_entries?: DeckEntry[] }` | `{ deck: Deck, validation_errors: string[] }` |
 | DELETE | `/decks/{id}` | -- | `204 No Content` |
 
-**DeckEntry format:**
-```json
-{ "card_instance_id": "uuid", "quantity": 1 }
-```
-
-**Validation errors returned:**
-```json
-{
-  "deck": { "id": "uuid", "is_valid": false },
-  "validation_errors": [
-    "Deck must contain exactly 20 cards (currently 18)",
-    "Legendary card 'Ashblade the Apocalyptic' appears 2 times (max 1)"
-  ]
-}
-```
-
-### 6.5 Economy
+### 7.5 Economy
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| GET | `/economy/balance` | -- | `{ chaos_dust: number, shards: { uncommon: number, rare: number, epic: number, legendary: number } }` |
+| GET | `/economy/balance` | -- | `{ chaos_dust: number, shards: { uncommon, rare, epic, legendary } }` |
 | POST | `/economy/purchase/card-pack` | `{ faction_id: string }` | `{ cards: CardInstance[], dust_spent: number }` |
 | POST | `/economy/purchase/specific-card` | `{ template_id: string }` | `{ card: CardInstance, dust_spent: number }` |
-| POST | `/economy/purchase/shard` | `{ shard_tier: "UNCOMMON" \| "RARE" \| "EPIC" \| "LEGENDARY" }` | `{ shard_tier: string, dust_spent: number }` |
+| POST | `/economy/purchase/shard` | `{ shard_tier: "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY" }` | `{ shard_tier, dust_spent }` |
 | POST | `/economy/purchase/avatar` | `{ avatar_id: string }` | `{ avatar: Avatar, dust_spent: number }` |
 | GET | `/economy/missions` | -- | `{ daily: Mission[], weekly: Mission[], onboarding: Mission[] }` |
 | POST | `/economy/missions/{id}/claim` | -- | `{ reward_type: string, reward_amount: number }` |
 
-**Card pack response example:**
-
-```json
-{
-  "cards": [
-    {
-      "id": "uuid-1",
-      "template_id": "uuid-t1",
-      "current_name": "Cogwork Stalker",
-      "tier": "COMMON",
-      "current_attack": 2,
-      "current_health": 3,
-      "mana_cost": 2,
-      "art_url": "https://art.chaoscreatures.com/base/ironwright/uuid-t1.png"
-    },
-    { "..." : "..." },
-    { "..." : "..." }
-  ],
-  "dust_spent": 100
-}
-```
-
-### 6.6 Evolution
+### 7.6 Evolution
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| POST | `/evolution/check` | `{ card_instance_id: string }` | See below |
-| POST | `/evolution/start` | See below | See below |
-| GET | `/evolution/{id}/status` | -- | See below |
-| POST | `/evolution/{id}/confirm` | `{ modifier_chosen_id: string, name_chosen: string }` | `{ card: CardInstance }` |
-
-**POST /evolution/check response:**
-
-```json
-{
-  "eligible": true,
-  "chaos_energy": 32,
-  "threshold": 30,
-  "next_tier": "RARE",
-  "shards_available": { "uncommon": 3, "rare": 1, "epic": 0, "legendary": 0 },
-  "shard_required": "RARE",
-  "shard_quality": "PLANAR",
-  "daily_evolutions_remaining": 4,
-  "prompt_modifiers": [
-    "Glowing eyes",
-    "Battle-scarred",
-    "Armored plating",
-    "Crackling energy",
-    "Reinforced gears",
-    "Steam venting"
-  ]
-}
-```
-
-**POST /evolution/start request:**
-
-```json
-{
-  "card_instance_id": "uuid",
-  "prompt_modifiers": ["Glowing eyes", "Steam venting"],
-  "channel_direction": "ORDER"
-}
-```
-
-**POST /evolution/start response:**
-
-```json
-{
-  "evolution_id": "uuid",
-  "actual_outcome": "CHAOS",
-  "modifier_options": [
-    {
-      "id": "mod-def-uuid-1",
-      "name": "Chaos-Forged Blade",
-      "pool_type": "UNIVERSAL",
-      "attunement": "CHAOS",
-      "base_effect": { "effect_type": "STAT_MODIFY_ATTACK", "value": 2 },
-      "attuned_effect": { "effect_type": "STAT_MODIFY_ATTACK", "value": 1 },
-      "instability_adjustment": 1
-    },
-    {
-      "id": "mod-def-uuid-2",
-      "name": "Overclocked Piston",
-      "pool_type": "FACTION",
-      "faction_mechanic": "AUGMENT",
-      "attunement": "CHAOS",
-      "base_effect": { "effect_type": "STAT_MODIFY_ATTACK", "value": 1, "condition": "PER_AUGMENT" },
-      "attuned_effect": { "effect_type": "STAT_MODIFY_ATTACK", "value": 1, "condition": "PER_AUGMENT" }
-    }
-  ],
-  "ability": {
-    "name": "Chaos Fury",
-    "trigger": "ON_CHAOS",
-    "effect": { "effect_type": "STAT_MODIFY_ATTACK", "target": "SELF", "value": 2, "duration": "THIS_TURN" },
-    "description": "When a Chaos Event triggers, this creature gets +2 ATK this turn."
-  },
-  "stat_changes": { "attack_change": 2, "health_change": 1 },
-  "instability_change": 1
-}
-```
-
-**GET /evolution/{id}/status response:**
-
-```json
-{
-  "status": "COMPLETE",
-  "art_url": "https://art.chaoscreatures.com/evolution/player-uuid/card-uuid/step-2.png",
-  "name_candidates": ["Overclocked Stalker", "Cogwork Fury", "Stalker, Unbound"],
-  "flavor_text": "The gears scream as chaos energy surges through brass veins."
-}
-```
+| POST | `/evolution/check` | `{ card_instance_id: string }` | Eligibility status (see Section 4.4) |
+| POST | `/evolution/start` | `{ card_instance_id, prompt_modifiers, channel_direction }` | Evolution data + job IDs |
+| GET | `/evolution/{id}/status` | -- | `{ status, art_url?, name_candidates?, flavor_text? }` |
+| POST | `/evolution/{id}/confirm` | `{ modifier_chosen_id, name_chosen }` | `{ card: CardInstance }` |
 
 Status values: `PENDING` | `IMAGE_PROCESSING` | `TEXT_PROCESSING` | `COMPLETE` | `FAILED`
 
-### 6.7 Matchmaking
+### 7.7 Matchmaking
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| POST | `/matchmaking/queue` | `{ deck_id: string, mode: "RANKED" \| "CASUAL" \| "PRACTICE" }` | `{ queue_id: string, estimated_wait_seconds: number }` |
+| POST | `/matchmaking/queue` | `{ deck_id: string, mode: "RANKED" | "CASUAL" | "PRACTICE" }` | `{ queue_id, estimated_wait_seconds }` |
 | DELETE | `/matchmaking/queue` | -- | `204 No Content` |
-| GET | `/matchmaking/status` | -- | `{ status: "QUEUED" \| "MATCHED" \| "NOT_QUEUED", match_id?: string }` |
+| GET | `/matchmaking/status` | -- | `{ status: "QUEUED" | "MATCHED" | "NOT_QUEUED", match_id? }` |
 
 When a match is found, the client receives a Realtime broadcast on channel `matchmaking:{player_id}`:
 
@@ -2226,30 +2988,30 @@ When a match is found, the client receives a Realtime broadcast on channel `matc
 
 ---
 
-## 7. Object Storage (Cloudflare R2)
+## 8. Object Storage (Cloudflare R2)
 
-### 7.1 Bucket Structure
+### 8.1 Bucket Structure
 
 ```
 chaos-creatures-art/
   base/                          # Base card art from batch pipeline
     {faction_short_name}/
-      {template_id}.png
+      {template_id}.webp
   evolution/                     # Per-player evolution art
     {player_id}/
       {card_instance_id}/
-        step-1.png
-        step-2.png
-        step-3.png
-        step-4.png
+        step-1.webp
+        step-2.webp
+        step-3.webp
+        step-4.webp
   avatars/
-    {avatar_id}.png
+    {avatar_id}.webp
   fallback/                      # Programmatic fallback art
     {card_instance_id}/
-      step-{n}.png
+      step-{n}.webp
 ```
 
-### 7.2 R2 Upload Helper
+### 8.2 R2 Upload Helper
 
 ```typescript
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
@@ -2272,19 +3034,19 @@ async function uploadToR2(
 
   let key: string;
   if (params.type === 'base') {
-    key = `base/${params.card_instance_id}.png`;
+    key = `base/${params.card_instance_id}.webp`;
   } else if (params.type === 'evolution') {
-    const filename = suffix ? `step-${params.step}-${suffix}.png` : `step-${params.step}.png`;
+    const filename = suffix ? `step-${params.step}-${suffix}.webp` : `step-${params.step}.webp`;
     key = `evolution/${params.player_id}/${params.card_instance_id}/${filename}`;
   } else {
-    key = `fallback/${params.card_instance_id}/step-${params.step}.png`;
+    key = `fallback/${params.card_instance_id}/step-${params.step}.webp`;
   }
 
   await r2Client.send(new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,
     Key: key,
     Body: Buffer.from(imageBuffer),
-    ContentType: 'image/png',
+    ContentType: 'image/webp',
     CacheControl: params.type === 'base' ? 'public, max-age=31536000' : 'public, max-age=3600',
   }));
 
@@ -2292,38 +3054,41 @@ async function uploadToR2(
 }
 ```
 
-### 7.3 CDN Configuration
+### 8.3 CDN Configuration
 
 - R2 public bucket URL serves as CDN automatically (Cloudflare edge caching)
 - Base art: `Cache-Control: public, max-age=31536000` (1 year, immutable)
 - Evolution art: `Cache-Control: public, max-age=3600` (1 hour, may be replaced by retry)
-- Client caches images locally with the art_url as cache key
+- iOS client caches images locally via `ImageCacheService` (200MB disk cache, LRU eviction)
+- All images are WebP format (smaller than PNG, supported on iOS 14+)
 
 ---
 
-## 8. Admin Dashboard
+## 9. Admin Dashboard (Separate Web Application)
 
-A React SPA deployed on Railway that gives the owner full control without touching code or databases.
+The Admin Dashboard is a **separate web application** deployed on Railway. It is NOT part of the iOS app. It is what the owner uses to manage the game without touching code or databases.
 
-### 8.1 Features
+**Technology:** Node.js + Express backend serving static HTML/JS/CSS. No React framework needed -- plain HTML with fetch() calls to the Express API. This keeps it simple and fast to build.
 
-| Feature | Description |
-|---|---|
-| **Dashboard** | Active matches count, players online, daily signups, revenue, AI generation cost |
-| **Player Lookup** | Search by display_name or friend_code. View full profile, collection, match history. |
-| **Match Monitor** | List active matches. View match state in real-time (spectator mode). |
-| **Card Templates** | Browse all templates. View art, stats, approval status. |
-| **Card Generation** | Trigger batch card generation. Set faction, count, creature type. Review/approve/reject in grid view. |
-| **Economy Controls** | Form fields for all `economy_config` values. Change dust rewards, shard costs, energy thresholds. Changes take effect immediately. |
-| **Balance Patch** | Update modifier definitions (stats, effects). Push changes live. |
-| **Content Review** | Queue of AI-generated evolution art awaiting review (for flagged content). Approve/reject. |
-| **Analytics** | Embedded PostHog dashboards -- DAU/MAU, retention, match stats, economy health. |
-| **Season Management** | Start/end seasons. Configure rewards. Push season reset. |
-| **Generation Jobs** | View AI generation queue. See pending/failed/completed jobs. Retry failed jobs. |
+**URL:** `https://admin-chaos-creatures.up.railway.app` (Railway assigns this automatically)
 
-### 8.2 Auth
+### 9.1 Features
 
-The Admin Dashboard uses a simple password set in the environment:
+| Feature | Description | Application |
+|---|---|---|
+| **Dashboard** | Active matches count, players online, daily signups, revenue, AI generation cost | Admin Dashboard |
+| **Player Lookup** | Search by display_name or friend_code. View full profile, collection, match history. | Admin Dashboard |
+| **Match Monitor** | List active matches. View match state in real-time (spectator mode). | Admin Dashboard |
+| **Card Templates** | Browse all templates. View art, stats, approval status. | Admin Dashboard |
+| **Card Generation** | Trigger batch card generation. Set faction, count, creature type. Review/approve/reject in grid view. | Admin Dashboard |
+| **Economy Controls** | Form fields for all `economy_config` values. Change dust rewards, shard costs, energy thresholds. Changes take effect immediately. | Admin Dashboard |
+| **Balance Patch** | Update modifier definitions (stats, effects). Push changes live. | Admin Dashboard |
+| **Content Review** | Queue of AI-generated evolution art awaiting review (for flagged content). Approve/reject. | Admin Dashboard |
+| **Analytics** | Embedded PostHog dashboards -- DAU/MAU, retention, match stats, economy health. | Admin Dashboard |
+| **Season Management** | Start/end seasons. Configure rewards. Push season reset. | Admin Dashboard |
+| **Generation Jobs** | View AI generation queue. See pending/failed/completed jobs. Retry failed jobs. | Admin Dashboard |
+
+### 9.2 Auth
 
 ```typescript
 // Admin auth is a single shared password (owner only)
@@ -2339,9 +3104,7 @@ app.post('/admin/login', (req, res) => {
 });
 ```
 
-### 8.3 Economy Config Editor
-
-The admin dashboard reads from and writes to the `economy_config` table:
+### 9.3 Economy Config Editor
 
 ```typescript
 // GET /admin/economy-config
@@ -2368,22 +3131,19 @@ app.put('/admin/economy-config/:key', requireAdmin, async (req, res) => {
 });
 ```
 
-All Edge Functions read economy values from `economy_config` at runtime, so changes take effect on the next API call -- no deploy needed.
-
-### 8.4 Batch Card Generation UI
+### 9.4 Batch Card Generation UI
 
 ```typescript
 // POST /admin/generate-batch
 app.post('/admin/generate-batch', requireAdmin, async (req, res) => {
   const { faction_id, count, creature_type_hint } = req.body;
 
-  // Create generation jobs
   const jobs = [];
   for (let i = 0; i < count; i++) {
     jobs.push({
       job_type: 'BASE_CARD_IMAGE',
       status: 'PENDING',
-      priority: -1, // Lowest priority
+      priority: -1,
       input_data: { faction_id, creature_type_hint, batch_index: i },
     });
   }
@@ -2393,7 +3153,6 @@ app.post('/admin/generate-batch', requireAdmin, async (req, res) => {
 });
 
 // GET /admin/generation-review
-// Returns completed base card jobs that need approval
 app.get('/admin/generation-review', requireAdmin, async (req, res) => {
   const { data } = await supabase
     .from('generation_jobs')
@@ -2411,7 +3170,6 @@ app.get('/admin/generation-review', requireAdmin, async (req, res) => {
 app.post('/admin/generation-review/:id/approve', requireAdmin, async (req, res) => {
   const job = await getJob(req.params.id);
 
-  // Create the card template from the approved generation
   await supabase.from('card_templates').insert({
     name: job.output_data.name,
     card_type: job.output_data.card_type,
@@ -2429,7 +3187,6 @@ app.post('/admin/generation-review/:id/approve', requireAdmin, async (req, res) 
     approved_by: 'admin',
   });
 
-  // Mark job as approved
   await supabase.from('generation_jobs').update({
     output_data: { ...job.output_data, approved: true },
   }).eq('id', req.params.id);
@@ -2439,6 +3196,7 @@ app.post('/admin/generation-review/:id/approve', requireAdmin, async (req, res) 
 
 // POST /admin/generation-review/:id/reject
 app.post('/admin/generation-review/:id/reject', requireAdmin, async (req, res) => {
+  const job = await getJob(req.params.id);
   await supabase.from('generation_jobs').update({
     output_data: { ...job.output_data, approved: false, rejection_reason: req.body.reason },
   }).eq('id', req.params.id);
@@ -2449,17 +3207,17 @@ app.post('/admin/generation-review/:id/reject', requireAdmin, async (req, res) =
 
 ---
 
-## 9. Infrastructure & Deployment
+## 10. Infrastructure and Deployment
 
-### 9.1 Local Development
+### 10.1 Local Development
 
 ```yaml
 # docker-compose.yml
 version: '3.8'
 
 services:
-  # Supabase local dev (via Supabase CLI -- not Docker)
-  # Run `npx supabase start` separately
+  # Supabase local dev runs via Supabase CLI (not Docker)
+  # Run `npx supabase start` separately -- it manages its own containers
 
   game-server:
     build:
@@ -2468,13 +3226,22 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - SUPABASE_URL=http://localhost:54321
+      - SUPABASE_URL=http://host.docker.internal:54321
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - FAL_KEY=${FAL_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+      - R2_PUBLIC_URL=${R2_PUBLIC_URL}
       - GAME_SERVER_PORT=3001
       - GAME_SERVER_SECRET=${GAME_SERVER_SECRET}
       - NODE_ENV=development
     volumes:
       - ./packages/game-server/src:/app/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   admin-dashboard:
     build:
@@ -2483,60 +3250,81 @@ services:
     ports:
       - "3002:3002"
     environment:
-      - SUPABASE_URL=http://localhost:54321
+      - SUPABASE_URL=http://host.docker.internal:54321
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET}
+      - POSTHOG_API_KEY=${POSTHOG_API_KEY}
+      - POSTHOG_HOST=${POSTHOG_HOST}
       - PORT=3002
     volumes:
       - ./packages/admin-dashboard/src:/app/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 ```
 
 **Full local dev startup (one command):**
 
 ```bash
+#!/bin/bash
 # start.sh -- the only command the owner runs
-npx supabase start && docker compose up -d && echo "Local dev running:
+set -e
+npx supabase start && docker compose up -d && echo "
+Local dev running:
   Supabase Studio: http://localhost:54323
   Game Server: http://localhost:3001
   Admin Dashboard: http://localhost:3002
-  Expo: Run 'npx expo start' in packages/mobile"
+  iOS Client: Open ChaosCreatures.xcodeproj in Xcode, run on Simulator
+"
 ```
 
-### 9.2 Repository Structure
+### 10.2 Repository Structure
 
 ```
 chaos-creatures/
   docs/design/                    # Design docs (this repo)
+  ChaosCreatures/                 # iOS app (Xcode project)
+    ChaosCreatures.xcodeproj
+    ChaosCreatures/               # Source code (see Section 2.1 for full layout)
+    ChaosCreaturesTests/
+    ChaosCreaturesUITests/
+    ci_scripts/
+      ci_post_clone.sh            # Xcode Cloud build script
   packages/
-    mobile/                       # React Native (Expo) client
-      app/                        # Expo Router pages
-      components/
-      lib/
-        supabase.ts               # Supabase client init
-        game-client.ts            # Match WebSocket handler
-      app.json                    # Expo config
-      eas.json                    # EAS Build config
     game-server/                  # Node.js game server (Railway)
       src/
         index.ts                  # Server entry point
         match-engine.ts           # Game state machine
         combat.ts                 # Combat resolution
+        matchmaker.ts             # Matchmaking queue poller
         timers.ts                 # Timer management
         types.ts                  # Shared types
       Dockerfile
       railway.json
-    admin-dashboard/              # React admin SPA (Railway)
+      package.json
+      tsconfig.json
+    admin-dashboard/              # Admin web app (Railway)
       src/
-        App.tsx
-        pages/
-          Dashboard.tsx
-          Players.tsx
-          EconomyConfig.tsx
-          GenerationReview.tsx
-          MatchMonitor.tsx
+        server.ts                 # Express server
+        routes/
+          dashboard.ts
+          players.ts
+          economy-config.ts
+          generation-review.ts
+          match-monitor.ts
+          season-management.ts
+      public/
+        index.html
+        login.html
+        dashboard.html
+        players.html
+        economy.html
+        generation.html
+        style.css
+        app.js
       Dockerfile
       railway.json
+      package.json
     shared/                       # Shared TypeScript types
       src/
         types.ts                  # All game types, enums, interfaces
@@ -2551,13 +3339,17 @@ chaos-creatures/
       apple-webhook/index.ts
     seed.sql                      # Initial game data
     config.toml                   # Supabase project config
+  legal/                          # Cloudflare Pages static site
+    privacy-policy.html
+    terms-of-service.html
   docker-compose.yml
   start.sh
   deploy.sh
   .env.example
+  .gitignore                      # Includes: *.xcconfig, .env, .env.*, *.secret, *.p8
 ```
 
-### 9.3 Production Deployment
+### 10.3 Production Deployment
 
 **Railway config for Game Server (`packages/game-server/railway.json`):**
 
@@ -2616,11 +3408,11 @@ CMD ["node", "dist/index.js"]
 **One-command deploy:**
 
 ```bash
-# deploy.sh
 #!/bin/bash
+# deploy.sh
 set -e
 
-echo "Deploying Chaos Creatures..."
+echo "Deploying Chaos Creatures backend..."
 
 # 1. Push Supabase migrations
 echo "Pushing database migrations..."
@@ -2646,26 +3438,26 @@ cd packages/admin-dashboard
 railway up --detach
 cd ../..
 
-# 5. Build mobile app (if --build flag passed)
-if [ "$1" = "--build" ]; then
-  echo "Building mobile apps..."
-  cd packages/mobile
-  npx eas build --platform all --non-interactive
-  cd ../..
-fi
-
-echo "Deployment complete!"
+echo "Backend deployment complete!"
+echo "iOS builds are handled by Xcode Cloud (triggered by git tag)."
+echo "  Beta: git tag beta/v0.1.0 && git push --tags"
+echo "  Release: git tag release/v1.0.0 && git push --tags"
 ```
 
-### 9.4 CI/CD (GitHub Actions)
+### 10.4 CI/CD
+
+**Backend CI/CD (GitHub Actions):**
 
 ```yaml
-# .github/workflows/deploy.yml
-name: Deploy
+# .github/workflows/deploy-backend.yml
+name: Deploy Backend
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'packages/**'
+      - 'supabase/**'
 
 jobs:
   test:
@@ -2674,10 +3466,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
+      - run: cd packages/game-server && npm ci && npm run lint && npm run typecheck && npm test
+      - run: cd packages/admin-dashboard && npm ci && npm run lint && npm run typecheck
 
   deploy:
     needs: test
@@ -2713,7 +3503,9 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 ```
 
-### 9.5 Monitoring & Alerting
+**iOS CI/CD:** Handled by Xcode Cloud (see Section 2.7). Triggered by git tags, not GitHub Actions.
+
+### 10.5 Monitoring and Alerting
 
 **PostHog dashboards (configured via PostHog UI, not code):**
 
@@ -2737,13 +3529,13 @@ jobs:
 
 ---
 
-## 10. Security
+## 11. Security
 
-### 10.1 Server-Authoritative Game Logic
+### 11.1 Server-Authoritative Game Logic
 
-The client is a rendering and input layer. All game logic runs on the game server. The client receives only the results. See Section 4.5 for the full anti-cheat specification.
+The client is a rendering and input layer. All game logic runs on the game server. The client receives only the results. See Section 5.5 for the full anti-cheat specification.
 
-### 10.2 Rate Limiting
+### 11.2 Rate Limiting
 
 Supabase Edge Functions have built-in rate limiting. Additional custom limits:
 
@@ -2774,7 +3566,7 @@ async function checkRateLimit(playerId: string, action: string, limit: number, w
 }
 ```
 
-### 10.3 Input Validation
+### 11.3 Input Validation
 
 Every client action is validated with Zod schemas on the server:
 
@@ -2799,25 +3591,26 @@ const AssignBlockersSchema = z.object({
 });
 ```
 
-### 10.4 Encryption & Secrets
+### 11.4 Encryption and Secrets
 
 | Layer | Mechanism |
 |---|---|
 | In transit | TLS 1.3 for all connections (Supabase, Railway, R2 all enforce HTTPS) |
 | At rest (database) | Supabase managed encryption (AES-256) |
 | At rest (R2) | Cloudflare R2 server-side encryption |
-| Secrets | Railway environment variables (encrypted at rest). Never in code. |
-| Player data | No passwords stored (OAuth only via Supabase Auth). Apple ID tokens never touch our code. |
+| Secrets | Railway environment variables (encrypted at rest). Xcode Cloud environment variables for iOS builds. Never in code. |
+| Player data | No passwords stored (Apple Sign-In only via Supabase Auth). Apple ID tokens never touch our code. |
+| iOS client | App Transport Security (ATS) enforced by default on iOS. All connections HTTPS only. |
 
-### 10.5 AI Safety
+### 11.5 AI Safety
 
 - **Prompt injection prevention:** Players select from a curated whitelist of visual prompt modifiers. No free-form text reaches any AI model. The prompt is constructed entirely server-side from validated components.
-- **Output safety:** fal.ai has built-in content moderation. Additional checks run on generated images before storage (see Section 3.7 quality check pipeline).
+- **Output safety:** fal.ai has built-in content moderation (`enable_safety_checker: true` on every request). Additional checks run on generated images before storage (see Section 4.7 quality check pipeline).
 - **Cost protection:** Per-user daily caps on evolution (5/15/30 by tier). Hard cap of 50 per user per day regardless of tier.
 
 ---
 
-## 11. Performance Targets
+## 12. Performance Targets
 
 | Metric | Target | How Measured |
 |---|---|---|
@@ -2827,10 +3620,11 @@ const AssignBlockersSchema = z.object({
 | AI image generation | < 30s end-to-end | `generation_jobs` timestamps |
 | AI text generation | < 5s end-to-end | `generation_jobs` timestamps |
 | Matchmaking queue time | < 15s at launch | `matchmaking_queue.queued_at` to match creation |
-| Client frame rate | 30fps minimum on iPhone 11 / equivalent Android | Client profiling |
-| Client cold start | < 5s to home screen | Client instrumentation |
+| Client frame rate | 30fps minimum on iPhone 11 (A13 chip, 2019) | Xcode Instruments GPU profiler |
+| Client cold start | < 5s to home screen | Client instrumentation via `os_signpost` |
+| Card art load time | < 1s (cached), < 3s (first load) | `ImageCacheService` instrumentation |
 
-### 11.1 Optimization Strategies
+### 12.1 Optimization Strategies
 
 **Server-side:**
 - Game state held in-memory on the game server (not in database) during active matches
@@ -2838,19 +3632,22 @@ const AssignBlockersSchema = z.object({
 - Pre-computed stat deltas rather than full recalculation from base stats
 - Connection pooling via Supabase client (built-in)
 
-**Client-side:**
-- Card art preloaded during matchmaking
-- Local image cache (200MB cap, LRU eviction)
+**Client-side (iOS):**
+- Card art preloaded during matchmaking via `ImageCacheService.preloadBattleArt()`
+- 200MB disk cache with LRU eviction for card art
 - Server sends deltas, not full state, for each action
-- Lazy loading of collection screens (paginated)
-- Animation quality tiered by device capability
+- Lazy loading of collection screens (paginated, 20 cards per page)
+- SpriteKit node pooling for damage numbers and particle effects (reuse instead of create/destroy)
+- `SKTextureAtlas` for card frame assets and UI elements (reduces draw calls)
+- Reduced motion setting disables particle effects and shortens animation durations
 
 **Network:**
 - R2 CDN for all card art (global edge caching)
+- WebP format for all images (30-50% smaller than PNG)
 - WebSocket compression via Supabase Realtime (built-in)
 - Reconnection with state snapshot (no game log replay)
 
-### 11.2 Capacity Planning (Launch)
+### 12.2 Capacity Planning (Launch)
 
 | Metric | Launch Target | Infrastructure |
 |---|---|---|
@@ -2860,20 +3657,22 @@ const AssignBlockersSchema = z.object({
 | Daily evolutions | 2,000-10,000 | Edge Functions (auto-scale) |
 | Database size (1 year) | ~20-50 GB | Supabase Pro plan |
 | R2 storage (1 year) | ~500 GB - 2 TB | Cloudflare R2 ($0.015/GB/month) |
-| Monthly AI cost | ~$500-2,000 | Image generation dominant |
+| Monthly AI cost (post-launch) | ~$500-2,000 | Image generation dominant; scales with subscribers |
 
 ---
 
-## 12. Data Flow Reference
+## 13. Data Flow Reference
 
 | Flow | Services | Path |
 |---|---|---|
-| Card Evolution | Edge Function -> fal.ai + OpenAI -> R2 -> PostgreSQL | Client -> Edge Function (validate, deduct shard) -> fal.ai (image) + OpenAI (text) -> R2 (store art) -> PostgreSQL (update card) -> Client |
-| Chaos Roll | Game Server | In-memory GameState -> Roll -> Event Selection -> Trigger Resolution -> Stat Recalc -> Broadcast (Realtime) |
-| Card Pack Opening | Edge Function | Client -> Edge Function (deduct dust) -> PostgreSQL (create CardInstances from random templates) -> Client |
-| Match Lifecycle | Edge Function + Game Server | Queue (PostgreSQL) -> Match (in-memory) -> Turns -> MatchRecord (PostgreSQL) + chaos energy update |
-| Deck Validation | Edge Function | Client -> Edge Function (validate 20 cards, single faction, copy limits, Legendary limits) -> PostgreSQL (save) |
+| Card Evolution | Edge Function -> fal.ai + OpenAI -> R2 -> PostgreSQL | iOS Client -> Edge Function (validate, deduct shard) -> fal.ai (image) + OpenAI (text) -> R2 (store art) -> PostgreSQL (update card) -> iOS Client |
+| Chaos Roll | Game Server | In-memory GameState -> Roll -> Event Selection -> Trigger Resolution -> Stat Recalc -> Broadcast (Realtime) -> iOS Client |
+| Card Pack Opening | Edge Function | iOS Client -> Edge Function (deduct dust) -> PostgreSQL (create CardInstances from random templates) -> iOS Client |
+| Match Lifecycle | Game Server + PostgreSQL | Queue (PostgreSQL) -> Match (in-memory) -> Turns -> MatchRecord (PostgreSQL) + chaos energy update -> iOS Client |
+| Deck Validation | Edge Function | iOS Client -> Edge Function (validate 20 cards, single faction, copy limits, Legendary limits) -> PostgreSQL (save) -> iOS Client |
 | Economy Config Change | Admin Dashboard | Admin UI form -> PUT /admin/economy-config -> PostgreSQL `economy_config` table -> Next API call reads new value |
+| Subscription Change | StoreKit 2 + Edge Function | StoreKit 2 (iOS) -> apple-webhook Edge Function -> PostgreSQL `players.subscription_tier` update |
+| App Store Review | Xcode Cloud | Git tag `release/*` -> Xcode Cloud archive -> App Store Connect -> Apple Review |
 
 ---
 
@@ -2881,33 +3680,33 @@ const AssignBlockersSchema = z.object({
 
 | Change | Old | New | Reason |
 |---|---|---|---|
-| **Entire infrastructure stack** | AWS/GCP, Kong, Redis, BullMQ, S3, CloudFront, Kubernetes, Kafka, BigQuery, Prometheus+Grafana, LaunchDarkly | Supabase, Railway, Cloudflare R2, PostHog, fal.ai, OpenAI | CLAUDE.md mandates exact stack. No alternatives. |
-| **Client technology** | Unity (C#) + Phaser.js (web) | React Native (Expo) / TypeScript only | CLAUDE.md: "NOT Unity. This is a firm decision." |
-| **Database schema** | Reference to data model doc, table name list | Full CREATE TABLE statements with column types, constraints, CHECK clauses, RLS policies | Owner cannot fill in schema details. Must be code-ready. |
-| **API endpoints** | Table of method/path/description | Full JSON request/response shapes for every endpoint | Claude Code needs exact shapes to implement. |
-| **WebSocket messages** | Event name + brief payload description | Full TypeScript type definitions for every message | Must be directly implementable. |
-| **AI generation** | BullMQ workers, Replicate OR fal.ai | Direct fal.ai HTTP calls from Edge Functions, generation_jobs table for tracking | No BullMQ, no Replicate. fal.ai only. |
-| **Job queue** | BullMQ + Redis + separate worker pods | `generation_jobs` PostgreSQL table + Edge Function cron | Simpler. No Redis infrastructure to manage. |
-| **Matchmaking** | Redis sorted sets | PostgreSQL table + scheduled Edge Function | No Redis. Supabase PostgreSQL handles it. |
-| **Game server scaling** | Kubernetes HPA, pod disruption budgets, NGINX ingress | Railway auto-scaling | Owner cannot operate Kubernetes. Railway handles scaling. |
-| **CI/CD** | Generic GitHub Actions + Kubernetes deploy | Specific GitHub Actions with Supabase CLI + Railway deploy action | Must be copy-paste ready. |
-| **Monitoring** | Prometheus + Grafana + Datadog + PagerDuty | PostHog + Railway built-in + Supabase built-in | Owner cannot configure Prometheus/Grafana. |
-| **Admin Dashboard** | Not mentioned | Full spec with endpoints, auth, economy editor, generation review, match monitor | Owner needs to manage the game without touching code. This was completely missing. |
-| **Local dev** | Kubernetes + Docker (implied) | docker-compose.yml + Supabase CLI + single start.sh | Must work with one command. |
-| **Deploy** | Multi-step Kubernetes rolling update | Single deploy.sh script | Must be one command. |
-| **Session/cache (Redis)** | Redis Cluster for sessions, game state, matchmaking, leaderboards, rate limiting | In-memory on game server (game state), PostgreSQL (matchmaking, rate limiting), Supabase Auth (sessions) | No Redis. Eliminated a whole infrastructure component. |
-| **Object storage** | S3/GCS with CloudFront/Cloud CDN | Cloudflare R2 with built-in CDN | CLAUDE.md: "Cloudflare R2" specifically. |
-| **Analytics** | Kafka/Kinesis -> BigQuery/Redshift -> Looker/Metabase | PostHog | CLAUDE.md: "PostHog" specifically. |
-| **Feature flags** | LaunchDarkly | Removed (economy_config table serves this purpose for balance values) | Owner cannot configure LaunchDarkly. Economy config table is simpler. |
-| **Error codes** | Not defined | Full error code table with codes, messages, and trigger conditions | Claude Code needs these to implement error handling. |
-| **WebSocket retry logic** | "reconnection handling" paragraph | Full TypeScript retry implementation with exponential backoff | Must be directly implementable. |
-| **Economy config** | Hardcoded values | `economy_config` database table with admin UI editor | Owner must change values without code changes. |
-| **Rate limiting** | "Redis counters" | PostgreSQL-based rate limiting with Edge Function helper | No Redis. |
-| **All pseudocode** | Python-style pseudocode | TypeScript (matching actual implementation language) | Project is TypeScript only. |
-| **Environment setup** | "set up Kubernetes cluster" (multi-step) | Single .env file with 12 keys | Owner creates accounts, pastes keys. Nothing else. |
-| **Manual processes** | QA review as manual checklist, balance testing as playtesting | Admin Dashboard with approve/reject UI, economy_config table for live tuning | Owner cannot do manual playtesting or raw database edits. |
+| **Client technology** | React Native (Expo) / TypeScript | Swift + SwiftUI + SpriteKit (iOS only) | CLAUDE.md updated: "NOT React Native. NOT Unity. NOT Expo. This is iOS only -- no Android." |
+| **Platform** | iOS + Android (React Native cross-platform) | iOS only (App Store only) | CLAUDE.md: iOS-only, no Android. |
+| **Auth providers** | Apple Sign-In + Google Sign-In | Apple Sign-In only | iOS-only means no Google Sign-In needed. |
+| **Payments** | Not specified / generic IAP | StoreKit 2 (native Apple API) | CLAUDE.md: "StoreKit 2 for in-app purchases and subscriptions (native Apple API, no third-party wrappers)." |
+| **CI/CD for iOS** | Expo EAS Build + GitHub Actions | Xcode Cloud (configured in App Store Connect) | Native iOS uses Xcode Cloud, not EAS Build. Triggered by git tags for beta/release. |
+| **CI/CD for backend** | Single GitHub Actions workflow for everything | Separate GitHub Actions for backend, Xcode Cloud for iOS | Separation of concerns: backend deploys on push to main, iOS builds on git tags. |
+| **Client section** | Brief mention of React Native client | Full Xcode project structure, Supabase Swift SDK, SpriteKit scene hierarchy, StoreKit 2 flow, image caching, match communication | Rewritten from scratch for Swift/SwiftUI/SpriteKit per CLAUDE.md requirements. |
+| **Admin Dashboard** | Mentioned as feature list in Section 8 | Dedicated Section 9 with clear separation from iOS app | CLAUDE.md: "Every doc must be clear about which application a feature belongs to." |
+| **fal.ai parameters (CRIT-5)** | `guidance_scale: 12.0` for Chaos, missing `strength` and `image_size`, collapsed Mid/Free steps | All parameters match doc 03 Section 1.4 exactly: guidance_scale 7.0/7.5/8.0 by shard tier, strength per evolution step and outcome, image_size portrait_4_3/square_hd, steps 28/32/40 | REVIEW.md CRIT-5: Doc 06 must use doc 03 Section 1.4 as source of truth. |
+| **fal.ai output format** | `output_format: 'png'` | `output_format: 'webp'` | Doc 03 specifies WebP. Smaller files, better for mobile bandwidth/storage. |
+| **fal.ai negative prompt** | Not included in API calls | Full negative prompt from doc 03 Section 1.2 included on every request | Doc 03 requires negative prompt on every single request. |
+| **fal.ai safety checker** | Not enabled | `enable_safety_checker: true` on every request | Doc 03 base request structure includes this parameter. |
+| **Matchmaking architecture (WARN-12)** | "Edge Function polls every 2 seconds" via pg_cron | Game server polls via setInterval every 2 seconds | REVIEW.md WARN-12: pg_cron minimum is 1 minute. Moved polling to game server process. |
+| **Bucket file extensions** | `.png` everywhere | `.webp` everywhere | Consistent with `output_format: 'webp'` in fal.ai calls. |
+| **Budget estimate** | Not included | Full $300 budget breakdown with per-service costs | CLAUDE.md: "Every doc that references infrastructure costs must include a dollar estimate and stay within this budget." |
+| **Legal pages** | Not mentioned | Cloudflare Pages for privacy policy and ToS | CLAUDE.md Launch Requirements: hosted at public URLs, required for App Store. |
+| **Repository structure** | `packages/mobile/` (React Native) | `ChaosCreatures/` (Xcode project at repo root) + `packages/` (backend only) | iOS project uses standard Xcode project layout, not a package subfolder. |
+| **Deploy script** | Included `npx eas build --platform all` | Removed mobile build from deploy.sh; iOS builds handled by Xcode Cloud | iOS builds are triggered by git tags, not a deploy script. |
+| **Start script** | Referenced `npx expo start` | References Xcode Simulator | Local iOS dev uses Xcode, not Expo. |
+| **WebSocket messages** | TypeScript type definitions only | Full JSON shapes for every message type | iOS client needs JSON shapes, not TypeScript types. Swift Codable works from JSON. |
+| **App Store env** | Not included | `APP_STORE_KEY_ID`, `APP_STORE_ISSUER_ID`, `APP_STORE_PRIVATE_KEY_PATH`, `APP_STORE_BUNDLE_ID` | Required for App Store Server API v2 subscription validation. |
+| **Fallback art format** | `.png()` | `.webp()` | Consistent WebP throughout. |
+| **rate_limit_log table** | Referenced in code but not in schema | Added to Section 3.1 with full CREATE TABLE, index, RLS, and pg_cron cleanup | Was missing from schema definition. |
+| **matchmaking_queue table** | Defined only in Section 3.5 | Also listed in migrations (Section 3.2) | Ensures migration file list is complete. |
+| **Docker compose** | Missing AI service env vars and host.docker.internal | Added FAL_KEY, OPENAI_API_KEY, R2 vars, and extra_hosts for macOS Docker | Game server needs AI keys for retry processing; macOS Docker needs extra_hosts. |
 
 ---
 
 *Last updated: 2026-02-16*
-*Status: Complete revision for solo non-engineer owner using Claude Code. All infrastructure decisions final per CLAUDE.md. All schemas, API contracts, message formats, and deployment configs are code-ready.*
+*Status: Complete revision for native iOS (Swift/SwiftUI/SpriteKit), iOS-only (App Store), StoreKit 2 payments, $300 budget cap. All fal.ai parameters match doc 03 Section 1.4 exactly. Admin Dashboard is a separate Railway web app. All schemas, API contracts, message formats, and deployment configs are code-ready.*

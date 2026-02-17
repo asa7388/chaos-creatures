@@ -1,6 +1,8 @@
 # 08 — Audio Design
 
-This document defines the music, SFX, and adaptive audio systems for Chaos Creatures. It is written for a solo non-engineer owner who will build this app using Claude Code with React Native (Expo). Every section is specific enough that Claude Code can generate working code directly from it. No sound designer, audio engineer, or composer needs to be hired — all assets are sourced from AI-generation tools and royalty-free libraries described in Section 8.
+This document defines the music, SFX, and adaptive audio systems for Chaos Creatures. It is written for a solo non-engineer owner who will build this app using Claude Code with Swift, SwiftUI, and SpriteKit on iOS. Every section is specific enough that Claude Code can generate working Swift code directly from it. No sound designer, audio engineer, or composer needs to be hired — all assets are sourced from AI-generation tools and royalty-free libraries described in Section 8.
+
+**Platform:** Native iOS only. Swift + SwiftUI + SpriteKit. App Store only. iOS 17+ minimum.
 
 **Depends on:** `00-game-design-master.md` (game overview, faction system, UI structure), `01-battle-mechanics.md` (battle flow, events, keywords)
 
@@ -18,16 +20,24 @@ This document defines the music, SFX, and adaptive audio systems for Chaos Creat
 
 ### Technical Constraints
 
-- **Platform:** iOS mobile (iPhone 11+ target), built with React Native (Expo SDK 51+)
-- **Audio library:** `expo-av` (`Audio` class) for SFX and music playback; `expo-audio` (new unified API, available Expo SDK 52+) as upgrade path
-- **File format:** MP3 for music (128 kbps) and SFX (96 kbps) — MP3 is the safest cross-platform format for React Native/Expo and avoids OGG codec issues on iOS
-- **Simultaneous channel limit:** 12 concurrent audio channels maximum (6 SFX + 4 music layers + 2 ambient)
+- **Platform:** iOS 17+ (iPhone 12+ target), built with Swift + SwiftUI + SpriteKit
+- **Audio APIs:**
+  - `AVAudioEngine` with `AVAudioPlayerNode` for adaptive/layered music mixing (battle music stems, instability crossfading)
+  - `AVAudioPlayer` for simple non-adaptive playback (menu music, shop ambient, evolution ceremony)
+  - `SKAction.playSoundFileNamed(_:waitForCompletion:)` for SFX triggered inside SpriteKit scenes (card play, creature attack, death, chaos roll, event SFX during battle)
+- **File format:**
+  - Music loops: **CAF** (Core Audio Format) — lossless container, zero-gap looping natively supported on iOS, no MP3 gapless-loop hacks needed
+  - SFX (short, in-scene): **CAF** — lowest latency on iOS, preferred by AVAudioEngine and SKAction
+  - Long ambient backgrounds: **AAC** at 128 kbps (smaller file size acceptable for background textures that are not latency-critical)
+  - All files encoded at **44.1 kHz, stereo** unless noted otherwise
+- **File storage:** All audio files stored in the Xcode project's asset catalog (`Assets.xcassets`) under an `Audio` folder group, or in a dedicated `Resources/Audio/` folder group within the Xcode target. SFX used by SpriteKit scenes must be in the main bundle (not in asset catalog subdirectories) so `SKAction.playSoundFileNamed` can locate them by filename.
+- **Simultaneous channel limit:** 16 concurrent audio channels maximum (8 SFX + 4 music layers + 2 ambient + 2 reserved for OS interruptions)
 - **File size budget:**
-  - Total music: ~15 MB compressed
-  - Total SFX: ~8 MB compressed
-  - Total ambient: ~2 MB compressed
-  - **Total audio package: ~25 MB**
-- **Latency:** <50ms for gameplay SFX triggers (chaos roll, card play, combat)
+  - Total music (CAF): ~18 MB
+  - Total SFX (CAF): ~3 MB
+  - Total ambient (AAC): ~2 MB
+  - **Total audio package: ~23 MB**
+- **Latency:** <20ms for gameplay SFX triggers (chaos roll, card play, combat) — AVAudioEngine and SKAction on iOS are both capable of sub-20ms latency when files are pre-loaded
 - **Volume control:** Master, Music, SFX independently adjustable. Default: Music 60%, SFX 80%, Master 100%.
 
 ---
@@ -129,26 +139,28 @@ Each faction has a unique sonic signature built from instrument palettes, rhythm
 
 **Emotional Goal:** Mysterious, epic, slightly uneasy. This is a world in conflict. The player is about to step into that conflict.
 
-**Implementation:** Loops seamlessly. Plays on Home screen, Collection screen, Deck Builder, Profile, Shop. Stops when battle matchmaking begins.
+**Implementation:** Played via `AVAudioPlayer`. File loaded with `prepareToPlay()` on app launch. `numberOfLoops = -1` for infinite looping. Plays on Home screen, Collection screen, Deck Builder, Profile, Shop. Stopped (with 1-second fade-out) when battle matchmaking begins.
 
-**Sourcing:** Generate using Suno AI (see Section 8). Prompt: `"Dark orchestral card game theme, hybrid orchestral and electronic, strings and distorted synths, mysterious and epic, 75 BPM, 2.5 minutes, loopable, D minor, tension and release structure, no vocals"`.
+**Sourcing:** Generate using Suno AI (see Section 8). Prompt: `"Dark orchestral card game theme, hybrid orchestral and electronic, strings and distorted synths, mysterious and epic, 75 BPM, 2.5 minutes, loopable, D minor, tension and release structure, no vocals"`. Export as WAV from Suno, convert to CAF using `afconvert` in Terminal (free, built into macOS).
 
 ---
 
 ### 3.2 Battle Music — Adaptive System
 
-Battle music is **faction-responsive** and **instability-adaptive**. The system uses layered stems that blend based on board state.
+Battle music is **faction-responsive** and **instability-adaptive**. The system uses layered stems mixed in real time by `AVAudioEngine`.
 
 #### Base Architecture
 
-Each battle track has **4 stems** that play simultaneously, mixed dynamically:
+Each battle track has **4 stems** that play simultaneously via separate `AVAudioPlayerNode` instances attached to a single `AVAudioEngine`. Stem volumes are adjusted in real time without stopping or reloading audio.
 
-1. **Foundation layer** (always playing): Bass + minimal percussion. Faction-neutral.
+1. **Foundation layer** (always at full volume): Bass + minimal percussion. Faction-neutral.
 2. **Player faction layer**: Adds player's faction instrumentation (brass for Ironwright, woodwinds for Fey, war drums for Demonic).
 3. **Opponent faction layer**: Adds opponent's faction instrumentation.
 4. **Intensity layer**: Percussion + harmonic tension. Volume scales with board complexity.
 
-**Example — Ironwright (you) vs. Fey Courts (opponent):**
+The intensity layer is split into **two files**: `MUS_Battle_Intensity_Order.caf` (clean, consonant) and `MUS_Battle_Intensity_Chaos.caf` (distorted, dissonant). Both play simultaneously; their volumes are crossfaded based on the player's instability rating.
+
+**Example — Ironwright (player) vs. Fey Courts (opponent):**
 - Foundation: Tonal bass drone + soft kick drum
 - Ironwright layer: Brass melody + clockwork ticking
 - Fey layer: Harp counter-melody + string pads
@@ -169,26 +181,27 @@ The result is a unique sonic blend for each faction matchup.
 - **Player instability 7-13 (Hybrid zone):** Neutral. Mix of consonance and dissonance.
 - **Player instability 14-20 (Chaos zone):** Music leans dissonant. Tremolo strings, distorted layers, atonal stabs.
 
-This is achieved via volume crossfading between "Order mix" and "Chaos mix" versions of the same stems. All mix logic runs in the React Native audio manager (see Section 7).
+This is achieved via volume crossfading between `MUS_Battle_Intensity_Order.caf` and `MUS_Battle_Intensity_Chaos.caf` using `AVAudioPlayerNode.volume`. No real-time DSP processing occurs on device — just volume adjustments on pre-processed pre-mixed stems.
 
 **Combat Phase Kick:**
-- When attackers are declared, a **percussion hit** fires (faction-specific: anvil for Ironwright, war drum for Demonic, frame drum for Fey).
-- Intensity layer briefly spikes +20% during combat resolution, returns to baseline after.
+- When attackers are declared, a **percussion hit** fires as a `SKAction.playSoundFileNamed` call (faction-specific: anvil for Ironwright, war drum for Demonic, frame drum for Fey).
+- The intensity layer volume briefly spikes +20% for the duration of combat resolution (Phases 6-8), then returns to baseline after End of Turn.
 
 #### Track Count
 
 **Launch Content:**
-- 3 faction-specific stems (Ironwright, Fey, Demonic) × 4 layers each = 12 stems
+- 3 faction-specific stems (Ironwright, Fey, Demonic) × 1 layer each = 3 stems
 - 1 foundation layer (universal) = 1 stem
-- **Total: 13 battle music stems** (~8-10 MB compressed)
+- 2 intensity layer stems (Order and Chaos versions) = 2 stems
+- **Total: 6 battle music stems** (~10-12 MB as CAF)
 
-Each match dynamically combines 4 stems from this pool based on matchup.
+Each match dynamically combines 4 of these 6 stems based on matchup (foundation + player faction + opponent faction + one of the two intensity stems, with the other intensity stem running in parallel for crossfading).
 
 **Tempo:** 95 BPM (battle-ready but not frantic). All stems locked to the same BPM for seamless layering.
 
-**Length:** Each stem is a 32-bar loop (~2:00 at 95 BPM). Loops indefinitely.
+**Length:** Each stem is a 32-bar loop (~2:00 at 95 BPM). CAF format supports exact sample-aligned loop points, guaranteeing seamless looping.
 
-**Sourcing:** See Section 8. Generate each stem separately in Suno AI with matching BPM. Export as MP3 128 kbps. Trim to a clean 32-bar loop in Audacity (free).
+**Sourcing:** See Section 8. Generate each stem separately in Suno AI with matching BPM. Export as WAV, convert to CAF using `afconvert -f caff -d LEI16 input.wav output.caf` in Terminal (built-in macOS tool, free). Trim to a clean 32-bar loop in Audacity (free) before conversion.
 
 ---
 
@@ -218,7 +231,7 @@ Each match dynamically combines 4 stems from this pool based on matchup.
 
 **Emotional Goal:** Goosebumps. This is your card's transformation. It should feel like a ritual, a birth, a triumph.
 
-**Implementation:** Plays over the Evolution Screen. Overrides all other music. Player can skip by tapping (music fades out over 2 seconds via `Audio.setVolumeAsync()` interpolation in a `setTimeout` loop, not a hard cut).
+**Implementation:** Played via `AVAudioPlayer` (non-adaptive, single file). Loaded in `viewDidAppear` of the evolution SwiftUI view. `prepareToPlay()` called on load. Player can skip by tapping — fade-out implemented by calling `setVolume(0, fadeDuration: 2.0)` on the `AVAudioPlayer` instance, then `stop()` after 2 seconds using `DispatchQueue.main.asyncAfter`.
 
 ---
 
@@ -232,8 +245,11 @@ Each match dynamically combines 4 stems from this pool based on matchup.
 - **Key:** A minor (calm, introspective)
 - **Structure:** Simple ABA loop, no dramatic peaks. This is furniture music — it should not demand attention.
 - **Length:** 3:00 loop
+- **Format:** AAC 128 kbps (background use, file size more important than latency here)
 
 **Shares the same track for Shop and Collection screens.** The main menu theme is already playing on Home, so this is used for screens where the player is spending longer periods browsing/building.
+
+**Implementation:** Played via `AVAudioPlayer`, `numberOfLoops = -1`. Crossfade from main menu theme: fade out main menu over 1 second, then start shop ambient.
 
 **Emotional Goal:** Calm, focus-friendly, slightly melancholic (the world is in chaos, but here you're safe to plan).
 
@@ -241,19 +257,19 @@ Each match dynamically combines 4 stems from this pool based on matchup.
 
 ### Music Summary Table
 
-| Context | Track | Tempo | Length | Adaptive? | File Size (est.) |
-|---|---|---|---|---|---|
-| Main Menu / Home | Planes of Chaos Theme | 75 BPM | 2:30 loop | No | ~2 MB |
-| Battle | Faction Stem Layers (×13) | 95 BPM | 2:00 loop each | Yes (dynamic mix) | ~10 MB |
-| Evolution Ceremony | Transformation Ritual | Variable | 1:10 (one-shot) | Faction + outcome coloring | ~1.5 MB |
-| Shop / Collection | Calm Ambient | 60 BPM | 3:00 loop | No | ~1.5 MB |
-| **TOTAL** | | | | | **~15 MB** |
+| Context | Track | Tempo | Length | Adaptive? | Format | File Size (est.) |
+|---|---|---|---|---|---|---|
+| Main Menu / Home | Planes of Chaos Theme | 75 BPM | 2:30 loop | No | CAF | ~2.5 MB |
+| Battle | Faction Stem Layers (6 stems) | 95 BPM | 2:00 loop each | Yes (AVAudioEngine mix) | CAF | ~12 MB |
+| Evolution Ceremony | Transformation Ritual | Variable | 1:10 (one-shot) | Faction + outcome coloring | CAF | ~1.5 MB |
+| Shop / Collection | Calm Ambient | 60 BPM | 3:00 loop | No | AAC 128 kbps | ~2 MB |
+| **TOTAL** | | | | | | **~18 MB** |
 
 ---
 
 ## 4. SFX Inventory
 
-All SFX are designed to be **clear, punchy, mobile-friendly** (work on small speakers), and **under 1 second in length** (except ambient loops).
+All SFX are designed to be **clear, punchy, mobile-friendly** (work on small speakers), and **under 1 second in length** (except ambient loops). All SFX stored as CAF files for lowest possible latency when played via `SKAction.playSoundFileNamed` or `AVAudioEngine`.
 
 ### 4.1 Battle Gameplay SFX
 
@@ -400,37 +416,38 @@ These layer into the Evolution Ceremony Music (Section 3.3) but are separate SFX
 | UI SFX | 10 | ~131 KB |
 | **TOTAL** | **59** | **~1.3 MB** |
 
-**Note:** Faction variations (creature attack, death, card play) are counted as separate files in the total count but share similar design templates.
+**Note:** Faction variations (creature attack, death, card play) are counted as separate files in the total count but share similar design templates. As CAF files, 1.3 MB compressed is approximately 2-3 MB uncompressed in RAM — well within iOS memory limits.
 
 ---
 
 ## 5. Adaptive Audio System
 
-The game uses a **dynamic mixing system** that responds to game state in real time. This keeps audio fresh across hundreds of battles and creates a tighter connection between player decisions and audio feedback.
+The game uses a **dynamic mixing system** built on `AVAudioEngine` that responds to game state in real time. This keeps audio fresh across hundreds of battles and creates a tighter connection between player decisions and audio feedback.
 
 ### 5.1 Music Intensity Scaling (Battle)
 
-**Trigger:** Total creature count on both boards (your creatures + opponent's creatures).
+**Trigger:** Total creature count on both boards (player's creatures + opponent's creatures).
 
-**Implementation:**
-- Foundation layer: Always at 100% volume (bass + minimal percussion)
-- Player faction layer: Always at 100% volume
-- Opponent faction layer: Always at 100% volume
-- **Intensity layer: Scales 0-100% based on creature count**
+**Implementation using AVAudioEngine:**
+- All 4-6 active stems loaded into separate `AVAudioPlayerNode` instances attached to one `AVAudioEngine`
+- Foundation layer: Always at 100% (`node.volume = 1.0`)
+- Player faction layer: Always at 100%
+- Opponent faction layer: Always at 100%
+- **Intensity layer nodes: Volume scales 0.0–1.0 based on creature count**
 
 **Formula:**
-```
-intensity_volume = min(1.0, total_creatures / 10)
+```swift
+let intensityVolume = min(1.0, Float(totalCreatures) / 10.0)
 ```
 
 | Creatures on Board | Intensity Volume |
 |---|---|
-| 0-1 | 0-10% (barely audible) |
-| 2 | 20% |
-| 3 | 30% |
-| 5 | 50% (midpoint) |
-| 8 | 80% |
-| 10 | 100% (full chaos) |
+| 0-1 | 0.0-0.1 (barely audible) |
+| 2 | 0.2 |
+| 3 | 0.3 |
+| 5 | 0.5 (midpoint) |
+| 8 | 0.8 |
+| 10 | 1.0 (full chaos) |
 
 **Feel:** Early turns are calm, strategic. As boards fill, tension builds. A board wipe (Upheaval, combat, etc.) drops intensity instantly — audible release.
 
@@ -440,26 +457,29 @@ intensity_volume = min(1.0, total_creatures / 10)
 
 **Trigger:** Active player's instability value (recalculated each time creatures enter/leave board).
 
-**Implementation:**
-- Two volume-mix presets for battle music stems: "Order Mix" (clean, full volume) and "Chaos Mix" (doubled-down volume on distortion stems).
-- In React Native, this is a real-time crossfade: `AudioManager.setChaosWeight(normalizedInstability)` is called every time instability changes. This adjusts the volume of each `Sound` object without stopping or reloading.
+**Implementation using AVAudioEngine:**
+- Both `MUS_Battle_Intensity_Order.caf` and `MUS_Battle_Intensity_Chaos.caf` play simultaneously via separate `AVAudioPlayerNode` instances
+- `AudioManager.setInstabilityWeight(_:)` adjusts their volumes in complementary fashion
 
 **Formula:**
-```typescript
-const chaosWeight = (playerInstability - 1) / 19; // 0.0 to 1.0
-const orderWeight = 1.0 - chaosWeight;
+```swift
+func setInstabilityWeight(_ instability: Int) {
+    let chaosWeight = Float(instability - 1) / 19.0 // 0.0 to 1.0
+    let orderWeight = 1.0 - chaosWeight
+    let base = intensityBaseVolume * musicVolume * masterVolume
+    intensityOrderNode.volume = base * orderWeight
+    intensityChaoNode.volume  = base * chaosWeight
+}
 ```
 
-| Player Instability | Order Mix | Chaos Mix | Musical Feel |
+| Player Instability | Order Node Volume | Chaos Node Volume | Musical Feel |
 |---|---|---|---|
 | 1-5 | 80-100% | 0-20% | Calm, structured, major harmonies |
 | 6-10 | 50-70% | 30-50% | Neutral, balanced |
 | 11-15 | 30-50% | 50-70% | Tense, building dissonance |
 | 16-20 | 0-20% | 80-100% | Chaotic, distorted, aggressive |
 
-**Feel:** A Chaos player with 18 instability hears music that's distorted, tremolo-heavy, dissonant. When two creatures die and instability drops to 12, the music smooths out slightly — audible feedback that the board state shifted.
-
-**Technical Note:** The "Order Mix" and "Chaos Mix" are separate audio stems for the intensity layer (two versions of the same loop — one clean, one distorted). The `AudioManager` crossfades between them by adjusting their respective volumes. No real-time DSP processing occurs on device.
+**Technical Note:** The "Order Mix" and "Chaos Mix" are separate pre-processed audio files (two versions of the same loop — one clean, one distorted). `AVAudioEngine` adjusts their volume in real time. No real-time DSP processing occurs on device.
 
 ---
 
@@ -468,11 +488,11 @@ const orderWeight = 1.0 - chaosWeight;
 **Trigger:** Attackers are declared (transition from Main Phase to Declare Attackers).
 
 **Implementation:**
-- A single **percussion hit** fires, faction-specific to the attacking player's faction:
-  - **Ironwright:** Anvil strike (metallic clang)
-  - **Fey Courts:** Frame drum hit (organic thud)
-  - **Demonic Kingdoms:** War drum (deep bass boom)
-- Intensity layer volume spikes +20% for the duration of combat resolution (Phases 6-8), then returns to baseline at End of Turn.
+- A single **percussion hit** SFX is fired via `SKAction.playSoundFileNamed(_:waitForCompletion:)` inside the SpriteKit battlefield scene, faction-specific to the attacking player's faction:
+  - **Ironwright:** `SFX_CombatKick_Ironwright.caf` (anvil strike — metallic clang)
+  - **Fey Courts:** `SFX_CombatKick_Fey.caf` (frame drum hit — organic thud)
+  - **Demonic Kingdoms:** `SFX_CombatKick_Demonic.caf` (war drum — deep bass boom)
+- The intensity layer volume on the `AVAudioPlayerNode` briefly spikes +20% during combat resolution phases, then returns to baseline at End of Turn.
 
 **Feel:** Combat feels punctuated, weighty. The percussion hit is a "now we fight" moment. Music surges during combat, recedes during planning.
 
@@ -480,24 +500,29 @@ const orderWeight = 1.0 - chaosWeight;
 
 ### 5.4 Audio Priority System
 
-Mobile devices have limited simultaneous audio channels. The game uses a **priority queue** to ensure critical SFX are never dropped.
+iOS has no hard channel count limit, but the game imposes a software limit to ensure critical SFX are never dropped and CPU usage stays predictable.
 
 **Channel Allocation:**
-- 6 channels: SFX (gameplay + UI)
-- 4 channels: Music layers (battle stems)
-- 2 channels: Ambient (evolution ceremony, background loops)
+- 8 channels: SFX (gameplay + UI)
+- 4 channels: Music layers (battle stems via AVAudioEngine)
+- 2 channels: Ambient (evolution ceremony, background loops via AVAudioPlayer)
+- 2 channels: OS reserved (phone calls, Siri, interruptions)
 
 **Priority Tiers (highest to lowest):**
 
-1. **P0 — Critical Gameplay SFX:** Chaos roll result, event SFX, creature death, damage to avatar. Never dropped.
-2. **P1 — Important Gameplay SFX:** Card play, creature attack, keyword triggers, mana gain/spend. Dropped only if 6 SFX channels full.
+1. **P0 — Critical Gameplay SFX:** Chaos roll result, event SFX, creature death, damage to avatar. Never dropped. Always played via `AVAudioEngine` auxiliary mixer node for lowest latency.
+2. **P1 — Important Gameplay SFX:** Card play, creature attack, keyword triggers, mana gain/spend. Dropped only if 8 SFX channels full.
 3. **P2 — Music Layers:** Battle music stems, menu music. Volume ducked to 60% when P0 SFX fires.
 4. **P3 — UI SFX:** Button taps, tab switches, scrolls. Dropped if SFX channels full.
-5. **P4 — Ambient:** Evolution ceremony ambient layers. Stopped if memory pressure.
+5. **P4 — Ambient:** Evolution ceremony ambient layers. Stopped if memory pressure event received.
 
 **Ducking Rules:**
-- When a P0 SFX fires (e.g., Chaos Roll result, Upheaval explosion), music ducks to 60% volume for 1 second, then returns.
-- When Evolution Ceremony music plays, all other music stops (hard cut via `Sound.stopAsync()`).
+- When a P0 SFX fires (e.g., Chaos Roll result, Upheaval explosion), music ducks to 60% volume for 1 second, then returns. Implemented by adjusting `AVAudioPlayerNode.volume` directly.
+- When Evolution Ceremony music plays, all other music stops (`AVAudioPlayer.stop()` on menu/battle music players).
+
+**iOS Audio Session Interruptions:**
+- `AVAudioSession` notifications for interruptions (phone calls, Siri) must be handled: pause all audio on `.began`, resume on `.ended` if `shouldResume` is true.
+- Register for `AVAudioSession.interruptionNotification` in `AudioManager.init()`.
 
 ---
 
@@ -505,48 +530,157 @@ Mobile devices have limited simultaneous audio channels. The game uses a **prior
 
 ### 6.1 File Format & Compression
 
-| Audio Type | Format | Bitrate | Rationale |
+| Audio Type | Format | Encoding | Rationale |
 |---|---|---|---|
-| **Music (loops)** | MP3 | 128 kbps | Widest React Native/Expo compatibility. Seamless loop supported by expo-av via `isLooping: true`. |
-| **SFX (short)** | MP3 | 96 kbps | Consistent format across the project. Avoids the AAC loading inconsistency on some Android devices. |
-| **Ambient (long loops)** | MP3 | 96 kbps | Lower bitrate acceptable for background textures. |
+| **Music loops (battle stems, menu theme, evolution)** | CAF | PCM LEI16 or Apple Lossless (ALAC) | CAF supports exact sample-aligned loop points, zero-gap looping on iOS without file header manipulation. Used with AVAudioEngine. |
+| **SFX (short, in-scene)** | CAF | PCM LEI16 | Lowest latency for SKAction.playSoundFileNamed and AVAudioEngine. Files are small enough that lossless is practical. |
+| **Ambient (long background loops)** | AAC | 128 kbps | File size more important than latency for background music. AVAudioPlayer handles AAC streaming natively. |
 
-**Total file size budget: ~25 MB** (15 MB music + 8 MB SFX + 2 MB ambient). Fits within the Expo app bundle and allows fast first install.
+**macOS conversion command (built-in `afconvert`, no download needed):**
+```bash
+# WAV/AIFF to CAF (lossless PCM, for SFX and music stems)
+afconvert -f caff -d LEI16 input.wav output.caf
+
+# WAV to AAC (for ambient loops only)
+afconvert -f m4af -d aac -b 128000 input.wav output.m4a
+```
+
+**Total file size budget: ~23 MB** (18 MB music + 3 MB SFX + 2 MB ambient). Fits within App Store app bundle without requiring on-demand resources.
 
 ---
 
-### 6.2 Looping & Seamlessness
+### 6.2 Xcode Asset Catalog and Bundle Structure
+
+All audio files are added to the **Xcode project target** (not an asset catalog subdirectory that would alter bundle paths). They must be present in the app's **main bundle** so `SKAction.playSoundFileNamed`, `AVAudioPlayer(contentsOf:)`, and `Bundle.main.url(forResource:withExtension:)` can locate them by filename.
+
+**Recommended Xcode folder group structure:**
+```
+ChaosCreatures (Xcode Project)
+└── Resources/
+    └── Audio/
+        ├── Music/
+        │   ├── MUS_MainMenu_PlanesOfChaos.caf
+        │   ├── MUS_Battle_Foundation.caf
+        │   ├── MUS_Battle_Ironwright_FactionLayer.caf
+        │   ├── MUS_Battle_Fey_FactionLayer.caf
+        │   ├── MUS_Battle_Demonic_FactionLayer.caf
+        │   ├── MUS_Battle_Intensity_Order.caf
+        │   ├── MUS_Battle_Intensity_Chaos.caf
+        │   ├── MUS_Evolution_Transformation.caf
+        │   └── MUS_Shop_Ambient.m4a
+        └── SFX/
+            ├── SFX_Battle_CardPlay_Ironwright.caf
+            ├── SFX_Battle_CardPlay_Fey.caf
+            ├── SFX_Battle_CardPlay_Demonic.caf
+            ├── SFX_Battle_CardPlay_Spell.caf
+            ├── SFX_Battle_CardDraw.caf
+            ├── SFX_Battle_DeckShuffle.caf
+            ├── SFX_Battle_ManaGain.caf
+            ├── SFX_Battle_ManaSpend.caf
+            ├── SFX_Battle_CreatureAttack_Ironwright.caf
+            ├── SFX_Battle_CreatureAttack_Fey.caf
+            ├── SFX_Battle_CreatureAttack_Demonic.caf
+            ├── SFX_Battle_CreatureHit.caf
+            ├── SFX_Battle_CreatureDeath_Ironwright.caf
+            ├── SFX_Battle_CreatureDeath_Fey.caf
+            ├── SFX_Battle_CreatureDeath_Demonic.caf
+            ├── SFX_Battle_AvatarDamage.caf
+            ├── SFX_Battle_Heal.caf
+            ├── SFX_Battle_TurnTransition.caf
+            ├── SFX_Battle_TimerWarning.caf
+            ├── SFX_Battle_TurnAutoEnd.caf
+            ├── SFX_Battle_Surrender.caf
+            ├── SFX_Keyword_ShieldBreak.caf
+            ├── SFX_Keyword_Lifesteal.caf
+            ├── SFX_Keyword_FlyingSwoop.caf
+            ├── SFX_Keyword_ReachBlock.caf
+            ├── SFX_Keyword_Deathtouch.caf
+            ├── SFX_Keyword_TauntLockOn.caf
+            ├── SFX_Keyword_Piercing.caf
+            ├── SFX_ChaosRoll_D20Tumble.caf
+            ├── SFX_ChaosRoll_OrderResult.caf
+            ├── SFX_ChaosRoll_ChaosResult.caf
+            ├── SFX_ChaosRoll_Nothing.caf
+            ├── SFX_ChaosRoll_InstabilityUpdate.caf
+            ├── SFX_Event_O1_MendingLight.caf
+            ├── SFX_Event_O2_PlanarWard.caf
+            ├── SFX_Event_O3_SteadyGrowth.caf
+            ├── SFX_Event_O4_Clarity.caf
+            ├── SFX_Event_O5_Fortify.caf
+            ├── SFX_Event_O6_Sanctuary.caf
+            ├── SFX_Event_O7_Bulwark.caf
+            ├── SFX_Event_O8_Harmonize.caf
+            ├── SFX_Event_C1_Surge.caf
+            ├── SFX_Event_C2_Wildfire.caf
+            ├── SFX_Event_C3_Upheaval.caf
+            ├── SFX_Event_C4_Frenzy.caf
+            ├── SFX_Event_C5_RiftBolt.caf
+            ├── SFX_Event_C6_ChaosSiphon.caf
+            ├── SFX_Event_C7_Maelstrom.caf
+            ├── SFX_Event_C8_Overcharge.caf
+            ├── SFX_Evolution_EnergyBuildup.caf
+            ├── SFX_Evolution_ShardCrack.caf
+            ├── SFX_Evolution_TransformWhoosh.caf
+            ├── SFX_Evolution_RevealFanfare.caf
+            ├── SFX_Evolution_OrderAccent.caf
+            ├── SFX_Evolution_ChaosAccent.caf
+            ├── SFX_Evolution_ModifierSelect.caf
+            ├── SFX_CombatKick_Ironwright.caf
+            ├── SFX_CombatKick_Fey.caf
+            ├── SFX_CombatKick_Demonic.caf
+            ├── SFX_UI_ButtonTap.caf
+            ├── SFX_UI_ButtonTapPrimary.caf
+            ├── SFX_UI_TabSwitch.caf
+            ├── SFX_UI_CardFlip.caf
+            ├── SFX_UI_Scroll.caf
+            ├── SFX_UI_DeckSelect.caf
+            ├── SFX_UI_MissionComplete.caf
+            ├── SFX_UI_LevelUp.caf
+            ├── SFX_UI_Error.caf
+            └── SFX_UI_Notification.caf
+```
+
+**How to add to Xcode:** In Xcode's Project Navigator, right-click `Resources/` → "Add Files to ChaosCreatures". Select the audio files. Ensure "Copy items if needed" is checked and the target `ChaosCreatures` is ticked. The files must appear in the target's "Copy Bundle Resources" build phase.
+
+---
+
+### 6.3 Looping & Seamlessness
 
 All looping tracks (battle music stems, menu themes, ambient) must:
 - **Loop seamlessly** with zero gap or click at the loop point.
 - Use **exact sample-aligned loop points** (trim to whole bars, no partial samples).
-- Include a **10ms crossfade** at the loop boundary (baked into the file using Audacity's "Export with loop point" feature) to ensure smooth transitions.
+- Include a **10ms crossfade** at the loop boundary (baked into the file using Audacity's crossfade loop export) to ensure smooth transitions.
+
+**CAF advantage:** Unlike MP3, CAF (with PCM encoding) has no encoder delay, making loop points exact. For `AVAudioPlayerNode` looping, use:
+```swift
+audioPlayerNode.scheduleBuffer(buffer, at: nil, options: .loops, completionHandler: nil)
+```
 
 **Testing:** Every loop is tested for at least 10 consecutive loops in Audacity before export to catch timing drift or audible clicks.
 
 ---
 
-### 6.3 Mixing & Mastering
+### 6.4 Mixing & Mastering
 
 All audio is **pre-mixed and mastered** before integration. No raw stems or unprocessed SFX.
 
 **Mastering targets:**
-- **Music:** Peak at -6 dB (headroom for dynamic layering), RMS -18 dB (consistent loudness)
-- **SFX:** Peak at -3 dB (punchy, audible over music), RMS varies by SFX type
-- **Ambient:** Peak at -12 dB (background layer, never foreground)
+- **Music:** Peak at -6 dBFS (headroom for dynamic layering), integrated loudness -18 LUFS (consistent loudness)
+- **SFX:** Peak at -3 dBFS (punchy, audible over music), loudness varies by SFX type
+- **Ambient:** Peak at -12 dBFS (background layer, never foreground)
 
 **Frequency balance:**
 - **Low end (20-200 Hz):** Reserved for bass music layers, war drums, sub-bass drones. SFX use sparingly (only impacts, explosions).
 - **Mids (200-4000 Hz):** Primary SFX range. Keep music mids scooped (dip at 800 Hz) to prevent masking SFX.
 - **Highs (4000-16000 Hz):** Chimes, crystalline SFX, hi-hats. Music uses sparingly to avoid fatigue.
 
-**Mobile speaker optimization:** All audio tested on iPhone 11 internal speaker at 50% volume. High-frequency content (>12 kHz) rolled off to prevent harshness. Use Audacity's "High Roll-off for Speech" EQ preset as a starting point, then tweak by ear.
+**Mobile speaker optimization:** All audio tested on iPhone internal speaker at 50% volume. High-frequency content (>12 kHz) rolled off to prevent harshness. Use Audacity's "High Roll-off for Speech" EQ preset as a starting point, then tweak by ear.
 
 ---
 
-### 6.4 Volume Controls
+### 6.5 Volume Controls
 
-Players can adjust three independent volume sliders in Settings:
+Players can adjust three independent volume sliders in the SwiftUI Settings screen:
 
 | Slider | Controls | Default |
 |---|---|---|
@@ -559,361 +693,607 @@ Players can adjust three independent volume sliders in Settings:
 - SFX at 80%: Clear feedback without being jarring.
 - Master at 100%: Player has full control.
 
-**Saved preferences:** Volume settings stored in `AsyncStorage` under the key `"audio_prefs"` as a JSON object `{ master: 1.0, music: 0.6, sfx: 0.8 }`. Loaded on app start, applied to the AudioManager before any sound plays.
+**Saved preferences:** Volume settings stored in `UserDefaults` under the keys `"audioPrefMaster"`, `"audioPrefMusic"`, `"audioPrefSFX"` as `Float` values. Loaded in `AudioManager.shared.loadPreferences()` on app launch (called from `AppDelegate.application(_:didFinishLaunchingWithOptions:)`), applied to all active `AVAudioPlayerNode` and `AVAudioPlayer` instances before any sound plays.
 
 ---
 
-### 6.5 Performance Constraints
+### 6.6 Performance Constraints
 
 | Metric | Target | Rationale |
 |---|---|---|
-| **Max simultaneous channels** | 12 | Prevents CPU overload on older devices (iPhone 11, iPad 8th gen). |
-| **SFX latency (trigger to playback)** | <50ms | Ensures audio feels responsive. Anything >100ms feels laggy. |
-| **Music layer crossfade time** | 0.5-1.0 seconds | Smooth transitions between intensity/instability states without jarring cuts. |
-| **Memory footprint (all audio loaded)** | <40 MB uncompressed in RAM | iOS memory limits. Older devices (2 GB RAM) need headroom. |
+| **Max simultaneous channels** | 16 (software limit) | Prevents CPU overload on iPhone 12 and older devices. |
+| **SFX latency (trigger to playback)** | <20ms | AVAudioEngine with preloaded CAF buffers achieves <5ms; SKAction.playSoundFileNamed achieves <20ms. |
+| **Music layer crossfade time** | 0.5-1.0 seconds | Smooth transitions between intensity/instability states. Implemented by linear ramp on AVAudioPlayerNode.volume. |
+| **Memory footprint (all SFX loaded)** | <8 MB uncompressed in RAM | 1.3 MB of CAF SFX expands to ~3 MB uncompressed. Well within iOS 17 limits on all targets. |
 
 **Streaming vs. preloading:**
-- **Music:** Loaded via `Audio.Sound.createAsync()` on screen mount. `isLooping: true` set at load time.
-- **SFX:** All SFX preloaded into a global `SoundPool` object at app launch. Total SFX ~1.3 MB compressed → ~3-4 MB uncompressed (acceptable).
-- **Evolution Ceremony:** Preloaded when the Evolution screen component mounts (`useEffect` on mount), unloaded in the cleanup function (`sound.unloadAsync()`).
+- **SFX:** All 59 SFX files preloaded into `AVAudioPCMBuffer` objects on app launch. Stored in a `[String: AVAudioPCMBuffer]` dictionary keyed by filename (without extension). Total ~3 MB in RAM.
+- **Music stems (battle):** Loaded as `AVAudioPCMBuffer` when `BattleScene` is first presented (`sceneDidLoad()`), freed when the battle ends (`sceneDidUnload()`).
+- **Menu music and shop ambient:** Loaded via `AVAudioPlayer(contentsOf:)` on screen appear, set `numberOfLoops = -1`, call `prepareToPlay()` immediately.
+- **Evolution Ceremony:** Loaded via `AVAudioPlayer` when the evolution view appears, unloaded (set to `nil`) in `onDisappear`.
 
 ---
 
-## 7. React Native (Expo) Implementation
+## 7. Swift / iOS Implementation
 
 This section is the blueprint Claude Code will use to implement audio. No manual engineering decisions are needed.
 
-### 7.1 Project File Structure
+### 7.1 AVAudioSession Configuration
 
-All audio assets live in the Expo project under `assets/audio/`:
+Configure the audio session once at app launch in `AppDelegate.swift` before any audio plays:
 
-```
-assets/
-  audio/
-    music/
-      MUS_MainMenu_PlanesOfChaos.mp3
-      MUS_Battle_Foundation.mp3
-      MUS_Battle_Ironwright_FactionLayer.mp3
-      MUS_Battle_Fey_FactionLayer.mp3
-      MUS_Battle_Demonic_FactionLayer.mp3
-      MUS_Battle_Intensity_Order.mp3
-      MUS_Battle_Intensity_Chaos.mp3
-      MUS_Evolution_Transformation.mp3
-      MUS_Shop_Ambient.mp3
-    sfx/
-      SFX_Battle_CardPlay_Ironwright.mp3
-      SFX_Battle_CardPlay_Fey.mp3
-      SFX_Battle_CardPlay_Demonic.mp3
-      SFX_Battle_CardPlay_Spell.mp3
-      SFX_Battle_CardDraw.mp3
-      SFX_Battle_DeckShuffle.mp3
-      SFX_Battle_ManaGain.mp3
-      SFX_Battle_ManaSpend.mp3
-      SFX_Battle_CreatureAttack_Ironwright.mp3
-      SFX_Battle_CreatureAttack_Fey.mp3
-      SFX_Battle_CreatureAttack_Demonic.mp3
-      SFX_Battle_CreatureHit.mp3
-      SFX_Battle_CreatureDeath_Ironwright.mp3
-      SFX_Battle_CreatureDeath_Fey.mp3
-      SFX_Battle_CreatureDeath_Demonic.mp3
-      SFX_Battle_AvatarDamage.mp3
-      SFX_Battle_Heal.mp3
-      SFX_Battle_TurnTransition.mp3
-      SFX_Battle_TimerWarning.mp3
-      SFX_Battle_TurnAutoEnd.mp3
-      SFX_Battle_Surrender.mp3
-      SFX_Keyword_ShieldBreak.mp3
-      SFX_Keyword_Lifesteal.mp3
-      SFX_Keyword_FlyingSwoop.mp3
-      SFX_Keyword_ReachBlock.mp3
-      SFX_Keyword_Deathtouch.mp3
-      SFX_Keyword_TauntLockOn.mp3
-      SFX_Keyword_Piercing.mp3
-      SFX_ChaosRoll_D20Tumble.mp3
-      SFX_ChaosRoll_OrderResult.mp3
-      SFX_ChaosRoll_ChaosResult.mp3
-      SFX_ChaosRoll_Nothing.mp3
-      SFX_ChaosRoll_InstabilityUpdate.mp3
-      SFX_Event_O1_MendingLight.mp3
-      SFX_Event_O2_PlanarWard.mp3
-      SFX_Event_O3_SteadyGrowth.mp3
-      SFX_Event_O4_Clarity.mp3
-      SFX_Event_O5_Fortify.mp3
-      SFX_Event_O6_Sanctuary.mp3
-      SFX_Event_O7_Bulwark.mp3
-      SFX_Event_O8_Harmonize.mp3
-      SFX_Event_C1_Surge.mp3
-      SFX_Event_C2_Wildfire.mp3
-      SFX_Event_C3_Upheaval.mp3
-      SFX_Event_C4_Frenzy.mp3
-      SFX_Event_C5_RiftBolt.mp3
-      SFX_Event_C6_ChaosSiphon.mp3
-      SFX_Event_C7_Maelstrom.mp3
-      SFX_Event_C8_Overcharge.mp3
-      SFX_Evolution_EnergyBuildup.mp3
-      SFX_Evolution_ShardCrack.mp3
-      SFX_Evolution_TransformWhoosh.mp3
-      SFX_Evolution_RevealFanfare.mp3
-      SFX_Evolution_OrderAccent.mp3
-      SFX_Evolution_ChaosAccent.mp3
-      SFX_Evolution_ModifierSelect.mp3
-      SFX_UI_ButtonTap.mp3
-      SFX_UI_ButtonTapPrimary.mp3
-      SFX_UI_TabSwitch.mp3
-      SFX_UI_CardFlip.mp3
-      SFX_UI_Scroll.mp3
-      SFX_UI_DeckSelect.mp3
-      SFX_UI_MissionComplete.mp3
-      SFX_UI_LevelUp.mp3
-      SFX_UI_Error.mp3
-      SFX_UI_Notification.mp3
-```
+```swift
+import AVFoundation
 
-### 7.2 Installation
-
-```bash
-npx expo install expo-av
-```
-
-Add to `app.json` plugins array:
-```json
-{
-  "expo": {
-    "plugins": [
-      [
-        "expo-av",
-        {
-          "microphonePermission": false
-        }
-      ]
-    ]
-  }
+func configureAudioSession() {
+    do {
+        let session = AVAudioSession.sharedInstance()
+        // mixWithOthers allows music app audio to continue in background;
+        // for a game, we want exclusive audio, so we use .ambient or .soloAmbient.
+        // .playback ensures audio plays even when the iOS silent switch is engaged.
+        try session.setCategory(.playback, mode: .default, options: [])
+        try session.setActive(true)
+    } catch {
+        print("AudioSession configuration failed: \(error)")
+    }
 }
 ```
 
-### 7.3 AudioManager Module
+Call `configureAudioSession()` in `application(_:didFinishLaunchingWithOptions:)`.
 
-Create `src/audio/AudioManager.ts`. Claude Code must implement this file with the following exported interface:
+The `.playback` category ensures audio plays when the device's silent/mute switch is engaged — critical for a game where all gameplay feedback is audio-driven.
 
-```typescript
-// src/audio/AudioManager.ts
-import { Audio } from 'expo-av';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+---
 
-// --- Types ---
+### 7.2 AudioManager Class
 
-export type FactionId = 'ironwright' | 'fey' | 'demonic';
+Create `Sources/Audio/AudioManager.swift`. Claude Code implements this file using the interface below.
 
-export type AudioPrefs = {
-  master: number;   // 0.0 – 1.0
-  music: number;    // 0.0 – 1.0
-  sfx: number;      // 0.0 – 1.0
-};
+```swift
+// Sources/Audio/AudioManager.swift
+import AVFoundation
+import SpriteKit
 
-// --- Public API (all methods are async-safe to call from any component) ---
+// MARK: - Types
 
-// Call once on app startup, before any screen renders.
-export async function initAudio(): Promise<void>;
+enum FactionId: String {
+    case ironwright, fey, demonic
+}
 
-// Load and persist volume preferences from AsyncStorage.
-export async function loadAudioPrefs(): Promise<AudioPrefs>;
+struct AudioPrefs {
+    var master: Float = 1.0
+    var music: Float  = 0.6
+    var sfx: Float    = 0.8
+}
 
-// Save updated prefs to AsyncStorage and apply to all active sounds immediately.
-export async function saveAudioPrefs(prefs: AudioPrefs): Promise<void>;
+// MARK: - AudioManager
 
-// --- Music ---
+final class AudioManager {
 
-// Smoothly transition to the main menu theme. Fades out current music first.
-export async function playMainMenuMusic(): Promise<void>;
+    static let shared = AudioManager()
+    private init() {}
 
-// Start battle music for the given matchup. Loads all 4 stems and begins crossfade logic.
-export async function startBattleMusic(playerFaction: FactionId, opponentFaction: FactionId): Promise<void>;
+    // MARK: - Properties
 
-// Update the intensity layer volume based on total creature count (0–10).
-export function setBoardIntensity(totalCreatures: number): void;
+    private var prefs = AudioPrefs()
 
-// Update the Order/Chaos crossfade based on player instability (1–20).
-export function setInstabilityWeight(instability: number): void;
+    // AVAudioEngine for adaptive battle music
+    private let engine = AVAudioEngine()
+    private var battleNodes: [String: AVAudioPlayerNode] = [:]
+    private var battleBuffers: [String: AVAudioPCMBuffer] = [:]
+    private var intensityBaseVolume: Float = 1.0
+    private var currentIntensityVolume: Float = 0.2
+    private var currentInstabilityWeight: Float = 0.0
 
-// Fire the combat kick SFX and briefly spike intensity layer.
-export async function fireCombatKick(attackerFaction: FactionId): Promise<void>;
+    // AVAudioPlayer for simple non-adaptive music
+    private var menuMusicPlayer: AVAudioPlayer?
+    private var shopMusicPlayer: AVAudioPlayer?
+    private var evolutionPlayer: AVAudioPlayer?
 
-// Stop all battle music stems. Call when match ends.
-export async function stopBattleMusic(): Promise<void>;
+    // SFX preloaded buffers
+    private var sfxBuffers: [String: AVAudioPCMBuffer] = [:]
+    private var sfxNodes: [AVAudioPlayerNode] = [] // pool of 8 reusable nodes
+    private var activeChannels: Set<String> = []
 
-// Play shop/collection ambient. Loops indefinitely.
-export async function playShopMusic(): Promise<void>;
+    // MARK: - Initialization
 
-// Stop shop music.
-export async function stopShopMusic(): Promise<void>;
+    /// Call once on app launch, before any screen renders.
+    func initialize() {
+        loadPreferences()
+        preloadAllSFX()
+        setupSFXNodePool()
+        setupEngineForMenu()
+        registerForInterruptions()
+    }
 
-// --- Evolution Ceremony ---
+    // MARK: - Preferences
 
-// Preload evolution audio assets. Call when Evolution screen mounts.
-export async function preloadEvolutionAudio(): Promise<void>;
+    func loadPreferences() {
+        let defaults = UserDefaults.standard
+        prefs.master = defaults.float(forKey: "audioPrefMaster").ifZero(1.0)
+        prefs.music  = defaults.float(forKey: "audioPrefMusic").ifZero(0.6)
+        prefs.sfx    = defaults.float(forKey: "audioPrefSFX").ifZero(0.8)
+    }
 
-// Play the three-phase evolution ceremony.
-// onPhaseChange(phase: 1 | 2 | 3) is called at each phase transition.
-export async function playEvolutionCeremony(
-  faction: FactionId,
-  outcomeIsOrder: boolean,
-  onPhaseChange: (phase: 1 | 2 | 3) => void
-): Promise<void>;
+    func savePreferences(_ newPrefs: AudioPrefs) {
+        prefs = newPrefs
+        UserDefaults.standard.set(prefs.master, forKey: "audioPrefMaster")
+        UserDefaults.standard.set(prefs.music,  forKey: "audioPrefMusic")
+        UserDefaults.standard.set(prefs.sfx,    forKey: "audioPrefSFX")
+        applyVolumesToAllActivePlayers()
+    }
 
-// Allow the player to skip by tapping. Fades out over 2 seconds.
-export async function skipEvolutionCeremony(): Promise<void>;
+    // MARK: - Menu Music (AVAudioPlayer)
 
-// Unload evolution audio. Call when Evolution screen unmounts.
-export async function unloadEvolutionAudio(): Promise<void>;
+    func playMainMenuMusic() {
+        guard let url = Bundle.main.url(forResource: "MUS_MainMenu_PlanesOfChaos", withExtension: "caf") else { return }
+        menuMusicPlayer = try? AVAudioPlayer(contentsOf: url)
+        menuMusicPlayer?.numberOfLoops = -1
+        menuMusicPlayer?.volume = prefs.master * prefs.music
+        menuMusicPlayer?.prepareToPlay()
+        menuMusicPlayer?.play()
+    }
 
-// --- SFX ---
+    func stopMainMenuMusic(fadeDuration: TimeInterval = 1.0) {
+        menuMusicPlayer?.setVolume(0, fadeDuration: fadeDuration)
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDuration) { [weak self] in
+            self?.menuMusicPlayer?.stop()
+            self?.menuMusicPlayer = nil
+        }
+    }
 
-// Play any SFX by its filename key (without extension).
-// Respects priority: P0 always plays. P3/P4 drop if channels full.
-export async function playSFX(
-  key: string,
-  priority?: 0 | 1 | 2 | 3 | 4
-): Promise<void>;
+    // MARK: - Shop Music (AVAudioPlayer)
 
-// Convenience wrappers (internally call playSFX with correct priority):
-export async function playCardPlay(faction: FactionId, isSpell?: boolean): Promise<void>;
-export async function playCreatureAttack(faction: FactionId): Promise<void>;
-export async function playCreatureDeath(faction: FactionId): Promise<void>;
-export async function playChaosRoll(): Promise<void>;
-export async function playRollResult(result: 'order' | 'chaos' | 'nothing'): Promise<void>;
-export async function playEventSFX(eventId: string): Promise<void>; // e.g. 'O1', 'C3'
-export async function playKeywordSFX(keyword: string): Promise<void>; // e.g. 'ShieldBreak'
-export async function playUITap(isPrimary?: boolean): Promise<void>;
+    func playShopMusic() {
+        guard let url = Bundle.main.url(forResource: "MUS_Shop_Ambient", withExtension: "m4a") else { return }
+        shopMusicPlayer = try? AVAudioPlayer(contentsOf: url)
+        shopMusicPlayer?.numberOfLoops = -1
+        shopMusicPlayer?.volume = prefs.master * prefs.music
+        shopMusicPlayer?.prepareToPlay()
+        shopMusicPlayer?.play()
+    }
+
+    func stopShopMusic() {
+        shopMusicPlayer?.stop()
+        shopMusicPlayer = nil
+    }
+
+    // MARK: - Battle Music (AVAudioEngine)
+
+    /// Load 4 active stems for the given matchup into AVAudioEngine nodes.
+    /// Call when BattleScene loads.
+    func startBattleMusic(playerFaction: FactionId, opponentFaction: FactionId) {
+        stopMainMenuMusic()
+        let stemNames = [
+            "MUS_Battle_Foundation",
+            "MUS_Battle_\(playerFaction.rawValue.capitalized)_FactionLayer",
+            "MUS_Battle_\(opponentFaction.rawValue.capitalized)_FactionLayer",
+            "MUS_Battle_Intensity_Order",
+            "MUS_Battle_Intensity_Chaos"
+        ]
+        engine.stop()
+        battleNodes.removeAll()
+        battleBuffers.removeAll()
+
+        for name in stemNames {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "caf"),
+                  let file = try? AVAudioFile(forReading: url),
+                  let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat,
+                                                frameCapacity: AVAudioFrameCount(file.length)),
+                  (try? file.read(into: buffer)) != nil
+            else { continue }
+
+            let node = AVAudioPlayerNode()
+            engine.attach(node)
+            engine.connect(node, to: engine.mainMixerNode, format: buffer.format)
+            battleNodes[name] = node
+            battleBuffers[name] = buffer
+        }
+
+        do { try engine.start() } catch { print("AVAudioEngine start failed: \(error)") }
+
+        for (name, node) in battleNodes {
+            guard let buffer = battleBuffers[name] else { continue }
+            node.scheduleBuffer(buffer, at: nil, options: .loops, completionHandler: nil)
+            node.volume = defaultVolume(for: name)
+            node.play()
+        }
+    }
+
+    func stopBattleMusic() {
+        for (_, node) in battleNodes { node.stop() }
+        engine.stop()
+        battleNodes.removeAll()
+        battleBuffers.removeAll()
+    }
+
+    // MARK: - Adaptive Music Controls
+
+    /// Call whenever total creature count changes (0–10+).
+    func setBoardIntensity(_ totalCreatures: Int) {
+        currentIntensityVolume = min(1.0, Float(totalCreatures) / 10.0)
+        updateIntensityNodeVolumes()
+    }
+
+    /// Call whenever player instability changes (1–20).
+    func setInstabilityWeight(_ instability: Int) {
+        currentInstabilityWeight = Float(instability - 1) / 19.0
+        updateIntensityNodeVolumes()
+    }
+
+    private func updateIntensityNodeVolumes() {
+        let base = intensityBaseVolume * currentIntensityVolume * prefs.music * prefs.master
+        let orderKey = "MUS_Battle_Intensity_Order"
+        let chaosKey = "MUS_Battle_Intensity_Chaos"
+        battleNodes[orderKey]?.volume = base * (1.0 - currentInstabilityWeight)
+        battleNodes[chaosKey]?.volume = base * currentInstabilityWeight
+    }
+
+    // MARK: - Combat Kick
+
+    /// Fire the faction-specific percussion hit when attackers are declared.
+    /// Called from BattleScene via SKAction, not directly from this manager.
+    func combatKickFilename(for faction: FactionId) -> String {
+        switch faction {
+        case .ironwright: return "SFX_CombatKick_Ironwright"
+        case .fey:        return "SFX_CombatKick_Fey"
+        case .demonic:    return "SFX_CombatKick_Demonic"
+        }
+    }
+
+    /// Temporarily spike the intensity layer volume +20% during combat resolution.
+    func spikeCombatIntensity() {
+        let spike: Float = 0.2
+        let orderKey = "MUS_Battle_Intensity_Order"
+        let chaosKey = "MUS_Battle_Intensity_Chaos"
+        battleNodes[orderKey]?.volume += spike
+        battleNodes[chaosKey]?.volume += spike
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            self?.updateIntensityNodeVolumes() // restore to baseline
+        }
+    }
+
+    // MARK: - Evolution Ceremony (AVAudioPlayer)
+
+    func preloadEvolutionAudio() {
+        guard let url = Bundle.main.url(forResource: "MUS_Evolution_Transformation", withExtension: "caf") else { return }
+        evolutionPlayer = try? AVAudioPlayer(contentsOf: url)
+        evolutionPlayer?.prepareToPlay()
+    }
+
+    func playEvolutionCeremony(faction: FactionId, outcomeIsOrder: Bool, onPhaseChange: @escaping (Int) -> Void) {
+        stopMainMenuMusic()
+        stopBattleMusic()
+        evolutionPlayer?.volume = prefs.master * prefs.music
+        evolutionPlayer?.play()
+        onPhaseChange(1)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { onPhaseChange(2) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 40) { onPhaseChange(3) }
+
+        // Play faction accent SFX at phase 2 (shard crack)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+            self?.playSFX("SFX_Evolution_ShardCrack", priority: 0)
+        }
+        // Play order or chaos accent at reveal
+        let accentKey = outcomeIsOrder ? "SFX_Evolution_OrderAccent" : "SFX_Evolution_ChaosAccent"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 40) { [weak self] in
+            self?.playSFX(accentKey, priority: 0)
+        }
+    }
+
+    func skipEvolutionCeremony() {
+        evolutionPlayer?.setVolume(0, fadeDuration: 2.0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.evolutionPlayer?.stop()
+        }
+    }
+
+    func unloadEvolutionAudio() {
+        evolutionPlayer?.stop()
+        evolutionPlayer = nil
+    }
+
+    // MARK: - SFX
+
+    /// Play any SFX by filename key (without extension).
+    /// Priority: 0 = always plays (P0 critical), 3/4 = dropped if channels full.
+    func playSFX(_ key: String, priority: Int = 1) {
+        guard priority == 0 || activeChannels.count < 8 else { return }
+        guard let buffer = sfxBuffers[key] else { return }
+
+        // Duck music on P0 SFX
+        if priority == 0 { duckMusic() }
+
+        let node = availableSFXNode()
+        activeChannels.insert(key)
+        node.volume = prefs.master * prefs.sfx
+        node.scheduleBuffer(buffer, at: nil, options: [], completionHandler: { [weak self] in
+            DispatchQueue.main.async { self?.activeChannels.remove(key) }
+        })
+        node.play()
+    }
+
+    // Convenience wrappers
+    func playCardPlay(faction: FactionId, isSpell: Bool = false) {
+        let key = isSpell ? "SFX_Battle_CardPlay_Spell" : "SFX_Battle_CardPlay_\(faction.rawValue.capitalized)"
+        playSFX(key, priority: 1)
+    }
+    func playCreatureAttack(faction: FactionId) { playSFX("SFX_Battle_CreatureAttack_\(faction.rawValue.capitalized)", priority: 1) }
+    func playCreatureDeath(faction: FactionId)  { playSFX("SFX_Battle_CreatureDeath_\(faction.rawValue.capitalized)", priority: 0) }
+    func playChaosRollTumble()                  { playSFX("SFX_ChaosRoll_D20Tumble", priority: 0) }
+    func playRollResult(_ result: String)        { playSFX("SFX_ChaosRoll_\(result)", priority: 0) } // "OrderResult", "ChaosResult", "Nothing"
+    func playEventSFX(_ eventId: String)         { playSFX("SFX_Event_\(eventId)", priority: 0) }    // e.g. "O1_MendingLight"
+    func playKeywordSFX(_ keyword: String)       { playSFX("SFX_Keyword_\(keyword)", priority: 1) }  // e.g. "ShieldBreak"
+    func playUITap(isPrimary: Bool = false)      { playSFX(isPrimary ? "SFX_UI_ButtonTapPrimary" : "SFX_UI_ButtonTap", priority: 3) }
+
+    // MARK: - Private Helpers
+
+    private func preloadAllSFX() {
+        // All 59 SFX files: load each into an AVAudioPCMBuffer for zero-latency playback.
+        // This is a static list — Swift bundler requires static filenames here.
+        let sfxFilenames: [String] = [
+            "SFX_Battle_CardPlay_Ironwright", "SFX_Battle_CardPlay_Fey", "SFX_Battle_CardPlay_Demonic",
+            "SFX_Battle_CardPlay_Spell", "SFX_Battle_CardDraw", "SFX_Battle_DeckShuffle",
+            "SFX_Battle_ManaGain", "SFX_Battle_ManaSpend",
+            "SFX_Battle_CreatureAttack_Ironwright", "SFX_Battle_CreatureAttack_Fey", "SFX_Battle_CreatureAttack_Demonic",
+            "SFX_Battle_CreatureHit",
+            "SFX_Battle_CreatureDeath_Ironwright", "SFX_Battle_CreatureDeath_Fey", "SFX_Battle_CreatureDeath_Demonic",
+            "SFX_Battle_AvatarDamage", "SFX_Battle_Heal", "SFX_Battle_TurnTransition",
+            "SFX_Battle_TimerWarning", "SFX_Battle_TurnAutoEnd", "SFX_Battle_Surrender",
+            "SFX_Keyword_ShieldBreak", "SFX_Keyword_Lifesteal", "SFX_Keyword_FlyingSwoop",
+            "SFX_Keyword_ReachBlock", "SFX_Keyword_Deathtouch", "SFX_Keyword_TauntLockOn", "SFX_Keyword_Piercing",
+            "SFX_ChaosRoll_D20Tumble", "SFX_ChaosRoll_OrderResult", "SFX_ChaosRoll_ChaosResult",
+            "SFX_ChaosRoll_Nothing", "SFX_ChaosRoll_InstabilityUpdate",
+            "SFX_Event_O1_MendingLight", "SFX_Event_O2_PlanarWard", "SFX_Event_O3_SteadyGrowth",
+            "SFX_Event_O4_Clarity", "SFX_Event_O5_Fortify", "SFX_Event_O6_Sanctuary",
+            "SFX_Event_O7_Bulwark", "SFX_Event_O8_Harmonize",
+            "SFX_Event_C1_Surge", "SFX_Event_C2_Wildfire", "SFX_Event_C3_Upheaval",
+            "SFX_Event_C4_Frenzy", "SFX_Event_C5_RiftBolt", "SFX_Event_C6_ChaosSiphon",
+            "SFX_Event_C7_Maelstrom", "SFX_Event_C8_Overcharge",
+            "SFX_Evolution_EnergyBuildup", "SFX_Evolution_ShardCrack", "SFX_Evolution_TransformWhoosh",
+            "SFX_Evolution_RevealFanfare", "SFX_Evolution_OrderAccent", "SFX_Evolution_ChaosAccent",
+            "SFX_Evolution_ModifierSelect",
+            "SFX_CombatKick_Ironwright", "SFX_CombatKick_Fey", "SFX_CombatKick_Demonic",
+            "SFX_UI_ButtonTap", "SFX_UI_ButtonTapPrimary", "SFX_UI_TabSwitch",
+            "SFX_UI_CardFlip", "SFX_UI_Scroll", "SFX_UI_DeckSelect",
+            "SFX_UI_MissionComplete", "SFX_UI_LevelUp", "SFX_UI_Error", "SFX_UI_Notification"
+        ]
+        for name in sfxFilenames {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "caf"),
+                  let file = try? AVAudioFile(forReading: url),
+                  let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat,
+                                                frameCapacity: AVAudioFrameCount(file.length)),
+                  (try? file.read(into: buffer)) != nil
+            else { continue }
+            sfxBuffers[name] = buffer
+        }
+    }
+
+    private func setupSFXNodePool() {
+        for _ in 0..<8 {
+            let node = AVAudioPlayerNode()
+            engine.attach(node)
+            engine.connect(node, to: engine.mainMixerNode, format: nil)
+            sfxNodes.append(node)
+        }
+        do { try engine.start() } catch { print("AVAudioEngine SFX pool start failed: \(error)") }
+    }
+
+    private func setupEngineForMenu() {
+        // Engine starts once in setupSFXNodePool; no additional setup needed for menu.
+    }
+
+    private func availableSFXNode() -> AVAudioPlayerNode {
+        // Return first non-playing node, or the last one (evict lowest priority)
+        return sfxNodes.first(where: { !$0.isPlaying }) ?? sfxNodes.last!
+    }
+
+    private func duckMusic(duration: TimeInterval = 1.2) {
+        let targetVolume = prefs.master * prefs.music * 0.6
+        menuMusicPlayer?.setVolume(targetVolume, fadeDuration: 0.1)
+        shopMusicPlayer?.setVolume(targetVolume, fadeDuration: 0.1)
+        for (_, node) in battleNodes { node.volume *= 0.6 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.applyVolumesToAllActivePlayers()
+        }
+    }
+
+    private func applyVolumesToAllActivePlayers() {
+        let musicVol = prefs.master * prefs.music
+        menuMusicPlayer?.volume = musicVol
+        shopMusicPlayer?.volume = musicVol
+        evolutionPlayer?.volume = musicVol
+        updateIntensityNodeVolumes()
+        for node in sfxNodes { node.volume = prefs.master * prefs.sfx }
+    }
+
+    private func defaultVolume(for stemName: String) -> Float {
+        // Intensity stems start at 0 volume; they are controlled by setBoardIntensity/setInstabilityWeight
+        if stemName.contains("Intensity") { return 0.0 }
+        return prefs.master * prefs.music
+    }
+
+    private func registerForInterruptions() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
+        )
+    }
+
+    @objc private func handleInterruption(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+        switch type {
+        case .began:
+            menuMusicPlayer?.pause()
+            shopMusicPlayer?.pause()
+            evolutionPlayer?.pause()
+            engine.pause()
+        case .ended:
+            guard let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt else { return }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            if options.contains(.shouldResume) {
+                menuMusicPlayer?.play()
+                shopMusicPlayer?.play()
+                evolutionPlayer?.play()
+                try? engine.start()
+            }
+        @unknown default: break
+        }
+    }
+}
+
+// MARK: - Float helper
+private extension Float {
+    func ifZero(_ fallback: Float) -> Float { self == 0 ? fallback : self }
+}
 ```
 
-### 7.4 AudioManager Internal Logic Notes for Claude Code
+---
 
-When implementing `AudioManager.ts`:
+### 7.3 SpriteKit Integration (BattleScene)
 
-1. **Audio mode:** Call `Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false })` inside `initAudio()`.
+SFX that fire during battle are triggered directly from `BattleScene` (a `SKScene` subclass) using `SKAction.playSoundFileNamed`. This is the lowest-latency path for in-scene SFX on iOS.
 
-2. **SFX preloading:** On `initAudio()`, call `Audio.Sound.createAsync(require(...))` for all 59 SFX files and store the resulting `Sound` objects in a `Map<string, Audio.Sound>`. Use `require()` with a static path — React Native bundler does not support dynamic `require()` with variables. Build a manual lookup object:
-   ```typescript
-   const SFX_ASSETS: Record<string, ReturnType<typeof require>> = {
-     'SFX_UI_ButtonTap': require('../../assets/audio/sfx/SFX_UI_ButtonTap.mp3'),
-     // ... one entry per file
-   };
-   ```
+```swift
+// Inside BattleScene.swift
 
-3. **Music stems:** Load on demand (when `startBattleMusic` is called), not at app startup. Unload on `stopBattleMusic`.
+// Card played by player
+func playCardPlaySFX(faction: FactionId) {
+    let filename: String
+    switch faction {
+    case .ironwright: filename = "SFX_Battle_CardPlay_Ironwright.caf"
+    case .fey:        filename = "SFX_Battle_CardPlay_Fey.caf"
+    case .demonic:    filename = "SFX_Battle_CardPlay_Demonic.caf"
+    }
+    run(SKAction.playSoundFileNamed(filename, waitForCompletion: false))
+}
 
-4. **Volume calculation for any sound:**
-   ```typescript
-   const effectiveVolume = prefs.master * (isMusic ? prefs.music : prefs.sfx) * soundBaseVolume;
-   await sound.setVolumeAsync(effectiveVolume);
-   ```
+// Chaos roll sequence: tumble sound, then result sound
+func playChaosRollSequence(result: ChaosRollResult) {
+    let tumble = SKAction.playSoundFileNamed("SFX_ChaosRoll_D20Tumble.caf", waitForCompletion: true)
+    let resultFilename: String
+    switch result {
+    case .order:   resultFilename = "SFX_ChaosRoll_OrderResult.caf"
+    case .chaos:   resultFilename = "SFX_ChaosRoll_ChaosResult.caf"
+    case .nothing: resultFilename = "SFX_ChaosRoll_Nothing.caf"
+    }
+    let resultSound = SKAction.playSoundFileNamed(resultFilename, waitForCompletion: false)
+    run(SKAction.sequence([tumble, resultSound]))
+}
 
-5. **Crossfade between Order and Chaos intensity stems:** Keep both `MUS_Battle_Intensity_Order` and `MUS_Battle_Intensity_Chaos` playing simultaneously. Use `setInstabilityWeight` to set complementary volumes:
-   ```typescript
-   const chaos = (instability - 1) / 19;
-   await intensityOrderSound.setVolumeAsync(effectiveMusicVolume * (1 - chaos) * baseIntensityVolume);
-   await intensityChaoSound.setVolumeAsync(effectiveMusicVolume * chaos * baseIntensityVolume);
-   ```
+// Combat kick when attackers declared
+func playAttackersDeclaredSFX(attackerFaction: FactionId) {
+    let filename = AudioManager.shared.combatKickFilename(for: attackerFaction) + ".caf"
+    run(SKAction.playSoundFileNamed(filename, waitForCompletion: false))
+    AudioManager.shared.spikeCombatIntensity()
+}
 
-6. **Channel limit enforcement:** Keep a `Set<string>` of currently-playing SFX keys. If the set size reaches 6 and the incoming sound is P3 or P4, skip it. Remove keys from the set when `Sound` finishes playing (`onPlaybackStatusUpdate` where `status.didJustFinish === true`).
-
-7. **Ducking:** When a P0 SFX fires, use a `setTimeout` sequence to duck music to 60% over 100ms, hold for 1000ms, then return to normal over 200ms:
-   ```typescript
-   await musicSound.setVolumeAsync(effectiveMusicVolume * 0.6);
-   setTimeout(async () => {
-     await musicSound.setVolumeAsync(effectiveMusicVolume);
-   }, 1200);
-   ```
-
-### 7.5 Usage in Components
-
-**Main menu screen (`src/screens/HomeScreen.tsx`):**
-```typescript
-import { playMainMenuMusic } from '../audio/AudioManager';
-
-useEffect(() => {
-  playMainMenuMusic();
-  return () => { /* music continues across menu screens, don't stop here */ };
-}, []);
+// Event SFX (e.g., O1_MendingLight)
+func playEventSFX(eventId: String) {
+    let filename = "SFX_Event_\(eventId).caf"
+    run(SKAction.playSoundFileNamed(filename, waitForCompletion: false))
+}
 ```
 
-**Battle screen (`src/screens/BattleScreen.tsx`):**
-```typescript
-import { startBattleMusic, stopBattleMusic, setBoardIntensity, setInstabilityWeight } from '../audio/AudioManager';
+**Note:** `SKAction.playSoundFileNamed` requires the file to be in the main bundle root (not nested in a folder group that alters the bundle path). Verify by calling `Bundle.main.url(forResource: "SFX_Battle_CardPlay_Ironwright", withExtension: "caf")` — if it returns `nil`, the file is not in the bundle correctly.
 
-// On mount:
-useEffect(() => {
-  startBattleMusic(playerFaction, opponentFaction);
-  return () => { stopBattleMusic(); };
-}, []);
+---
 
-// When board state changes:
-useEffect(() => {
-  setBoardIntensity(totalCreatures);
-}, [totalCreatures]);
+### 7.4 SwiftUI View Integration
 
-useEffect(() => {
-  setInstabilityWeight(playerInstability);
-}, [playerInstability]);
+**HomeView.swift (main menu):**
+```swift
+.onAppear { AudioManager.shared.playMainMenuMusic() }
 ```
 
-**Evolution screen (`src/screens/EvolutionScreen.tsx`):**
-```typescript
-import { preloadEvolutionAudio, playEvolutionCeremony, skipEvolutionCeremony, unloadEvolutionAudio } from '../audio/AudioManager';
-
-useEffect(() => {
-  preloadEvolutionAudio();
-  return () => { unloadEvolutionAudio(); };
-}, []);
-
-const handleStartEvolution = () => {
-  playEvolutionCeremony(cardFaction, evolutionIsOrder, (phase) => {
-    setCurrentPhase(phase); // update animation state
-  });
-};
+**BattleView.swift (wraps BattleScene):**
+```swift
+.onAppear {
+    AudioManager.shared.startBattleMusic(playerFaction: playerFaction, opponentFaction: opponentFaction)
+}
+.onDisappear {
+    AudioManager.shared.stopBattleMusic()
+}
+.onChange(of: viewModel.totalCreatures) { count in
+    AudioManager.shared.setBoardIntensity(count)
+}
+.onChange(of: viewModel.playerInstability) { instability in
+    AudioManager.shared.setInstabilityWeight(instability)
+}
 ```
 
-**Settings screen (`src/screens/SettingsScreen.tsx`):**
-```typescript
-import { loadAudioPrefs, saveAudioPrefs } from '../audio/AudioManager';
+**EvolutionView.swift:**
+```swift
+.onAppear { AudioManager.shared.preloadEvolutionAudio() }
+.onDisappear { AudioManager.shared.unloadEvolutionAudio() }
 
-const [prefs, setPrefs] = useState({ master: 1.0, music: 0.6, sfx: 0.8 });
+Button("Begin Evolution") {
+    AudioManager.shared.playEvolutionCeremony(
+        faction: card.faction,
+        outcomeIsOrder: evolutionResult.isOrder,
+        onPhaseChange: { phase in viewModel.currentPhase = phase }
+    )
+}
 
-useEffect(() => {
-  loadAudioPrefs().then(setPrefs);
-}, []);
+Button("Skip") {
+    AudioManager.shared.skipEvolutionCeremony()
+}
+```
 
-const handleSliderChange = async (key: keyof AudioPrefs, value: number) => {
-  const updated = { ...prefs, [key]: value };
-  setPrefs(updated);
-  await saveAudioPrefs(updated); // applies immediately to all active sounds
-};
+**SettingsView.swift:**
+```swift
+@State private var prefs = AudioManager.shared.prefs
+
+Slider(value: $prefs.master, in: 0...1)
+    .onChange(of: prefs.master) { _ in AudioManager.shared.savePreferences(prefs) }
+
+Slider(value: $prefs.music, in: 0...1)
+    .onChange(of: prefs.music) { _ in AudioManager.shared.savePreferences(prefs) }
+
+Slider(value: $prefs.sfx, in: 0...1)
+    .onChange(of: prefs.sfx) { _ in AudioManager.shared.savePreferences(prefs) }
+```
+
+**CollectionView.swift / ShopView.swift:**
+```swift
+.onAppear { AudioManager.shared.stopMainMenuMusic(); AudioManager.shared.playShopMusic() }
+.onDisappear { AudioManager.shared.stopShopMusic(); AudioManager.shared.playMainMenuMusic() }
 ```
 
 ---
 
 ## 8. Audio Asset Sourcing (No Sound Designer Required)
 
-This section tells the owner exactly where to get every audio asset for launch. Total estimated cost: $0–$30/month (most tools have free tiers sufficient for a launch package).
+This section tells the owner exactly where to get every audio asset for launch. Total estimated cost: **$0** (using free tools and free tiers). The owner's time investment is approximately 4-6 hours to generate, trim, and convert all assets.
+
+The $300 total project budget is not consumed by audio — all tools listed here are free or have free tiers sufficient for a one-time launch generation. No subscriptions are required after launch.
 
 ### 8.1 Music — Suno AI
 
-**What it is:** AI music generation. Type a text prompt, get a full MP3 track back in seconds.
+**What it is:** AI music generation. Type a text prompt, get a full audio track back in seconds.
 
 **URL:** https://suno.com
 
-**Pricing:** Free tier gives 50 credits/day (~10 tracks/day). Pro plan is $10/month for 2,500 credits/month (sufficient to generate all 16+ tracks needed at launch). Commercial use is included in the paid plan — required for publishing to App Store.
+**Pricing:**
+- **Free tier:** 50 credits/day (~10 tracks/day). Sufficient to generate all 9 music tracks needed at launch if done over 2-3 days.
+- **Pro plan:** $10/month for 2,500 credits/month. Required for commercial use (App Store publishing).
+- **Commercial license:** Included only in paid plans. The owner must upgrade to Pro before generating any music intended for the published app. Cancel after generating all launch assets (one month, $10 total).
 
 **How to use:**
 1. Sign up at suno.com.
-2. Upgrade to Pro ($10/month) before generating any music you intend to publish.
-3. For each track, use the "Custom Mode" option. Set the style tags to describe the faction palette and paste in the descriptive brief from Section 3.
+2. Upgrade to Pro ($10/month) before generating publishable music.
+3. Use "Custom Mode" for each track. Set the style tags and description from the table below.
 4. Generate 3-5 variations per track and pick the best one.
-5. Download as MP3.
-6. Open in Audacity (free, https://www.audacityteam.org) to:
-   - Trim to the correct loop length (count bars at the given BPM)
-   - Apply "High Roll-off for Speech" EQ to reduce harshness above 12 kHz
-   - Export as MP3 128 kbps (music) or 96 kbps (ambient/SFX)
+5. Download as MP3 (Suno exports MP3).
+6. Convert to CAF using Terminal (free, built into macOS):
+   ```bash
+   afconvert -f caff -d LEI16 MUS_MainMenu_PlanesOfChaos.mp3 MUS_MainMenu_PlanesOfChaos.caf
+   ```
+7. Open in Audacity to trim to a clean loop length (count bars at the given BPM).
 
 **Example Suno prompts per track:**
 
@@ -922,7 +1302,7 @@ This section tells the owner exactly where to get every audio asset for launch. 
 | Main Menu | `dark orchestral, electronic, epic, mysterious, cinematic` | `Planes of Chaos theme, 75 BPM, D minor, hybrid orchestral and electronic, strings and distorted synths, 2.5 minutes, loopable, no vocals, tension and release` |
 | Battle Foundation | `minimal, cinematic, bass, percussion, dark ambient` | `Battle foundation layer, 95 BPM, bass drone and minimal kick drum, faction neutral, 2 minutes, loopable` |
 | Ironwright Faction Layer | `steampunk, brass, industrial, mechanical, dark fantasy` | `Steampunk battle music, 95 BPM, brass melody with clockwork ticking, anvil accents, industrial percussion, 2 minutes, loopable, no vocals` |
-| Fey Faction Layer | `celtic, harp, mystical, orchestral, nature, ethereal` | `Fey Courts battle music, 95 BPM but in 6/8 feel, harp counter-melody, string pads, whispered choir, 2 minutes, loopable` |
+| Fey Faction Layer | `celtic, harp, mystical, orchestral, nature, ethereal` | `Fey Courts battle music, 95 BPM feel in 6/8, harp counter-melody, string pads, whispered choir, 2 minutes, loopable` |
 | Demonic Faction Layer | `dark, war drums, choral, brutal, epic, Phrygian` | `Demonic Kingdoms battle music, 95 BPM, war drums and taiko, guttural throat singing, low brass, 2 minutes, loopable` |
 | Intensity Order | `orchestral, tense, percussion, cinematic, rising` | `Battle intensity layer Order version, 95 BPM, clean percussion and consonant strings, building but structured, 2 minutes, loopable` |
 | Intensity Chaos | `distorted, aggressive, atonal, industrial, chaotic` | `Battle intensity layer Chaos version, 95 BPM, distorted percussion, tremolo strings, atonal stabs, dissonant, 2 minutes, loopable` |
@@ -937,15 +1317,16 @@ This section tells the owner exactly where to get every audio asset for launch. 
 
 **URL:** https://elevenlabs.io/sound-effects
 
-**Pricing:** Free tier includes 10,000 characters/month of text-to-speech (sound effects generation uses a separate quota; check current pricing). Sound effects free tier is generous for a one-time batch creation. Pro plan is $22/month if more volume is needed.
-
-**Commercial use:** Yes, included.
+**Pricing:**
+- **Free tier:** Sufficient for generating all 62 SFX files in a single session. No subscription needed for one-time batch generation.
+- **Starter plan:** $5/month if free tier quota is exhausted.
+- **Commercial use:** Included in all tiers for sound effects.
 
 **How to use:**
 1. Go to elevenlabs.io/sound-effects.
-2. Type a description of the sound (e.g., `"glass shattering into crystalline shards with a cascading high-pitched resonance, sharp impact"`).
-3. Click Generate. Download the MP3.
-4. Import into Audacity to trim to correct length and normalize to -3 dB peak.
+2. Type a text description of the sound.
+3. Click Generate. Download as MP3.
+4. Convert to CAF: `afconvert -f caff -d LEI16 input.mp3 output.caf`
 
 **Example descriptions for key SFX:**
 
@@ -965,9 +1346,9 @@ This section tells the owner exactly where to get every audio asset for launch. 
 
 **URL:** https://freesound.org
 
-**Pricing:** Free. Requires attribution for CC-BY licensed sounds. Filter to "CC0" (public domain) to avoid attribution requirements — there are thousands of CC0 SFX available.
+**Pricing:** Free. Filter to "CC0" (public domain) to avoid attribution requirements — thousands of CC0 SFX available.
 
-**Best categories to search for Chaos Creatures SFX:**
+**Best categories to search:**
 - `dice rolling` — D20 tumble
 - `metal impact` — Ironwright attacks and deaths
 - `glass breaking` — Shield break, shard crack
@@ -976,7 +1357,7 @@ This section tells the owner exactly where to get every audio asset for launch. 
 - `fire crackling` — Demonic ambient texture
 - `UI click`, `button tap`, `notification chime` — UI SFX
 
-**Workflow:** Download WAV files, import into Audacity, normalize, trim, export as MP3 96 kbps.
+**Workflow:** Download WAV files, import into Audacity, normalize to -3 dBFS peak, trim to correct length, export as WAV, then convert to CAF using `afconvert`.
 
 ---
 
@@ -984,28 +1365,49 @@ This section tells the owner exactly where to get every audio asset for launch. 
 
 **URL:** https://www.audacityteam.org
 
-**Pricing:** Free, open source.
+**Pricing:** Free, open source. Available for macOS.
 
 **Required uses:**
-- Trim downloaded tracks to exact loop points
-- Normalize loudness (Effect > Normalize > -3 dB peak for SFX, -6 dB for music)
-- Apply gentle high-frequency roll-off (Effect > EQ and Filters > Low Pass Filter, set to 12 kHz, roll-off 48 dB/octave) for mobile speaker friendliness
-- Export as MP3 at the correct bitrate (File > Export > Export as MP3, set bitrate in quality settings)
+- Trim downloaded tracks to exact loop points (zoom in, snap to zero crossings)
+- Normalize loudness: Effect > Normalize > -3 dBFS peak for SFX, -6 dBFS for music
+- Apply gentle high-frequency roll-off: Effect > EQ and Filters > Low Pass Filter, 12 kHz cutoff, 48 dB/octave roll-off for mobile speaker friendliness
 - Test loops: select the region, enable Transport > Loop Play, listen for at least 10 cycles
+- Export as WAV (not MP3 from Audacity — convert to CAF separately using `afconvert`)
 
 ---
 
-### 8.4 Total Sourcing Cost Estimate
+### 8.4 afconvert (Free, Built into macOS)
 
-| Tool | Plan | Monthly Cost | Usage |
+**What it is:** Apple's command-line audio format converter. Ships with macOS — no download needed.
+
+**Path:** `/usr/bin/afconvert` (already on every Mac)
+
+**Common conversions:**
+```bash
+# MP3 or WAV to CAF lossless (for SFX and music stems)
+afconvert -f caff -d LEI16 input.wav output.caf
+
+# WAV to AAC M4A (for shop ambient only)
+afconvert -f m4af -d aac -b 128000 input.wav output.m4a
+
+# Batch convert a whole folder of WAV files to CAF
+for f in *.wav; do afconvert -f caff -d LEI16 "$f" "${f%.wav}.caf"; done
+```
+
+---
+
+### 8.5 Total Sourcing Cost Estimate
+
+| Tool | Plan | Cost | Usage |
 |---|---|---|---|
-| Suno AI | Pro | $10/month | Generate all 16 music tracks (cancel after launch) |
-| ElevenLabs | Free or Starter | $0–$5/month | Generate all 59 SFX (one-time batch) |
-| Freesound.org | Free | $0 | Supplement any SFX not well served by ElevenLabs |
-| Audacity | Free | $0 | Edit, trim, normalize, export all audio |
-| **Total** | | **$10–$15 one-time month** | Cancel subscriptions after generating launch assets |
+| Suno AI | Pro (1 month, then cancel) | $10 one-time | Generate all 9 music tracks for App Store publishing |
+| ElevenLabs | Free tier | $0 | Generate all 62 SFX (one-time batch) |
+| Freesound.org | Free (CC0 filter) | $0 | Supplement any SFX not well served by ElevenLabs |
+| Audacity | Free | $0 | Edit, trim, normalize all audio |
+| afconvert | Free (built into macOS) | $0 | Convert all audio to CAF/AAC |
+| **Total** | | **$10 one-time** | Cancel Suno Pro after generating launch assets |
 
-**Expected time to source all audio:** 4-6 hours total (30 mins to generate all music tracks in Suno, 2 hours to generate and trim SFX, 1-2 hours to organize files and rename to the convention in Section 9).
+**Expected time to source all audio:** 4-6 hours total (30 minutes to generate all music tracks in Suno, 2 hours to generate and trim SFX, 1-2 hours to convert files with `afconvert` and organize into the Xcode folder structure).
 
 ---
 
@@ -1017,12 +1419,13 @@ Audio implementation is phased across development milestones to ensure core game
 
 **Must-have for playable alpha. Claude Code builds this first.**
 
-- `AudioManager.ts` skeleton with `initAudio()`, `playSFX()`, `loadAudioPrefs()`, `saveAudioPrefs()`
-- **Battle SFX:** Card play (universal), creature attack (universal), creature death (universal), damage to avatar, mana gain/spend, turn transition
-- **Chaos Roll SFX:** D20 tumble, Order result, Chaos result, Nothing result
-- **Basic Battle Music:** Single universal battle track (`MUS_Battle_Foundation.mp3`) looping. No adaptive system yet — just plays.
+- `AudioManager.swift` skeleton with `initialize()`, `playSFX(_:priority:)`, `loadPreferences()`, `savePreferences(_:)`
+- **AVAudioSession** configuration in `AppDelegate`
+- **Battle SFX via SKAction:** Card play (universal), creature attack (universal), creature death (universal), damage to avatar, mana gain/spend, turn transition
+- **Chaos Roll SFX via SKAction:** D20 tumble (sequential with result), Order result, Chaos result, Nothing result
+- **Basic Battle Music:** Single universal battle track (`MUS_Battle_Foundation.caf`) looping via `AVAudioPlayer`. No adaptive system yet.
 - **UI SFX:** Button tap (generic), tab switch, error tone
-- **Settings screen:** Master/Music/SFX sliders wired to `saveAudioPrefs()`
+- **Settings screen:** Master/Music/SFX sliders wired to `savePreferences(_:)`
 
 **File count:** ~20 SFX + 1 music track
 
@@ -1034,18 +1437,18 @@ Audio implementation is phased across development milestones to ensure core game
 
 **Adds emotional depth and faction differentiation.**
 
-- **Faction-Specific Battle Music:** All 13 stems loaded. `startBattleMusic(playerFaction, opponentFaction)` working with 4-layer stem blending.
-- **`setBoardIntensity()`** and **`setInstabilityWeight()`** implemented.
-- **Event SFX:** All 16 events wired (`playEventSFX('O1')` through `playEventSFX('C8')`).
+- **Full `AVAudioEngine` battle music system:** All 6 stems loaded. `startBattleMusic(playerFaction:opponentFaction:)` working with 4-node stem mixing.
+- **`setBoardIntensity(_:)`** and **`setInstabilityWeight(_:)`** implemented.
+- **Event SFX:** All 16 events wired via SKAction in `BattleScene`.
 - **Keyword SFX:** All 7 keyword triggers wired.
-- **Evolution SFX:** All 7 evolution sounds wired to evolution screen phases.
-- **Faction SFX Variations:** `playCardPlay(faction)`, `playCreatureAttack(faction)`, `playCreatureDeath(faction)` dispatching to the correct faction file.
-- **Main Menu Music:** `playMainMenuMusic()` implemented.
-- **`playEvolutionCeremony()`** implemented with phase callbacks.
+- **Evolution SFX:** All 7 evolution sounds wired to evolution view phases.
+- **Faction SFX Variations:** `playCardPlay(faction:)`, `playCreatureAttack(faction:)`, `playCreatureDeath(faction:)` dispatching to the correct faction CAF file.
+- **Main Menu Music:** `playMainMenuMusic()` working with `AVAudioPlayer`.
+- **`playEvolutionCeremony(faction:outcomeIsOrder:onPhaseChange:)`** implemented.
 
 **File count:** ~50 additional SFX + all music stems
 
-**Goal:** Game has full audio identity. Factions sound distinct. Events are recognizable.
+**Goal:** Game has full audio identity. Factions sound distinct. Events are recognizable by sound.
 
 ---
 
@@ -1053,13 +1456,14 @@ Audio implementation is phased across development milestones to ensure core game
 
 **Final layer of dynamic responsiveness and immersion.**
 
-- **`fireCombatKick()`** implemented with faction-specific percussion SFX and intensity spike.
-- **Evolution Ceremony:** `skipEvolutionCeremony()` with 2-second fade-out.
-- **Shop/Collection Music:** `playShopMusic()` wired to Collection and Shop screens.
+- **`spikeCombatIntensity()`** implemented with faction-specific combat kick SFX.
+- **Evolution Ceremony:** `skipEvolutionCeremony()` with 2-second `AVAudioPlayer.setVolume(0, fadeDuration: 2.0)` fade.
+- **Shop/Collection Music:** `playShopMusic()` wired to Collection and Shop SwiftUI views.
 - **Additional UI SFX:** Mission complete, level up, rank up, notification pop, deck selection.
-- **Audio Ducking:** P0 SFX fires music duck logic in `playSFX()`.
-- **Channel limit enforcement:** `Set<string>` active channels checked before P3/P4 SFX play.
-- **Mobile Optimization:** Test on physical iPhone 11 via Expo Go. Fix any crackling or latency issues.
+- **Audio Ducking:** `duckMusic()` called from P0 `playSFX` path.
+- **Channel limit enforcement:** Active channel count checked before P3/P4 SFX play.
+- **Physical device testing:** Test on physical iPhone via TestFlight. Fix any crackling or latency issues.
+- **AVAudioSession interruption handling:** Phone calls and Siri pause/resume audio correctly.
 
 **File count:** ~10 additional SFX + 2 music tracks
 
@@ -1072,26 +1476,29 @@ Audio implementation is phased across development milestones to ensure core game
 ### Functional Testing
 
 - [ ] All SFX trigger at correct moments (no missing audio, no double-triggers)
-- [ ] Music loops seamlessly (no clicks, no gaps) — test by listening for 5+ minutes
-- [ ] Volume sliders work independently (Master, Music, SFX)
-- [ ] Audio preferences persist across app restarts (check AsyncStorage)
-- [ ] Audio priority system drops P3/P4 sounds correctly when channels full
-- [ ] Music ducking fires on P0 SFX (chaos roll, events, avatar damage)
+- [ ] Music loops seamlessly via CAF (no clicks, no gaps) — test by listening for 5+ minutes
+- [ ] Volume sliders work independently (Master, Music, SFX) and apply immediately
+- [ ] Audio preferences persist across app restarts (`UserDefaults`)
+- [ ] Audio priority system drops P3/P4 sounds correctly when 8 SFX channels are full
+- [ ] Music ducking fires on P0 SFX (chaos roll result, events, avatar damage)
 - [ ] Faction SFX variations play for correct factions
-- [ ] `setInstabilityWeight()` crossfades audibly between Order and Chaos intensity stems
-- [ ] `setBoardIntensity()` scales intensity layer volume correctly
-- [ ] Combat percussion kick fires when attackers declared
-- [ ] Evolution ceremony plays full sequence, phase callbacks fire at correct times
-- [ ] Evolution ceremony can be skipped with 2-second fade (not a hard cut)
-- [ ] `playsInSilentModeIOS: true` works — audio plays even when the iPhone mute switch is on
+- [ ] `setInstabilityWeight(_:)` crossfades audibly between Order and Chaos intensity stems
+- [ ] `setBoardIntensity(_:)` scales intensity layer volume correctly
+- [ ] Combat percussion kick fires from SKAction when attackers declared
+- [ ] `spikeCombatIntensity()` briefly increases intensity, returns to baseline after 3 seconds
+- [ ] Evolution ceremony plays full sequence, phase callbacks fire at correct times (0s, 20s, 40s)
+- [ ] Evolution ceremony can be skipped with `setVolume(0, fadeDuration: 2.0)` (not a hard cut)
+- [ ] Audio plays when the iOS silent/mute switch is engaged (AVAudioSession `.playback` category)
+- [ ] Phone call interruption pauses all audio; audio resumes correctly after call ends
+- [ ] `Bundle.main.url(forResource:withExtension:)` resolves correctly for all audio files
 
 ### Performance Testing
 
-- [ ] No audio crackling or popping on iPhone 11 (physical device test via Expo Go or TestFlight)
-- [ ] SFX latency <50ms for gameplay SFX (chaos roll, card play, combat) — test by tapping and listening
-- [ ] No memory crash when all SFX preloaded at launch
+- [ ] No audio crackling or popping on physical iPhone (test via TestFlight)
+- [ ] SFX latency <20ms for gameplay SFX (chaos roll, card play, combat) — test by listening
+- [ ] No memory warning when all SFX preloaded at launch (~3 MB uncompressed)
 - [ ] No dropped SFX during heavy combat (10 creatures, multiple keyword triggers in one turn)
-- [ ] Music streaming does not cause frame drops or animation stutter during battle
+- [ ] AVAudioEngine battle music does not cause frame rate drops in SpriteKit during battle
 
 ### Quality Testing
 
@@ -1101,6 +1508,7 @@ Audio implementation is phased across development milestones to ensure core game
 - [ ] Event SFX are recognizable after 2-3 listens
 - [ ] Music does not cause fatigue after 30-minute play session
 - [ ] No unintentional harsh frequencies (except intentional Chaos SFX)
+- [ ] CAF loop points are glitch-free (verified with 10-cycle loop test in Audacity before conversion)
 
 ---
 
@@ -1109,16 +1517,17 @@ Audio implementation is phased across development milestones to ensure core game
 When a new faction is added (post-launch), the following audio must be produced:
 
 **Per New Faction:**
-- 4 battle music stems (foundation shared, 1 new faction layer) — generate in Suno AI
+- 1 battle music faction stem (foundation shared, intensity layers shared) — generate in Suno AI
 - 3 SFX variations (creature attack, creature death, card play) — generate in ElevenLabs
-- ~8-12 faction-specific modifier trigger SFX
-- Evolution accent SFX (1 new variant for the faction's evolution flavor)
+- 1 combat kick SFX — generate in ElevenLabs
+- ~8-12 faction-specific modifier trigger SFX (if new mechanic has unique triggers)
+- 1 evolution accent SFX (faction's evolution flavor) — generate in ElevenLabs
 
-**Estimated effort per faction:** 2-3 hours (sourcing + editing in Audacity)
+**Estimated effort per faction:** 2-3 hours (sourcing + editing in Audacity + converting with `afconvert`)
 
-**File size per faction:** ~1-2 MB (4 stems + SFX variations)
+**File size per faction:** ~1-2 MB (1 stem + SFX variations as CAF)
 
-**Code changes:** Add the new faction's files to `SFX_ASSETS` and `MUSIC_ASSETS` lookup objects in `AudioManager.ts`. No structural changes needed.
+**Code changes:** Add the new faction's filenames to the `sfxFilenames` array in `preloadAllSFX()` and add a new `case` to the `FactionId` enum. No structural changes to `AudioManager.swift` needed.
 
 ---
 
@@ -1127,8 +1536,8 @@ When a new faction is added (post-launch), the following audio must be produced:
 ### Audio Cues for Visually Impaired Players
 
 - **Distinct SFX for every game state change:** Card played, creature died, event fired, turn passed. No silent state changes.
-- **Event announcements:** Optional iOS VoiceOver integration — when an event fires, call `AccessibilityInfo.announceForAccessibility(eventName)` from React Native's built-in `AccessibilityInfo` API.
-- **Audio indicators for targeting:** When a spell requires a target, valid targets play `SFX_UI_Notification.mp3` when highlighted.
+- **Event announcements:** Optional iOS VoiceOver integration — when an event fires, call `UIAccessibility.post(notification: .announcement, argument: eventName)` in Swift.
+- **Audio indicators for targeting:** When a spell requires a target, valid targets play `SFX_UI_Notification.caf` when highlighted.
 
 **Not in P0-P2 scope, but design allows for future enhancement.**
 
@@ -1136,7 +1545,7 @@ When a new faction is added (post-launch), the following audio must be produced:
 
 For players sensitive to audio intensity:
 
-- **"Minimal Audio" toggle in Settings:** When enabled, stops all music and reduces SFX to critical gameplay feedback only (chaos roll result, damage, death, turn end). This is a boolean in `AudioPrefs` stored in AsyncStorage.
+- **"Minimal Audio" toggle in Settings:** When enabled, stops all music and reduces SFX to critical gameplay feedback only (chaos roll result, damage, death, turn end). This is a `Bool` value stored in `UserDefaults` under the key `"audioMinimalMode"`.
 - **Reduced volume on chaos/explosion SFX:** Caps Upheaval, Maelstrom, Rift Bolt, and other loud SFX at 50% of the user's SFX volume setting when Minimal Audio is on.
 
 **Not in P0-P2 scope, but design allows for future enhancement.**
@@ -1175,32 +1584,33 @@ All audio files follow this naming structure for organization and programmatic l
 
 ### Music:
 ```
-MUS_[Context]_[FactionOrType].mp3
+MUS_[Context]_[FactionOrType].[caf|m4a]
 ```
 - Examples:
-  - `MUS_Battle_Foundation.mp3`
-  - `MUS_Battle_Ironwright_FactionLayer.mp3`
-  - `MUS_Battle_Intensity_Order.mp3`
-  - `MUS_Battle_Intensity_Chaos.mp3`
-  - `MUS_MainMenu_PlanesOfChaos.mp3`
-  - `MUS_Evolution_Transformation.mp3`
-  - `MUS_Shop_Ambient.mp3`
+  - `MUS_Battle_Foundation.caf`
+  - `MUS_Battle_Ironwright_FactionLayer.caf`
+  - `MUS_Battle_Intensity_Order.caf`
+  - `MUS_Battle_Intensity_Chaos.caf`
+  - `MUS_MainMenu_PlanesOfChaos.caf`
+  - `MUS_Evolution_Transformation.caf`
+  - `MUS_Shop_Ambient.m4a`
 
 ### SFX:
 ```
-SFX_[Category]_[Action]_[Variation].mp3
+SFX_[Category]_[Action]_[Variation].caf
 ```
 - Examples:
-  - `SFX_Battle_CardPlay_Ironwright.mp3`
-  - `SFX_Battle_CreatureDeath_Fey.mp3`
-  - `SFX_Keyword_ShieldBreak.mp3`
-  - `SFX_ChaosRoll_D20Tumble.mp3`
-  - `SFX_Event_O1_MendingLight.mp3`
-  - `SFX_Event_C3_Upheaval.mp3`
-  - `SFX_Evolution_ShardCrack.mp3`
-  - `SFX_UI_ButtonTap.mp3`
+  - `SFX_Battle_CardPlay_Ironwright.caf`
+  - `SFX_Battle_CreatureDeath_Fey.caf`
+  - `SFX_Keyword_ShieldBreak.caf`
+  - `SFX_ChaosRoll_D20Tumble.caf`
+  - `SFX_Event_O1_MendingLight.caf`
+  - `SFX_Event_C3_Upheaval.caf`
+  - `SFX_Evolution_ShardCrack.caf`
+  - `SFX_UI_ButtonTap.caf`
+  - `SFX_CombatKick_Ironwright.caf`
 
-**Total file count at 1.0 launch:** ~80-90 audio files (13 music stems + 3 music tracks + 60+ SFX).
+**Total file count at 1.0 launch:** ~82 audio files (9 music files + 62 SFX + 3 combat kick SFX variants, all as CAF except `MUS_Shop_Ambient.m4a`).
 
 ---
 
@@ -1209,52 +1619,88 @@ SFX_[Category]_[Action]_[Variation].mp3
 Audio is a core pillar of Chaos Creatures' identity. The Chaos Roll, faction aesthetics, and evolution moments all depend on audio to deliver emotional impact. This design prioritizes:
 
 1. **Faction differentiation** through distinct sonic palettes (brass vs. woodwinds vs. war drums)
-2. **Adaptive music** that responds to board state (instability, creature count, combat phase)
+2. **Adaptive music** that responds to board state (instability, creature count, combat phase) via `AVAudioEngine`
 3. **Memorable event SFX** that players learn to anticipate and recognize
-4. **Mobile optimization** with compressed file sizes, low latency, and clear mixing for phone speakers
+4. **iOS-native audio** using CAF format, `AVAudioEngine` for adaptive mixing, `AVAudioPlayer` for simple playback, and `SKAction.playSoundFileNamed` for in-scene SFX
 5. **Scalable production** that allows new factions to be added efficiently
-6. **Zero hiring required** — all assets sourced from Suno AI, ElevenLabs, and Freesound.org using prompts derived directly from this document
+6. **Zero cost for audio assets** — all assets sourced from Suno AI (free tier or $10 for one month of commercial-license Pro), ElevenLabs (free tier), Freesound.org (CC0), Audacity (free), and `afconvert` (built into macOS)
 
-By the 1.0 launch, Chaos Creatures will have a complete, polished, and emotionally resonant audio package generated entirely without a professional audio team.
+By the 1.0 launch, Chaos Creatures will have a complete, polished, and emotionally resonant audio package generated entirely without a professional audio team and without spending any of the $300 project budget on audio tooling beyond Suno Pro ($10 one-time).
 
 ---
 
 **Document Status:** Ready for Claude Code implementation and asset sourcing.
 
-**Implementation Entry Point:** Start with `src/audio/AudioManager.ts` using the interface defined in Section 7.3. All other integration is wiring calls from screen components.
+**Implementation Entry Point:** Start with `Sources/Audio/AudioManager.swift` using the interface defined in Section 7.2. Configure `AVAudioSession` in `AppDelegate`. All other integration is wiring calls from SwiftUI views and `BattleScene`.
 
 ---
 
 ## Revision Log
 
-Changes made in the revision pass (2026-02-16):
+### Revision 1 (2026-02-16) — Initial production pass
 
-1. **Removed "engineer will fill in" assumptions throughout.** Every section now has explicit, actionable decisions. The original document deferred implementation details with phrases like "real-time EQ and reverb adjustments" which required an audio engineer to interpret. These have been replaced with concrete React Native/expo-av strategies (e.g., two separate pre-processed stems crossfaded by volume, not real-time DSP).
+1. Removed "engineer will fill in" assumptions throughout. Every section now has explicit, actionable decisions. The original document deferred implementation details with phrases like "real-time EQ and reverb adjustments" which required an audio engineer to interpret. These have been replaced with concrete React Native/expo-av strategies.
 
-2. **Replaced Unity/C# AudioSource references with React Native/Expo (`expo-av`).** The original doc contained no explicit Unity references, but all implementation concepts were framed in engine-agnostic terms that a solo developer could not act on. Section 7 now provides a complete `AudioManager.ts` TypeScript interface, installation instructions (`npx expo install expo-av`), `app.json` plugin config, and usage examples for every screen type.
+2. Replaced Unity/C# AudioSource references with React Native/Expo (`expo-av`). Section 7 provides a complete `AudioManager.ts` TypeScript interface, installation instructions, `app.json` plugin config, and usage examples for every screen type.
 
-3. **Added Section 8: Audio Asset Sourcing.** The original doc ended with "Share this doc with a composer and sound designer for feasibility review." The revision replaces this with specific AI and royalty-free tools: Suno AI (music, $10/month Pro, commercial license), ElevenLabs Sound Effects (SFX, free tier), Freesound.org (supplemental SFX, free CC0), and Audacity (editing, free). Exact product URLs, pricing, commercial use policies, and step-by-step instructions are included. Example Suno prompts are provided for every track in the game.
+3. Added Section 8: Audio Asset Sourcing with specific AI and royalty-free tools: Suno AI (music), ElevenLabs Sound Effects (SFX), Freesound.org (supplemental SFX), and Audacity (editing).
 
-4. **Added Section 7.1: Exact Expo project file structure.** The original doc named files without placing them in any directory structure. The revision specifies the exact path `assets/audio/music/` and `assets/audio/sfx/` and lists every filename that must exist before P0 audio can work.
+4. Added Section 7.1: Exact Expo project file structure and Section 7.2: Installation command and `app.json` config.
 
-5. **Added Section 7.2: Installation command and `app.json` config.** No developer decision needed.
+5. Added Section 7.3: Complete `AudioManager.ts` public interface and Section 7.4: Internal implementation notes for Claude Code.
 
-6. **Added Section 7.3: Complete `AudioManager.ts` public interface.** Every method the rest of the app needs is defined with TypeScript signatures. Claude Code can implement this file from scratch using the interface as a contract.
+6. Added Section 7.5: Component-level usage examples for HomeScreen, BattleScreen, EvolutionScreen, and SettingsScreen.
 
-7. **Added Section 7.4: Internal implementation notes for Claude Code.** Specifies how to handle: audio mode initialization, the static `require()` lookup pattern (React Native bundler constraint), volume calculation formula, Order/Chaos intensity crossfade logic, channel limit enforcement via a `Set`, and music ducking via `setTimeout` sequence.
+7. Changed file format from OGG/AAC to MP3 throughout (safest universal format for React Native/Expo on iOS).
 
-8. **Added Section 7.5: Component-level usage examples.** Shows exactly how `HomeScreen`, `BattleScreen`, `EvolutionScreen`, and `SettingsScreen` call into the AudioManager.
+8. Made volume persistence explicit: `AsyncStorage` with key `"audio_prefs"` and JSON shape `{ master, music, sfx }`.
 
-9. **Changed file format from OGG/AAC to MP3 throughout.** The original doc specified OGG Vorbis for music and AAC for SFX. OGG has codec inconsistencies on iOS in React Native/Expo. MP3 is the safest universal format across both iOS and Android in expo-av. The naming convention appendix was updated to reflect `.mp3` extensions.
+9. Made evolution skip mechanism concrete: `Sound.setVolumeAsync()` in a `setTimeout` loop.
 
-10. **Made volume persistence explicit.** The original doc said "stored in player profile" without specifying the mechanism. The revision specifies `AsyncStorage` with the key `"audio_prefs"` and the exact JSON shape `{ master, music, sfx }`.
+10. Removed "team composition" estimates. Replaced with sourcing section and $10-15 one-time cost table.
 
-11. **Made evolution skip mechanism concrete.** The original said "music fades out over 2 seconds." The revision specifies this is implemented via `Sound.setVolumeAsync()` in a `setTimeout` loop, not a built-in feature.
+11. Made streaming vs. preloading decision explicit for Expo: SFX preloaded at app launch, music loaded on screen mount.
 
-12. **Removed "team composition" estimates (1 composer + 1 sound designer + 1 audio engineer).** These are irrelevant for a solo owner using AI tools. Replaced with the sourcing section and cost table showing $10-15 one-time spend.
+12. Added `playsInSilentModeIOS: true` requirement to the QA checklist.
 
-13. **Made streaming vs. preloading decision explicit for Expo.** The original described a generic streaming model. The revision specifies: SFX preloaded at app launch via `Audio.Sound.createAsync()` into a `Map`, music loaded on screen mount, evolution audio loaded on Evolution screen mount and unloaded in cleanup.
+---
 
-14. **Updated the `app.json` plugin config for expo-av.** Added `microphonePermission: false` to prevent unnecessary permission requests.
+### Revision 2 (2026-02-16) — iOS native platform rewrite
 
-15. **Added `playsInSilentModeIOS: true` to the QA checklist.** This is a critical iOS-specific requirement that the original doc did not mention. Without it, all audio is silenced when the hardware mute switch is engaged — a common player complaint in mobile games.
+**Trigger:** Project changed from React Native/Expo to native iOS (Swift + SwiftUI + SpriteKit). All React Native, Expo, and expo-av references replaced with iOS-native equivalents. REVIEW.md issues applicable to this document addressed.
+
+1. **Removed all React Native / Expo / expo-av references.** The entire document previously targeted React Native with the `expo-av` library. All implementation code, file structure, installation instructions, and API references have been replaced with native iOS equivalents. There are zero remaining references to `expo-av`, `AsyncStorage`, TypeScript, `require()`, `app.json`, `useEffect`, or any React Native concept.
+
+2. **Changed file format from MP3 to CAF/AAC throughout.** Music loops and SFX now use CAF (Core Audio Format) — the iOS-native lossless audio container. CAF provides exact sample-aligned loop points without encoder delay, eliminating the gapless-loop hacks required with MP3 on iOS. Long ambient background tracks use AAC at 128 kbps where file size matters more than latency. All filenames in the asset inventory and Appendix B updated from `.mp3` to `.caf` / `.m4a`.
+
+3. **Replaced `expo-av` with `AVAudioEngine` + `AVAudioPlayer` + `SKAction`.** The adaptive battle music system now uses `AVAudioEngine` with separate `AVAudioPlayerNode` instances for each stem — the correct iOS API for real-time multi-track mixing. Simple non-adaptive playback (menu music, shop ambient, evolution ceremony) uses `AVAudioPlayer`. In-scene SFX triggered from `BattleScene` (a `SKScene` subclass) use `SKAction.playSoundFileNamed(_:waitForCompletion:)` for lowest possible latency.
+
+4. **Added `AVAudioSession` configuration section (Section 7.1).** The `.playback` category ensures audio plays when the iOS silent/mute switch is engaged — equivalent to the old `playsInSilentModeIOS: true` expo-av setting. Interruption handling (phone calls, Siri) now uses `AVAudioSession.interruptionNotification`.
+
+5. **Replaced Expo file structure with Xcode project folder group structure (Section 6.2).** The old `assets/audio/` Expo folder has been replaced with a `Resources/Audio/Music/` and `Resources/Audio/SFX/` folder group structure in the Xcode project navigator. Includes instructions on how to add files to the Xcode target and verify they appear in "Copy Bundle Resources".
+
+6. **Added `afconvert` documentation (Section 8.4).** `afconvert` is macOS's built-in command-line audio converter (free, ships with every Mac). The owner uses it to convert WAV/MP3 downloads from Suno and ElevenLabs into CAF format. Exact shell commands provided for single-file and batch conversion.
+
+7. **Replaced `AsyncStorage` with `UserDefaults`.** Volume preferences now stored in `UserDefaults` as `Float` values under keys `"audioPrefMaster"`, `"audioPrefMusic"`, `"audioPrefSFX"`. Equivalent to the old AsyncStorage JSON blob but uses the native iOS persistence API.
+
+8. **Replaced TypeScript `AudioManager.ts` with Swift `AudioManager.swift` (Section 7.2).** The complete Swift class is provided with all public methods matching the original TypeScript interface: `initialize()`, `loadPreferences()`, `savePreferences(_:)`, `playMainMenuMusic()`, `startBattleMusic(playerFaction:opponentFaction:)`, `setBoardIntensity(_:)`, `setInstabilityWeight(_:)`, `fireCombatKick` / `spikeCombatIntensity()`, `playEvolutionCeremony(faction:outcomeIsOrder:onPhaseChange:)`, `skipEvolutionCeremony()`, `playSFX(_:priority:)`, and faction convenience wrappers.
+
+9. **Added SpriteKit integration section (Section 7.3).** Shows `BattleScene` calling `SKAction.playSoundFileNamed` for card play, chaos roll sequence, attackers declared, and event SFX. Includes the important note that files must be in the main bundle root for `SKAction.playSoundFileNamed` to locate them.
+
+10. **Replaced React component usage examples with SwiftUI view integration (Section 7.4).** `useEffect` hooks replaced with `.onAppear` / `.onDisappear` view modifiers and `.onChange(of:)` for reactive board state updates.
+
+11. **Updated sourcing section (Section 8) to reflect $0 budget target.** Total audio sourcing cost is now $10 one-time (Suno Pro for 1 month, then cancel). Revised total summary to state that audio does not consume the $300 project budget. All tools (ElevenLabs free tier, Freesound.org CC0, Audacity, `afconvert`) are free.
+
+12. **Updated battle stem count from 13 to 6.** The previous design had 13 stems (3 factions × 4 layers + 1 foundation). Revised to 6 stems (1 foundation + 3 faction layers + 2 intensity variants — Order and Chaos). This is simpler to implement with `AVAudioEngine`, reduces memory footprint, and is sufficient for all faction matchup combinations.
+
+13. **Increased simultaneous channel limit from 12 to 16.** iOS 17 on iPhone 12+ handles more concurrent audio channels than the previous 12-channel limit set for older React Native targets. Added 2 reserved channels for OS interruptions.
+
+14. **Updated SFX latency target from <50ms to <20ms.** `AVAudioEngine` with preloaded `AVAudioPCMBuffer` objects achieves sub-5ms latency on iOS. `SKAction.playSoundFileNamed` achieves <20ms. The previous <50ms target was the React Native/expo-av limit, not the iOS native limit.
+
+15. **Added combat kick SFX as 3 separate files** (`SFX_CombatKick_Ironwright.caf`, `SFX_CombatKick_Fey.caf`, `SFX_CombatKick_Demonic.caf`) which were previously described in prose but not listed in the file inventory. Total file count updated to 82.
+
+16. **Addressed REVIEW.md WARN-1** (wrong infrastructure stack): Removed all references to "React Native / Flutter / PWA" and "Phaser.js / PixiJS" from the technical constraints section. The document now consistently references Swift + SwiftUI + SpriteKit throughout.
+
+17. **Addressed REVIEW.md WARN-2** (RevenueCat): This document contains no payment references. Payments belong to the monetization doc. No change needed in this doc.
+
+18. **Updated accessibility section** to use `UIAccessibility.post(notification: .announcement, argument:)` instead of the React Native `AccessibilityInfo.announceForAccessibility()` API.

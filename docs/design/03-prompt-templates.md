@@ -1,6 +1,6 @@
 # Chaos Creatures — Prompt Templates & AI Generation Pipeline
 
-**Version:** 2.0 (Revised for solo non-engineer build)
+**Version:** 3.0 (iOS platform alignment, locked style anchor, resumable batch pipeline, budget estimates)
 **Last Updated:** 2026-02-16
 **Dependencies:** `00-game-design-master.md`, `01-battle-mechanics.md`, `02-card-data-model.md`
 
@@ -8,29 +8,59 @@
 
 ## Overview
 
-This document defines the complete AI generation pipeline for Chaos Creatures. It contains exact prompt strings Claude Code can implement directly — no fill-in-the-blanks, no "construct a prompt using faction style," no decisions left to the engineer.
+This document defines the complete AI generation pipeline for Chaos Creatures. It contains exact prompt strings, API request shapes, and pipeline code Claude Code can implement directly — no fill-in-the-blanks, no "construct a prompt using faction style," no decisions left to the implementer.
 
 **Infrastructure used (non-negotiable, from CLAUDE.md):**
 - Image generation: fal.ai FLUX Kontext API
 - Text generation: OpenAI GPT-4o Mini
 - Art storage: Cloudflare R2 (CDN delivery)
-- Backend: Supabase Edge Functions (trigger generation jobs)
-- Server: Railway Node.js (batch pipeline runner)
+- Backend: Supabase Edge Functions (trigger generation jobs from game server events)
+- Game server: Railway Node.js/TypeScript (batch pipeline runner, evolution job queue)
+- Admin Dashboard: Railway web app (React, separate from iOS game client — see Two Applications below)
+
+**Two Applications — Which App Owns What:**
+- **iOS game client** (Swift/SwiftUI/SpriteKit): Displays card art, triggers evolution requests, presents modifier choices, shows evolution ceremony. Does NOT call fal.ai or OpenAI directly. All generation is server-side.
+- **Admin Dashboard** (React web app on Railway): Batch card generation pipeline, review gallery for QA, approve/reject/regenerate controls, export to database. The owner accesses this in a browser. It is NOT part of the iOS app.
 
 **Key Principles:**
-- Players never type freeform prompts — they pick from curated lists
+- Players never type freeform prompts — they pick from curated lists surfaced by the iOS app
 - Every evolution uses img2img (FLUX Kontext) referencing the previous tier's art
 - Chaos mote cost never changes through evolution — only art, name, stats, and abilities change
 - Text generation uses GPT-4o Mini at ~$0.0001 per call
 - All generated art uploads to Cloudflare R2; `art_url` on CardInstance/EvolutionRecord stores the R2 CDN URL
+- Every image prompt starts with the global STYLE_ANCHOR prefix (Section 1.1) to ensure visual consistency across all cards
 
 ---
 
 ## 1. Image Generation Pipeline (fal.ai FLUX Kontext)
 
-### 1.1 fal.ai API Integration
+### 1.1 Global Visual Style Anchor
 
-All image generation calls go to fal.ai. There are two endpoints used:
+**Every single image generation request — base card or evolution — prepends this string at the start of the prompt.** This is the locked visual style anchor that ensures all generated art looks like it belongs in the same card game. No card art is generated without it.
+
+```
+STYLE_ANCHOR = "fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality"
+```
+
+This string is prepended to every prompt, before the faction prefix. Final prompt assembly order:
+
+```
+{STYLE_ANCHOR}, {FACTION_PREFIX}, {CREATURE_DESCRIPTION}, {COMPOSITION_INSTRUCTION}
+```
+
+For evolution prompts:
+
+```
+{STYLE_ANCHOR}, {EVOLUTION_DIRECTION_INSTRUCTION}, {HISTORY_CONTEXT}, {MODIFIER_DESCRIPTION}, {FACTION_SHORT_DESCRIPTION aesthetic maintenance instruction}
+```
+
+The STYLE_ANCHOR enforces: painterly digital illustration style, consistent color richness, consistent card-portrait framing, and absence of text or borders. If a generated card looks like it came from a different game, the STYLE_ANCHOR was either omitted or the faction prefix is pulling too hard in a conflicting direction — reject and regenerate.
+
+---
+
+### 1.2 fal.ai API Integration
+
+All image generation calls go to fal.ai. Two endpoints are used:
 
 **Base card generation (text-to-image):**
 ```
@@ -43,13 +73,27 @@ POST https://fal.run/fal-ai/flux-kontext/dev
 POST https://fal.run/fal-ai/flux-kontext/pro
 ```
 
-**Authentication:** `Authorization: Key ${FAL_API_KEY}` header. `FAL_API_KEY` comes from `.env`.
+**Authentication:** `Authorization: Key ${FAL_API_KEY}` header on every request. `FAL_API_KEY` stored in Railway environment variables (never committed to git).
+
+**Base request structure for base card generation (txt2img):**
+```json
+{
+  "prompt": "<STYLE_ANCHOR + faction prefix + creature description + composition>",
+  "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, extra limbs, fused body parts, speech bubbles, comic panels, grid layout, collage, white background",
+  "image_size": "portrait_4_3",
+  "num_inference_steps": 35,
+  "guidance_scale": 7.5,
+  "num_images": 1,
+  "enable_safety_checker": true,
+  "output_format": "webp"
+}
+```
 
 **Base request structure for evolution (img2img):**
 ```json
 {
-  "image_url": "https://r2.chaos-creatures.com/art/{card_instance_id}/tier-common.webp",
-  "prompt": "<assembled prompt string>",
+  "image_url": "https://r2.chaos-creatures.com/art/{card_instance_id}/{from_tier}.webp",
+  "prompt": "<STYLE_ANCHOR + evolution direction + history context + modifier description + faction maintenance>",
   "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects",
   "image_size": "portrait_4_3",
   "num_inference_steps": 30,
@@ -61,25 +105,13 @@ POST https://fal.run/fal-ai/flux-kontext/pro
 }
 ```
 
-**Base request structure for base card generation (txt2img):**
-```json
-{
-  "prompt": "<assembled prompt string>",
-  "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects",
-  "image_size": "portrait_4_3",
-  "num_inference_steps": 35,
-  "guidance_scale": 7.5,
-  "num_images": 1,
-  "enable_safety_checker": true,
-  "output_format": "webp"
-}
-```
+**`image_size` values used:**
+- `portrait_4_3` = 768×1024 (Free/Planar Shard tier)
+- `square_hd` = 1024×1024 (Mid/Refined and Top/Prismatic Shard tiers)
 
-**`image_size` values used:** `portrait_4_3` = 768×1024. For 1024×1024 (paid tiers), use `square_hd`.
+**`strength` parameter (img2img only):** 0.0 = identical to input, 1.0 = completely new image. See denoising table in Section 1.5.
 
-**`strength` parameter:** This is the denoising strength for img2img. 0.0 = identical to input, 1.0 = completely new image. See denoising table in Section 1.4.
-
-**Response format:**
+**Response format (both endpoints):**
 ```json
 {
   "images": [
@@ -96,21 +128,23 @@ POST https://fal.run/fal-ai/flux-kontext/pro
 }
 ```
 
-After generation, download the image from `images[0].url` and upload to Cloudflare R2 at path `art/{card_instance_id}/{tier}.webp`. Store the R2 CDN URL as `art_url`.
+After generation: download the image from `images[0].url`, upload to Cloudflare R2 at path `art/{card_instance_id}/{tier}.webp`, store the R2 CDN URL as `art_url` on the CardInstance or EvolutionRecord.
+
+**Error response format (HTTP 4xx or 5xx):**
+```json
+{
+  "detail": "Error message string",
+  "status": 422
+}
+```
+
+HTTP 429 means rate limit. Apply exponential backoff: wait 2s, retry; wait 4s, retry; wait 8s, retry. See Section 6.2 for full retry logic.
 
 ---
 
-### 1.2 Base Card Art Generation (Batch Pipeline — Pre-Launch)
+### 1.3 Base Card Art Generation (Batch Pipeline — Admin Dashboard)
 
-Base cards are generated during the batch pipeline before launch. These become the Common-tier art.
-
-#### Prompt Structure
-
-All base card prompts follow this exact pattern:
-
-```
-{FACTION_PREFIX}, {CREATURE_DESCRIPTION}, {COMPOSITION_INSTRUCTION}, {QUALITY_TAGS}
-```
+Base cards are generated during the batch pipeline before launch. These become the Common-tier art. The batch pipeline runs in the Admin Dashboard (Railway web app), not in the iOS game client.
 
 #### Faction Prefixes (Exact Strings — Copy Into Code as Constants)
 
@@ -135,130 +169,116 @@ demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and 
 portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view or frontal pose, simple contextual background not cluttered, clear distinct silhouette, card game art composition, eyes visible and facing viewer, dramatic directional lighting
 ```
 
-#### Quality Tags (Same for All Factions)
-
-```
-fantasy card game art, high detail, professional digital illustration, sharp focus, vibrant colors, dynamic pose, Magic: The Gathering style composition, clean edges
-```
-
 #### Negative Prompt (Used on Every Single Request — Never Omit)
 
 ```
-text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, extra limbs, fused body parts, speech bubbles, comic panels, grid layout
+text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, extra limbs, fused body parts, speech bubbles, comic panels, grid layout, white background, collage
 ```
 
 ---
 
 #### Concrete Base Card Prompt Examples
 
-These are copy-paste ready prompts. The batch script assembles them from the constants above plus a creature description row from the CSV.
+These are fully assembled prompts with the STYLE_ANCHOR prepended. The batch script concatenates the components from the CSV row plus the constants above. These examples are copy-paste ready.
 
 **Ironwright — 3-cost Clockwork Wolf (instability 2, 3ATK/4HP):**
 ```
+fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+
 steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses,
 
 clockwork wolf, sleek predatory design, articulated brass leg joints with visible pistons, mechanical jaw with copper fangs, glowing amber optical sensors, mid-prowl stance,
 
-portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view, industrial workshop background with soft-focus steam pipes, clear distinct silhouette, eyes facing viewer, dramatic lighting from upper left,
-
-fantasy card game art, high detail, professional digital illustration, sharp focus, vibrant warm metallic tones, dynamic pose, Magic: The Gathering style composition, clean edges
+portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view, industrial workshop background with soft-focus steam pipes, clear distinct silhouette, eyes facing viewer, dramatic lighting from upper left
 ```
 
 **Ironwright — 1-cost Gear Sprite (instability 1, 1ATK/2HP):**
 ```
+fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+
 steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses,
 
 tiny clockwork sprite, insect-like brass wings with visible gear joints, small rounded body of copper plating, spinning gear on back like a propeller, curious alert posture, diminutive but precise,
 
-portrait orientation, centered creature filling 70 percent of frame, frontal pose, dark industrial girder background with atmospheric steam wisps, clear distinct silhouette, glowing eyes facing viewer, dramatic top-down lighting,
-
-fantasy card game art, high detail, professional digital illustration, sharp focus, vibrant warm metallic tones, Magic: The Gathering style composition, clean edges
+portrait orientation, centered creature filling 70 percent of frame, frontal pose, dark industrial girder background with atmospheric steam wisps, clear distinct silhouette, glowing eyes facing viewer, dramatic top-down lighting
 ```
 
 **Fey Courts — 4-cost Thornwood Warden (instability 1, 2ATK/6HP, Shield keyword):**
 ```
+fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+
 ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights,
 
 tall fey knight, living bark armor grown into elegant broad plates, large shield woven from vines and glowing teal crystal, antlers crowned with moonflowers, luminous pale-green eyes, noble protective wide-stance pose, silver-green bioluminescent veins across armor,
 
-portrait orientation, centered creature filling 70 percent of frame, three-quarter view, ancient grove background with towering trees and floating magical motes, clear distinct silhouette, dramatic soft moonlight from above-right,
-
-fantasy card game art, high detail, professional digital illustration, sharp focus, cool tones with magical cyan and silver highlights, ethereal inner glow, Magic: The Gathering style composition, clean edges
+portrait orientation, centered creature filling 70 percent of frame, three-quarter view, ancient grove background with towering trees and floating magical motes, clear distinct silhouette, dramatic soft moonlight from above-right
 ```
 
 **Fey Courts — 2-cost Moonpetal Sprite (instability 3, 3ATK/2HP, Flying keyword):**
 ```
+fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+
 ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights,
 
 small agile fey scout, dragonfly-like translucent wings of solidified moonlight, lithe body clad in petal armor, sharp thorn-claws, crouched ready-to-spring stance, wild feral expression, bioluminescent marking streaks on skin,
 
-portrait orientation, centered creature filling 70 percent of frame, dynamic angled pose with wings spread, misty forest canopy background, clear distinct silhouette, eyes glowing violet facing viewer, dramatic rim lighting,
-
-fantasy card game art, high detail, professional digital illustration, sharp focus, cool silver and violet tones, dynamic pose showing speed, Magic: The Gathering style composition, clean edges
+portrait orientation, centered creature filling 70 percent of frame, dynamic angled pose with wings spread, misty forest canopy background, clear distinct silhouette, eyes glowing violet facing viewer, dramatic rim lighting
 ```
 
 **Demonic Kingdoms — 3-cost Ashclaw Ravager (instability 4, 5ATK/2HP, Piercing keyword):**
 ```
+fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+
 demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence,
 
 lean predatory demon, elongated razor-edged obsidian claws, exposed rib-cage bone structure through torn corrupted flesh, swept-back obsidian horns, eyes burning with hellfire, crouched low pouncing stance, glowing crimson infernal rune tattoos across body, ash and embers drifting around,
 
-portrait orientation, centered creature filling 70 percent of frame, low three-quarter view emphasizing menace, volcanic wasteland background with lava rivers soft-focus, clear distinct silhouette, hellfire eyes facing viewer, dramatic underlighting from lava glow,
-
-fantasy card game art, high detail, professional digital illustration, sharp focus, dark palette with intense crimson and violet highlights, menacing weight, Magic: The Gathering style composition, clean edges
+portrait orientation, centered creature filling 70 percent of frame, low three-quarter view emphasizing menace, volcanic wasteland background with lava rivers soft-focus, clear distinct silhouette, hellfire eyes facing viewer, dramatic underlighting from lava glow
 ```
 
 **Demonic Kingdoms — 5-cost Bloodrite Warlord (instability 2, 4ATK/7HP, Lifesteal keyword):**
 ```
+fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+
 demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence,
 
 massive demonic warlord, heavy obsidian plate armor etched with blood-glyphs, large weapon dripping with dark ichor, imposing upright commanding stance, prominent curved horns, deep-set burning eyes, blood ritual sigils glowing on pauldrons, veins of dark energy visible through armor joints,
 
-portrait orientation, centered creature filling 70 percent of frame, dramatic frontal command pose, obsidian fortress battlements background, clear distinct silhouette, burning eyes facing viewer, dramatic top lighting with hellfire from below,
-
-fantasy card game art, high detail, professional digital illustration, sharp focus, dark palette with deep crimson command presence, Magic: The Gathering style composition, clean edges
+portrait orientation, centered creature filling 70 percent of frame, dramatic frontal command pose, obsidian fortress battlements background, clear distinct silhouette, burning eyes facing viewer, dramatic top lighting with hellfire from below
 ```
 
 ---
 
-### 1.3 Evolution Art Prompts (Image-to-Image with FLUX Kontext)
+### 1.4 Evolution Art Prompts (Image-to-Image with FLUX Kontext)
 
-Every evolution calls `fal.run/fal-ai/flux-kontext/dev` or `.../pro` with the previous tier's art as `image_url`.
+Every evolution calls `fal.run/fal-ai/flux-kontext/dev` or `.../pro` with the previous tier's art as `image_url`. The STYLE_ANCHOR is always prepended.
 
-#### Order Evolution Prompt Template
-
-```
-Transform this {FACTION_NAME} creature with Order energy. Refine and structure the design. Add crystalline geometric patterns growing from the surface, luminous blue-white-gold Order energy emanating from within, refined and polished armor or outer casing, symmetrical ordered enhancements, harmonious natural or mechanical growth. Subtle transformation — the creature should remain clearly recognizable. {HISTORY_CONTEXT}
-
-Apply these specific visual changes: {MODIFIER_DESCRIPTIONS}
-
-Maintain the {FACTION_SHORT_DESCRIPTION} aesthetic throughout. Portrait orientation, centered composition, fantasy card game art, high detail, professional digital illustration, no text, no watermarks.
-```
-
-#### Chaos Evolution Prompt Template
+#### Order Evolution Direction Instruction
 
 ```
-Transform this {FACTION_NAME} creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements breaking the original silhouette, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain the creature's core identity but push it toward the extreme. {HISTORY_CONTEXT}
-
-Apply these specific visual changes: {MODIFIER_DESCRIPTIONS}
-
-Maintain the {FACTION_SHORT_DESCRIPTION} aesthetic but push it toward its most extreme and unstable expression. Portrait orientation, centered composition, fantasy card game art, high detail, professional digital illustration, no text, no watermarks.
+ORDER_INSTRUCTION = "Transform this creature with Order energy. Refine and structure the design. Add crystalline geometric patterns growing from the surface, luminous blue-white-gold Order energy emanating from within, refined and polished armor or outer casing, symmetrical ordered enhancements, harmonious natural or mechanical growth. Subtle transformation — the creature should remain clearly recognizable."
 ```
 
-#### History Context Strings (Inserted into Both Templates)
+#### Chaos Evolution Direction Instruction
 
-These are selected by the server based on the card's `evolution_history` record count and outcome distribution:
+```
+CHAOS_INSTRUCTION = "Transform this creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements breaking the original silhouette, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain the creature's core identity but push it toward the extreme."
+```
+
+#### History Context Strings
+
+Selected by the server based on the card's `evolution_history` record count and outcome distribution:
 
 | Condition | History Context String |
 |---|---|
-| First evolution (0 previous) | *(empty string — omit this field)* |
+| First evolution (0 previous) | *(empty string — omit this field entirely)* |
 | All Order so far | `This creature has been shaped entirely by Order energy, showing crystalline perfection and structured harmony. This evolution continues that refinement.` |
 | All Chaos so far | `This creature has been wracked entirely by Chaos energy, showing fractured volatile forms barely held together. This evolution pushes further into dissolution.` |
 | Mostly Order (Order > Chaos by 2+) | `This creature carries strong Order patterning — structured crystalline elements — but now Chaos energy breaks through the cracks.` |
 | Mostly Chaos (Chaos > Order by 2+) | `This creature carries deep Chaos corruption — fractured volatile forms — but now Order energy attempts to crystallize and contain it.` |
 | Balanced (Order == Chaos, or within 1) | `This creature carries both Order crystallization and Chaos fracturing in equal measure, a volatile balance of structured and wild energy.` |
 
-#### FACTION_SHORT_DESCRIPTION Values (Insert Into Templates)
+#### Faction Short Descriptions (Used in Evolution Prompts)
 
 | Faction | FACTION_SHORT_DESCRIPTION |
 |---|---|
@@ -266,22 +286,35 @@ These are selected by the server based on the card's `evolution_history` record 
 | The Fey Courts | `ethereal fey nature bioluminescent` |
 | The Demonic Kingdoms | `dark infernal demonic hellfire` |
 
+#### Evolution Prompt Final Assembly
+
+```typescript
+const evolutionPrompt = [
+  STYLE_ANCHOR,
+  directionInstruction,
+  historyContext,           // empty string omitted via filter(Boolean)
+  `Apply these specific visual changes: ${modifierDescription}.`,
+  `Maintain the ${factionShortDescription} aesthetic throughout.`,
+  'Portrait orientation, centered composition, no text, no watermarks.'
+].filter(Boolean).join(' ');
+```
+
 ---
 
-### 1.4 Technical Parameters by Shard Quality
+### 1.5 Technical Parameters by Shard Quality
 
-These are the exact values to pass in the fal.ai API request body.
+These are the exact values to pass in the fal.ai API request body. These values are the canonical source of truth — doc 06 must read these values from this table.
 
-| Parameter | Planar Shard (Free) | Refined Shard (Mid) | Prismatic Shard (High) |
+| Parameter | Planar Shard (Free) | Refined Shard (Mid) | Prismatic Shard (Top) |
 |---|---|---|---|
 | **Endpoint** | `fal-ai/flux-kontext/dev` | `fal-ai/flux-kontext/pro` | `fal-ai/flux-kontext/pro` |
 | **`image_size`** | `portrait_4_3` (768×1024) | `square_hd` (1024×1024) | `square_hd` (1024×1024) |
 | **`num_inference_steps`** | `28` | `32` | `40` |
 | **`guidance_scale`** | `7.0` | `7.5` | `8.0` |
 | **Passes** | 1 | 1 | 2 (generate then refine) |
-| **Estimated cost** | ~$0.02 | ~$0.05 | ~$0.08 (both passes) |
+| **Estimated cost per evolution** | ~$0.02 | ~$0.05 | ~$0.08 (both passes) |
 
-#### Denoising Strength (`strength` parameter) by Evolution Tier and Outcome
+#### Denoising Strength (`strength` parameter) by Evolution Step and Outcome
 
 | Evolution Step | Order `strength` | Chaos `strength` |
 |---|---|---|
@@ -291,25 +324,26 @@ These are the exact values to pass in the fal.ai API request body.
 | Epic → Legendary | `0.50` | `0.80` |
 
 **Prismatic Second Pass (refinement):** After the first generation, call the API again with:
-- `image_url`: URL of first-pass output
+- `image_url`: URL of first-pass output (not the original reference image)
 - Same prompt as first pass, prepended with: `Enhance lighting quality, sharpen details, improve overall fidelity without changing the composition or design.`
 - `strength`: `0.20` (very low — polish only, no composition change)
 - `num_inference_steps`: `20`
+- `guidance_scale`: `8.0`
 
 ---
 
-### 1.5 Visual Prompt Modifiers by Subscriber Tier
+### 1.6 Visual Prompt Modifiers by Subscriber Tier
 
-At evolution time, the player picks one modifier from a presented list. The server assembles the list based on the player's subscription tier and the faction of the evolving card. The selected modifier's description is inserted into the `{MODIFIER_DESCRIPTIONS}` slot in the evolution prompt template.
+At evolution time, the iOS game client presents the player with a list of modifier options. The server assembles the list based on the player's subscription tier and the faction of the evolving card. The selected modifier's description string is inserted into the `{MODIFIER_DESCRIPTIONS}` slot in the evolution prompt.
 
 **Selection counts by tier (from `01-battle-mechanics.md` Section 6):**
 - Free (Planar Shard): Player sees 2 options, picks 1 (1 universal + 1 faction)
 - Mid (Refined Shard): Player sees 3 options, picks 1 (1 universal + 2 faction)
 - Top (Prismatic Shard): Player sees 4 options, picks 1 (2 universal + 2 faction)
 
-#### Universal Modifiers — All Tiers Have Access to These
+The iOS game client displays these options as a card-selection UI during the evolution ceremony sequence. The server sends the option list; the client renders it; the player taps one. The client sends the chosen modifier ID back to the server. All assembly logic is server-side.
 
-These are the base 10. Free tier gets 2 presented per evolution (1 universal randomly drawn from this list, 1 faction from faction list below).
+#### Universal Modifiers — All Tiers Have Access to These (Free tier draws from U01–U10)
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -324,7 +358,7 @@ These are the base 10. Free tier gets 2 presented per evolution (1 universal ran
 | U09 | Elemental Aura | `swirling elemental energy aura surrounding the creature — fire, ice, or lightning trails in motion` |
 | U10 | Crystalline Growth | `crystals growing from the creature's surface, geometric and ordered, catching and refracting light` |
 
-#### Universal Modifiers — Mid Tier Adds These (Total 20 Universal Options in Pool)
+#### Universal Modifiers — Mid Tier Adds These (Mid draws from U01–U20)
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -339,7 +373,7 @@ These are the base 10. Free tier gets 2 presented per evolution (1 universal ran
 | U19 | Tribal Markings | `bold painted or scarified tribal or clan markings across the body in contrasting pigment` |
 | U20 | Dual Coloring | `the color palette splits — one side or element shifts to a contrasting color suggesting internal conflict` |
 
-#### Universal Modifiers — Top Tier Adds These (Total 30 Universal Options in Pool)
+#### Universal Modifiers — Top Tier Adds These (Top draws from U01–U30)
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -358,9 +392,7 @@ These are the base 10. Free tier gets 2 presented per evolution (1 universal ran
 
 #### Ironwright Collective Faction Modifiers
 
-Free tier: 1 faction option drawn randomly from F01–F10.
-Mid tier: 2 faction options drawn from F01–F18.
-Top tier: 2 faction options drawn from F01–F28.
+Free tier draws 1 from IF01–IF10. Mid draws 2 from IF01–IF18. Top draws 2 from IF01–IF28.
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -397,6 +429,8 @@ Top tier: 2 faction options drawn from F01–F28.
 
 #### The Fey Courts Faction Modifiers
 
+Free tier draws 1 from FF01–FF10. Mid draws 2 from FF01–FF18. Top draws 2 from FF01–FF28.
+
 | ID | Display Name | Prompt Description String |
 |---|---|---|
 | FF01 | Flowering Blooms | `small flowers blooming across the vine and bark armor in symmetrical natural patterns` |
@@ -431,6 +465,8 @@ Top tier: 2 faction options drawn from F01–F28.
 ---
 
 #### The Demonic Kingdoms Faction Modifiers
+
+Free tier draws 1 from DF01–DF10. Mid draws 2 from DF01–DF18. Top draws 2 from DF01–DF28.
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
@@ -479,11 +515,13 @@ All text generation uses `gpt-4o-mini` at the OpenAI API. Endpoint: `POST https:
 }
 ```
 
+Text generation calls are made server-side (Railway Node.js) on evolution events. The iOS game client never calls OpenAI directly.
+
 ---
 
 ### 2.1 Card Naming
 
-Called during every evolution. Generates 3 candidates; player picks 1.
+Called during every evolution. Generates 3 candidates; the iOS client presents them as a picker; player taps one. The chosen name is sent to the server as `name_chosen_id` (index 0–2 into the returned array).
 
 #### Exact System Prompt
 
@@ -524,19 +562,19 @@ Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, For
 
 **The Fey Courts:**
 ```
-Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, Moss. Use fey titles: Lord, Lady, Warden, Huntress, Speaker, Court. Use seasons and celestial: Spring, Autumn, Moon, Star, Dawn. Use mythic descriptors: Verdant, Eternal, Wild, Ancient. Poetic structures preferred. Examples: Thornwood, Crown of the Wilds — Moonpetal Huntress — the Eternal Grove.
+Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, Moss. Use fey titles: Lord, Lady, Warden, Huntress, Speaker, Court. Use seasons and celestial: Spring, Autumn, Moon, Star, Dawn. Use mythic descriptors: Verdant, Eternal, Wild, Ancient. Poetic structures preferred. Examples: Thornwood Crown of the Wilds, Moonpetal Huntress, the Eternal Grove.
 ```
 
 **The Demonic Kingdoms:**
 ```
-Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Use concepts of sin: Wrath, Hunger, Ruin, Agony. Direct hard sounds preferred. Examples: Ashblade, Lord of Ruin — Bloodrite Reaver — the Unbound Hunger.
+Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Use concepts of sin: Wrath, Hunger, Ruin, Agony. Direct hard sounds preferred. Examples: Ashblade Lord of Ruin, Bloodrite Reaver, the Unbound Hunger.
 ```
 
 #### Concrete Naming Examples (Actual Input/Output)
 
 **Example 1 — Ironwright, Common → Uncommon, Chaos outcome:**
 
-User prompt (with fields filled in):
+User prompt (fields filled in):
 ```
 FACTION: Ironwright Collective
 FACTION VOICE: Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred. Examples: Brassbound Guardian, Steamforged Titan, Ironwrought Sentinel.
@@ -656,7 +694,7 @@ The gears scream, but they hold. They always hold.
 ```
 
 **Ironwright, Legendary, Order:**
-Input: CARD NAME: "Brassforge Colossus", Chaos direction.
+Input: CARD NAME: "Brassforge Colossus", Order direction.
 Output:
 ```
 Precision tolerances. Redundant systems. A masterpiece of function over flaw.
@@ -694,7 +732,7 @@ The pact is written in blood. It will be paid in blood.
 
 ### 2.3 Evolution Narrative (Epic and Legendary Tiers Only)
 
-Displayed during the evolution ceremony animation for Epic and Legendary evolutions. Not generated for Common→Uncommon or Uncommon→Rare.
+Displayed during the evolution ceremony animation in the iOS game client for Epic and Legendary evolutions. Not generated for Common→Uncommon or Uncommon→Rare.
 
 #### Exact System Prompt
 
@@ -750,7 +788,7 @@ The Shard closes. The machine is better than its design intended.
 
 ### 2.4 Prewritten Event Flavor Text
 
-Event flavor text is NOT AI-generated. All 16 events have static prewritten strings. These are stored in the database at seed time, never called from an API during gameplay.
+Event flavor text is NOT AI-generated. All 16 events have static prewritten strings. These are stored in the database at seed time and never called from an API during gameplay.
 
 #### Order Events
 
@@ -782,7 +820,7 @@ Event flavor text is NOT AI-generated. All 16 events have static prewritten stri
 
 ## 3. Faction Voice Guides
 
-Reference section for image prompt and text prompt writers. Every AI call referencing faction voice should pull from here.
+Reference section for image prompt and text prompt construction. Every AI call referencing faction voice pulls from here.
 
 ### 3.1 Ironwright Collective (Steampunk)
 
@@ -874,7 +912,7 @@ Reference section for image prompt and text prompt writers. Every AI call refere
 
 ## 4. Prompt Construction Algorithm
 
-This is the exact server-side logic that assembles prompts. Claude Code implements this as TypeScript functions in the Railway game server (or Supabase Edge Function for evolution triggers).
+This is the exact server-side logic that assembles prompts. Claude Code implements this as TypeScript functions on the Railway game server (Node.js/TypeScript). The iOS game client does not assemble prompts — it sends evolution trigger requests to the server, which handles all generation.
 
 ### 4.1 Evolution Image Prompt Assembly
 
@@ -888,19 +926,21 @@ function buildEvolutionImagePrompt(
 ): FalAiRequestBody
 ```
 
-**Step-by-step assembly:**
-
-**Step 1: Determine faction prefix**
+**Step 1: Define the global style anchor constant**
 ```typescript
-const factionPrefixes: Record<string, string> = {
+const STYLE_ANCHOR = 'fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality';
+```
+
+**Step 2: Determine faction prefix**
+```typescript
+const FACTION_PREFIXES: Record<string, string> = {
   'IRONWRIGHT':       'steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses',
   'FEY_COURTS':       'ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights',
   'DEMONIC_KINGDOMS': 'demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence'
 };
-const factionPrefix = factionPrefixes[cardInstance.faction_id];
 ```
 
-**Step 2: Determine evolution direction instruction**
+**Step 3: Determine evolution direction instruction**
 ```typescript
 const ORDER_INSTRUCTION = 'Transform this creature with Order energy. Refine and structure the design. Add crystalline geometric patterns growing from the surface, luminous blue-white-gold Order energy emanating from within, refined and polished armor or outer casing, symmetrical ordered enhancements, harmonious growth. Subtle transformation — the creature should remain clearly recognizable.';
 
@@ -909,7 +949,7 @@ const CHAOS_INSTRUCTION = 'Transform this creature with Chaos energy. Dramatical
 const directionInstruction = evolutionOutcome === 'ORDER' ? ORDER_INSTRUCTION : CHAOS_INSTRUCTION;
 ```
 
-**Step 3: Build evolution history context**
+**Step 4: Build evolution history context**
 ```typescript
 function getHistoryContext(history: EvolutionRecord[]): string {
   if (history.length === 0) return '';
@@ -925,88 +965,92 @@ function getHistoryContext(history: EvolutionRecord[]): string {
 const historyContext = getHistoryContext(cardInstance.evolution_history);
 ```
 
-**Step 4: Get modifier description**
+**Step 5: Get modifier description**
 ```typescript
-// MODIFIER_PROMPT_DESCRIPTIONS is a Record<string, string> mapping modifier ID to prompt description
-// See full table in Section 1.5 above
+// MODIFIER_PROMPT_DESCRIPTIONS is a Record<string, string> mapping modifier ID to prompt description string
+// See full table in Section 1.6 above. All IDs U01-U30, IF01-IF28, FF01-FF28, DF01-DF28 must be present.
 const modifierDescription = MODIFIER_PROMPT_DESCRIPTIONS[selectedModifierId];
 ```
 
-**Step 5: Assemble full prompt**
+**Step 6: Assemble full prompt**
 ```typescript
-const factionShortDescriptions: Record<string, string> = {
+const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
   'IRONWRIGHT':       'steampunk industrial brass-and-gears',
   'FEY_COURTS':       'ethereal fey nature bioluminescent',
   'DEMONIC_KINGDOMS': 'dark infernal demonic hellfire'
 };
 
 const prompt = [
+  STYLE_ANCHOR,
   directionInstruction,
   historyContext,
   `Apply these specific visual changes: ${modifierDescription}.`,
-  `Maintain the ${factionShortDescriptions[cardInstance.faction_id]} aesthetic throughout.`,
-  'Portrait orientation, centered composition, fantasy card game art, high detail, professional digital illustration, no text, no watermarks.'
-].filter(Boolean).join('\n\n');
+  `Maintain the ${FACTION_SHORT_DESCRIPTIONS[cardInstance.faction_id]} aesthetic throughout.`,
+  'Portrait orientation, centered composition, no text, no watermarks.'
+].filter(Boolean).join(' ');
 ```
 
-**Step 6: Set technical parameters based on shard quality and tier**
+**Step 7: Set technical parameters based on shard quality and evolution step**
 ```typescript
 const STRENGTH_TABLE = {
   ORDER: { COMMON: 0.35, UNCOMMON: 0.40, RARE: 0.45, EPIC: 0.50 },
   CHAOS: { COMMON: 0.65, UNCOMMON: 0.70, RARE: 0.75, EPIC: 0.80 }
 };
+// cardInstance.tier is the FROM tier (before evolution)
 
-const endpointMap = {
-  PLANAR:   'fal-ai/flux-kontext/dev',
-  REFINED:  'fal-ai/flux-kontext/pro',
+const ENDPOINT_MAP = {
+  PLANAR:    'fal-ai/flux-kontext/dev',
+  REFINED:   'fal-ai/flux-kontext/pro',
   PRISMATIC: 'fal-ai/flux-kontext/pro'
 };
 
-const imageSizeMap = {
-  PLANAR:   'portrait_4_3',
-  REFINED:  'square_hd',
+const IMAGE_SIZE_MAP = {
+  PLANAR:    'portrait_4_3',
+  REFINED:   'square_hd',
   PRISMATIC: 'square_hd'
 };
 
-const stepsMap = { PLANAR: 28, REFINED: 32, PRISMATIC: 40 };
-const guidanceMap = { PLANAR: 7.0, REFINED: 7.5, PRISMATIC: 8.0 };
+const STEPS_MAP    = { PLANAR: 28, REFINED: 32, PRISMATIC: 40 };
+const GUIDANCE_MAP = { PLANAR: 7.0, REFINED: 7.5, PRISMATIC: 8.0 };
+
+const STANDARD_NEGATIVE_PROMPT = 'text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects';
 
 const strength = STRENGTH_TABLE[evolutionOutcome][cardInstance.tier];
 
 return {
-  endpoint: endpointMap[shardQuality],
+  endpoint: ENDPOINT_MAP[shardQuality],
   body: {
-    image_url:            cardInstance.art_url,  // current tier art as reference
-    prompt:               prompt,
-    negative_prompt:      'text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects',
-    image_size:           imageSizeMap[shardQuality],
-    num_inference_steps:  stepsMap[shardQuality],
-    guidance_scale:       guidanceMap[shardQuality],
-    strength:             strength,
-    num_images:           1,
+    image_url:             cardInstance.art_url,
+    prompt:                prompt,
+    negative_prompt:       STANDARD_NEGATIVE_PROMPT,
+    image_size:            IMAGE_SIZE_MAP[shardQuality],
+    num_inference_steps:   STEPS_MAP[shardQuality],
+    guidance_scale:        GUIDANCE_MAP[shardQuality],
+    strength:              strength,
+    num_images:            1,
     enable_safety_checker: true,
-    output_format:        'webp'
+    output_format:         'webp'
   },
   needsSecondPass: shardQuality === 'PRISMATIC'
 };
 ```
 
-**Step 7 (Prismatic only): Second refinement pass**
+**Step 8 (Prismatic only): Second refinement pass**
 ```typescript
 if (needsSecondPass) {
   const refinementRequest = {
     endpoint: 'fal-ai/flux-kontext/pro',
     body: {
-      image_url:           firstPassOutputUrl,
-      prompt:              `Enhance lighting quality, sharpen details, improve overall fidelity without changing the composition or design. ${prompt}`,
-      negative_prompt:     STANDARD_NEGATIVE_PROMPT,
-      image_size:          'square_hd',
-      num_inference_steps: 20,
-      guidance_scale:      8.0,
-      strength:            0.20,
-      num_images:          1,
+      image_url:             firstPassOutputUrl,
+      prompt:                `Enhance lighting quality, sharpen details, improve overall fidelity without changing the composition or design. ${prompt}`,
+      negative_prompt:       STANDARD_NEGATIVE_PROMPT,
+      image_size:            'square_hd',
+      num_inference_steps:   20,
+      guidance_scale:        8.0,
+      strength:              0.20,
+      num_images:            1,
       enable_safety_checker: true,
-      output_format:       'webp'
+      output_format:         'webp'
     }
   };
 }
@@ -1074,7 +1118,7 @@ return {
 
 ### 4.3 Complete End-to-End Example Prompts
 
-#### Ironwright — Common to Uncommon, Chaos, Free Tier
+#### Ironwright — Common to Uncommon, Chaos, Free Tier (Planar Shard)
 
 Reference image: `https://r2.chaos-creatures.com/art/abc123/common.webp` (clockwork wolf)
 Selected modifier: IF02 (Steam Venting)
@@ -1084,7 +1128,7 @@ Shard: PLANAR
 ```json
 {
   "image_url": "https://r2.chaos-creatures.com/art/abc123/common.webp",
-  "prompt": "Transform this creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain core identity but push toward the extreme.\n\nApply these specific visual changes: multiple high-pressure steam vents erupting from the chassis in dramatic plumes.\n\nMaintain the steampunk industrial brass-and-gears aesthetic throughout.\n\nPortrait orientation, centered composition, fantasy card game art, high detail, professional digital illustration, no text, no watermarks.",
+  "prompt": "fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality, Transform this creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain core identity but push toward the extreme. Apply these specific visual changes: multiple high-pressure steam vents erupting from the chassis in dramatic plumes. Maintain the steampunk industrial brass-and-gears aesthetic throughout. Portrait orientation, centered composition, no text, no watermarks.",
   "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects",
   "image_size": "portrait_4_3",
   "num_inference_steps": 28,
@@ -1109,7 +1153,7 @@ Shard: PLANAR
     },
     {
       "role": "user",
-      "content": "FACTION: Ironwright Collective\nFACTION VOICE: Industrial and precise...\nBASE NAME: Cogwork Stalker\nEVOLUTION TIER: UNCOMMON\nEVOLUTION DIRECTION: CHAOS\nEVOLUTION HISTORY: 0 Chaos evolutions, 0 Order evolutions before this one\nPREVIOUS NAMES: [\"Cogwork Stalker\"]\n\nGenerate exactly 3 card name candidates..."
+      "content": "FACTION: Ironwright Collective\nFACTION VOICE: Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred.\nBASE NAME: Cogwork Stalker\nEVOLUTION TIER: UNCOMMON\nEVOLUTION DIRECTION: CHAOS\nEVOLUTION HISTORY: 0 Chaos evolutions, 0 Order evolutions before this one\nPREVIOUS NAMES: [\"Cogwork Stalker\"]\n\nGenerate exactly 3 card name candidates. Rules:\n- 2 to 4 words maximum per name\n- Must match the faction voice exactly\n- Must reflect evolution toward CHAOS\n- Must show progression from the most recent name: \"Cogwork Stalker\"\n- Chaos evolution names: suggest power, wildness, corruption, rage, transformation\n- Do not reuse any name from PREVIOUS NAMES\n\nReturn ONLY this JSON array, nothing else:\n[\"Name One\", \"Name Two\", \"Name Three\"]"
     }
   ]
 }
@@ -1117,17 +1161,18 @@ Shard: PLANAR
 
 ---
 
-#### Fey Courts — Uncommon to Rare, Order, Mid Tier
+#### Fey Courts — Uncommon to Rare, Order, Mid Tier (Refined Shard)
 
-Reference image: previously evolved art at Uncommon tier
-Selected modifier: FF05 (Starlight Aura) — from faction pool
+Reference image: previously evolved Uncommon-tier art
+Selected modifier: FF05 (Starlight Aura)
 Shard: REFINED
+Evolution history: 2 prior Order evolutions, 0 Chaos
 
 **fal.ai request body:**
 ```json
 {
   "image_url": "https://r2.chaos-creatures.com/art/def456/uncommon.webp",
-  "prompt": "Transform this creature with Order energy. Refine and structure the design. Add crystalline geometric patterns growing from the surface, luminous blue-white-gold Order energy emanating from within, refined and polished armor or outer casing, symmetrical ordered enhancements, harmonious growth. Subtle transformation — the creature should remain clearly recognizable.\n\nThis creature has been shaped entirely by Order energy, showing crystalline perfection and structured harmony. This evolution continues that refinement.\n\nApply these specific visual changes: soft starlight emanating from within the creature, points of light moving slowly around it.\n\nMaintain the ethereal fey nature bioluminescent aesthetic throughout.\n\nPortrait orientation, centered composition, fantasy card game art, high detail, professional digital illustration, no text, no watermarks.",
+  "prompt": "fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality, Transform this creature with Order energy. Refine and structure the design. Add crystalline geometric patterns growing from the surface, luminous blue-white-gold Order energy emanating from within, refined and polished armor or outer casing, symmetrical ordered enhancements, harmonious growth. Subtle transformation — the creature should remain clearly recognizable. This creature has been shaped entirely by Order energy, showing crystalline perfection and structured harmony. This evolution continues that refinement. Apply these specific visual changes: soft starlight emanating from within the creature, points of light moving slowly around it. Maintain the ethereal fey nature bioluminescent aesthetic throughout. Portrait orientation, centered composition, no text, no watermarks.",
   "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects",
   "image_size": "square_hd",
   "num_inference_steps": 32,
@@ -1141,17 +1186,18 @@ Shard: REFINED
 
 ---
 
-#### Demonic Kingdoms — Epic to Legendary, Chaos, Top Tier (2 passes)
+#### Demonic Kingdoms — Epic to Legendary, Chaos, Top Tier (Prismatic Shard, 2 passes)
 
 Reference image: previously evolved Epic-tier art (3 Chaos evolutions prior)
-Selected modifier: DF27 (Apocalypse Herald) — top-tier exclusive
+Selected modifier: DF27 (Apocalypse Herald)
 Shard: PRISMATIC
+Evolution history: 3 prior Chaos evolutions, 0 Order
 
 **First pass fal.ai request body:**
 ```json
 {
   "image_url": "https://r2.chaos-creatures.com/art/ghi789/epic.webp",
-  "prompt": "Transform this creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain core identity but push toward the extreme.\n\nThis creature has been wracked entirely by Chaos energy, showing fractured volatile forms barely held together. This evolution pushes further into dissolution.\n\nApply these specific visual changes: the creature radiates an apocalyptic aura — cracks in reality spreading behind it, worlds ending at its back.\n\nMaintain the dark infernal demonic hellfire aesthetic throughout.\n\nPortrait orientation, centered composition, fantasy card game art, high detail, professional digital illustration, no text, no watermarks.",
+  "prompt": "fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality, Transform this creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain core identity but push toward the extreme. This creature has been wracked entirely by Chaos energy, showing fractured volatile forms barely held together. This evolution pushes further into dissolution. Apply these specific visual changes: the creature radiates an apocalyptic aura — cracks in reality spreading behind it, worlds ending at its back. Maintain the dark infernal demonic hellfire aesthetic throughout. Portrait orientation, centered composition, no text, no watermarks.",
   "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects",
   "image_size": "square_hd",
   "num_inference_steps": 40,
@@ -1163,11 +1209,12 @@ Shard: PRISMATIC
 }
 ```
 
-**Second pass (refinement):**
+**Second pass (refinement only):**
 ```json
 {
   "image_url": "<first_pass_output_url>",
-  "prompt": "Enhance lighting quality, sharpen details, improve overall fidelity without changing the composition or design. Transform this creature with Chaos energy...",
+  "prompt": "Enhance lighting quality, sharpen details, improve overall fidelity without changing the composition or design. fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, no text, no borders, no watermarks.",
+  "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects",
   "image_size": "square_hd",
   "num_inference_steps": 20,
   "guidance_scale": 8.0,
@@ -1180,29 +1227,57 @@ Shard: PRISMATIC
 
 ---
 
-## 5. Batch Generation Spec
+## 5. Batch Generation Pipeline (Admin Dashboard)
 
-The batch pipeline is the tool used before launch to generate all Common-tier card art and text. The owner runs this tool from one command, reviews results in a web gallery, and approves or rejects each card with one click.
+The batch pipeline is a feature of the **Admin Dashboard** (Railway-deployed web app), not the iOS game client. The owner opens the Admin Dashboard in a browser, uploads a CSV, triggers generation, and approves or rejects results in the review gallery. No terminal commands required from the owner.
 
-### 5.1 CSV Input Format
+### 5.1 Budget Estimates — $300 Total Build Budget
 
-The batch pipeline reads a CSV file at `scripts/batch/cards-to-generate.csv`. This is the only input the owner provides. Claude Code generates the art and text from it.
+The batch pipeline generates all pre-launch Common-tier card art and text. Cost estimates for the full launch set (from the example CSV: 15 cards, 3 factions):
+
+| Item | Count | Unit Cost | Total |
+|---|---|---|---|
+| Base card art (fal.ai flux/dev, txt2img) | 15 cards × 1.2 avg attempts (20% regen rate) | ~$0.03/image | ~$0.54 |
+| Base flavor text (GPT-4o Mini) | 15 cards × 1.1 avg attempts | ~$0.0001/call | ~$0.002 |
+| **Full launch set (367 cards per doc 05 estimates)** | 367 × 1.3 avg attempts | ~$0.03/image | ~$14.30 |
+| Post-launch player evolutions (first 1000 players, est. avg 5 evolutions/player) | 5000 evolutions | ~$0.03 avg (mixed tiers) | ~$150 |
+| GPT-4o Mini for 5000 evolutions (names + flavor text) | 10000 calls | ~$0.0001 | ~$1.00 |
+| fal.ai Pro subscription (optional, for faster throughput) | 1 month | $0 (pay-per-use) | $0 |
+| Cloudflare R2 storage (367 base cards + 5000 evolution images) | ~5400 webp files @ ~150KB avg | $0 (free tier: 10GB) | $0 |
+| Cloudflare R2 egress | ~50GB/month reads | $0 (free egress) | $0 |
+| Railway (game server + admin dashboard) | 1 month | $5/month (Hobby plan) | $5 |
+| Supabase | 1 month | $0 (free tier sufficient for launch) | $0 |
+| Apple Developer Program | Annual | $99/year | $99 |
+| **Total estimated spend to launch** | | | **~$270** |
+
+**Budget headroom:** ~$30 remaining out of $300. Do not add paid services without removing something else.
+
+**Cost safety rules:**
+- Free-tier player evolutions use `fal-ai/flux-kontext/dev` (~$0.02/image) not Pro
+- GPT-4o Mini is correct — do not upgrade to GPT-4o without re-evaluating budget
+- Alert fires (PostHog) if total monthly fal.ai + OpenAI spend exceeds $50 in any calendar month
+
+---
+
+### 5.2 CSV Input Format
+
+The Admin Dashboard reads a CSV file the owner uploads through the dashboard UI. This is the only input the owner provides. The pipeline generates art and text from it.
 
 **Column definitions:**
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | string | Unique ID for this row — used as the batch key. Use format `IW-001`, `FEY-001`, `DMK-001`. |
+| `id` | string | Unique ID for this row. Format: `IW-001`, `FEY-001`, `DMK-001`. Used as the manifest key for resumability. |
 | `faction_id` | string | One of: `IRONWRIGHT`, `FEY_COURTS`, `DEMONIC_KINGDOMS` |
 | `card_type` | string | One of: `CREATURE`, `SPELL`, `STABILIZER` |
-| `base_name` | string | Starting name for the creature. This is the Common-tier name. |
-| `creature_description` | string | Visual description of the creature for the art prompt. 1-3 sentences. What it looks like, its pose, distinctive features. |
+| `base_name` | string | Starting name (Common-tier name). |
+| `creature_description` | string | Visual description for the art prompt. 1–3 sentences. What it looks like, pose, distinctive features. |
 | `mana_cost` | integer | 1 through 6 |
-| `base_attack` | integer | ATK value. Leave empty for SPELL/STABILIZER. |
+| `base_attack` | integer | ATK value. Empty for SPELL/STABILIZER. |
 | `base_health` | integer | HP value. |
 | `base_instability` | integer | 0 through 5 |
-| `keywords` | string | Comma-separated list of keywords from: SHIELD, LIFESTEAL, FLYING, REACH, DEATHTOUCH, TAUNT, PIERCING. Leave empty if none. |
-| `flavor_note` | string | Optional hint to guide flavor text tone. e.g., "aggressive hunter," "noble defender," "ancient sleeper." |
+| `keywords` | string | Comma-separated from: SHIELD, LIFESTEAL, FLYING, REACH, DEATHTOUCH, TAUNT, PIERCING. Empty if none. |
+| `flavor_note` | string | Optional hint to guide flavor text. e.g., "aggressive hunter," "noble defender." |
 
 **Example CSV (`cards-to-generate.csv`):**
 
@@ -1227,23 +1302,217 @@ DMK-005,DEMONIC_KINGDOMS,CREATURE,Infernal Colossus,"colossal demon, three stori
 
 ---
 
-### 5.2 Batch Script
+### 5.3 Resumable Batch Script
 
-The batch pipeline script lives at `scripts/batch/generate-cards.ts`. The owner runs it with:
+The batch pipeline runs as a Node.js/TypeScript process on the Railway server, triggered by the Admin Dashboard UI (owner clicks "Start Generation"). The pipeline is fully resumable — it tracks completed cards in a JSON manifest and skips them on re-run. It never crashes on API errors.
 
-```bash
-npx ts-node scripts/batch/generate-cards.ts
+**Pipeline entry point:** `scripts/batch/generate-cards.ts`
+**Triggered by:** Admin Dashboard POST request to `/api/admin/batch/start` (Railway endpoint)
+**Progress visible:** Admin Dashboard polls `/api/admin/batch/status` every 3 seconds and displays a live progress bar
+
+**Manifest file:** `scripts/batch/output/manifest.json`
+
+The manifest tracks the state of each card by its `id` column from the CSV. Before processing any card, the pipeline checks whether its ID already has a `completed` entry in the manifest. If it does, skip it. The pipeline only processes rows with status `pending` or `failed`.
+
+**Manifest format:**
+```json
+{
+  "started_at": "2026-02-16T10:00:00Z",
+  "last_updated": "2026-02-16T10:15:32Z",
+  "total": 15,
+  "completed": 12,
+  "failed": 1,
+  "pending": 2,
+  "cards": {
+    "IW-001": {
+      "status": "completed",
+      "art_url": "https://r2.chaos-creatures.com/art/batch/IW-001/common.webp",
+      "flavor_text": "Built to hunt. Built to last.",
+      "art_prompt": "fantasy card game art, painterly...",
+      "fal_seed": 12345678,
+      "completed_at": "2026-02-16T10:02:14Z"
+    },
+    "IW-002": {
+      "status": "failed",
+      "error": "nsfw_flagged_by_fal",
+      "attempts": 3,
+      "last_attempt_at": "2026-02-16T10:05:00Z"
+    },
+    "IW-003": {
+      "status": "pending"
+    }
+  }
+}
 ```
 
-The script:
-1. Reads `scripts/batch/cards-to-generate.csv`
-2. For each row, calls fal.ai (txt2img) to generate art
-3. Uploads art to Cloudflare R2 at `art/batch/{row_id}/common.webp`
-4. Calls GPT-4o Mini to generate initial flavor text
-5. Writes results to `scripts/batch/output/results.json`
-6. Builds `scripts/batch/output/review-gallery.html` — a static web page the owner opens in a browser
+**Pipeline TypeScript implementation:**
 
-**Expected environment variables in `.env`:**
+```typescript
+import * as fs from 'fs';
+import * as path from 'path';
+import { parse } from 'csv-parse/sync';
+
+const MANIFEST_PATH = path.join(__dirname, 'output/manifest.json');
+const CSV_PATH      = path.join(__dirname, 'cards-to-generate.csv');
+const MAX_ATTEMPTS  = 3;
+
+// Exponential backoff: attempt 1 = 2s, attempt 2 = 4s, attempt 3 = 8s
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function callFalWithRetry(requestBody: object, attempt = 1): Promise<FalResponse> {
+  try {
+    const response = await fetch('https://fal.run/fal-ai/flux/dev', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${process.env.FAL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(60000)  // 60s timeout
+    });
+
+    if (response.status === 429) {
+      // Rate limit: wait and retry with exponential backoff
+      const waitMs = Math.pow(2, attempt) * 1000;
+      console.log(`Rate limited. Waiting ${waitMs}ms before retry ${attempt}/${MAX_ATTEMPTS}`);
+      await sleep(waitMs);
+      if (attempt < MAX_ATTEMPTS) return callFalWithRetry(requestBody, attempt + 1);
+      throw new Error('rate_limit_exhausted');
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(`fal_api_error_${response.status}: ${error.detail}`);
+    }
+
+    const data = await response.json() as FalResponse;
+
+    if (data.has_nsfw_concepts?.[0] === true) {
+      throw new Error('nsfw_flagged_by_fal');
+    }
+
+    return data;
+  } catch (err) {
+    if (attempt < MAX_ATTEMPTS && !(err instanceof Error && err.message === 'rate_limit_exhausted')) {
+      const waitMs = Math.pow(2, attempt) * 1000;
+      console.log(`Error on attempt ${attempt}: ${err}. Retrying in ${waitMs}ms...`);
+      await sleep(waitMs);
+      return callFalWithRetry(requestBody, attempt + 1);
+    }
+    throw err;
+  }
+}
+
+function loadManifest(): Manifest {
+  if (fs.existsSync(MANIFEST_PATH)) {
+    return JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf-8')) as Manifest;
+  }
+  return { started_at: new Date().toISOString(), last_updated: new Date().toISOString(), total: 0, completed: 0, failed: 0, pending: 0, cards: {} };
+}
+
+function saveManifest(manifest: Manifest): void {
+  manifest.last_updated = new Date().toISOString();
+  fs.mkdirSync(path.dirname(MANIFEST_PATH), { recursive: true });
+  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+}
+
+async function runBatchPipeline(): Promise<void> {
+  const csvContent = fs.readFileSync(CSV_PATH, 'utf-8');
+  const rows = parse(csvContent, { columns: true, skip_empty_lines: true }) as CsvRow[];
+
+  const manifest = loadManifest();
+  manifest.total = rows.length;
+
+  // Initialize pending entries for any row not yet in manifest
+  for (const row of rows) {
+    if (!manifest.cards[row.id]) {
+      manifest.cards[row.id] = { status: 'pending' };
+    }
+  }
+  saveManifest(manifest);
+
+  for (const row of rows) {
+    const entry = manifest.cards[row.id];
+
+    // Skip completed cards — this is what makes the pipeline resumable
+    if (entry.status === 'completed') {
+      console.log(`Skipping ${row.id} — already completed`);
+      continue;
+    }
+
+    // Skip cards that have exhausted all attempts
+    if (entry.status === 'failed' && (entry.attempts ?? 0) >= MAX_ATTEMPTS) {
+      console.log(`Skipping ${row.id} — failed after ${MAX_ATTEMPTS} attempts`);
+      continue;
+    }
+
+    console.log(`Processing ${row.id}: ${row.base_name}`);
+    manifest.cards[row.id] = { status: 'pending', attempts: (entry.attempts ?? 0) + 1, last_attempt_at: new Date().toISOString() };
+    saveManifest(manifest);
+
+    try {
+      // Build art prompt
+      const artPrompt = buildBaseCardPrompt(row);
+
+      // Call fal.ai with retry and backoff — never throws unless MAX_ATTEMPTS exhausted
+      const falResponse = await callFalWithRetry({
+        prompt: artPrompt,
+        negative_prompt: STANDARD_NEGATIVE_PROMPT,
+        image_size: 'portrait_4_3',
+        num_inference_steps: 35,
+        guidance_scale: 7.5,
+        num_images: 1,
+        enable_safety_checker: true,
+        output_format: 'webp'
+      });
+
+      // Download image and upload to R2
+      const imageBuffer = await downloadImage(falResponse.images[0].url);
+      const r2Key = `art/batch/${row.id}/common.webp`;
+      await uploadToR2(imageBuffer, r2Key);
+      const artUrl = `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${r2Key}`;
+
+      // Generate flavor text
+      const flavorText = await callOpenAIForFlavorText(row);
+
+      // Mark as completed in manifest
+      manifest.cards[row.id] = {
+        status: 'completed',
+        art_url: artUrl,
+        flavor_text: flavorText,
+        art_prompt: artPrompt,
+        fal_seed: falResponse.seed,
+        completed_at: new Date().toISOString()
+      };
+      manifest.completed = Object.values(manifest.cards).filter(c => c.status === 'completed').length;
+      saveManifest(manifest);
+
+      console.log(`Completed ${row.id}`);
+
+    } catch (err) {
+      console.error(`Failed ${row.id}: ${err}`);
+      manifest.cards[row.id] = {
+        status: 'failed',
+        error: String(err),
+        attempts: manifest.cards[row.id].attempts ?? 1,
+        last_attempt_at: new Date().toISOString()
+      };
+      manifest.failed = Object.values(manifest.cards).filter(c => c.status === 'failed').length;
+      saveManifest(manifest);
+      // Continue to next card — never crash the pipeline
+    }
+  }
+
+  manifest.pending = Object.values(manifest.cards).filter(c => c.status === 'pending').length;
+  saveManifest(manifest);
+
+  console.log(`Pipeline complete. ${manifest.completed}/${manifest.total} completed, ${manifest.failed} failed.`);
+}
+```
+
+**Expected environment variables (Railway environment, not in git):**
 ```
 FAL_API_KEY=...
 OPENAI_API_KEY=...
@@ -1252,62 +1521,71 @@ CLOUDFLARE_R2_ACCESS_KEY_ID=...
 CLOUDFLARE_R2_SECRET_ACCESS_KEY=...
 CLOUDFLARE_R2_BUCKET_NAME=chaos-creatures-art
 CLOUDFLARE_R2_PUBLIC_URL=https://r2.chaos-creatures.com
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
 ---
 
-### 5.3 Review Gallery Specification
+### 5.4 Admin Dashboard Review Gallery
 
-`review-gallery.html` is a self-contained static HTML file the owner opens locally in a browser. It does NOT require a server. All approve/reject state is saved to `scripts/batch/output/review-state.json` in the local filesystem (via a tiny Node.js server the script starts automatically, or via localStorage as fallback).
+The review gallery is a feature of the **Admin Dashboard** — a React web app deployed on Railway. It is not part of the iOS game client. The owner accesses it at `https://admin.chaos-creatures.com` (or the Railway-provided URL before a custom domain is configured).
+
+**Technology:** React (TypeScript), deployed on Railway as a separate service from the game server. Uses the same Railway project, different service. No separate account needed.
+
+**Review gallery data source:** The gallery reads from the manifest at `scripts/batch/output/manifest.json` via a Railway API endpoint (`GET /api/admin/batch/results`). It does not read the file system directly from the browser.
 
 **Gallery layout:**
 
-Each card displays as a card-sized panel in a grid:
-- Left: Generated art (scaled to card proportions)
-- Right: Card details
-  - Name, faction, type
-  - Stats: `{mana_cost} cost | {base_attack}/{base_health} | Instability {base_instability}`
-  - Keywords (if any)
+Each card displays as a card-sized panel in a responsive grid (3 columns on desktop):
+- Top: Generated art (displayed at card proportions, 768×1024 aspect ratio regardless of actual dimensions)
+- Middle: Card details
+  - Name, faction, card type
+  - Stats: `{mana_cost} CM | {base_attack}/{base_health} | Instability {base_instability}`
+  - Keywords (if any), as badges
   - Flavor text
-  - Art prompt used (collapsible)
-- Below: Three buttons
-  - **Approve** (green) — marks card as approved, enters production pool
-  - **Reject** (red) — marks card as rejected, removes from pool
-  - **Regenerate** (orange) — triggers a new generation for just this card with a different seed
+  - Art prompt used (collapsible section, hidden by default)
+- Bottom: Three action buttons
+  - **Approve** (green) — marks card `approved` in manifest, enters production pool
+  - **Reject** (red) — marks card `rejected`, removes from production pool
+  - **Regenerate** (orange) — sends `POST /api/admin/batch/regenerate/{card_id}` to the server, which sets the manifest entry back to `pending` and re-runs just that card through the pipeline with a new random seed. The gallery auto-refreshes when the new image is available.
 
 **Header section:**
-- Progress bar: "X of Y approved | Z rejected | W pending"
-- Button: "Export Approved Cards to Database" — generates `approved-cards.sql` INSERT statements
-- Button: "Regenerate All Rejected" — reruns generation for all rejected cards at once
+- Progress bar: `{X} approved | {Z} rejected | {W} pending | {F} failed`
+- Button: **Export Approved to Database** — calls `POST /api/admin/batch/export`, which generates SQL INSERT statements into `card_templates` and inserts them directly into the Supabase database using the service role key. No file download needed.
+- Button: **Regenerate All Failed** — calls `POST /api/admin/batch/regenerate-failed`, which resets all `failed` entries to `pending` and re-runs the pipeline for those cards only
 
-**Approve/Reject persistence:** State saves automatically on every click to `review-state.json`. Refreshing the page preserves all decisions.
+**State persistence:** All approve/reject decisions are stored in the manifest on the Railway server via API calls. The manifest is the source of truth. Refreshing the browser preserves all decisions.
+
+**Security:** Admin Dashboard is behind HTTP Basic Auth (username/password set as Railway environment variable `ADMIN_PASSWORD`). One set of credentials, no user accounts needed.
 
 ---
 
-### 5.4 Batch Art Prompt Assembly
+### 5.5 Batch Art Prompt Assembly
 
-The script builds each card's art prompt by concatenating the three components:
+The pipeline builds each card's art prompt by concatenating the STYLE_ANCHOR, faction prefix, creature description, and composition instruction:
 
 ```typescript
+const STYLE_ANCHOR = 'fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality';
+
+const COMPOSITION_INSTRUCTION = 'portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view or frontal pose, simple contextual background not cluttered, clear distinct silhouette, card game art composition, eyes visible and facing viewer, dramatic directional lighting';
+
 function buildBaseCardPrompt(row: CsvRow): string {
   const factionPrefix = FACTION_PREFIXES[row.faction_id];
-  const composition = 'portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view or frontal pose, simple contextual background not cluttered, clear distinct silhouette, card game art composition, eyes visible and facing viewer, dramatic directional lighting';
-  const quality = 'fantasy card game art, high detail, professional digital illustration, sharp focus, vibrant colors, dynamic pose, Magic: The Gathering style composition, clean edges';
-
-  return `${factionPrefix},\n\n${row.creature_description},\n\n${composition},\n\n${quality}`;
+  return `${STYLE_ANCHOR},\n\n${factionPrefix},\n\n${row.creature_description},\n\n${COMPOSITION_INSTRUCTION}`;
 }
 ```
 
 The `negative_prompt` is always:
 ```
-text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, extra limbs, fused body parts, speech bubbles, comic panels, grid layout
+text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, extra limbs, fused body parts, speech bubbles, comic panels, grid layout, white background, collage
 ```
 
 ---
 
-### 5.5 Batch Flavor Text Prompt
+### 5.6 Batch Flavor Text Prompt
 
-The batch script uses a simplified flavor text prompt for base cards (no evolution history yet):
+The batch pipeline uses a simplified flavor text prompt for base cards (no evolution history yet):
 
 **System prompt:**
 ```
@@ -1338,61 +1616,58 @@ Output only the flavor text, nothing else.
 
 ### 6.1 Content Safety
 
-fal.ai's FLUX Kontext API has `enable_safety_checker: true` set on every request. This is the first line of defense. The response field `has_nsfw_concepts` returns `[true]` if the safety checker flagged the image.
+fal.ai's FLUX Kontext API has `enable_safety_checker: true` set on every request. This is the primary content filter. The response field `has_nsfw_concepts` returns `[true]` if the safety checker flagged the image.
 
 **Server-side check after every generation:**
 ```typescript
 async function validateGeneratedImage(falResponse: FalResponse): Promise<ValidationResult> {
-  // Check fal.ai's built-in safety checker result
   if (falResponse.has_nsfw_concepts[0] === true) {
     return { valid: false, reason: 'nsfw_flagged_by_fal' };
   }
-
-  // Check for text in image using fal.ai OCR or a simple heuristic
   // For launch: trust fal.ai safety checker + negative prompt
-  // Post-launch: add Azure Content Safety or AWS Rekognition call here
-
+  // Post-launch upgrade: add Azure Content Safety or AWS Rekognition call here if false-positives become a problem
   return { valid: true };
 }
 ```
 
 **If validation fails:**
-1. Log the failure with prompt and card instance ID
+1. Log the failure with prompt and card instance ID to Supabase `generation_error_log` table
 2. Increment retry counter for this generation attempt
-3. If retry count < 3: retry with the negative prompt augmented with `no text overlay, completely clean image, SFW, appropriate for all ages`
+3. If retry count < 3: retry with negative prompt augmented with `no text overlay, completely clean image, SFW, appropriate for all ages`
 4. If retry count == 3: use fallback art (see Section 6.3)
-5. Notify owner via PostHog event `generation_failed_after_retries` with card details
+5. Fire PostHog event `generation_failed_after_retries` with `{ card_instance_id, faction_id, evolution_outcome, modifier_id }`
 
 ---
 
 ### 6.2 Retry Logic
 
-**Image generation retry sequence:**
+**Image generation retry sequence (all generation contexts — batch pipeline and live evolution):**
 
-| Attempt | Action |
-|---|---|
-| 1 (initial) | Send standard request |
-| 2 (retry on NSFW flag) | Add to negative_prompt: `no text overlay, completely clean image, SFW, appropriate for all ages`. Reduce `strength` by 0.05 for evolution calls. |
-| 3 (retry on second flag) | Remove the most recently selected player modifier from the prompt. Add `safe, tasteful, professional game art` to positive prompt. |
-| 4 (all retries exhausted) | Use fallback art, queue async retry, notify owner |
+| Attempt | Trigger | Action |
+|---|---|---|
+| 1 (initial) | — | Send standard request |
+| 2 | NSFW flag OR API error (non-429) | Add to negative_prompt: `no text overlay, completely clean image, SFW, appropriate for all ages`. Reduce `strength` by 0.05 for evolution calls. Wait 2s before retry. |
+| 3 | NSFW flag on attempt 2 OR API error on attempt 2 | Remove the most recently selected player modifier from the prompt. Add `safe, tasteful, professional game art` to positive prompt. Wait 4s before retry. |
+| 4 (rate limit — HTTP 429) | Any attempt returns 429 | Wait `2^attempt` seconds (2s, 4s, 8s). Retry up to 3 times for rate limits specifically. |
+| Final failure | All retries exhausted | Use fallback art. Queue async retry. Notify owner via PostHog. |
 
-**API timeout handling (fal.ai calls that don't return within 45 seconds):**
-1. Cancel the pending request
-2. Retry once with identical parameters
+**API timeout handling (fal.ai calls that don't return within 60 seconds):**
+1. Cancel the pending request via `AbortSignal.timeout(60000)`
+2. Retry once with identical parameters after 5s
 3. If second timeout: use fallback art, queue async retry
 
 **Text generation retry sequence:**
 
-| Attempt | Action |
-|---|---|
-| 1 (initial) | Standard request |
-| 2 (if response is not valid JSON) | Add to system prompt: `CRITICAL: Your response must be ONLY a valid JSON array like ["Name1", "Name2", "Name3"]. No other text.` |
-| 3 (if still malformed) | Use template fallback names |
+| Attempt | Trigger | Action |
+|---|---|---|
+| 1 (initial) | — | Standard request |
+| 2 | Response is not valid JSON | Add to system prompt: `CRITICAL: Your response must be ONLY a valid JSON array like ["Name1", "Name2", "Name3"]. No other text.` |
+| 3 | Still malformed JSON | Use template fallback names |
 
 **Template fallback names if GPT fails completely:**
 ```typescript
 function getFallbackNames(previousName: string, evolutionOutcome: string, tier: string): string[] {
-  const tierSuffix = { UNCOMMON: 'Prime', RARE: 'Elite', EPIC: 'Champion', LEGENDARY: 'Legendary' }[tier];
+  const tierSuffix    = { UNCOMMON: 'Prime', RARE: 'Elite', EPIC: 'Champion', LEGENDARY: 'Legendary' }[tier];
   const outcomeSuffix = evolutionOutcome === 'CHAOS' ? 'Unbound' : 'Ascendant';
   return [
     `${previousName} ${tierSuffix}`,
@@ -1406,41 +1681,79 @@ function getFallbackNames(previousName: string, evolutionOutcome: string, tier: 
 
 ### 6.3 Fallback Art System
 
-If all generation attempts fail, the card still evolves mechanically. The player is never blocked by an API failure.
+If all generation attempts fail, the card still evolves mechanically. The iOS game client is never blocked by an API failure — it receives the fallback art URL and continues.
 
-**Fallback art is a programmatic overlay applied to the existing art:**
+**Fallback art is a programmatic overlay applied to the existing art using the `sharp` Node.js library:**
 
 ```typescript
+import sharp from 'sharp';
+
 async function generateFallbackArt(
   existingArtUrl: string,
-  evolutionOutcome: 'ORDER' | 'CHAOS'
+  evolutionOutcome: 'ORDER' | 'CHAOS',
+  cardInstanceId: string,
+  toTier: string
 ): Promise<string> {
   // Download existing art from R2
-  // Apply color overlay using sharp (Node.js image processing library):
-  // ORDER: blue-white tint overlay at 30% opacity + slight brightness increase (+10) + sharpness
-  // CHAOS: red-purple tint overlay at 30% opacity + saturation boost (+20) + slight blur on edges
-  // Upload modified image to R2 at art/{card_instance_id}/{tier}-fallback.webp
-  // Return R2 CDN URL
+  const imageBuffer = await downloadImage(existingArtUrl);
+
+  let processedBuffer: Buffer;
+  if (evolutionOutcome === 'ORDER') {
+    // Blue-white tint overlay at 30% opacity + slight brightness increase
+    processedBuffer = await sharp(imageBuffer)
+      .tint({ r: 180, g: 210, b: 255 })   // cool blue-white tint
+      .modulate({ brightness: 1.1, saturation: 0.95 })
+      .sharpen()
+      .webp({ quality: 85 })
+      .toBuffer();
+  } else {
+    // Red-purple tint overlay at 30% opacity + saturation boost
+    processedBuffer = await sharp(imageBuffer)
+      .tint({ r: 200, g: 80, b: 180 })    // red-purple chaos tint
+      .modulate({ brightness: 0.95, saturation: 1.25 })
+      .blur(0.5)
+      .webp({ quality: 85 })
+      .toBuffer();
+  }
+
+  // Upload modified image to R2
+  const r2Key = `art/${cardInstanceId}/${toTier.toLowerCase()}-fallback.webp`;
+  await uploadToR2(processedBuffer, r2Key);
+  return `${process.env.CLOUDFLARE_R2_PUBLIC_URL}/${r2Key}`;
 }
 ```
 
-**Player-facing message when fallback is used:**
+**Player-facing message when fallback is used (displayed in the iOS evolution ceremony screen):**
 ```
-Your card has evolved! The new art is being finalized in the background and will appear shortly.
+Your card has evolved! The final artwork is being generated and will appear soon.
 You can play with your evolved card right now.
 ```
 
-This message appears in the evolution completion screen. The art updates automatically the next time the player opens the card (via push notification if the app is in the background).
+The iOS game client polls `GET /api/cards/{card_instance_id}/art-status` every 30 seconds when a card has fallback art. When the async retry succeeds and `art_url` is updated, the client refreshes the card image without requiring a full data reload. The client also receives an APNs push notification via Supabase Realtime when the art finishes.
 
-**Async retry queue:** Failed generation jobs are added to a Supabase table `art_generation_queue` with status `PENDING`. A Railway cron job runs every 15 minutes and retries up to 5 pending items. On success, it updates `CardInstance.art_url` and `EvolutionRecord.art_url` and sends a push notification.
+**Async retry queue:** Failed generation jobs are added to Supabase table `art_generation_queue`:
+```sql
+CREATE TABLE art_generation_queue (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  card_instance_id uuid NOT NULL REFERENCES card_instances(id),
+  evolution_record_id uuid NOT NULL,
+  status       text NOT NULL DEFAULT 'PENDING',  -- PENDING | PROCESSING | COMPLETED | ABANDONED
+  attempts     int NOT NULL DEFAULT 0,
+  last_error   text,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+```
+
+A Railway cron job (`scripts/retry-failed-art.ts`, runs every 15 minutes via Railway's cron scheduler) dequeues up to 5 `PENDING` items and retries them. On success: updates `CardInstance.art_url` and `EvolutionRecord.art_url`, sets status `COMPLETED`, triggers APNs push via Supabase Edge Function. After 5 failed attempts: sets status `ABANDONED`, fires PostHog event `art_generation_permanently_failed`.
 
 ---
 
 ### 6.4 Generation Queue and Rate Limits
 
-**Priority queuing:** fal.ai Pro endpoints have higher throughput. Paid tier evolutions go to Pro endpoints (REFINED, PRISMATIC), free tier goes to Dev endpoint.
+**Priority queuing:** fal.ai Pro endpoints have higher throughput. Paid tier evolutions use Pro endpoints (REFINED, PRISMATIC); Free tier uses Dev endpoint. This is enforced server-side — the iOS client sends shard quality, the server picks the endpoint.
 
-**Per-user daily rate limits (prevents abuse — aligns with max shard acquisition rate):**
+**Per-user daily rate limits (stored in Supabase `player` table as `daily_evolution_count`, reset by midnight UTC via Supabase pg_cron):**
 
 | Tier | Max Evolutions per Day |
 |---|---|
@@ -1449,38 +1762,49 @@ This message appears in the evolution completion screen. The art updates automat
 | Top | 30 |
 | Hard cap (any tier) | 50 |
 
-Rate limit enforcement: stored in Supabase as `daily_evolution_count` on Player table, reset by midnight UTC cron.
+Rate limit check in the Railway game server's evolution handler: before triggering any generation job, read `player.daily_evolution_count` and compare to tier limit. If exceeded, return HTTP 429 with body `{ error: 'daily_evolution_limit_reached', limit: N }`. The iOS client shows an alert: "You've reached today's evolution limit. Come back tomorrow to evolve more cards."
 
-**Cost monitoring:** Each generation call is logged to a Supabase table `api_cost_log` with:
-- `player_id`, `generation_type` (base/evolution/refinement), `model`, `estimated_cost_usd`, `timestamp`
+**Cost monitoring:** Each generation call is logged to Supabase `api_cost_log`:
+```sql
+CREATE TABLE api_cost_log (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id           uuid REFERENCES players(id),   -- null for batch pipeline
+  generation_type     text NOT NULL,  -- 'base_art' | 'evolution' | 'refinement' | 'naming' | 'flavor_text'
+  model               text NOT NULL,  -- 'fal-ai/flux-kontext/dev' | 'fal-ai/flux-kontext/pro' | 'gpt-4o-mini'
+  estimated_cost_usd  numeric(8,5) NOT NULL,
+  timestamp           timestamptz NOT NULL DEFAULT now()
+);
+```
 
-A PostHog dashboard watches for players exceeding expected cost profiles. Alert fires if any player's monthly API cost exceeds $2.00 (signals possible exploit or runaway retry loop).
+PostHog alert fires if any player's 30-day rolling API cost exceeds $2.00 (signals exploit or runaway loop): event name `player_cost_anomaly`, properties `{ player_id, 30_day_cost_usd }`.
+Global monthly cost alert fires if total `api_cost_log` sum for the month exceeds $50: event name `monthly_budget_alert`.
 
 ---
 
 ### 6.5 Base Card QA Workflow
 
-All batch-generated base cards go through owner approval before entering the live card pool. The review gallery (Section 5.3) is the complete QA interface.
+All batch-generated base cards go through owner approval in the Admin Dashboard review gallery before entering the live card pool.
 
-**QA criteria (owner evaluates each card):**
+**QA criteria (owner evaluates each card in the gallery):**
 
 | Check | Pass Condition |
 |---|---|
 | Art matches faction | Clearly Ironwright / Fey / Demonic aesthetic |
+| Consistent with style anchor | Looks like it belongs in the same card game as others already approved |
 | Creature is visible | Subject fills frame, clearly identifiable |
 | No text or watermarks | No readable characters in image |
 | Colors appropriate | Warm metallic / cool nature / dark infernal as expected |
 | Name fits faction voice | Passes the "does this sound like this faction" gut check |
 | Flavor text grammatical | Readable, no obvious errors |
 | Flavor text evocative | Feels like a card game, not a description |
-| Stats match PP budget | ATK + HP + keyword costs = mana cost × 2 + 1 (±1 tolerance) |
-| No offensive content | Nothing that would trigger app store review |
+| Stats match PP budget | ATK + HP + keyword costs = mana cost x 2 + 1 (±1 tolerance) |
+| No App Store-violating content | Nothing that would trigger App Store review — no gore, no explicit imagery |
 
-**Target approval rate:** 70–80% (20–30% rejection is normal for AI batch generation).
+**Target approval rate:** 70–80%. A 20–30% rejection rate is normal for AI batch generation. The pipeline is designed to be run, reviewed, and have the failed cards regenerated until the target count is reached.
 
-**Approved cards:** Get `approved_at` timestamp and are inserted into `card_templates` table via the "Export Approved Cards to Database" button in the review gallery.
+**Approved cards:** Get `approved_at` timestamp and are inserted into `card_templates` table via the "Export Approved to Database" button in the Admin Dashboard (calls `POST /api/admin/batch/export` — no manual SQL needed).
 
-**Rejected cards:** Deleted from the output set. Owner can click "Regenerate All Rejected" to try again with different seeds.
+**Rejected cards:** Marked in the manifest. Owner clicks "Regenerate All Failed" in the Admin Dashboard to try new seeds for all rejected entries.
 
 ---
 
@@ -1492,24 +1816,50 @@ All batch-generated base cards go through owner approval before entering the liv
 
 2. **Replaced abstract prompt templates with exact prompt strings.** The original used placeholder language like "construct a prompt using faction style." Version 2.0 provides verbatim faction prefix strings, verbatim evolution direction instruction strings, verbatim composition and quality tag strings, and fully assembled example prompts ready to copy into code.
 
-3. **Added complete visual modifier tables with prompt description strings.** The original listed modifier display names only. Version 2.0 adds a `Prompt Description String` column for every modifier (U01–U30, IF01–IF28, FF01–FF28, DF01–DF28) — the exact text inserted into `{MODIFIER_DESCRIPTIONS}` in the evolution prompt. This removes all judgment calls about how to translate a modifier name into a prompt instruction.
+3. **Added complete visual modifier tables with prompt description strings.** The original listed modifier display names only. Version 2.0 adds a `Prompt Description String` column for every modifier (U01–U30, IF01–IF28, FF01–FF28, DF01–DF28) — the exact text inserted into `{MODIFIER_DESCRIPTIONS}` in the evolution prompt.
 
-4. **Added TypeScript function signatures and implementations for prompt assembly.** The original had Python pseudocode with undefined helper functions. Version 2.0 provides TypeScript implementations matching the CLAUDE.md infrastructure stack (Railway Node.js/TypeScript) including the complete `buildEvolutionImagePrompt` function, all lookup tables as typed constants, and the `buildNamingPrompt` function.
+4. **Added TypeScript function signatures and implementations for prompt assembly.** Version 2.0 provides TypeScript implementations matching the CLAUDE.md infrastructure stack (Railway Node.js/TypeScript) including the complete `buildEvolutionImagePrompt` function and `buildNamingPrompt` function.
 
-5. **Added complete Batch Generation Spec (Section 5) — new section not in original.** The original had a note saying "internal batch tool with approval UI needed." Version 2.0 fully specifies: the exact CSV format with all columns and types, example CSV rows for all three factions, the script entry point and run command, the review gallery UI specification (layout, buttons, persistence, export), and the batch art prompt assembly function.
+5. **Added complete Batch Generation Spec (Section 5) — new section not in original.** Fully specifies the CSV format, example CSV rows, pipeline entry point, review gallery UI spec, and batch art prompt assembly function.
 
-6. **Replaced pseudocode content filter with fal.ai-native safety approach.** The original referenced Azure Content Safety and AWS Rekognition as third-party services. Version 2.0 uses fal.ai's built-in `enable_safety_checker: true` as the primary mechanism (no additional accounts needed), with explicit handling of the `has_nsfw_concepts` response field. Post-launch upgrade path noted but not required for launch.
+6. **Replaced pseudocode content filter with fal.ai-native safety approach.** Uses fal.ai's built-in `enable_safety_checker: true` as the primary mechanism with explicit `has_nsfw_concepts` handling.
 
-7. **Replaced generic "NSFW detection API" with explicit retry sequence table.** The original had Python pseudocode calling undefined APIs. Version 2.0 defines a concrete 4-attempt retry sequence with specific prompt modifications at each attempt.
+7. **Replaced generic retry pseudocode with explicit retry sequence table.**
 
-8. **Made fallback art system implementation-ready.** The original said "apply programmatic visual treatment." Version 2.0 specifies the exact operation (sharp library, tint overlay at 30% opacity, specific adjustments for Order vs. Chaos), the R2 path convention, the Supabase queue table name (`art_generation_queue`), and the Railway cron retry interval (15 minutes).
+8. **Made fallback art system implementation-ready with `sharp` library.**
 
-9. **Removed all references to non-stack services.** Original mentioned "consider X" alternatives. Version 2.0 only references Supabase, Railway, fal.ai, Cloudflare R2, OpenAI, and PostHog — exactly the stack from CLAUDE.md.
+9. **Removed all references to non-stack services.**
 
-10. **Added exact prewritten event flavor text for all 16 events.** The original noted these should be prewritten but left the text as examples. Version 2.0 provides the complete set of all 8 Order and 8 Chaos event flavor text strings in a table, ready to seed into the database.
+10. **Added exact prewritten event flavor text for all 16 events.**
 
-11. **Converted all "the engineer should decide" notes into specific decisions.** Examples: denoising values are now exact numbers in a table rather than ranges in prose; fal.ai `image_size` values are specified by exact API parameter name (`portrait_4_3`, `square_hd`) rather than pixel dimensions; the fallback name generator is provided as a TypeScript function rather than described as a concept.
+11. **Converted all "the engineer should decide" notes into specific decisions.**
 
-12. **Added faction name voice strings and flavor tone strings as exact insertable constants.** The original described voice guides in prose. Version 2.0 separates these into distinct constants (`FACTION_NAME_VOICES`, flavor tone strings) that map directly to template variables in the prompt templates.
+12. **Added faction name voice strings and flavor tone strings as exact insertable constants.**
 
-13. **Added PostHog cost monitoring integration.** The original mentioned "log all API costs" without specifying how. Version 2.0 specifies a Supabase `api_cost_log` table and a PostHog event `generation_failed_after_retries`, consistent with the analytics stack from CLAUDE.md.
+13. **Added PostHog cost monitoring integration and Supabase `api_cost_log` table.**
+
+### Changes Made in Version 3.0 (2026-02-16)
+
+1. **Platform alignment — iOS native throughout.** Removed all implicit and explicit references to React Native, Expo, Android, Google Play, and client-side prompt assembly. Clarified that the iOS game client (Swift/SwiftUI/SpriteKit) never calls fal.ai or OpenAI directly — all generation is server-side on Railway. The iOS client only triggers evolution requests, displays results, and presents modifier picker UI.
+
+2. **Added global STYLE_ANCHOR (Section 1.1) — new, required by CLAUDE.md Art Consistency section.** Every image prompt now prepends the STYLE_ANCHOR constant before any faction prefix or evolution instruction. This is the locked visual style enforcer. Prompts in Sections 1.3, 1.4, 4.1, 4.3, and 5.5 updated to include STYLE_ANCHOR. Concrete example prompts rewritten with STYLE_ANCHOR prepended.
+
+3. **Admin Dashboard is a Railway-deployed React web app, not a local static HTML file.** Section 5 completely rewritten to distinguish the Admin Dashboard (browser-accessible web app at a Railway URL) from the iOS game client. The review gallery is no longer a local `review-gallery.html` file. All gallery interactions call Railway API endpoints. Security: HTTP Basic Auth via Railway environment variable.
+
+4. **Batch pipeline is now fully resumable (Section 5.3).** Added JSON manifest (`manifest.json`) that tracks every card by ID with status `pending | completed | failed`. The pipeline reads the manifest on startup, skips completed entries, and resumes from the last failed/pending card. No card is ever processed twice unless explicitly marked for regeneration via the Admin Dashboard.
+
+5. **Added exponential backoff and never-crash guarantees (Section 5.3).** The pipeline catches all errors per-card, logs them to the manifest, and continues. HTTP 429 triggers exponential backoff (`2^attempt` seconds). Any exception is caught and stored as `failed` in the manifest — the pipeline never crashes. The TypeScript implementation includes `AbortSignal.timeout(60000)` for hung requests.
+
+6. **Added $300 budget cost table (Section 5.1).** Full cost breakdown: batch generation (~$14.30 for 367 cards), first 1000 players' evolutions (~$150), infrastructure (~$5/month Railway + $99 Apple Developer), R2 storage ($0 on free tier). Total estimated launch spend: ~$270, leaving ~$30 headroom.
+
+7. **Removed manual processes.** The "Export Approved Cards to Database" button now calls `POST /api/admin/batch/export` which writes directly to Supabase — no SQL file generation, no manual import step. "Regenerate" and "Regenerate All Failed" buttons call Railway API endpoints that trigger the pipeline — no owner terminal commands required.
+
+8. **CRIT-5 from REVIEW.md confirmed — doc 03 is canonical.** Section 1.5 now explicitly states it is the source of truth for all fal.ai parameters and that doc 06 must read from this table. The canonical values: `guidance_scale` max 8.0 (never 12.0), `strength` and `image_size` always present and shard-tier-specific, `num_inference_steps` differs between Free (28) and Mid (32) and Top (40).
+
+9. **fal.ai error response format documented.** Added HTTP 429 rate limit response handling, error response JSON shape `{ detail, status }`, and `AbortSignal.timeout` for 60-second hung request detection.
+
+10. **Supabase `art_generation_queue` schema added as SQL DDL.** Removed vague "Supabase table" references — replaced with actual `CREATE TABLE` statement. Same for `api_cost_log`.
+
+11. **iOS push notification path documented.** Fallback art completion triggers APNs push notification via Supabase Realtime → Supabase Edge Function → APNs. iOS client polls `GET /api/cards/{id}/art-status` every 30 seconds when displaying fallback art.
+
+12. **StoreKit 2 / App Store compliance.** Confirmed no payment logic touches this doc (prompt templates are unrelated to payments). All mentions of "app" refer to the native iOS app. No RevenueCat, no Stripe, no Google Play references anywhere in this document.

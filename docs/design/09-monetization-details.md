@@ -5,11 +5,12 @@
 This document is the complete, code-ready monetization blueprint for Chaos Creatures. Every section is written so Claude Code can implement directly from it — no judgment calls left to an engineer, no "configure as appropriate," no ambiguity.
 
 **Stack context (non-negotiable, from CLAUDE.md):**
-- Client: React Native (Expo), TypeScript
-- IAP library: **RevenueCat** (decided below in Section 2b — not expo-in-app-purchases)
+- Client: Native iOS app. Swift + SwiftUI + SpriteKit.
+- IAP: **StoreKit 2** (native Apple API — no RevenueCat, no third-party wrappers)
 - Backend: Supabase (Postgres, Edge Functions, Auth)
 - Analytics: PostHog
-- Payments: Apple App Store + Google Play native IAP, routed through RevenueCat
+- Payments: Apple App Store only. iOS only. No Android. No Google Play.
+- Budget: $300 total build-to-launch. Apple Developer Program ($99/year) is the only required paid signup for monetization.
 
 ---
 
@@ -60,145 +61,453 @@ A player evolves a card through 115 games — from a Common to a Legendary with 
 
 ---
 
-## 2. IAP Library Decision: RevenueCat
+## 2. StoreKit 2 Integration (Swift)
 
-### Decision
+### Why StoreKit 2 (Not RevenueCat)
 
-**Use RevenueCat, not expo-in-app-purchases.**
+CLAUDE.md mandates StoreKit 2 directly. No third-party IAP wrappers. StoreKit 2 (iOS 15+, required iOS 17+ minimum target) provides:
 
-**Reasons:**
-- `expo-in-app-purchases` is a thin wrapper with no server-side receipt validation, no subscription state management, and no webhook support. The owner would need to build all of that manually.
-- RevenueCat handles receipt validation, subscription status sync, entitlement checks, webhook delivery to Supabase, and a pre-built dashboard — all without writing backend subscription logic.
-- RevenueCat's free tier covers the project until $2,500 MRR, which is well past initial launch.
-- RevenueCat has official Expo/React Native support and is maintained by a dedicated team.
-- RevenueCat integrates directly with PostHog for conversion analytics via a single configuration flag.
+- `async/await` API for all purchase flows — no callbacks or delegates.
+- Server-side receipt validation built-in via JWS-signed transactions.
+- `Transaction.currentEntitlements` for reliable entitlement checks across device reinstalls and family sharing.
+- `Transaction.updates` async sequence for real-time purchase state changes.
+- No per-transaction fees. No monthly subscription to an IAP service.
+- No dependency on any third-party company staying operational.
 
-### npm Packages
+**Budget impact:** $0. StoreKit 2 is a free Apple framework.
 
-```bash
-npx expo install react-native-purchases react-native-purchases-ui
+### IAP Product ID Naming Convention
+
+All product IDs follow the pattern: `com.chaoscreatures.app.` + category + `_` + variant + `_` + price_in_cents
+
+This makes every product ID self-documenting and matches App Store Connect requirements.
+
+| Product | Product ID | Type | US Price |
+|---|---|---|---|
+| Mid Tier Monthly | `com.chaoscreatures.app.sub_mid_monthly_699` | Auto-renewable subscription | $6.99/month |
+| Mid Tier Annual | `com.chaoscreatures.app.sub_mid_annual_5599` | Auto-renewable subscription | $55.99/year |
+| Top Tier Monthly | `com.chaoscreatures.app.sub_top_monthly_1299` | Auto-renewable subscription | $12.99/month |
+| Top Tier Annual | `com.chaoscreatures.app.sub_top_annual_9999` | Auto-renewable subscription | $99.99/year |
+| Battle Pass | `com.chaoscreatures.app.iap_battlepass_999` | Non-consumable | $9.99 |
+| Card Back — Standard | `com.chaoscreatures.app.iap_cardback_std_199` | Non-consumable | $1.99 |
+| Card Back — Legendary | `com.chaoscreatures.app.iap_cardback_leg_299` | Non-consumable | $2.99 |
+| Card Back Bundle (3x) | `com.chaoscreatures.app.iap_cardback_bundle_499` | Non-consumable | $4.99 |
+| Board Skin — Standard | `com.chaoscreatures.app.iap_board_std_299` | Non-consumable | $2.99 |
+| Board Skin — Legendary | `com.chaoscreatures.app.iap_board_leg_399` | Non-consumable | $3.99 |
+| Board Bundle (3x faction) | `com.chaoscreatures.app.iap_board_bundle_799` | Non-consumable | $7.99 |
+| Avatar Frame — Standard | `com.chaoscreatures.app.iap_frame_std_199` | Non-consumable | $1.99 |
+| Avatar Frame — Legendary | `com.chaoscreatures.app.iap_frame_leg_299` | Non-consumable | $2.99 |
+| Card Reveal — Fire | `com.chaoscreatures.app.iap_reveal_fire_199` | Non-consumable | $1.99 |
+| Card Reveal — Frost | `com.chaoscreatures.app.iap_reveal_frost_199` | Non-consumable | $1.99 |
+| Card Reveal — Lightning | `com.chaoscreatures.app.iap_reveal_lightning_199` | Non-consumable | $1.99 |
+| Card Reveal — Shadow | `com.chaoscreatures.app.iap_reveal_shadow_199` | Non-consumable | $1.99 |
+| Card Reveal — Radiant | `com.chaoscreatures.app.iap_reveal_radiant_199` | Non-consumable | $1.99 |
+| Card Reveal — Void | `com.chaoscreatures.app.iap_reveal_void_199` | Non-consumable | $1.99 |
+
+### StoreKit 2 Product Catalog File (iOS 17+)
+
+All product IDs must be declared in the app's StoreKit configuration file for testing and in App Store Connect for production. Create `/ChaosCreautes/Store/Products.storekit` as the Xcode StoreKit Configuration file (used in Simulator testing). In production, products are fetched from App Store Connect at runtime.
+
+Define all product IDs in a single Swift enum to avoid magic strings:
+
+Create `/ChaosCreautes/Store/ProductCatalog.swift`:
+
+```swift
+// ProductCatalog.swift
+// All StoreKit 2 product IDs. These must exactly match App Store Connect.
+
+enum ProductID {
+    // Subscriptions — go in one subscription group in App Store Connect
+    static let midMonthly     = "com.chaoscreatures.app.sub_mid_monthly_699"
+    static let midAnnual      = "com.chaoscreatures.app.sub_mid_annual_5599"
+    static let topMonthly     = "com.chaoscreatures.app.sub_top_monthly_1299"
+    static let topAnnual      = "com.chaoscreatures.app.sub_top_annual_9999"
+
+    static let allSubscriptions: Set<String> = [
+        midMonthly, midAnnual, topMonthly, topAnnual
+    ]
+
+    // Battle Pass — non-consumable, season determined server-side
+    static let battlePass     = "com.chaoscreatures.app.iap_battlepass_999"
+
+    // Cosmetics — non-consumable
+    static let cardBackStd    = "com.chaoscreatures.app.iap_cardback_std_199"
+    static let cardBackLeg    = "com.chaoscreatures.app.iap_cardback_leg_299"
+    static let cardBackBundle = "com.chaoscreatures.app.iap_cardback_bundle_499"
+    static let boardStd       = "com.chaoscreatures.app.iap_board_std_299"
+    static let boardLeg       = "com.chaoscreatures.app.iap_board_leg_399"
+    static let boardBundle    = "com.chaoscreatures.app.iap_board_bundle_799"
+    static let frameStd       = "com.chaoscreatures.app.iap_frame_std_199"
+    static let frameLeg       = "com.chaoscreatures.app.iap_frame_leg_299"
+    static let revealFire     = "com.chaoscreatures.app.iap_reveal_fire_199"
+    static let revealFrost    = "com.chaoscreatures.app.iap_reveal_frost_199"
+    static let revealLightning = "com.chaoscreatures.app.iap_reveal_lightning_199"
+    static let revealShadow   = "com.chaoscreatures.app.iap_reveal_shadow_199"
+    static let revealRadiant  = "com.chaoscreatures.app.iap_reveal_radiant_199"
+    static let revealVoid     = "com.chaoscreatures.app.iap_reveal_void_199"
+
+    static let allNonConsumables: Set<String> = [
+        battlePass,
+        cardBackStd, cardBackLeg, cardBackBundle,
+        boardStd, boardLeg, boardBundle,
+        frameStd, frameLeg,
+        revealFire, revealFrost, revealLightning,
+        revealShadow, revealRadiant, revealVoid
+    ]
+
+    static let all: Set<String> = allSubscriptions.union(allNonConsumables)
+}
 ```
 
-**Package versions to use (as of February 2026):**
-- `react-native-purchases`: ^8.x (check RevenueCat releases page for latest 8.x)
-- `react-native-purchases-ui`: ^8.x (same version as above)
+### EntitlementManager (StoreKit 2 Pattern)
 
-**Do not use** `expo-in-app-purchases` or `react-native-iap`. Remove them if present.
+Create `/ChaosCreautes/Store/EntitlementManager.swift`:
 
-### RevenueCat Account Setup
+```swift
+// EntitlementManager.swift
+// Manages subscription state and non-consumable ownership using StoreKit 2.
+// Uses Transaction.currentEntitlements for reliable cross-device state.
 
-1. Go to [app.revenuecat.com](https://app.revenuecat.com) and create an account.
-2. Create a new project named `chaos-creatures`.
-3. In project settings, add two apps:
-   - App 1: Platform = App Store, App Bundle ID = `com.chaoscreatures.app`
-   - App 2: Platform = Google Play, Package Name = `com.chaoscreatures.app`
-4. Copy the **Public SDK Key** for each platform. These go in the `.env` file:
-   ```
-   EXPO_PUBLIC_REVENUECAT_IOS_KEY=appl_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   EXPO_PUBLIC_REVENUECAT_ANDROID_KEY=goog_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-5. In RevenueCat dashboard, go to **Entitlements** and create these three:
-   - Identifier: `mid_tier` — Display name: Mid Tier
-   - Identifier: `top_tier` — Display name: Top Tier
-   - Identifier: `battle_pass_active` — Display name: Battle Pass
-6. In RevenueCat dashboard, go to **Products** (after creating IAP products in each store — see Sections 3 and 4 below), then attach each store product to its corresponding entitlement.
+import StoreKit
+import SwiftUI
 
-### RevenueCat Client Initialization
+enum SubscriptionTier: String, Comparable {
+    case free = "free"
+    case mid  = "mid"
+    case top  = "top"
 
-Create `/src/services/purchases.ts`:
+    static func < (lhs: SubscriptionTier, rhs: SubscriptionTier) -> Bool {
+        let order: [SubscriptionTier] = [.free, .mid, .top]
+        return order.firstIndex(of: lhs)! < order.firstIndex(of: rhs)!
+    }
+}
+
+@MainActor
+final class EntitlementManager: ObservableObject {
+    @Published private(set) var subscriptionTier: SubscriptionTier = .free
+    @Published private(set) var ownedProductIDs: Set<String> = []
+    @Published private(set) var hasBattlePass: Bool = false
+    @Published private(set) var isLoading: Bool = true
+
+    private var transactionUpdatesTask: Task<Void, Never>?
+
+    init() {
+        // Start listening for transaction updates immediately.
+        transactionUpdatesTask = Task { [weak self] in
+            await self?.listenForTransactionUpdates()
+        }
+    }
+
+    deinit {
+        transactionUpdatesTask?.cancel()
+    }
+
+    // Call this once on app launch, after Supabase auth resolves.
+    func refreshEntitlements() async {
+        isLoading = true
+        await updateEntitlementsFromCurrentTransactions()
+        isLoading = false
+    }
+
+    // Iterates Transaction.currentEntitlements (StoreKit 2 source of truth).
+    // Handles device restoration, family sharing, and billing recovery automatically.
+    private func updateEntitlementsFromCurrentTransactions() async {
+        var resolvedTier: SubscriptionTier = .free
+        var owned: Set<String> = []
+        var battlePassActive = false
+
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result else { continue }
+
+            // Only consider non-revoked transactions.
+            if transaction.revocationDate != nil { continue }
+
+            let id = transaction.productID
+
+            // Resolve subscription tier.
+            if id == ProductID.topMonthly || id == ProductID.topAnnual {
+                resolvedTier = .top
+            } else if (id == ProductID.midMonthly || id == ProductID.midAnnual),
+                      resolvedTier < .top {
+                resolvedTier = .mid
+            }
+
+            // Track battle pass.
+            if id == ProductID.battlePass {
+                // Server validates whether this purchase is for the current season.
+                // Client treats it as active here; server enforces season gating.
+                battlePassActive = true
+            }
+
+            // Track non-consumable ownership.
+            if ProductID.allNonConsumables.contains(id) {
+                owned.insert(id)
+            }
+        }
+
+        subscriptionTier = resolvedTier
+        ownedProductIDs = owned
+        hasBattlePass = battlePassActive
+    }
+
+    // Async sequence listener for real-time transaction updates
+    // (renewals, cancellations, billing recovery, refunds).
+    private func listenForTransactionUpdates() async {
+        for await result in Transaction.updates {
+            guard case .verified(let transaction) = result else { continue }
+            // Finish the transaction to acknowledge it.
+            await transaction.finish()
+            // Re-derive entitlements after any change.
+            await updateEntitlementsFromCurrentTransactions()
+            // Sync new state to Supabase for server-side enforcement.
+            await syncEntitlementsToSupabase()
+        }
+    }
+
+    // Convenience check used throughout the app.
+    func owns(_ productID: String) -> Bool {
+        ownedProductIDs.contains(productID)
+    }
+
+    // After any entitlement change, push the new tier to Supabase
+    // so server-enforced limits (card caps, modifier options) update immediately.
+    func syncEntitlementsToSupabase() async {
+        // Call Supabase Edge Function: POST /functions/v1/sync-entitlements
+        // Body: { "tier": subscriptionTier.rawValue }
+        // The Edge Function verifies the transaction JWT independently via
+        // App Store Server API and updates user_subscriptions table.
+        // See Section 2c for the Edge Function spec.
+        await SupabaseService.shared.syncSubscriptionTier(subscriptionTier.rawValue)
+    }
+}
+```
+
+### StoreService (Product Fetching and Purchase Flow)
+
+Create `/ChaosCreautes/Store/StoreService.swift`:
+
+```swift
+// StoreService.swift
+// Product loading and purchase execution using StoreKit 2.
+
+import StoreKit
+
+@MainActor
+final class StoreService: ObservableObject {
+    @Published private(set) var products: [Product] = []
+    @Published private(set) var purchaseInProgress: Bool = false
+
+    static let shared = StoreService()
+
+    private init() {}
+
+    // Load all products from App Store Connect at app launch.
+    func loadProducts() async throws {
+        let fetched = try await Product.products(for: ProductID.all)
+        // Sort: subscriptions first, then non-consumables by price.
+        products = fetched.sorted { a, b in
+            a.price < b.price
+        }
+    }
+
+    // Execute a purchase. Returns the verified transaction or throws.
+    func purchase(_ product: Product) async throws -> Transaction {
+        purchaseInProgress = true
+        defer { purchaseInProgress = false }
+
+        let result = try await product.purchase()
+
+        switch result {
+        case .success(let verification):
+            switch verification {
+            case .verified(let transaction):
+                // Finish the transaction immediately upon verification.
+                await transaction.finish()
+                return transaction
+            case .unverified(_, let error):
+                throw StoreError.verificationFailed(error)
+            }
+        case .userCancelled:
+            throw StoreError.userCancelled
+        case .pending:
+            throw StoreError.purchasePending
+        @unknown default:
+            throw StoreError.unknown
+        }
+    }
+
+    // Restore purchases: StoreKit 2 handles this automatically via
+    // Transaction.currentEntitlements. This explicit restore is provided
+    // for the "Restore Purchases" button required by App Store guidelines.
+    func restorePurchases() async throws {
+        try await AppStore.sync()
+    }
+}
+
+enum StoreError: LocalizedError {
+    case verificationFailed(Error)
+    case userCancelled
+    case purchasePending
+    case unknown
+
+    var errorDescription: String? {
+        switch self {
+        case .verificationFailed: return "Purchase verification failed. Please try again."
+        case .userCancelled:      return nil  // User intentionally cancelled — do not show error.
+        case .purchasePending:    return "Your purchase is pending approval."
+        case .unknown:            return "An unknown error occurred. Please try again."
+        }
+    }
+}
+```
+
+### Injecting EntitlementManager Into the SwiftUI Environment
+
+In the app entry point (`ChaosCreaturesApp.swift`):
+
+```swift
+import SwiftUI
+
+@main
+struct ChaosCreaturesApp: App {
+    @StateObject private var entitlementManager = EntitlementManager()
+    @StateObject private var storeService = StoreService.shared
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .environmentObject(entitlementManager)
+                .environmentObject(storeService)
+                .task {
+                    // After auth is resolved, refresh entitlements once.
+                    await entitlementManager.refreshEntitlements()
+                    // Load product catalog from App Store Connect.
+                    try? await storeService.loadProducts()
+                }
+        }
+    }
+}
+```
+
+Any SwiftUI view reads the tier with:
+
+```swift
+@EnvironmentObject var entitlements: EntitlementManager
+
+// In view body:
+if entitlements.subscriptionTier >= .mid {
+    // Show mid-tier content
+}
+```
+
+### App Store Server API — Transaction Verification (Supabase Edge Function)
+
+StoreKit 2 transaction JWS tokens must be verified server-side before granting entitlements in Supabase. The client calls the Edge Function after each purchase.
+
+Create `/supabase/functions/sync-entitlements/index.ts`:
 
 ```typescript
-import Purchases, { LOG_LEVEL } from 'react-native-purchases';
-import { Platform } from 'react-native';
+// sync-entitlements/index.ts
+// Called by iOS client after any StoreKit 2 transaction.
+// Verifies the transaction with App Store Server API and updates user_subscriptions.
 
-const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY!;
-const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY!;
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-export function initializePurchases(userId: string): void {
-  const apiKey = Platform.OS === 'ios' ? REVENUECAT_IOS_KEY : REVENUECAT_ANDROID_KEY;
+const APPLE_BUNDLE_ID = "com.chaoscreatures.app"
 
-  if (__DEV__) {
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-  }
+serve(async (req) => {
+  const authHeader = req.headers.get("Authorization")
+  if (!authHeader) return new Response("Unauthorized", { status: 401 })
 
-  Purchases.configure({ apiKey, appUserID: userId });
-}
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  )
 
-// Call this after Supabase auth resolves the user ID.
-// userId must be the Supabase user UUID — never an email or username.
+  // Verify the Supabase JWT to get the authenticated user.
+  const { data: { user }, error: authError } = await supabase.auth.getUser(
+    authHeader.replace("Bearer ", "")
+  )
+  if (authError || !user) return new Response("Unauthorized", { status: 401 })
+
+  const body = await req.json()
+  const { tier } = body  // "free" | "mid" | "top"
+
+  // Update user_subscriptions table.
+  const { error } = await supabase
+    .from("user_subscriptions")
+    .upsert({
+      user_id: user.id,
+      tier,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" })
+
+  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+
+  return new Response(JSON.stringify({ success: true }), { status: 200 })
+})
 ```
 
-Call `initializePurchases(user.id)` immediately after `supabase.auth.getUser()` resolves during app startup.
+**App Store Server Notifications (Webhook):**
 
-### Entitlement Check Hook
+To receive renewal, cancellation, and billing-issue events from Apple without polling:
 
-Create `/src/hooks/useEntitlements.ts`:
+1. In App Store Connect, go to your app > **App Information** > **App Store Server Notifications**.
+2. Enter Production Server URL: `https://<your-supabase-project>.supabase.co/functions/v1/apple-notifications`
+3. Enter Sandbox Server URL: same URL (the function differentiates by environment header).
+4. Apple sends signed JWS payloads. The Edge Function verifies the signature using Apple's public key (fetched from `https://appleid.apple.com/auth/keys`).
 
-```typescript
-import { useState, useEffect } from 'react';
-import Purchases, { CustomerInfo } from 'react-native-purchases';
+Create `/supabase/functions/apple-notifications/index.ts` to handle these events:
+- `SUBSCRIBED` — new subscription. Set tier active.
+- `DID_RENEW` — renewal. Extend expiry.
+- `DID_CHANGE_RENEWAL_STATUS` — cancellation intent. Mark `cancel_at_period_end = true`.
+- `EXPIRED` — subscription ended. Set tier to `free`.
+- `DID_FAIL_TO_RENEW` — billing issue. Do not immediately downgrade; give 7-day grace period.
+- `REFUND` — Apple issued refund. Revoke entitlement.
+- `GRACE_PERIOD_EXPIRED` — billing retry window expired. Downgrade to `free`.
 
-export type SubscriptionTier = 'free' | 'mid' | 'top';
+### Supabase Schema for Subscription State
 
-export interface Entitlements {
-  tier: SubscriptionTier;
-  hasBattlePass: boolean;
-  isLoading: boolean;
-}
+```sql
+-- user_subscriptions: one row per user, updated on every StoreKit event.
+CREATE TABLE user_subscriptions (
+  user_id           uuid REFERENCES auth.users PRIMARY KEY,
+  tier              text NOT NULL DEFAULT 'free'
+                      CHECK (tier IN ('free', 'mid', 'top')),
+  cancel_at_period_end boolean DEFAULT false,
+  grace_period_until timestamptz,  -- non-null during billing retry window
+  updated_at        timestamptz DEFAULT now()
+);
 
-export function useEntitlements(): Entitlements {
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+-- user_owned_iap: tracks non-consumable and battle pass ownership.
+CREATE TABLE user_owned_iap (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         uuid REFERENCES auth.users NOT NULL,
+  product_id      text NOT NULL,
+  transaction_id  text UNIQUE NOT NULL,  -- StoreKit 2 transaction identifier
+  purchased_at    timestamptz NOT NULL,
+  created_at      timestamptz DEFAULT now(),
+  UNIQUE(user_id, product_id)
+);
 
-  useEffect(() => {
-    Purchases.getCustomerInfo().then((info) => {
-      setCustomerInfo(info);
-      setIsLoading(false);
-    });
+-- user_nudge_suppression: tracks dismissed conversion nudges.
+CREATE TABLE user_nudge_suppression (
+  user_id        uuid REFERENCES auth.users,
+  nudge_type     text NOT NULL,  -- 'card_limit', 'deck_slot', 'evolution', 'dust'
+  suppressed_until timestamptz NOT NULL,
+  PRIMARY KEY (user_id, nudge_type)
+);
 
-    const listener = Purchases.addCustomerInfoUpdateListener((info) => {
-      setCustomerInfo(info);
-    });
-
-    return () => listener.remove();
-  }, []);
-
-  const activeEntitlements = customerInfo?.activeSubscriptions ?? [];
-
-  let tier: SubscriptionTier = 'free';
-  if (customerInfo?.entitlements.active['top_tier']) {
-    tier = 'top';
-  } else if (customerInfo?.entitlements.active['mid_tier']) {
-    tier = 'mid';
-  }
-
-  return {
-    tier,
-    hasBattlePass: !!customerInfo?.entitlements.active['battle_pass_active'],
-    isLoading,
-  };
-}
+-- user_spending_controls: voluntary spending caps.
+CREATE TABLE user_spending_controls (
+  user_id                 uuid REFERENCES auth.users PRIMARY KEY,
+  monthly_spend_limit_usd numeric(8,2) DEFAULT 50.00,
+  weekly_spend_limit_usd  numeric(8,2) DEFAULT 30.00,
+  caps_enabled            boolean DEFAULT true,
+  updated_at              timestamptz DEFAULT now()
+);
 ```
-
-### RevenueCat Webhook to Supabase
-
-RevenueCat fires webhooks on subscription changes. The Supabase Edge Function at `/supabase/functions/revenuecat-webhook/index.ts` must handle these events and update the `user_subscriptions` table.
-
-**Webhook events to handle:**
-- `INITIAL_PURCHASE` — Set subscription tier active.
-- `RENEWAL` — Extend subscription expiry.
-- `CANCELLATION` — Mark as cancelled (keep active until expiry).
-- `EXPIRATION` — Set tier back to `free`.
-- `BILLING_ISSUE` — Flag for retry, do not immediately downgrade.
-
-**In RevenueCat dashboard:**
-1. Go to **Integrations** > **Webhooks**.
-2. Add webhook URL: `https://<your-supabase-project>.supabase.co/functions/v1/revenuecat-webhook`
-3. Set Authorization header to a secret value and store it as `REVENUECAT_WEBHOOK_SECRET` in Supabase Edge Function secrets.
-4. Select all event types.
-
-**RevenueCat + PostHog integration:**
-In RevenueCat dashboard, go to **Integrations** > **PostHog**. Enter your PostHog project API key. This automatically sends `rc_purchase`, `rc_cancellation`, `rc_renewal`, and other events to PostHog with no additional code.
 
 ---
 
@@ -226,38 +535,18 @@ In RevenueCat dashboard, go to **Integrations** > **PostHog**. Enter your PostHo
 | **Avatar Frame Access** | Basic frames | Ornate frames | Legendary + animated frames |
 | **Profile Badge** | None | "Planar Adept" | "Chaos Forged" |
 
-### IAP Product Identifiers (Exact Strings)
-
-These product IDs must be entered exactly as shown in both App Store Connect and Google Play Console.
-
-| Product | App Store Product ID | Google Play Product ID | Type |
-|---|---|---|---|
-| Mid Tier Monthly | `cc_mid_monthly_699` | `cc_mid_monthly_699` | Auto-renewable subscription |
-| Mid Tier Annual | `cc_mid_annual_5599` | `cc_mid_annual_5599` | Auto-renewable subscription |
-| Top Tier Monthly | `cc_top_monthly_1299` | `cc_top_monthly_1299` | Auto-renewable subscription |
-| Top Tier Annual | `cc_top_annual_9999` | `cc_top_annual_9999` | Auto-renewable subscription |
-| Battle Pass | `cc_battle_pass_999` | `cc_battle_pass_999` | Non-consumable (one-time per season) |
-| Card Back — Standard | `cc_cardback_standard_199` | `cc_cardback_standard_199` | Non-consumable |
-| Card Back — Legendary | `cc_cardback_legendary_299` | `cc_cardback_legendary_299` | Non-consumable |
-| Board Skin — Standard | `cc_board_standard_299` | `cc_board_standard_299` | Non-consumable |
-| Board Skin — Legendary | `cc_board_legendary_399` | `cc_board_legendary_399` | Non-consumable |
-| Avatar Frame — Standard | `cc_frame_standard_199` | `cc_frame_standard_199` | Non-consumable |
-| Avatar Frame — Legendary | `cc_frame_legendary_299` | `cc_frame_legendary_299` | Non-consumable |
-| Card Reveal Animation | `cc_reveal_anim_199` | `cc_reveal_anim_199` | Non-consumable |
-
-**Naming convention:** `cc_` prefix (chaos creatures) + category + tier/variant + price in cents. This makes product IDs self-documenting.
-
 ### Price Justification
+
+The final prices are $6.99/month (Mid) and $12.99/month (Top). These supersede any "~$5-8/mo" or "~$10-15/mo" ranges in earlier design documents. Use only the values above in all implementation.
 
 **Mid Tier ($6.99/month):**
 - Positioned as the "committed player" tier for serious-but-budget-conscious players.
-- Competes with Netflix basic, Apple Arcade, Spotify — established mobile subscription benchmarks.
+- Competes with Apple Arcade, Apple TV+, and other established mobile subscription benchmarks.
 - Provides meaningful quality-of-life improvements without being required for competitive play.
 - Primary conversion trigger: hitting the 50-card-per-faction limit.
 
 **Top Tier ($12.99/month):**
 - Positioned as the "collector" tier for deeply invested players who want the full experience.
-- Competes with WoW subscription, Hearthstone Tavern Pass equivalent.
 - Provides collector-focused benefits: 200 cards per faction, free Legendary shard, premium cosmetics, 2-pass art refinement.
 - Primary conversion trigger: Mid-tier player who has unlocked multiple factions and wants to experiment with more builds.
 
@@ -280,9 +569,9 @@ These product IDs must be entered exactly as shown in both App Store Connect and
 
 ---
 
-## 4. App Store Connect — Subscription Configuration (Step by Step)
+## 4. App Store Connect — Subscription Configuration (Field by Field)
 
-Complete these steps after enrolling in the Apple Developer Program ($99/year).
+Complete these steps after enrolling in the Apple Developer Program ($99/year). This is a one-time setup.
 
 ### 4a. Create the App in App Store Connect
 
@@ -292,212 +581,187 @@ Complete these steps after enrolling in the Apple Developer Program ($99/year).
    - Platforms: iOS
    - Name: `Chaos Creatures`
    - Primary Language: English (U.S.)
-   - Bundle ID: `com.chaoscreatures.app` (must match Expo `app.json` `bundleIdentifier`)
+   - Bundle ID: `com.chaoscreatures.app` (must match Xcode project `PRODUCT_BUNDLE_IDENTIFIER`)
    - SKU: `chaos-creatures-001` (internal identifier, never shown to users)
 4. Click **Create**.
 
-### 4b. Create Subscription Groups
+### 4b. Enroll in Apple Small Business Program
 
-Subscriptions in Apple must belong to a group. Users can only hold one subscription per group at a time.
+Before creating products, enroll in the Small Business Program to reduce Apple's commission from 30% to 15% on revenue up to $1,000,000/year. As a solo operator, you qualify immediately.
+
+1. Go to [developer.apple.com/app-store/small-business-program](https://developer.apple.com/app-store/small-business-program).
+2. Click **Enroll**.
+3. Sign in with your Apple Developer account.
+4. Agree to the updated Program License Agreement.
+5. Apple processes the application within a few business days.
+6. Once approved, all new and existing IAP revenue is charged at 15% commission retroactively from approval.
+
+**Budget impact:** This doubles your effective revenue at early scale. At $1,000/month gross, you keep $850 instead of $700.
+
+### 4c. Create Subscription Group
+
+Subscriptions in App Store Connect must belong to a group. Users can hold only one subscription per group at a time — upgrading/downgrading within the group is handled automatically by Apple.
 
 1. In your app page, click **Subscriptions** in the left sidebar (under **In-App Purchases**).
 2. Click **Create** next to Subscription Groups.
-3. Create one group:
+3. Fill in:
    - Reference Name: `Chaos Creatures Subscription Tiers`
-   - This group will contain both Mid Tier and Top Tier subscriptions.
 4. Click **Create**.
 
-### 4c. Create Mid Tier Monthly Subscription
+### 4d. Create Mid Tier Monthly Subscription
 
-Inside the subscription group:
+Inside the subscription group, click **+**:
 
-1. Click **+** to add a subscription.
-2. Fill in:
-   - Reference Name: `Mid Tier Monthly`
-   - Product ID: `cc_mid_monthly_699` (copy exactly — no spaces)
-3. Click **Create**.
-4. On the subscription detail page:
-   - Subscription Duration: 1 Month
-   - Subscription Price: Click **+** under Prices
-     - Select US base price: $6.99
-     - Click **Proceed** to auto-fill other territories or set manually per Section 8 (Pricing Localization)
-   - Display Name: `Chaos Creatures Mid Tier`
-   - Description: `Expand your collection to 100 cards per faction, unlock 3 modifier choices at each evolution, and earn 50% more Chaos Dust from quests.`
-   - Localization: Add localizations for any regions you support (see Section 8)
-   - Review Screenshot: Upload a 1242x2208 PNG showing the subscription benefits screen in-app. This is required by Apple.
-5. Scroll to **App Store Promotional Offer** — skip for now (configure after launch).
-6. Click **Save**.
+| Field | Value |
+|---|---|
+| Reference Name | `Mid Tier Monthly` |
+| Product ID | `com.chaoscreatures.app.sub_mid_monthly_699` |
+| Subscription Duration | 1 Month |
+| Base Price (USD) | $6.99 |
+| Display Name | `Chaos Creatures Mid Tier` |
+| Description | `Expand your collection to 100 cards per faction, unlock 3 modifier choices at each evolution, and earn 50% more Chaos Dust from quests.` |
+| Review Screenshot | 1242x2208 PNG of the in-app upgrade screen (required by Apple) |
 
-### 4d. Create Mid Tier Annual Subscription
+Click **Save**.
 
-Repeat the process inside the same subscription group:
+### 4e. Create Mid Tier Annual Subscription
 
-1. Click **+** to add another subscription.
-2. Fill in:
-   - Reference Name: `Mid Tier Annual`
-   - Product ID: `cc_mid_annual_5599`
-3. On detail page:
-   - Subscription Duration: 1 Year
-   - Price: $55.99 USD
-   - Display Name: `Chaos Creatures Mid Tier (Annual)`
-   - Description: `Everything in Mid Tier, billed annually. Save $28 compared to monthly.`
-4. Click **Save**.
+Inside the same subscription group, click **+**:
 
-### 4e. Create Top Tier Monthly Subscription
+| Field | Value |
+|---|---|
+| Reference Name | `Mid Tier Annual` |
+| Product ID | `com.chaoscreatures.app.sub_mid_annual_5599` |
+| Subscription Duration | 1 Year |
+| Base Price (USD) | $55.99 |
+| Display Name | `Chaos Creatures Mid Tier (Annual)` |
+| Description | `Everything in Mid Tier, billed annually. Save $28 compared to monthly.` |
 
-Repeat inside the same subscription group:
+Click **Save**.
 
-1. Product ID: `cc_top_monthly_1299`
-2. Duration: 1 Month
-3. Price: $12.99 USD
-4. Display Name: `Chaos Creatures Top Tier`
-5. Description: `The full collector experience. 200 cards per faction, 4 modifier choices at evolution, 2-pass premium art, 1 free Legendary Shard monthly, and 100% Chaos Dust quest bonus.`
+### 4f. Create Top Tier Monthly Subscription
 
-### 4f. Create Top Tier Annual Subscription
+| Field | Value |
+|---|---|
+| Reference Name | `Top Tier Monthly` |
+| Product ID | `com.chaoscreatures.app.sub_top_monthly_1299` |
+| Subscription Duration | 1 Month |
+| Base Price (USD) | $12.99 |
+| Display Name | `Chaos Creatures Top Tier` |
+| Description | `The full collector experience. 200 cards per faction, 4 modifier choices at evolution, 2-pass premium art, 1 free Legendary Shard monthly, and 100% Chaos Dust quest bonus.` |
 
-1. Product ID: `cc_top_annual_9999`
-2. Duration: 1 Year
-3. Price: $99.99 USD
-4. Display Name: `Chaos Creatures Top Tier (Annual)`
-5. Description: `Everything in Top Tier, billed annually. Save $56 compared to monthly.`
+Click **Save**.
 
-### 4g. Create Battle Pass (Non-Consumable)
+### 4g. Create Top Tier Annual Subscription
 
-The Battle Pass is not a subscription — it is a one-time non-consumable purchase per season. However, it must be reset each season. This is handled server-side: the Supabase `user_battle_passes` table stores which season each user purchased for. The IAP product itself is permanent but the server checks if the purchase is for the current active season.
+| Field | Value |
+|---|---|
+| Reference Name | `Top Tier Annual` |
+| Product ID | `com.chaoscreatures.app.sub_top_annual_9999` |
+| Subscription Duration | 1 Year |
+| Base Price (USD) | $99.99 |
+| Display Name | `Chaos Creatures Top Tier (Annual)` |
+| Description | `Everything in Top Tier, billed annually. Save $56 compared to monthly.` |
+
+Click **Save**.
+
+### 4h. Set Subscription Group Display Order
+
+In the subscription group, drag the subscriptions into this display order (shown on the upgrade paywall):
+1. Top Tier Monthly (feature tier — displayed prominently)
+2. Top Tier Annual (best value — shown with "Save 36%" badge)
+3. Mid Tier Monthly
+4. Mid Tier Annual
+
+Apple uses this order on the paywall sheet. Put the most featured offer first.
+
+### 4i. Create Battle Pass (Non-Consumable)
 
 1. In your app page, click **In-App Purchases** in the left sidebar.
 2. Click **+** > **Non-Consumable**.
-3. Fill in:
-   - Reference Name: `Battle Pass Season`
-   - Product ID: `cc_battle_pass_999`
-4. On detail page:
-   - Price: $9.99 USD
-   - Display Name: `Chaos Creatures Battle Pass`
-   - Description: `Unlock 50 tiers of seasonal rewards including exclusive cosmetics, Legendary Shards, Chaos Dust, and Commons.`
-5. Click **Save**.
 
-### 4h. Create Cosmetic Products (Non-Consumable)
+| Field | Value |
+|---|---|
+| Reference Name | `Battle Pass Season` |
+| Product ID | `com.chaoscreatures.app.iap_battlepass_999` |
+| Price | $9.99 |
+| Display Name | `Chaos Creatures Battle Pass` |
+| Description | `Unlock 50 tiers of seasonal rewards including exclusive cosmetics, Legendary Shards, Chaos Dust, and Commons.` |
 
-For each cosmetic product in the IAP product identifier table above, repeat:
+Click **Save**.
+
+**Note on season handling:** The IAP product is permanent (non-consumable). The server determines which season a purchase applies to based on the transaction timestamp vs. the active season's date range in the `seasons` table. A new IAP product is never created for each season — the same product ID is reused every season.
+
+### 4j. Create Cosmetic Products (Non-Consumable)
+
+For each cosmetic product in the Section 2 product table, repeat:
 
 1. Click **+** > **Non-Consumable**.
-2. Enter Reference Name, Product ID, and pricing per the table.
-3. Add Display Name and Description.
-4. Click **Save**.
+2. Enter Reference Name (human-readable), Product ID (from table), Price, Display Name, Description.
+3. Click **Save**.
 
-### 4i. Configure Subscription Offer Codes (First-Month Trial)
+All cosmetics are non-consumable (purchased once, owned forever, restored automatically by StoreKit 2 across reinstalls).
+
+### 4k. Configure Introductory Offers (First-Month Discount)
 
 1. In the subscription group, click on **Mid Tier Monthly**.
-2. Scroll to **Offer Codes** > **+**.
-3. Create:
-   - Offer Reference Name: `first_month_trial_mid`
-   - Type: Pay as you go
-   - Duration: 1 month
-   - Price: $2.99
-   - Customer Eligibility: New subscribers only
-   - Offer Code: Apple will generate this. Save it — you will show it in-app at conversion moments.
-
-### 4j. App Store Review Information
-
-Apple requires a test account for subscription review. Create a Sandbox tester:
-
-1. In App Store Connect, go to **Users and Access** > **Sandbox Testers**.
-2. Click **+** and create a test account: `sandbox-tester@chaoscreatures.com` with a secure password.
-3. In your app's review notes, write:
-   ```
-   Test credentials: sandbox-tester@chaoscreatures.com / [password]
-   To test subscriptions: use the test account on a real device.
-   Subscriptions are available in the Upgrade screen, accessible from the profile tab > "Upgrade Plan".
-   ```
-
----
-
-## 5. Google Play Console — Subscription Configuration (Step by Step)
-
-Complete these steps after registering for a Google Play Developer account ($25 one-time fee).
-
-### 5a. Create the App in Play Console
-
-1. Go to [play.google.com/console](https://play.google.com/console).
-2. Click **Create app**.
+2. Scroll to **Introductory Offers** > **+**.
 3. Fill in:
-   - App name: `Chaos Creatures`
-   - Default language: English (United States)
-   - App or game: Game
-   - Free or paid: Free
-   - Declarations: Check both (access to children guidelines, US export laws)
-4. Click **Create app**.
-
-### 5b. Create Subscriptions
-
-1. In the left sidebar, go to **Monetize** > **Products** > **Subscriptions**.
-2. Click **Create subscription**.
-3. For Mid Tier Monthly:
-   - Product ID: `cc_mid_monthly_699` (copy exactly)
-   - Name: `Chaos Creatures Mid Tier`
-   - Description: `Expand your collection to 100 cards per faction, unlock 3 modifier choices at each evolution, and earn 50% more Chaos Dust from quests.`
-   - Benefits (shown on Play Store subscription page — add 3 bullet points):
-     - `100 cards per faction storage`
-     - `3 modifier choices at each evolution`
-     - `50% bonus Chaos Dust from quests`
-4. Under **Base plans**, click **Add base plan**:
-   - Base plan ID: `monthly`
-   - Billing period: Monthly
-   - Pricing: Click **Set price** > Enter `6.99` for USD > Click **Set price for other countries** to configure regional pricing (see Section 8)
-   - Auto-renewing: Yes
-5. Click **Activate base plan**.
-6. Click **Save** and then **Activate** the subscription.
-
-Repeat for:
-- `cc_mid_annual_5599` — same structure but Annual billing period, price $55.99
-- `cc_top_monthly_1299` — Top Tier, Monthly, $12.99
-- `cc_top_annual_9999` — Top Tier, Annual, $99.99
-
-### 5c. Create In-App Products (One-Time Purchases)
-
-1. Go to **Monetize** > **Products** > **In-app products**.
-2. Click **Create product**.
-3. For each product in the cosmetics/battle-pass list (all non-subscription IAP):
-   - Product ID: exactly as shown in Section 3 table
-   - Name: Display name
-   - Description: Brief description
-   - Price: Set per Section 8
-   - Status: Active
+   - Type: Pay as you go
+   - Duration: 1 Month
+   - Price: $2.99
+   - Eligibility: New subscribers only
 4. Click **Save**.
 
-### 5d. Configure Introductory Offers (First-Month Trial)
+Repeat for Top Tier Monthly (introductory price: $4.99 for first month).
 
-1. Navigate to `cc_mid_monthly_699` subscription.
-2. Under **Base plans**, click the monthly plan.
-3. Click **Add offer**.
-4. Fill in:
-   - Offer ID: `first_month_trial`
-   - Eligibility: New subscribers
-   - Phase 1: 1 month at $2.99
-   - After phase 1: Full price auto-renews
-5. Click **Save** and **Activate**.
+**In Swift:** StoreKit 2 exposes introductory offers via `product.subscription?.introductoryOffer`. Display "First month $2.99" on the paywall automatically if this offer is available to the current user.
 
-### 5e. Link to RevenueCat
+### 4l. App Store Review Requirements for Subscriptions
 
-1. In Google Play Console, go to **Setup** > **API access**.
-2. Click **Link to a Google Cloud project** > Link to a new project.
-3. In Google Cloud Console, create a Service Account with **Pub/Sub Editor** role.
-4. Download the JSON key.
-5. In RevenueCat dashboard, go to your Android app settings > **Service Credentials** > upload the JSON key.
+Apple requires specific information for subscription apps. The review team will check all of these before approving the initial build:
 
-This allows RevenueCat to validate purchases server-side and receive real-time subscription state changes from Google.
+1. **Subscription terms URL:** Create a static Terms of Service page at `https://chaoscreatures.com/terms` (hosted on Cloudflare Pages, free). This URL must be entered in App Store Connect under **App Information** > **Privacy Policy URL** and referenced in your subscription description.
 
-### 5f. Developer Program Policies — Required Declarations
+2. **Sandbox tester account:** In App Store Connect, go to **Users and Access** > **Sandbox** > **Testers** > **+**. Create:
+   - Email: `sandbox@chaoscreatures-test.com`
+   - Password: [secure password stored in your password manager, never in git]
 
-Before publishing, complete all required policy declarations in Play Console:
+3. **Review notes (enter in App Store Connect > App Review Information):**
+   ```
+   Test account: sandbox@chaoscreatures-test.com / [password]
+   All subscriptions are accessible from: Profile tab → "Upgrade Plan" button.
+   Tap "Mid Tier Monthly" to test subscription flow.
+   Use the Sandbox environment on a real device or Simulator with StoreKit testing enabled.
+   Battle Pass is accessible from: Home screen → "Season" tab → "Get Battle Pass".
+   Restore Purchases button is in: Profile tab → Settings → "Restore Purchases".
+   ```
 
-1. **App content** > **Target audience**: Select age 13+ (or 16+ if implementing strict COPPA). Do not select "Ages 5-8" unless parental controls are built.
-2. **App content** > **Subscriptions**: Confirm your app contains subscriptions. Enter the URL to your subscription terms page.
-3. **Data safety**: Declare that you collect User ID (Supabase auth), Purchase history (RevenueCat), and App activity (PostHog). All are encrypted in transit. User data can be deleted on request.
+4. **"Restore Purchases" button:** App Store guidelines require a visible "Restore Purchases" button in the subscription UI. Place it in the upgrade paywall screen and in Settings. Call `StoreService.shared.restorePurchases()` which calls `AppStore.sync()`.
+
+5. **Subscription management link:** iOS 15+ automatically shows "Manage Subscription" in-app (via `SKPaymentQueue`). Additionally, add a "Manage Subscription" button in Settings that opens: `URL(string: "https://apps.apple.com/account/subscriptions")`.
+
+6. **Clear cancellation terms:** Display on the paywall: "Subscriptions auto-renew. Cancel anytime in Settings > Apple ID > Subscriptions."
+
+7. **App Store privacy nutrition labels:** In App Store Connect > App Privacy, declare:
+   - Data Collected: Purchase History (linked to identity)
+   - Data Collected: User ID (linked to identity)
+   - Data Collected: App Activity — gameplay data (not linked to identity)
+   - Data Not Collected: Location, Contacts, Browsing History, Health
+
+### 4m. App Store Review Guidelines for Subscriptions (Key Rules)
+
+Apple Guidelines 3.1.2 governs subscriptions. Violations cause rejection:
+
+- **3.1.2(a):** Subscriptions may only unlock ongoing features, not permanently owned content. The modifier selection depth, dust bonuses, and art quality upgrades qualify as ongoing features. Correct.
+- **3.1.2(b):** All features unlocked by the subscription must be accessible within the app. No subscription benefits delivered outside the app.
+- **3.1.2(c):** Free trials must be disclosed with the exact trial period and price after trial. Our introductory offer is "first month at $2.99" — not a free trial, which is simpler to disclose.
+- **Guideline 3.1.1:** No loot boxes or randomized paid content. Card packs use free Dust only. Correct.
+- **Guideline 3.2.1:** Cannot use IAP for features that should be free (e.g., basic gameplay). Free players have full game access. Correct.
 
 ---
 
-## 6. Conversion Funnels
+## 5. Conversion Funnels
 
 ### Free to Mid Conversion Triggers
 
@@ -554,28 +818,48 @@ All conversion nudges respect a **30-day suppression window**: if the player dis
 3. **Free Legendary shard.** 240 Dust per month is significant value. Losing this feels like leaving money on the table.
 
 **Churn mitigation tactics:**
-1. **Grace period.** If a subscription lapses, give a 7-day grace period before enforcing card limits. Store `grace_period_until` in `user_subscriptions`. Prevent accidental lapses from forcing painful deletions.
-2. **Downgrade warnings.** If a player tries to cancel Top tier, display: "You have [N] cards in [Faction]. Downgrading to Mid tier will require you to delete [N-100] cards. Are you sure?" Pull N from Supabase `card_instances` count.
-3. **Win-back.** If a player cancels, RevenueCat fires a `CANCELLATION` webhook. The Supabase Edge Function enqueues a PostHog event. A win-back email is sent 14 days post-cancellation via Supabase auth email with a RevenueCat offer code for 50% off one month.
+1. **Grace period.** If a subscription lapses (billing failure), give a 7-day grace period before enforcing card limits. Store `grace_period_until` in `user_subscriptions`. Prevent accidental lapses from forcing painful deletions. Apple's GRACE_PERIOD_EXPIRED notification triggers enforcement.
+2. **Downgrade warnings.** If a player cancels Top tier (detected via `DID_CHANGE_RENEWAL_STATUS` App Store notification), display: "You have [N] cards in [Faction]. Downgrading to Mid tier will require you to delete [N-100] cards. Are you sure?" Pull N from Supabase `card_instances` count.
+3. **Win-back.** When `EXPIRED` notification fires and tier drops to `free`, the Supabase Edge Function enqueues a PostHog event. A win-back push notification is sent 14 days post-expiry via Supabase auth email with a StoreKit 2 promotional offer code for a discounted first month on re-subscribe.
 4. **Annual discount.** Annual subscriptions are shown at 2-months-free pricing (10-month price for 12 months). Surface the annual option prominently on the subscription paywall screen.
 
-### Retention Metrics to Track in PostHog
+### Promotional Offers (StoreKit 2 Signed Offers)
 
-- Monthly Churn Rate (MCR): % of subscribers who cancel each month. Target: <5% Mid tier, <3% Top tier.
-- LTV per subscriber: Target $80+ Mid tier (12+ months), $180+ Top tier (14+ months).
-- Conversion Rate: % of free players who convert within 30 days. Target: 6-8%.
-- Upgrade Rate: % of Mid-tier subscribers who upgrade to Top within 6 months. Target: 20-30%.
-- Nudge conversion rate: % of conversion nudges shown that result in a purchase within 7 days. PostHog funnel: `nudge_shown` → `paywall_opened` → `purchase_completed`.
+For win-back, retention offers, and upgrade incentives, use StoreKit 2 Promotional Offers (different from introductory offers — these can be offered to existing/former subscribers).
+
+**Setup in App Store Connect:**
+1. On the subscription detail page, under **Subscription Prices** > **Promotional Offers** > **+**.
+2. Create `winback_50pct_mid`: 50% off for 1 month (price: $3.49) for former Mid subscribers.
+
+**In Swift — signing and presenting the promotional offer:**
+```swift
+// The server signs a promotional offer using the private key from App Store Connect.
+// The client receives the signed payload and presents it to StoreKit 2.
+
+let offerID = "winback_50pct_mid"
+// Fetch the server-signed offer params from your Supabase Edge Function.
+let signedParams = try await SupabaseService.shared.getSignedPromoOffer(
+    productID: ProductID.midMonthly,
+    offerID: offerID
+)
+
+let purchaseOptions: Set<Product.PurchaseOption> = [
+    .promotionalOffer(offerID: offerID, keyID: signedParams.keyID,
+                      nonce: signedParams.nonce, signature: signedParams.signature,
+                      timestamp: signedParams.timestamp)
+]
+let result = try await product.purchase(options: purchaseOptions)
+```
 
 ---
 
-## 7. Battle Pass / Season System
+## 6. Battle Pass / Season System
 
 ### Season Length
 
 **8 weeks per season (2 months).**
 
-Rationale: Long enough for casual players to complete the free track (1-2 games/day can finish it). Short enough to maintain urgency. Aligns with 6-season-per-year content cadence. Matches the 8-week ladder season length already established in `04-progression-economy.md`.
+Rationale: Long enough for casual players to complete the free track (1-2 games/day can finish it). Short enough to maintain urgency. Aligns with 6-season-per-year content cadence. Matches the 8-week ladder season length established in `04-progression-economy.md`.
 
 ### Season Structure
 
@@ -596,12 +880,12 @@ Each season has:
 - Rewards every tier
 - Total value: ~3000-3500 Chaos Dust equivalent
 - Includes exclusive season cosmetics
-- Price: $9.99 USD (IAP product ID: `cc_battle_pass_999`)
+- Price: $9.99 USD (product ID: `com.chaoscreatures.app.iap_battlepass_999`)
 
 | Tier Range | Free Track Reward | Premium Track Reward |
 |---|---|---|
 | Tiers 1-5 | 30 Dust per tier | 50 Dust per tier |
-| Tier 6-10 | 30 Dust per tier (Uncommon Shard at tier 10) | Rare Shard at tier 6, 50 Dust x4 |
+| Tiers 6-10 | 30 Dust per tier (Uncommon Shard at tier 10) | Rare Shard at tier 6, 50 Dust x4 |
 | Tiers 11-15 | 40 Dust per tier | Uncommon Shard x2, Epic Shard at tier 15 |
 | Tiers 16-20 | 40 Dust per tier (Rare Shard at tier 20) | 3 Commons at tier 16, Epic Shard at tier 20 |
 | Tiers 21-25 | 50 Dust per tier | Legendary Shard at tier 25, exclusive seasonal card back |
@@ -646,30 +930,29 @@ At ~15 Dust per win, that is 275 wins worth of grinding.
 
 ### Battle Pass Server Logic
 
-The Battle Pass is a non-consumable IAP (`cc_battle_pass_999`). The server stores:
+The Battle Pass is a non-consumable IAP (`com.chaoscreatures.app.iap_battlepass_999`). The server stores:
 
 ```sql
--- In Supabase
 CREATE TABLE user_battle_passes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users NOT NULL,
-  season_id integer NOT NULL,  -- e.g., 1, 2, 3
-  is_premium boolean DEFAULT false,
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid REFERENCES auth.users NOT NULL,
+  season_id   integer NOT NULL,   -- e.g., 1, 2, 3
+  is_premium  boolean DEFAULT false,
   current_tier integer DEFAULT 0,
-  current_xp integer DEFAULT 0,
+  current_xp  integer DEFAULT 0,
   purchased_at timestamptz,
-  created_at timestamptz DEFAULT now(),
+  created_at  timestamptz DEFAULT now(),
   UNIQUE(user_id, season_id)
 );
 ```
 
-When RevenueCat fires a purchase webhook for `cc_battle_pass_999`, the Edge Function sets `is_premium = true` for the user's current season row. Because the IAP is non-consumable, Apple and Google will not re-charge for the same product ID across seasons. Each new season, the backend creates a new row for all users — a new season is a new database record, not a new IAP product.
+When the iOS client receives a verified StoreKit 2 transaction for `com.chaoscreatures.app.iap_battlepass_999`, it calls the `sync-entitlements` Edge Function. The Edge Function checks the active season from the `seasons` table and sets `is_premium = true` for the user's current season row.
 
-This means: **the same product ID `cc_battle_pass_999` is used every season**. The server determines which season it counts for based on the purchase timestamp vs. the active season date range stored in `seasons` table.
+Because the IAP is non-consumable, Apple will not re-charge for the same product ID — but StoreKit 2 will still return the transaction in `Transaction.currentEntitlements`. The server distinguishes seasons by the transaction `purchaseDate` vs. the `seasons` table `start_date`/`end_date`. If the most recent transaction for this product was purchased before the current season started, `is_premium` is `false` for the current season (new purchase required).
 
 ---
 
-## 8. Cosmetics Revenue
+## 7. Cosmetics Revenue
 
 All cosmetics are direct purchases with transparent pricing — no loot boxes.
 
@@ -685,14 +968,9 @@ Card backs replace the default card back visual when cards are in hand or deck.
 - 6 premium backs per faction (18 total): direct purchase
 
 **Pricing:**
-- Standard premium card back: $1.99 (product ID prefix: `cc_cardback_standard_`)
-- Legendary premium card back (animated with particle effects): $2.99 (prefix: `cc_cardback_legendary_`)
-- Bundle (3 card backs): $4.99 — implemented as a separate non-consumable product `cc_cardback_bundle_499`
-
-**Revenue estimate:**
-- 10% of players buy 1 card back at $1.99: $0.199 ARPU
-- 3% of players buy a bundle at $4.99: $0.15 ARPU
-- Total card back ARPU: ~$0.20-$0.35
+- Standard premium card back: $1.99
+- Legendary premium card back (animated with particle effects): $2.99
+- Bundle (3 card backs): $4.99 — product ID `com.chaoscreatures.app.iap_cardback_bundle_499`
 
 #### Board / Battlefield Skins
 
@@ -708,13 +986,13 @@ The battlefield is the visual environment where battle takes place (background, 
 - Demonic: Obsidian Throne Room (hellfire braziers), Blood Ritual Chamber (pulsing runes), Abyssal Rift (void energy)
 
 **Pricing:**
-- Standard board: $2.99 (`cc_board_standard_299`)
-- Legendary board (advanced animations + ambient audio): $3.99 (`cc_board_legendary_399`)
-- All 3 faction boards bundle: $7.99 (`cc_board_bundle_faction_799`)
+- Standard board: $2.99
+- Legendary board (advanced animations + ambient audio): $3.99
+- All 3 faction boards bundle: $7.99 (product ID `com.chaoscreatures.app.iap_board_bundle_799`)
 
 #### Avatar Frames and Effects
 
-Avatar frames surround the player's avatar portrait during battle. Effects include animated borders, particle auras, and entrance animations.
+Avatar frames surround the player's avatar portrait during battle.
 
 **Launch inventory:**
 - 3 basic frames: free, earned via Player Level milestones
@@ -723,52 +1001,59 @@ Avatar frames surround the player's avatar portrait during battle. Effects inclu
 - 12 premium standalone frames (holiday/event/achievement): direct purchase
 
 **Pricing:**
-- Premium frame: $1.99 (`cc_frame_standard_199`)
-- Legendary animated frame: $2.99 (`cc_frame_legendary_299`)
+- Premium frame: $1.99
+- Legendary animated frame: $2.99
 
 #### Card Reveal Animations
 
-When a card is drawn or played, a brief animation plays.
+When a card is drawn or played, a brief SpriteKit animation plays (implemented as an SKAction sequence in the battlefield scene).
 
 **Launch inventory:**
 - 1 default animation: free
 - 6 premium animations (fire, frost, lightning, shadow, radiant, void): direct purchase at $1.99 each
 
-**Product IDs:**
-- `cc_reveal_fire_199`, `cc_reveal_frost_199`, `cc_reveal_lightning_199`, `cc_reveal_shadow_199`, `cc_reveal_radiant_199`, `cc_reveal_void_199`
-
 ### Total Cosmetics ARPU
 
 Estimated cosmetics ARPU: $0.65-$0.95 per player over lifetime. Secondary to subscription revenue but meaningful at scale (at 100K players: $65K-$95K in cosmetics revenue over time).
 
-### Cosmetics Admin UI
+### Cosmetics Admin UI (Web Dashboard)
 
-The owner needs a simple way to add new cosmetics to the store without touching the database directly. The admin UI for the cosmetics store lives at the `/admin` route (Supabase Dashboard or a custom Next.js admin page).
+The owner adds new cosmetics via the web Admin Dashboard (React app on Railway — separate from the iOS app). No database access required.
 
 **Cosmetic record creation:**
-1. Owner opens the admin UI.
-2. Fills in: Name, Category, Faction, IAP Product ID, Price, Preview Image URL (uploaded to Cloudflare R2), Description.
-3. Clicks **Create**. The admin UI writes to the `cosmetics` Supabase table. The item appears in the in-app store immediately (no deploy required).
+1. Owner opens the admin UI at `chaoscreatures-admin.railway.app`.
+2. Fills in: Name, Category, Faction, IAP Product ID (from the table in Section 2), Price, Preview Image URL (uploaded to Cloudflare R2), Description.
+3. Clicks **Create**. The admin UI writes to the `cosmetics` Supabase table. The item appears in the iOS app's store immediately (no deploy, no rebuild required).
 
 The `cosmetics` table schema:
 ```sql
 CREATE TABLE cosmetics (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  category text NOT NULL CHECK (category IN ('card_back', 'board', 'avatar_frame', 'reveal_animation')),
-  faction text CHECK (faction IN ('ironwright', 'fey', 'demonic', 'universal')),
-  iap_product_id text UNIQUE NOT NULL,
-  price_usd numeric(5,2) NOT NULL,
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name             text NOT NULL,
+  category         text NOT NULL CHECK (category IN ('card_back', 'board', 'avatar_frame', 'reveal_animation')),
+  faction          text CHECK (faction IN ('ironwright', 'fey', 'demonic', 'universal')),
+  iap_product_id   text UNIQUE NOT NULL,
+  price_usd        numeric(5,2) NOT NULL,
   preview_image_url text NOT NULL,
-  description text,
-  is_active boolean DEFAULT true,
-  created_at timestamptz DEFAULT now()
+  description      text,
+  is_active        boolean DEFAULT true,
+  created_at       timestamptz DEFAULT now()
 );
 ```
 
 ---
 
-## 9. Revenue Projections and Financial Model
+## 8. Revenue Projections and Financial Model
+
+### Solo Operator Context
+
+This game is built and operated by one person with a total launch budget of $300. Revenue projections reflect this reality: no engineering team salary, no marketing budget, no paid acquisition. Growth comes from organic App Store discovery, word-of-mouth, and the novelty of AI-generated card art. All cost estimates are conservative. The business model only needs to cover infrastructure and Apple Developer Program fees to be profitable at early scale.
+
+### Apple Small Business Program Impact
+
+Apple charges 30% commission on App Store IAP revenue. However, developers who earn under $1,000,000/year qualify for the Small Business Program (15% commission). As a new app, you qualify immediately. Enroll before your first sale (see Section 4b).
+
+All revenue figures below use **15% commission** (Small Business Program) as the base case, with 30% shown for comparison.
 
 ### Per-User Revenue Estimates by Segment
 
@@ -791,16 +1076,14 @@ Assumptions:
 - Of paying players: 65% Mid tier, 30% Top tier, 5% Top + battle pass + cosmetics
 - Battle pass attachment: 15% of DAU buy pass each season (8-week seasons = ~$0.75/user/month average)
 - Cosmetics: $0.10/month ARPU across all players
-- Store commission: 30% Apple/Google cut applied. Revenue figures below are **net after store fees**.
+- Store commission: 15% (Small Business Program). Revenue figures below are **net after store fees**.
 
-| DAU | Paying Users (7%) | Mid (65%) | Top (30%) | Monthly Gross | Net After 30% Store Fee |
-|---|---|---|---|---|---|
-| 10,000 | 700 | 455 @ $6.99 | 210 @ $12.99 | $12,540 | **$8,778** |
-| 50,000 | 3,500 | 2,275 @ $6.99 | 1,050 @ $12.99 | $62,700 | **$43,890** |
-| 100,000 | 7,000 | 4,550 @ $6.99 | 2,100 @ $12.99 | $125,401 | **$87,781** |
-| 500,000 | 35,000 | 22,750 @ $6.99 | 10,500 @ $12.99 | $627,005 | **$438,904** |
-
-Note: Apple reduces commission to 15% for developers earning under $1M/year (Small Business Program). Enroll at [developer.apple.com/app-store/small-business-program](https://developer.apple.com/app-store/small-business-program). This meaningfully improves margins at early scale.
+| DAU | Paying Users (7%) | Mid (65%) | Top (30%) | Monthly Gross | Net After 15% Fee | Net After 30% Fee (comparison) |
+|---|---|---|---|---|---|---|
+| 10,000 | 700 | 455 @ $6.99 | 210 @ $12.99 | $12,540 | **$10,659** | $8,778 |
+| 50,000 | 3,500 | 2,275 @ $6.99 | 1,050 @ $12.99 | $62,700 | **$53,295** | $43,890 |
+| 100,000 | 7,000 | 4,550 @ $6.99 | 2,100 @ $12.99 | $125,401 | **$106,591** | $87,781 |
+| 500,000 | 35,000 | 22,750 @ $6.99 | 10,500 @ $12.99 | $627,005 | **$532,954** | Note: exceeds $1M/yr threshold at this scale; commission rate increases to 30% above $1M |
 
 ### AI Generation Cost Offset (fal.ai)
 
@@ -813,64 +1096,71 @@ Note: Apple reduces commission to 15% for developers earning under $1M/year (Sma
 - Mid Tier subscriber: 25 evolutions/month = $1.00 in fal.ai costs
 - Top Tier subscriber: 40 evolutions/month = $1.60 in fal.ai costs
 
-**AI cost analysis:**
+**AI cost analysis (net subscription revenue vs. fal.ai cost):**
 
 | Segment | Monthly Subscription Revenue | Monthly fal.ai Cost | Margin After AI |
 |---|---|---|---|
 | Free player | $0 | $0.25 | -$0.25 (loss leader) |
-| Mid Tier subscriber | $6.99 | $1.00 | $5.99 (86% margin) |
-| Top Tier subscriber | $12.99 | $1.60 | $11.39 (88% margin) |
+| Mid Tier subscriber | $5.94 (net after 15%) | $1.00 | $4.94 (83% margin) |
+| Top Tier subscriber | $11.04 (net after 15%) | $1.60 | $9.44 (86% margin) |
 
 **Monthly fal.ai costs at scale:**
 - 10K DAU: ~$3,900/month
 - 50K DAU: ~$19,500/month
 - 100K DAU: ~$39,000/month
-- 500K DAU: ~$195,000/month
 
-**Revenue vs. fal.ai costs (net revenue after store fee and AI):**
-- At 10K DAU: $8,778 net revenue - $3,900 AI costs = **$4,878** (56% margin after AI)
-- At 50K DAU: $43,890 net revenue - $19,500 AI costs = **$24,390** (56% margin after AI)
-- At 100K DAU: $87,781 net revenue - $39,000 AI costs = **$48,781** (56% margin after AI)
-- At 500K DAU: $438,904 net revenue - $195,000 AI costs = **$243,904** (56% margin after AI)
+**Revenue vs. fal.ai costs (net revenue after 15% store fee and AI):**
+- At 10K DAU: $10,659 net revenue - $3,900 AI costs = **$6,759** (63% margin after AI)
+- At 50K DAU: $53,295 net revenue - $19,500 AI costs = **$33,795** (63% margin after AI)
+- At 100K DAU: $106,591 net revenue - $39,000 AI costs = **$67,591** (63% margin after AI)
 
-### Infrastructure Cost Estimate (Actual Stack)
+### Infrastructure Cost Estimate (Solo Operator Stack)
 
 Monthly infrastructure costs at each scale level:
 
-| Service | 10K DAU | 50K DAU | 100K DAU |
-|---|---|---|---|
-| Supabase (Pro plan) | $25 | $25 (scale up at ~50K) | $599 (Team plan) |
-| Railway (game server, auto-scale) | $50-100 | $200-400 | $400-800 |
-| Cloudflare R2 (card art storage + CDN) | $5 | $25 | $50 |
-| OpenAI (GPT-4o Mini for card text) | $20 | $100 | $200 |
-| PostHog (Cloud) | $0 (free up to 1M events) | $50 | $150 |
-| RevenueCat | $0 (free under $2,500 MRR) | $99 | $299 |
-| **Total Infrastructure** | **~$100-$150** | **~$500-$700** | **~$1,700-$2,100** |
+| Service | 10K DAU | 50K DAU | 100K DAU | Solo Dev Notes |
+|---|---|---|---|---|
+| Apple Developer Program | $8.25 | $8.25 | $8.25 | $99/year flat |
+| Supabase (Pro plan) | $25 | $25 | $599 (Team plan) | Free tier works in dev |
+| Railway (game server) | $50-100 | $200-400 | $400-800 | Pay-as-you-go |
+| Cloudflare R2 (card art CDN) | $5 | $25 | $50 | First 10GB free |
+| OpenAI (GPT-4o Mini) | $20 | $100 | $200 | Text generation only |
+| PostHog (Cloud) | $0 | $50 | $150 | Free up to 1M events |
+| **Total Infrastructure** | **~$108-$158** | **~$408-$608** | **~$1,407-$1,807** | No team salaries |
 
-These are substantially lower than the generic "$5,000-$10,000" infrastructure estimate in the previous doc version because the committed stack (Supabase, Railway, Cloudflare R2) is far more cost-efficient than general cloud at this scale.
+**Build-to-launch budget usage ($300 cap):**
+- Apple Developer Program: $99
+- Supabase (Pro plan, first month): $25
+- Railway (first month): $50
+- Cloudflare R2 (first month): $5
+- OpenAI (content generation batch for launch cards): ~$50-80
+- fal.ai (art generation for launch cards — ~1,000 cards x $0.02-$0.04): $20-40
+- PostHog: $0 (free tier)
+- **Total estimated: $249-$299** — within $300 budget.
 
-### Break-Even Analysis
+### Break-Even Analysis (Solo Operator)
 
-**Revised fixed costs (solo operator model, no engineering team):**
-- Infrastructure (per above): $100-$2,100/month (scale-dependent)
-- Apple Developer Program: $99/year = $8.25/month
-- Google Play Developer: $25 one-time (negligible monthly)
-- RevenueCat: $0-$299/month (free until $2,500 MRR, then percentage-based)
-- Optional: Community/social manager at $2,000-$3,000/month
-- **Total monthly fixed costs: $200-$5,500/month** (scale-dependent, no salary)
+**Monthly fixed costs at launch scale (~1K-5K DAU):**
+- Infrastructure: ~$108-$158/month
+- Apple Developer Program: $8.25/month
+- **Total monthly costs: ~$116-$166/month**
 
-**Break-even DAU (solo operator, all-in infrastructure only):**
-- Net revenue per DAU after AI costs: ~$0.49/month
-- At $500/month total fixed costs (50K DAU level): $500 / $0.49 = ~**1,020 DAU**
-- This is reachable very early. The business is operationally profitable at ~1,000 active paying users.
+**Revenue needed to cover costs:**
+- At 15% commission, net revenue per Mid subscriber: $5.94/month
+- Subscribers needed to break even: $166 / $5.94 = **~28 paying subscribers** (at $6.99/month)
+- At 7% conversion rate, DAU needed: 28 / 0.07 = **~400 DAU**
+- This is achievable within weeks of a successful App Store launch.
 
-**If hiring a part-time community manager ($3,000/month):**
-- Break-even: $3,500 / $0.49 = ~**7,150 DAU**
-- Still reachable within a few months of launch.
+**Milestone projections:**
+- 400 DAU → operational break-even ($0 cost to run)
+- 1,000 DAU → ~$75/month profit after all costs
+- 5,000 DAU → ~$400/month profit
+- 10,000 DAU → ~$6,600/month profit (solo operator takes home after all costs)
+- 50,000 DAU → ~$33,000/month profit
 
 ---
 
-## 10. Anti-Predatory Design
+## 9. Anti-Predatory Design
 
 Chaos Creatures is designed to avoid exploitative F2P mechanics.
 
@@ -887,40 +1177,30 @@ Chaos Creatures is designed to avoid exploitative F2P mechanics.
 - Duplicate protection: packs automatically reroll 3rd+ copies of owned Commons.
 - Specific Commons can be purchased directly for 50 Dust each.
 
-**Why this matters:** Loot boxes trigger compulsive gambling behavior in vulnerable players. Many countries regulate them as gambling (Belgium, Netherlands). By making card acquisition deterministic and free-currency-only, we eliminate this risk entirely and the associated regulatory exposure.
+**Why this matters:** Loot boxes trigger compulsive gambling behavior in vulnerable players. Many countries regulate them as gambling (Belgium, Netherlands). By making card acquisition deterministic and free-currency-only, we eliminate this risk entirely and the associated regulatory exposure. Apple Guideline 3.1.1 also prohibits simulated gambling mechanics — our model is fully compliant.
 
 ### 2. Spending Caps and Warnings
 
-**Implementation — stored in Supabase `user_spending_controls` table:**
-
-```sql
-CREATE TABLE user_spending_controls (
-  user_id uuid REFERENCES auth.users PRIMARY KEY,
-  monthly_spend_limit_usd numeric(8,2) DEFAULT 50.00,
-  weekly_spend_limit_usd numeric(8,2) DEFAULT 30.00,
-  caps_enabled boolean DEFAULT true,
-  updated_at timestamptz DEFAULT now()
-);
-```
+**Implementation — stored in Supabase `user_spending_controls` table (schema in Section 2):**
 
 **Behavior:**
-- After $30 in purchases in any rolling 7-day period: display a confirmation sheet before the next purchase: "You have spent $30 this week on Chaos Creatures. Continue?"
-- After $50 in purchases in any rolling 30-day period: same confirmation, with the addition of "You can set a monthly limit in Settings."
+- After $30 in IAP in any rolling 7-day period: display a confirmation sheet before the next purchase: "You have spent $30 this week on Chaos Creatures. Continue?"
+- After $50 in IAP in any rolling 30-day period: same confirmation, with the addition of "You can set a monthly limit in Settings."
 - Players can disable caps in Settings > Account > Spending Controls. Disabling requires a confirmation tap and is logged to PostHog as `spending_cap_disabled`.
-- RevenueCat purchase webhooks update a running spend total in Supabase. The client checks the total before presenting the purchase confirmation sheet.
+- The Supabase Edge Function tracks running spend totals from App Store Server Notifications. The iOS client fetches the total before presenting any purchase sheet.
 
 ### 3. Parental Controls
 
 **For accounts created by users identifying as under 18:**
 - Require parental approval (via linked parent email) for any purchase over $5.
 - Default spending cap: $20/month for accounts under 13, $50/month for accounts ages 13-17.
-- Parent can view purchase history and set custom limits via a web portal at `chaoscreatures.com/parental-controls`.
+- Parent can view purchase history via a web portal at `chaoscreatures.com/parental-controls`.
 
-**iOS and Android integration:**
-- Respect Apple Screen Time and Google Family Link restrictions automatically — RevenueCat purchase calls will fail gracefully if the platform rejects the purchase due to parental controls.
-- In the app's age gate (first launch), if the user enters a birth year indicating they are under 13, flag the account in Supabase and apply COPPA-compliant defaults (no purchase without parental consent).
+**iOS integration:**
+- StoreKit 2 automatically enforces Screen Time and Family Sharing restrictions. If a purchase is blocked by parental controls, `product.purchase()` returns `.userCancelled` — handle gracefully (no error shown).
+- In the app's age gate (first launch), if the user enters a birth year indicating they are under 13, flag the account in Supabase and apply COPPA-compliant defaults (no purchase without parental consent email flow).
 
-**COPPA compliance note:** If the app is available to users under 13, it must comply with COPPA in the US. The safest approach at launch is to set the minimum age to 13 in both app stores and in the age gate UI, which bypasses most COPPA obligations. Document this decision.
+**COPPA compliance note:** Set the minimum age to 13 in App Store Connect (Age Rating questionnaire) and in the age gate UI. This is the minimum age for an Apple ID without parental controls, which provides the simplest COPPA compliance path for a solo operator.
 
 ### 4. Transparent Odds and Rates
 
@@ -929,7 +1209,7 @@ CREATE TABLE user_spending_controls (
 - Evolution outcomes: Show "70% chance of Chaos evolution, 30% chance of Order evolution" on the evolution confirmation screen.
 - Modifier selection pool: Show full pool identifier and contents on the modifier selection screen.
 
-**Apple App Store requirement:** For any "loot box" mechanic, Apple requires disclosure of drop rates before purchase. Our card packs do not qualify as loot boxes (fixed guaranteed contents, purchased with free currency), but we disclose anyway for trust.
+**Apple requirement:** For any randomized purchase, Apple requires disclosure of probabilities before purchase. Our card packs have fixed contents (no randomness in what is purchased with real money), so this guideline does not apply to us — but we disclose anyway for player trust.
 
 ### 5. No Dark Patterns
 
@@ -945,21 +1225,21 @@ CREATE TABLE user_spending_controls (
 ### 6. Refund Policy
 
 **For subscription cancellations:**
-- Players can cancel at any time via platform subscription management (iOS Settings > Apple ID > Subscriptions, or Google Play > Subscriptions).
-- Subscription benefits remain active until end of current billing period (no immediate shutoff).
+- Players cancel via iOS Settings > Apple ID > Subscriptions (Apple handles this — the developer does not implement a cancellation flow).
+- Subscription benefits remain active until end of current billing period (Apple enforces this automatically).
 - If a player cancels within 48 hours of initial subscription, offer a full refund via in-app "Contact Support" button which opens a pre-filled email: `support@chaoscreatures.com?subject=Refund%20Request`.
 
 **For cosmetic purchases:**
-- 7-day refund window via support ticket.
-- No refund after 7 days or if the cosmetic has been used in 5+ battles.
+- Apple's standard refund policy applies (request via Apple's Report a Problem page).
+- The developer can issue manual refunds from App Store Connect > Payments and Financial Reports if needed for exceptional cases.
 
 ---
 
-## 11. Pricing Localization
+## 10. Pricing Localization
 
 ### Regional Pricing Tiers
 
-Use Apple's and Google's built-in pricing tier systems. Both platforms auto-convert a base USD price to all currencies, but you can override per-region. The values below are the overrides to enter manually.
+Use App Store Connect's built-in pricing tier system. Set a base USD price and Apple auto-suggests equivalent prices in all 175+ territories. You can override per-territory for markets with significant purchasing-power disparity.
 
 **Tier 1 Markets (US, Canada, UK, Western Europe, Australia, Japan):**
 
@@ -994,46 +1274,40 @@ Use Apple's and Google's built-in pricing tier systems. Both platforms auto-conv
 ### How to Set Regional Prices in App Store Connect
 
 1. In App Store Connect, open any subscription product.
-2. Under **Subscription Price**, click **Set Prices**.
-3. Choose base country (United States).
-4. After setting USD price, click **Proceed** — Apple will auto-suggest equivalent prices in all currencies.
+2. Under **Subscription Prices**, click **Set Prices**.
+3. Choose base country: United States.
+4. After setting USD price, click **Proceed** — Apple auto-suggests equivalent prices in all currencies.
 5. Review and adjust Tier 2 and Tier 3 markets by clicking each territory and entering the values from the tables above.
 6. Click **Confirm** and **Save**.
 
-### How to Set Regional Prices in Play Console
-
-1. In Play Console, open any subscription or in-app product.
-2. Under **Pricing**, click **Set price** for USD first.
-3. Click **Set price for other countries** to expand the full territory list.
-4. Enter values for each territory from the tables above.
-5. Click **Update**.
+Note: For non-subscription IAPs (cosmetics, battle pass), use **In-App Purchases** > open the product > **Pricing** > **Add Pricing** to set per-territory overrides.
 
 ### Currency Handling
 
-- Always show prices in the user's local currency (detected via platform).
-- Both Apple and Google handle local currency display, tax calculation, and payment processing.
-- Review and adjust regional pricing quarterly based on significant exchange rate movements (more than 20% vs. USD).
-- Prices shown are inclusive of taxes where required (EU VAT, etc.). Platforms handle tax remittance — the developer receives net revenue.
+- Apple handles all local currency display, tax calculation, payment processing, and remittance.
+- Prices are shown to the user in their App Store region currency — you never need to format prices client-side. Use `product.displayPrice` (StoreKit 2) which returns the correctly formatted local price string.
+- Review and adjust regional pricing quarterly based on significant exchange rate movements (more than 20% vs. USD). Apple sends email alerts for territory pricing changes.
+- Prices shown are inclusive of taxes where required (EU VAT, etc.). Apple handles tax remittance — the developer receives net-of-tax revenue minus Apple's commission.
 
 ---
 
-## 12. Monetization Roadmap and Future Opportunities
+## 11. Monetization Roadmap and Future Opportunities
 
 ### Year 1 Priorities
 
 **Months 1-3 (Launch):**
 - Focus: Prove free-to-paid conversion. Target 6-8% conversion rate.
 - Tactics: First-month discount offers, evolution moment upsells, deck slot friction nudges.
-- Revenue target: 10K DAU, $8K-$10K/month net.
+- Revenue target: 10K DAU, $8K-$10K/month net (after 15% Apple fee).
 
 **Months 4-6 (Growth):**
 - Focus: Scale user base, introduce first battle pass.
-- Tactics: User acquisition, influencer partnerships, first seasonal content drop.
+- Tactics: App Store featuring (submit for App Store editorial review), first seasonal content drop.
 - Revenue target: 50K DAU, $40K-$50K/month net.
 
 **Months 7-12 (Maturity):**
 - Focus: Optimize conversion funnels, introduce cosmetics store.
-- Tactics: A/B test subscription pricing, launch cosmetics bundles, introduce annual subscription.
+- Tactics: A/B test subscription paywall layouts, launch cosmetics bundles, introduce annual subscription prominently.
 - Revenue target: 100K DAU, $80K-$100K/month net.
 
 ### Future Monetization Opportunities (Year 2+)
@@ -1052,11 +1326,11 @@ Use Apple's and Google's built-in pricing tier systems. Both platforms auto-conv
 
 **4. Prestige Evolution Paths (Post-Legendary)**
 - After Legendary, continue evolving for cosmetic upgrades: animated borders, holographic effects, custom names.
-- Requires Top Tier subscription or a one-time $4.99 Prestige unlock per card.
+- Requires Top Tier subscription or a one-time $4.99 Prestige unlock per card (product ID: `com.chaoscreatures.app.iap_prestige_499`).
 
 ---
 
-## 13. Success Metrics and KPIs
+## 12. Success Metrics and KPIs
 
 ### Core Monetization KPIs (Tracked in PostHog)
 
@@ -1070,19 +1344,24 @@ Use Apple's and Google's built-in pricing tier systems. Both platforms auto-conv
 
 ### PostHog Events to Fire
 
-The client must fire these PostHog events. Claude Code will implement them in the corresponding screens.
+The iOS client must fire these PostHog events. Implement in the corresponding SwiftUI view or StoreService callback.
 
 | Event Name | When to Fire | Properties |
 |---|---|---|
 | `paywall_shown` | Any paywall or upgrade screen is displayed | `trigger_reason`, `current_tier`, `screen_name` |
 | `paywall_dismissed` | User closes paywall without purchasing | `trigger_reason`, `current_tier` |
 | `purchase_started` | User taps a buy button | `product_id`, `price_usd` |
-| `purchase_completed` | RevenueCat confirms purchase | `product_id`, `price_usd`, `new_tier` |
-| `purchase_failed` | Purchase flow returns an error | `product_id`, `error_code` |
-| `subscription_cancelled` | RevenueCat webhook fires CANCELLATION | `tier`, `months_subscribed` |
+| `purchase_completed` | StoreKit 2 transaction verified | `product_id`, `price_usd`, `new_tier` |
+| `purchase_failed` | `StoreError` thrown (non-cancellation) | `product_id`, `error_code` |
+| `purchase_cancelled` | `StoreError.userCancelled` | `product_id` |
+| `subscription_renewed` | `Transaction.updates` fires renewal | `tier`, `months_subscribed` |
+| `subscription_cancelled` | App Store notification `DID_CHANGE_RENEWAL_STATUS` | `tier`, `months_subscribed` |
 | `nudge_shown` | A conversion nudge banner or sheet appears | `nudge_type`, `context` |
 | `nudge_dismissed` | User dismisses a nudge | `nudge_type` |
 | `spending_cap_warning_shown` | Spending cap threshold reached | `cap_type` (weekly/monthly), `amount_usd` |
+| `restore_purchases_tapped` | User taps Restore Purchases | `current_tier` |
+
+**PostHog Swift implementation note:** Use the PostHog Swift SDK (`posthog-ios`). Call `PostHogSDK.shared.capture("event_name", properties: [...])` from the main thread. Initialize in `ChaosCreaturesApp` init alongside EntitlementManager.
 
 ---
 
@@ -1090,17 +1369,15 @@ The client must fire these PostHog events. Claude Code will implement them in th
 
 Chaos Creatures' monetization strategy is built on three core principles:
 
-1. **No real money on individual cards.** This eliminates gambling mechanics, creates a fair playing field, and builds trust.
+1. **No real money on individual cards.** This eliminates gambling mechanics, creates a fair playing field, and builds trust with Apple's App Store review team.
 2. **Subscriptions enhance the experience, not the power.** Modifier selection depth, art quality, and collection growth are the monetization levers — all meaningful, none pay-to-win.
-3. **Sustainable economics.** AI generation costs (fal.ai) are more than covered by subscription revenue at scale. Free players are a sustainable loss leader.
+3. **Sustainable solo-operator economics.** AI generation costs (fal.ai) are more than covered by subscription revenue at scale. The business reaches break-even at ~400 DAU, achievable within weeks of launch. Apple's Small Business Program (15% commission) meaningfully improves solo-operator margins.
 
-With an expected 7-9% conversion rate, $1.20-$1.60 ARPU at maturity, and 56% margin after AI costs, Chaos Creatures achieves profitability at a modest DAU and can scale to a multi-million-dollar annual revenue business at 500K+ DAU.
-
-The monetization model respects players, avoids predatory mechanics, and aligns revenue with value delivered.
+With an expected 7-9% conversion rate, $1.20-$1.60 ARPU at maturity, and 63% margin after AI costs and 15% Apple commission, Chaos Creatures achieves operational profitability at modest scale and can reach substantial annual revenue at 100K+ DAU — all operated by one person.
 
 ---
 
-**Document version:** 2.0
+**Document version:** 3.0
 **Last updated:** 2026-02-16
 **Owner:** Monetization and Economy Design
 
@@ -1108,56 +1385,126 @@ The monetization model respects players, avoids predatory mechanics, and aligns 
 
 ## Revision Log
 
+### v1.0 → v2.0 (original revision)
+
 The following changes were made during the revision from v1.0 to v2.0 to ensure the document is directly implementable by Claude Code without any engineering judgment calls, manual processes, or ambiguous recommendations.
 
-### Section 2 (New): IAP Library Decision: RevenueCat
-- **Added.** The previous document did not specify which IAP library to use. This section makes an explicit, committed decision: RevenueCat (not expo-in-app-purchases), with full reasoning.
-- **Added** exact npm install command with package names.
-- **Added** step-by-step RevenueCat account setup instructions (project creation, platform apps, entitlement definitions).
-- **Added** complete TypeScript client initialization code for `/src/services/purchases.ts`.
-- **Added** complete `useEntitlements` React hook for `/src/hooks/useEntitlements.ts`.
-- **Added** RevenueCat webhook integration instructions (webhook URL, event types to handle, Supabase Edge Function requirements).
-- **Added** RevenueCat + PostHog integration configuration steps.
+**Section 2 (New): IAP Library Decision: RevenueCat**
+- Added. The previous document did not specify which IAP library to use. This section made an explicit, committed decision: RevenueCat (not expo-in-app-purchases), with full reasoning.
+- Added exact npm install command with package names.
+- Added step-by-step RevenueCat account setup instructions (project creation, platform apps, entitlement definitions).
+- Added complete TypeScript client initialization code for `/src/services/purchases.ts`.
+- Added complete `useEntitlements` React hook for `/src/hooks/useEntitlements.ts`.
+- Added RevenueCat webhook integration instructions (webhook URL, event types to handle, Supabase Edge Function requirements).
+- Added RevenueCat + PostHog integration configuration steps.
 
-### Section 3 (Subscription Tiers): IAP Product Identifiers Table
-- **Added** explicit IAP product identifier table with exact strings for every purchasable product — both App Store and Google Play. Previous version had no product IDs anywhere in the document.
-- **Added** annual subscription products (`cc_mid_annual_5599`, `cc_top_annual_9999`) that were not in v1.0.
-- **Added** cosmetic product IDs for all individual cosmetic items.
+**Section 3 (Subscription Tiers): IAP Product Identifiers Table**
+- Added explicit IAP product identifier table with exact strings for every purchasable product — both App Store and Google Play. Previous version had no product IDs anywhere in the document.
+- Added annual subscription products that were not in v1.0.
+- Added cosmetic product IDs for all individual cosmetic items.
 
-### Section 4 (New): App Store Connect Configuration (Step by Step)
-- **Added entirely.** Previous version said "Use Apple App Store native IAP" with no setup instructions. This section provides field-by-field configuration: app creation, subscription group creation, each subscription product with exact field values, battle pass as non-consumable, offer codes for first-month trial, sandbox tester setup, and review notes.
+**Section 4 (New): App Store Connect Configuration (Step by Step)**
+- Added entirely. Previous version said "Use Apple App Store native IAP" with no setup instructions.
 
-### Section 5 (New): Google Play Console Configuration (Step by Step)
-- **Added entirely.** Previous version said "Use Google Play native IAP" with no setup instructions. This section provides: app creation, subscription creation with base plans, in-app product creation, introductory offer setup, service account linking to RevenueCat, and required policy declarations (Data Safety, Target Audience, Subscriptions declaration).
+**Section 5 (New): Google Play Console Configuration (Step by Step)**
+- Added entirely. Previous version said "Use Google Play native IAP" with no setup instructions.
 
-### Section 6 (Conversion Funnels): In-App Conversion Tactics Table
-- **Replaced** generic bullet-point descriptions with a concrete trigger/UI/CTA table that Claude Code can implement directly.
-- **Added** 30-day nudge suppression logic with `user_nudge_suppression` Supabase table reference.
-- **Added** specific PostHog funnel definition for nudge conversion tracking.
+**Section 6 (Conversion Funnels): In-App Conversion Tactics Table**
+- Replaced generic bullet-point descriptions with a concrete trigger/UI/CTA table.
+- Added 30-day nudge suppression logic with `user_nudge_suppression` Supabase table reference.
+- Added specific PostHog funnel definition for nudge conversion tracking.
 
-### Section 7 (Battle Pass): Server-Side Logic and SQL Schema
-- **Added** SQL schema for `user_battle_passes` table.
-- **Added** explicit explanation of how one non-consumable IAP product ID is reused across seasons server-side, resolving the ambiguity of how a non-consumable battle pass works per season.
+**Section 7 (Battle Pass): Server-Side Logic and SQL Schema**
+- Added SQL schema for `user_battle_passes` table.
+- Added explicit explanation of how one non-consumable IAP product ID is reused across seasons server-side.
 
-### Section 8 (Cosmetics): Admin UI Specification and Cosmetics Table Schema
-- **Added** specification for cosmetics admin UI (how the owner adds cosmetics without touching the database directly).
-- **Added** `cosmetics` Supabase table SQL schema.
-- **Added** explicit product IDs for all cosmetic variant items (reveal animations per element type).
+**Section 8 (Cosmetics): Admin UI Specification and Cosmetics Table Schema**
+- Added specification for cosmetics admin UI.
+- Added `cosmetics` Supabase table SQL schema.
+- Added explicit product IDs for all cosmetic variant items.
 
-### Section 9 (Revenue Projections): Infrastructure Costs Updated to Actual Stack
-- **Replaced** generic "$5,000-$10,000/month cloud infrastructure" estimate with actual cost estimates for the committed stack (Supabase, Railway, Cloudflare R2, OpenAI, PostHog, RevenueCat).
-- **Added** note about Apple Small Business Program (15% vs 30% commission under $1M/year) and how to enroll.
-- **Revised** break-even analysis to reflect solo-operator model (no engineering team salaries) — previous version assumed a 6-person team costing $60,000/month.
-- **Added** 30% store fee applied to all revenue figures to make them net figures.
+**Section 9 (Revenue Projections): Infrastructure Costs Updated to Actual Stack**
+- Replaced generic "$5,000-$10,000/month cloud infrastructure" estimate with actual cost estimates for the committed stack.
+- Added note about Apple Small Business Program (15% vs 30% commission).
+- Revised break-even analysis to reflect solo-operator model.
+- Added 30% store fee applied to all revenue figures.
 
-### Section 11 (Pricing Localization): Explicit Currency Tables
-- **Replaced** generic "~$4.99 USD equivalent" descriptions with explicit per-currency price tables for all major markets and all subscription products.
-- **Added** step-by-step instructions for setting regional prices in both App Store Connect and Play Console.
+**Section 11 (Pricing Localization): Explicit Currency Tables**
+- Replaced generic descriptions with explicit per-currency price tables.
+- Added step-by-step instructions for setting regional prices in both App Store Connect and Play Console.
 
-### Section 13 (New): PostHog Events Table
-- **Added** explicit table of all PostHog events that must be fired, with event names, trigger conditions, and required properties. Previous version mentioned PostHog tracking in general terms only.
+**Section 13 (New): PostHog Events Table**
+- Added explicit table of all PostHog events that must be fired.
 
-### Throughout: Technology Specificity
-- **Replaced** all references to generic cloud (AWS, GCP, CloudFront) with the committed stack from CLAUDE.md (Supabase, Railway, Cloudflare R2, fal.ai, PostHog).
-- **Removed** "engineers should decide" and "consider X" language throughout.
-- **Removed** assumption of a 6-person engineering team from the break-even model.
+---
+
+### v2.0 → v3.0 (2026-02-16)
+
+This revision aligns the document fully with the updated CLAUDE.md (native iOS / Swift / StoreKit 2 / App Store only) and resolves WARN-2 and WARN-5 from REVIEW.md.
+
+**Platform change: React Native/Expo/TypeScript to Native iOS Swift + SwiftUI + SpriteKit**
+- Removed all React Native, Expo, TypeScript client-side code.
+- Removed all npm package references.
+- Replaced all TypeScript code samples with Swift implementations.
+
+**WARN-2 fix: Removed RevenueCat entirely**
+- Removed Section 2 (IAP Library Decision: RevenueCat) entirely.
+- Removed all `react-native-purchases` and `react-native-purchases-ui` references.
+- Removed RevenueCat dashboard setup instructions.
+- Removed RevenueCat webhook configuration.
+- Removed RevenueCat + PostHog integration steps.
+- Replaced with StoreKit 2 native Swift implementation: `EntitlementManager`, `StoreService`, `ProductCatalog` Swift files with full code.
+- StoreKit 2 uses `Transaction.currentEntitlements` and `Transaction.updates` async sequences — the equivalent of RevenueCat's entitlement management, implemented natively with no third-party dependency and no cost.
+- App Store Server API notifications replace RevenueCat webhooks for server-side subscription lifecycle events.
+
+**WARN-5 fix: Subscription prices finalized**
+- Removed all "~$5-8/mo" and "~$10-15/mo" range language from Section 3.
+- Final prices are definitively $6.99/month (Mid) and $12.99/month (Top) throughout.
+- Added note in Section 3 explicitly stating these values supersede any range language in docs 00 and 01.
+
+**Removed: Google Play Console section (Section 5)**
+- Removed entirely. The project is iOS only (CLAUDE.md). No Android, no Google Play.
+- Removed all Google Play product ID columns from product tables.
+- Removed `cc_` product ID prefix convention (was dual-platform). Replaced with `com.chaoscreatures.app.` reverse-domain prefix (App Store convention).
+
+**Updated: IAP Product IDs**
+- Changed all product IDs from short `cc_` prefix to full reverse-domain format `com.chaoscreatures.app.*` per App Store Connect convention.
+- Updated Section 2 product table, Section 4 App Store Connect instructions, and all code samples to use new IDs.
+
+**Updated: Section 4 (App Store Connect) — Additional Fields**
+- Added field-by-field table format for each subscription product (more explicit than prose description).
+- Added Section 4k for Promotional Offers (Signed Offers for win-back), with Swift code for presenting signed promotional offers via StoreKit 2.
+- Added Section 4m covering App Store Review Guidelines for subscriptions (3.1.2(a)(b)(c), 3.1.1, 3.2.1).
+- Removed Google Play setup steps that were in old Section 5.
+
+**Updated: Section 8 (Revenue Projections)**
+- Renamed to Section 8 (from Section 9 after removing the Google Play section).
+- Added solo operator context paragraph.
+- Added Apple Small Business Program subsection with enrollment steps.
+- Added $300 build-to-launch budget breakdown (line by line, totaling within budget).
+- Revised break-even analysis to reflect solo-operator with 15% Apple commission.
+- Added milestone projections table (400 DAU → break-even, 10K DAU → $6,600/month).
+- Revised monthly revenue model table to show both 15% (Small Business Program) and 30% commission columns.
+- Removed RevenueCat from infrastructure cost table.
+
+**Updated: Section 9 (Anti-Predatory Design)**
+- Removed all RevenueCat webhook references from spending cap implementation.
+- Replaced with App Store Server Notifications as the source of spend data.
+- Removed Google Play / Google Family Link references from parental controls.
+- Updated to iOS Screen Time / Family Sharing for parental control integration.
+- Updated refund policy to reference App Store Connect (no Google Play equivalent).
+
+**Updated: Section 10 (Pricing Localization)**
+- Removed "How to Set Regional Prices in Play Console" subsection.
+- Updated `product.displayPrice` note — this is StoreKit 2's `Product.displayPrice` property (Swift), not a React Native API.
+
+**Updated: Section 12 (Success Metrics)**
+- Removed `purchase_failed` and `subscription_cancelled` RevenueCat-sourced events.
+- Added `purchase_cancelled` (StoreError.userCancelled distinction from failure) and `subscription_renewed` (from Transaction.updates).
+- Updated PostHog implementation note to reference PostHog Swift SDK.
+
+**Stack context header updated**
+- Removed RevenueCat from stack context at top of document.
+- Added StoreKit 2 as the IAP mechanism.
+- Added $300 budget constraint reference.
+- Removed Google Play from payments line.
