@@ -70,7 +70,7 @@ struct ContentView: View {
                     .navigationDestination(for: ProfileDestination.self) { destination in
                         switch destination {
                         case .achievements:
-                            Text("Achievements") // Placeholder
+                            AchievementsView()
                         case .settings:
                             SettingsView()
                         }

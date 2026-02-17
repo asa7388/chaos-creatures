@@ -185,11 +185,13 @@ final class StoreKitService {
             let transactionId: String
             let productId: String
             let originalTransactionId: String
+            let jwsRepresentation: String
 
             enum CodingKeys: String, CodingKey {
                 case transactionId = "transaction_id"
                 case productId = "product_id"
                 case originalTransactionId = "original_transaction_id"
+                case jwsRepresentation = "jws_representation"
             }
         }
 
@@ -199,7 +201,8 @@ final class StoreKitService {
                 body: EntitlementSync(
                     transactionId: String(transaction.id),
                     productId: transaction.productID,
-                    originalTransactionId: String(transaction.originalID)
+                    originalTransactionId: String(transaction.originalID),
+                    jwsRepresentation: transaction.jwsRepresentation
                 )
             )
         } catch {

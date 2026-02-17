@@ -187,9 +187,49 @@ struct PostMatchView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Rewards
+    // MARK: - S-38: Rewards (mode-aware)
 
     private var rewardsView: some View {
+        VStack(spacing: 12) {
+            if isPracticeMode {
+                // Practice mode: no rewards earned
+                practiceRewardsView
+            } else {
+                // PvP mode: show actual rewards based on win/loss and mode
+                pvpRewardsView
+            }
+        }
+        .padding(16)
+        .background(Color.bgSecondary.opacity(0.8))
+        .cornerRadius(12)
+    }
+
+    private var practiceRewardsView: some View {
+        VStack(spacing: 8) {
+            Text("Practice Match")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.textPrimary)
+
+            Text("No rewards in practice mode. Play Ranked or Casual to earn XP, Dust, and Chaos Energy!")
+                .font(.system(size: 13))
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+
+            // Still show energy earned (all 20 deck cards gain energy even in practice)
+            HStack(spacing: 6) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.warningYellow)
+                Text("All deck cards earned +\(energyEarned) Chaos Energy")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.warningYellow)
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private var pvpRewardsView: some View {
         VStack(spacing: 12) {
             Text("Rewards")
                 .font(.system(size: 16, weight: .bold))
@@ -213,13 +253,13 @@ struct PostMatchView: View {
                 rewardItem(
                     icon: "bolt.fill",
                     label: "Energy",
-                    value: "+\(energyEarned)",
+                    value: "+\(energyEarned)/card",
                     color: .warningYellow
                 )
             }
 
-            // Rank change (for ranked mode)
-            if let record = matchRecord, record.gameMode == .ranked {
+            // Ranked mode bonus info
+            if matchRecord?.gameMode == .ranked {
                 HStack(spacing: 8) {
                     Image(systemName: isVictory ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
                         .foregroundColor(isVictory ? .orderBlue : .chaosRed)
@@ -230,10 +270,13 @@ struct PostMatchView: View {
                 }
                 .padding(.top, 4)
             }
+
+            // Energy explanation
+            Text("All 20 deck cards gained +\(energyEarned) Chaos Energy")
+                .font(.system(size: 11))
+                .foregroundColor(.textTertiary)
+                .padding(.top, 2)
         }
-        .padding(16)
-        .background(Color.bgSecondary.opacity(0.8))
-        .cornerRadius(12)
     }
 
     private func rewardItem(icon: String, label: String, value: String, color: Color) -> some View {
@@ -277,6 +320,13 @@ struct PostMatchView: View {
         guard let matchId else {
             isLoading = false
             loadError = "No match ID provided."
+            return
+        }
+
+        // Practice matches don't save match records to Supabase,
+        // so skip the fetch and show results based on router state
+        if router.selectedGameMode == .practice {
+            isLoading = false
             return
         }
 
@@ -350,14 +400,40 @@ struct PostMatchView: View {
             : record.player1FinalHp
     }
 
+    /// S-38: Whether this was a practice match
+    private var isPracticeMode: Bool {
+        if let record = matchRecord {
+            return record.gameMode == .practice
+        }
+        // Fallback to router's selected mode if no record loaded
+        return router.selectedGameMode == .practice
+    }
+
+    /// S-38: XP earned — based on mode and win/loss
+    /// Source: docs/design/04-progression-economy.md
+    /// Ranked: 30 win / 15 loss, Casual: 25 win / 10 loss, Practice: 0
     private var xpEarned: Int {
-        isVictory ? 25 : 10
+        guard !isPracticeMode else { return 0 }
+        let isRanked = matchRecord?.gameMode == .ranked
+        if isRanked {
+            return isVictory ? 30 : 15
+        }
+        return isVictory ? 25 : 10
     }
 
+    /// S-38: Dust earned — based on mode and win/loss
+    /// Ranked: 8 win / 3 loss, Casual: 5 win / 2 loss, Practice: 0
     private var dustEarned: Int {
-        isVictory ? 5 : 2
+        guard !isPracticeMode else { return 0 }
+        let isRanked = matchRecord?.gameMode == .ranked
+        if isRanked {
+            return isVictory ? 8 : 3
+        }
+        return isVictory ? 5 : 2
     }
 
+    /// S-38: Chaos energy per card — 2 win / 1 loss (all modes including practice)
+    /// Source: packages/game-server/src/engine/constants.ts
     private var energyEarned: Int {
         isVictory ? 2 : 1
     }

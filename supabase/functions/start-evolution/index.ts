@@ -204,6 +204,62 @@ serve(async (req: Request) => {
     return errorResponse(ErrorCode.EVOLUTION_GENERATION_FAILED, "Failed to start AI generation");
   }
 
+  // 9. Fire-and-forget: invoke generation Edge Functions to process the PENDING jobs.
+  // Uses the same pattern as complete-evolution's achievement trigger.
+  const functionUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (functionUrl && serviceKey) {
+    const headers = {
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+    };
+
+    // Fire evolution art generation
+    if (imageJob?.id) {
+      fetch(`${functionUrl}/functions/v1/generate-evolution-art`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          job_id: imageJob.id,
+          card_instance_id,
+          player_id: auth.playerId,
+          faction_id: factionId,
+          rarity: currentTier.toLowerCase(),
+          art_url: card.art_url,
+          evolution_outcome: "STANDARD",
+          selected_modifier_id: "pending",
+          from_tier: currentTier,
+          shard_quality: "PLANAR",
+          evolution_history: card.evolution_history || [],
+          evolution_number: (card.evolution_history || []).length + 1,
+        }),
+      }).catch((err) => console.error("Evolution art trigger error:", err));
+    }
+
+    // Fire evolution text generation (name candidates)
+    if (textJob?.id) {
+      const previousNames = (card.evolution_history || [])
+        .map((e: any) => e.name_after)
+        .filter(Boolean);
+      fetch(`${functionUrl}/functions/v1/generate-card-text`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          mode: "name",
+          job_id: textJob.id,
+          naming: {
+            factionId,
+            templateBaseName: card.current_name,
+            toTier: targetTier,
+            evolutionOutcome: "STANDARD",
+            evolutionHistory: card.evolution_history || [],
+            previousNames: [card.current_name, ...previousNames],
+          },
+        }),
+      }).catch((err) => console.error("Evolution text trigger error:", err));
+    }
+  }
+
   return new Response(
     JSON.stringify({
       data: {

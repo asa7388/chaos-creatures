@@ -9,11 +9,20 @@ struct HomeView: View {
     @Environment(AppState.self) private var appState
     @Environment(AppRouter.self) private var router
 
+    // S-40: Track whether the player has any valid decks
+    @State private var hasValidDeck = true  // Optimistic default
+    @State private var hasCheckedDecks = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // Player greeting
                 playerGreetingSection
+
+                // S-40: First-time user deck creation prompt
+                if hasCheckedDecks && !hasValidDeck {
+                    firstDeckPrompt
+                }
 
                 // Play button
                 playButtonSection
@@ -38,9 +47,34 @@ struct HomeView: View {
                 }
             }
         }
+        .task {
+            await checkForDecks()
+        }
         .refreshable {
             await appState.refreshPlayer()
+            await checkForDecks()
         }
+    }
+
+    // MARK: - S-40: Deck Check
+
+    private func checkForDecks() async {
+        guard let playerId = appState.player?.id else { return }
+        do {
+            let decks: [Deck] = try await SupabaseService.shared.fetchAll(
+                from: SupabaseService.Table.decks,
+                filters: [
+                    ("player_id", playerId.uuidString),
+                    ("is_valid", "true")
+                ],
+                limit: 1
+            )
+            hasValidDeck = !decks.isEmpty
+        } catch {
+            // On error, keep optimistic default so we don't block the user
+            hasValidDeck = true
+        }
+        hasCheckedDecks = true
     }
 
     // MARK: - Player Greeting
@@ -93,6 +127,51 @@ struct HomeView: View {
         .padding(16)
         .cardBackground()
         .padding(.top, 8)
+    }
+
+    // MARK: - S-40: First Deck Prompt
+
+    private var firstDeckPrompt: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.warningYellow)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Build Your First Deck")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.textPrimary)
+                    Text("You need a valid 20-card deck before you can play. Create one now!")
+                        .font(.system(size: 13))
+                        .foregroundColor(.textSecondary)
+                }
+            }
+
+            Button(action: {
+                appState.selectedTab = .decks
+                router.decksNavigationPath.append(DecksDestination.deckBuilder(nil))
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.rectangle.on.rectangle")
+                        .font(.system(size: 14))
+                    Text("Create Deck")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.orderBlue)
+                .cornerRadius(10)
+            }
+        }
+        .padding(16)
+        .background(Color.warningYellow.opacity(0.1))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.warningYellow.opacity(0.3), lineWidth: 1)
+        )
     }
 
     // MARK: - Play Button
