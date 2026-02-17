@@ -5,13 +5,15 @@
 
 // =============================================================================
 // 1. STYLE ANCHOR (Section 1.1) -- Prefixes EVERY image generation request
+// v3 style anchor with artist references for traditional oil painting aesthetics.
 // =============================================================================
 
 export const STYLE_ANCHOR =
-  'fantasy card game art, painterly digital illustration, semi-realistic style, ' +
-  'rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, ' +
-  'sharp focus on subject, subject centered and filling frame, card-portrait composition ' +
-  '3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality';
+  'traditional oil painting on canvas by Donato Giancola and Frank Frazetta, ' +
+  'visible heavy brushwork and palette knife texture, cracked oil paint surface, ' +
+  'classical fantasy illustration from 1990s Magic: The Gathering, muted earth tone palette, ' +
+  'chiaroscuro lighting, raw and gritty not polished, imperfect asymmetric anatomy, ' +
+  'single creature portrait 3:4 ratio, no text no borders no watermarks';
 
 // =============================================================================
 // 2. FACTION PREFIXES (Section 1.3) -- Used for base card art generation
@@ -25,31 +27,81 @@ export function normalizeFactionId(factionId: string): string {
 }
 
 const DEMONIC_PREFIX =
-  'demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, ' +
-  'infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, ' +
-  'blood-red and deep purple-black tones, visceral menacing presence';
+  'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
+  'lit from below by hellfire glow, deep shadow obscuring details, ' +
+  'burnt crimson and charcoal black palette, oppressive and heavy, ' +
+  'painted like a Wayne Barlowe or Zdzislaw Beksinski hellscape';
 
 export const FACTION_PREFIXES: Record<string, string> = {
   IRONWRIGHT:
-    'steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, ' +
-    'riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, ' +
-    'warm metallic tones with amber and rust highlights, glowing amber lenses',
+    'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
+    'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
+    'warm ochre and raw umber palette, smoky atmospheric background, ' +
+    'painted like a Brom or Keith Parkinson illustration',
   FEY_COURTS:
-    'ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, ' +
-    'living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, ' +
-    'organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights',
+    'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
+    'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
+    'overgrown with moss and lichen, more Brothers Grimm than Disney, ' +
+    'painted like a Brian Froud or Alan Lee illustration',
   DEMONIC: DEMONIC_PREFIX,
   DEMONIC_KINGDOMS: DEMONIC_PREFIX, // DB alias
 };
 
 // =============================================================================
-// 3. COMPOSITION INSTRUCTION (Section 1.3) -- Same for all factions
+// 3. COMPOSITION INSTRUCTION (Section 1.3) -- Default fallback for all factions
 // =============================================================================
 
 export const COMPOSITION_INSTRUCTION =
-  'portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view or frontal pose, ' +
-  'simple contextual background not cluttered, clear distinct silhouette, card game art composition, ' +
-  'eyes visible and facing viewer, dramatic directional lighting';
+  'three-quarter view creature portrait, strong silhouette, atmospheric murky background, ' +
+  'single harsh light source casting deep shadows, old master painting composition, ' +
+  'rough textured brushwork throughout, NOT clean NOT smooth NOT digital';
+
+// =============================================================================
+// 3a. COMPOSITION POOL -- 12 templates for art variety (selected by card metadata)
+// =============================================================================
+
+export const COMPOSITION_POOL: Record<string, string> = {
+  PORTRAIT_CLOSE: 'extreme close-up portrait, face fills frame, intense eye contact, shallow depth of field',
+  PORTRAIT_THREE_QUARTER: 'three-quarter view portrait, shoulders and head, slight turn, atmospheric background',
+  ACTION_ATTACK: 'dynamic action pose mid-strike, motion blur on weapon, debris flying, low camera angle',
+  ACTION_DEFEND: 'defensive stance, shield raised, bracing for impact, ground-level perspective',
+  ACTION_CAST: 'arms raised channeling energy, magical particles swirling, dramatic backlighting',
+  ENVIRONMENTAL_WIDE: 'wide establishing shot, creature small in vast landscape, epic scale, deep perspective',
+  ENVIRONMENTAL_EMERGING: 'creature emerging from faction environment, half-hidden, atmospheric fog/mist',
+  DRAMATIC_LOW_ANGLE: 'extreme low angle looking up, creature towers overhead, dramatic sky behind',
+  DRAMATIC_SILHOUETTE: 'silhouette against dramatic sky/explosion/portal, rim lighting, high contrast',
+  DETAIL_MACRO: 'macro detail shot of distinctive feature (claws/eyes/armor/wings), shallow depth of field',
+  NARRATIVE_MOMENT: 'mid-narrative scene, creature interacting with environment, storytelling composition',
+  NARRATIVE_DUAL: 'two creatures in frame, confrontation or alliance, split composition',
+};
+
+// =============================================================================
+// 3b. FACTION ENVIRONMENTS -- 5 per faction for rich atmospheric backgrounds
+// =============================================================================
+
+export const FACTION_ENVIRONMENTS: Record<string, string[]> = {
+  ironwright: [
+    'inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery',
+    'atop a massive clockwork bridge spanning a canyon of interlocking gears',
+    'in a brass and copper workshop littered with half-finished automata and blueprints',
+    'on the observation deck of a towering industrial spire belching steam into orange skies',
+    'inside a walking factory, mechanical legs visible through floor grates, landscape moving outside windows',
+  ],
+  fey: [
+    'in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on ancient stones',
+    'beneath the canopy of the World Tree, roots thick as rivers, leaves filtering golden twilight',
+    'at the shore of an enchanted lake reflecting a sky full of aurora and floating islands',
+    'in a twilight meadow of giant wildflowers where fireflies spell out forgotten runes',
+    'deep inside a crystal cave where living gemstones hum with harmonic resonance',
+  ],
+  demonic: [
+    'on a volcanic cliff overlooking a sea of lava, obsidian spires rising from the molten surface',
+    'in a throne room built from the bones of fallen titans, hellfire braziers lining the walls',
+    'at the edge of a reality rift where the material world crumbles into the void',
+    'on an ash-covered battlefield strewn with shattered weapons and smoldering craters',
+    'inside a collapsed citadel where gravity fails and stone blocks float in burning air',
+  ],
+};
 
 // =============================================================================
 // 4. NEGATIVE PROMPTS (Section 1.3)
@@ -57,8 +109,10 @@ export const COMPOSITION_INSTRUCTION =
 
 export const NEGATIVE_PROMPT_BASE =
   'text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, ' +
-  'gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, ' +
-  'extra limbs, fused body parts, speech bubbles, comic panels, grid layout, white background, collage';
+  'gore, distorted anatomy, multiple heads, deformed limbs, extra limbs, fused body parts, ' +
+  '3d render, CGI, photorealistic, airbrushed, smooth plastic skin, digital art, vector art, ' +
+  'deviantart, artstation trending, oversaturated, neon glow, stock photo, generic, symmetrical face, ' +
+  'white background, collage, grid layout, concept art sheet';
 
 export const NEGATIVE_PROMPT_EVOLUTION =
   'text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, ' +
@@ -85,10 +139,10 @@ export const CHAOS_INSTRUCTION =
 // =============================================================================
 
 export const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
-  IRONWRIGHT: 'steampunk industrial brass-and-gears',
-  FEY_COURTS: 'ethereal fey nature bioluminescent',
-  DEMONIC: 'dark infernal demonic hellfire',
-  DEMONIC_KINGDOMS: 'dark infernal demonic hellfire',
+  IRONWRIGHT: 'grimy industrial steampunk, corroded brass and blackened iron, painted like Brom',
+  FEY_COURTS: 'dark fey forest creature, twisted ancient wood, painted like Brian Froud',
+  DEMONIC: 'grotesque infernal creature, fused bone and volcanic rock, painted like Wayne Barlowe',
+  DEMONIC_KINGDOMS: 'grotesque infernal creature, fused bone and volcanic rock, painted like Wayne Barlowe',
 };
 
 // =============================================================================
@@ -318,30 +372,120 @@ export interface FalAiResponse {
 // 11. PROMPT BUILDER FUNCTIONS
 // =============================================================================
 
+/** Card metadata used for composition and environment selection. */
+export interface CardPromptMetadata {
+  tier?: string;       // e.g. 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'
+  keywords?: string[]; // e.g. ['SHIELD', 'FLYING']
+  manaCost?: number;   // CM cost
+  cardType?: string;   // e.g. 'CREATURE', 'SPELL', 'STABILIZER'
+}
+
+/**
+ * Select a composition template based on card metadata.
+ * Higher-tier and more expensive cards get more dramatic compositions.
+ * Keyword-driven cards get action-oriented compositions.
+ * Falls back to PORTRAIT_THREE_QUARTER for generic creatures.
+ */
+export function selectComposition(card: CardPromptMetadata): string {
+  const tier = card.tier?.toUpperCase() || '';
+  const keywords = (card.keywords || []).map((k) => k.toUpperCase());
+  const manaCost = card.manaCost ?? 3;
+  const cardType = card.cardType?.toUpperCase() || 'CREATURE';
+
+  // Legendary -> narrative compositions
+  if (tier === 'LEGENDARY') {
+    return Math.random() > 0.5
+      ? COMPOSITION_POOL.NARRATIVE_MOMENT
+      : COMPOSITION_POOL.NARRATIVE_DUAL;
+  }
+  // Epic -> dramatic compositions
+  if (tier === 'EPIC') {
+    return Math.random() > 0.5
+      ? COMPOSITION_POOL.DRAMATIC_SILHOUETTE
+      : COMPOSITION_POOL.DRAMATIC_LOW_ANGLE;
+  }
+  // Spells -> casting pose
+  if (cardType === 'SPELL') return COMPOSITION_POOL.ACTION_CAST;
+  // High cost (7+) -> imposing low angle
+  if (manaCost >= 7) return COMPOSITION_POOL.DRAMATIC_LOW_ANGLE;
+  // Keywords drive composition
+  if (keywords.includes('PIERCING') || keywords.includes('DEATHTOUCH')) {
+    return COMPOSITION_POOL.ACTION_ATTACK;
+  }
+  if (keywords.includes('SHIELD') || keywords.includes('TAUNT')) {
+    return COMPOSITION_POOL.ACTION_DEFEND;
+  }
+  if (keywords.includes('FLYING')) return COMPOSITION_POOL.ENVIRONMENTAL_WIDE;
+  // Low cost -> close portrait
+  if (manaCost <= 2) return COMPOSITION_POOL.PORTRAIT_CLOSE;
+  // Default -> three-quarter
+  return COMPOSITION_POOL.PORTRAIT_THREE_QUARTER;
+}
+
+/**
+ * Select a random faction environment for atmospheric backgrounds.
+ * Maps faction IDs (IRONWRIGHT, FEY_COURTS, DEMONIC, DEMONIC_KINGDOMS)
+ * to lowercase lookup keys.
+ */
+export function selectEnvironment(faction: string): string {
+  const factionMap: Record<string, string> = {
+    ironwright: 'ironwright',
+    fey_courts: 'fey',
+    fey: 'fey',
+    demonic: 'demonic',
+    demonic_kingdoms: 'demonic',
+  };
+  const key = factionMap[faction.toLowerCase()] || 'ironwright';
+  const envs = FACTION_ENVIRONMENTS[key];
+  return envs[Math.floor(Math.random() * envs.length)];
+}
+
 /**
  * Build a base card art prompt for fal.ai FLUX Dev (txt2img).
  * Used during batch generation pipeline.
+ *
+ * When cardMeta is provided, composition and environment are selected
+ * automatically based on card tier, keywords, mana cost, and card type.
+ * When compositionOverride is provided, it takes precedence over auto-selection.
+ * When neither is provided, the default COMPOSITION_INSTRUCTION is used.
  */
 export function buildArtPrompt(
   factionId: string,
   creatureDescription: string,
-  compositionOverride?: string
+  compositionOverride?: string,
+  cardMeta?: CardPromptMetadata
 ): FalAiBaseCardRequest {
   const factionPrefix = FACTION_PREFIXES[factionId];
   if (!factionPrefix) {
     throw new Error(`Unknown faction: ${factionId}. Expected IRONWRIGHT, FEY_COURTS, or DEMONIC.`);
   }
 
-  const composition = compositionOverride || COMPOSITION_INSTRUCTION;
+  // Composition: explicit override > auto-select from metadata > default
+  let composition: string;
+  if (compositionOverride) {
+    composition = compositionOverride;
+  } else if (cardMeta) {
+    composition = selectComposition(cardMeta);
+  } else {
+    composition = COMPOSITION_INSTRUCTION;
+  }
 
-  const prompt = [STYLE_ANCHOR, factionPrefix, creatureDescription, composition].join(', ');
+  // Environment: only added when card metadata is provided for variety
+  const environment = cardMeta ? selectEnvironment(factionId) : '';
+
+  const promptParts = [STYLE_ANCHOR, factionPrefix, creatureDescription, composition];
+  if (environment) {
+    promptParts.push(environment);
+  }
+
+  const prompt = promptParts.join(', ');
 
   return {
     prompt,
     negative_prompt: NEGATIVE_PROMPT_BASE,
     image_size: 'portrait_4_3',
-    num_inference_steps: 35,
-    guidance_scale: 7.5,
+    num_inference_steps: 40,
+    guidance_scale: 8.5,
     num_images: 1,
     enable_safety_checker: true,
     output_format: 'webp',

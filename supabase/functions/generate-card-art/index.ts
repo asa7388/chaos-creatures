@@ -24,6 +24,7 @@ import {
   buildArtPrompt,
   STYLE_ANCHOR,
   NEGATIVE_PROMPT_BASE,
+  type CardPromptMetadata,
 } from '../_shared/prompts.ts';
 
 // =============================================================================
@@ -37,6 +38,10 @@ interface GenerateCardArtRequest {
   rarity: string;
   card_id: string;
   composition_override?: string;
+  // Optional card metadata for auto-composition and environment selection
+  card_type?: string;
+  keywords?: string[];
+  mana_cost?: number;
 }
 
 interface FalAiResponse {
@@ -235,11 +240,22 @@ serve(async (req: Request) => {
         .eq('id', body.job_id);
     }
 
-    // Build the art prompt
+    // Build the art prompt with optional card metadata for composition variety
+    const cardMeta: CardPromptMetadata | undefined =
+      (body.card_type || body.keywords || body.mana_cost !== undefined)
+        ? {
+            tier: body.rarity,
+            keywords: body.keywords,
+            manaCost: body.mana_cost,
+            cardType: body.card_type,
+          }
+        : undefined;
+
     const artRequest = buildArtPrompt(
       body.faction_id,
       body.creature_description,
-      body.composition_override
+      body.composition_override,
+      cardMeta
     );
 
     // Call fal.ai

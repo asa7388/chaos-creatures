@@ -25,6 +25,7 @@ import {
   buildArtPrompt,
   buildBaseCardTextPrompt,
   NEGATIVE_PROMPT_BASE,
+  type CardPromptMetadata,
 } from '../_shared/prompts.ts';
 
 // =============================================================================
@@ -279,10 +280,18 @@ async function processCard(
       input_data: { stage: 'generating_art', spec },
     }).eq('id', jobId);
 
+    const cardMeta: CardPromptMetadata = {
+      tier: spec.rarity,
+      keywords: spec.keywords,
+      manaCost: spec.cm_cost,
+      cardType: spec.card_type,
+    };
+
     const artRequest = buildArtPrompt(
       spec.faction_id,
       spec.creature_description,
-      spec.composition_override
+      spec.composition_override,
+      cardMeta
     );
 
     let falResponse: FalAiResponse;
