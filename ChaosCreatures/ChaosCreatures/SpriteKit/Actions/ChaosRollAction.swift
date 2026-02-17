@@ -13,8 +13,8 @@ enum ChaosRollAction {
         let container = SKNode()
         container.name = "d20Container"
 
-        // D20 polygon (hexagonal approximation)
-        let sides = 6
+        // D20 shape: use a 20-sided polygon for a proper icosahedral silhouette
+        let sides = 20
         let radius = SK.D20.diameter / 2
         let path = CGMutablePath()
         for i in 0..<sides {

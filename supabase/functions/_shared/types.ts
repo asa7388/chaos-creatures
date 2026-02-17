@@ -279,7 +279,7 @@ export const SUBSCRIPTION_QUEST_MULTIPLIER: Record<SubscriptionTier, number> = {
 
 /** Max deck slots by subscription tier. */
 export const MAX_DECK_SLOTS: Record<SubscriptionTier, number> = {
-  FREE: 4,
+  FREE: 3,
   MID: 6,
   HIGH: 8,
 };

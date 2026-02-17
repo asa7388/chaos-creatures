@@ -79,6 +79,7 @@ final class EventBannerNode: SKNode {
         self.name = "eventBanner"
         self.zPosition = SK.ZPosition.eventBanner
         self.alpha = 0
+        self.isUserInteractionEnabled = true
 
         addChild(borderNode)
         addChild(backgroundNode)
@@ -90,6 +91,13 @@ final class EventBannerNode: SKNode {
 
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) not implemented")
+    }
+
+    // MARK: - Touch Handling
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        // Tap to dismiss the event banner early
+        dismiss()
     }
 
     // MARK: - Presentation

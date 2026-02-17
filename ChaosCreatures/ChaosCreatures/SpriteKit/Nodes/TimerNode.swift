@@ -23,7 +23,7 @@ final class TimerNode: SKNode {
     private var timerAction: SKAction?
 
     /// Threshold (in seconds) below which the timer turns urgent red
-    private let urgentThreshold: Int = 10
+    private let urgentThreshold: Int = 15
 
     // MARK: - Init
 
