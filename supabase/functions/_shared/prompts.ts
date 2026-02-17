@@ -17,6 +17,18 @@ export const STYLE_ANCHOR =
 // 2. FACTION PREFIXES (Section 1.3) -- Used for base card art generation
 // =============================================================================
 
+// Faction ID normalization: DB uses DEMONIC_KINGDOMS, prompt system uses DEMONIC.
+// All lookup maps support both forms. Use normalizeFactionId() in prompt builders.
+export function normalizeFactionId(factionId: string): string {
+  if (factionId === 'DEMONIC_KINGDOMS') return 'DEMONIC';
+  return factionId;
+}
+
+const DEMONIC_PREFIX =
+  'demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, ' +
+  'infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, ' +
+  'blood-red and deep purple-black tones, visceral menacing presence';
+
 export const FACTION_PREFIXES: Record<string, string> = {
   IRONWRIGHT:
     'steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, ' +
@@ -26,10 +38,8 @@ export const FACTION_PREFIXES: Record<string, string> = {
     'ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, ' +
     'living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, ' +
     'organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights',
-  DEMONIC:
-    'demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, ' +
-    'infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, ' +
-    'blood-red and deep purple-black tones, visceral menacing presence',
+  DEMONIC: DEMONIC_PREFIX,
+  DEMONIC_KINGDOMS: DEMONIC_PREFIX, // DB alias
 };
 
 // =============================================================================
@@ -78,6 +88,7 @@ export const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
   IRONWRIGHT: 'steampunk industrial brass-and-gears',
   FEY_COURTS: 'ethereal fey nature bioluminescent',
   DEMONIC: 'dark infernal demonic hellfire',
+  DEMONIC_KINGDOMS: 'dark infernal demonic hellfire',
 };
 
 // =============================================================================
@@ -443,28 +454,33 @@ export function buildPrismaticRefinementRequest(
 // 12. TEXT GENERATION PROMPTS (Section 2)
 // =============================================================================
 
+const DEMONIC_NAME_VOICE = 'Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Direct hard sounds preferred.';
+
 export const FACTION_NAME_VOICES: Record<string, string> = {
   IRONWRIGHT:
     'Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred.',
   FEY_COURTS:
     'Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, Moss. Use fey titles: Lord, Lady, Warden, Huntress, Speaker, Court. Use seasons and celestial: Spring, Autumn, Moon, Star, Dawn. Use mythic descriptors: Verdant, Eternal, Wild, Ancient. Poetic structures preferred.',
-  DEMONIC:
-    'Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Direct hard sounds preferred.',
+  DEMONIC: DEMONIC_NAME_VOICE,
+  DEMONIC_KINGDOMS: DEMONIC_NAME_VOICE,
 };
+
+const DEMONIC_FLAVOR_TONE = 'Visceral and direct. Emphasizes power, sacrifice, consumption, and hunger. Order = controlled fury, pacts honored in blood, restrained corruption. Chaos = unbound carnage, self-immolation for power, apocalyptic hunger. Tone is declarative and ominous \u2014 short sentences like dark scripture.';
 
 export const FACTION_FLAVOR_TONES: Record<string, string> = {
   IRONWRIGHT:
     'Technical reverence for craftsmanship. Emphasizes function, precision, and engineering. Order = perfected systems, harmonious mechanisms. Chaos = overloaded, screaming gears, design pushed beyond limits. Tone is clipped and declarative \u2014 short sentences that sound like engineer\'s notes.',
   FEY_COURTS:
     'Ancient and lyrical. Emphasizes cycles, memory, wildness, and time. Order = harmony with nature, patient growth, eternal memory. Chaos = the wild hunt, primal fury, untamed power that predates civilization. Tone is poetic but not flowery \u2014 spare and weighted with age.',
-  DEMONIC:
-    'Visceral and direct. Emphasizes power, sacrifice, consumption, and hunger. Order = controlled fury, pacts honored in blood, restrained corruption. Chaos = unbound carnage, self-immolation for power, apocalyptic hunger. Tone is declarative and ominous \u2014 short sentences like dark scripture.',
+  DEMONIC: DEMONIC_FLAVOR_TONE,
+  DEMONIC_KINGDOMS: DEMONIC_FLAVOR_TONE,
 };
 
 export const FACTION_DISPLAY_NAMES: Record<string, string> = {
   IRONWRIGHT: 'The Ironwright Collective',
   FEY_COURTS: 'The Fey Courts',
   DEMONIC: 'The Demonic Kingdoms',
+  DEMONIC_KINGDOMS: 'The Demonic Kingdoms',
 };
 
 export interface NamingPromptInput {
