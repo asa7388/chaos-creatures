@@ -2,131 +2,9 @@
 // Chaos Creatures
 // Runtime battle representation of a card.
 // Mirrors: packages/game-server/src/types/game-state.ts BattleCard + BattleCreature
+// Note: Enums are defined in Enums.swift to avoid duplication.
 
 import Foundation
-
-// MARK: - Enums (mirroring server enums.ts)
-
-enum CardType: String, Codable {
-    case creature = "CREATURE"
-    case spell = "SPELL"
-    case stabilizer = "STABILIZER"
-}
-
-enum Keyword: String, Codable, CaseIterable {
-    case shield = "SHIELD"
-    case lifesteal = "LIFESTEAL"
-    case flying = "FLYING"
-    case reach = "REACH"
-    case deathtouch = "DEATHTOUCH"
-    case taunt = "TAUNT"
-    case piercing = "PIERCING"
-
-    var displayName: String {
-        rawValue.capitalized
-    }
-
-    var iconName: String {
-        switch self {
-        case .shield: return "shield.fill"
-        case .lifesteal: return "heart.fill"
-        case .flying: return "wind"
-        case .reach: return "arrow.up.forward"
-        case .deathtouch: return "skull.fill"
-        case .taunt: return "exclamationmark.shield.fill"
-        case .piercing: return "arrow.right.to.line"
-        }
-    }
-}
-
-enum EventType: String, Codable {
-    case order = "ORDER"
-    case chaos = "CHAOS"
-}
-
-enum ChaosRollOutcome: String, Codable {
-    case order = "ORDER"
-    case chaos = "CHAOS"
-    case nothing = "NOTHING"
-}
-
-enum PlayerSide: String, Codable {
-    case player1 = "PLAYER_1"
-    case player2 = "PLAYER_2"
-}
-
-enum TurnPhase: String, Codable, CaseIterable {
-    case gameSetup = "GAME_SETUP"
-    case startOfTurn = "START_OF_TURN"
-    case chaosRoll = "CHAOS_ROLL"
-    case eventResolution = "EVENT_RESOLUTION"
-    case drawAndMana = "DRAW_AND_MANA"
-    case mainPhase = "MAIN_PHASE"
-    case declareAttackers = "DECLARE_ATTACKERS"
-    case assignBlockers = "ASSIGN_BLOCKERS"
-    case combatResolution = "COMBAT_RESOLUTION"
-    case endTurn = "END_TURN"
-    case gameOver = "GAME_OVER"
-
-    /// Short display name for the phase indicator
-    var shortName: String {
-        switch self {
-        case .gameSetup: return "Setup"
-        case .startOfTurn: return "Start"
-        case .chaosRoll: return "Roll"
-        case .eventResolution: return "Event"
-        case .drawAndMana: return "Draw"
-        case .mainPhase: return "Main"
-        case .declareAttackers: return "Attack"
-        case .assignBlockers: return "Block"
-        case .combatResolution: return "Combat"
-        case .endTurn: return "End"
-        case .gameOver: return "Over"
-        }
-    }
-
-    /// The 9 phases displayed in the indicator (excludes setup and game over)
-    static var displayPhases: [TurnPhase] {
-        [.startOfTurn, .chaosRoll, .eventResolution, .drawAndMana,
-         .mainPhase, .declareAttackers, .assignBlockers, .combatResolution, .endTurn]
-    }
-
-    /// Whether this phase is a decision phase (timer active)
-    var isDecisionPhase: Bool {
-        switch self {
-        case .mainPhase, .declareAttackers, .assignBlockers:
-            return true
-        default:
-            return false
-        }
-    }
-}
-
-enum EndReason: String, Codable {
-    case hpZero = "HP_ZERO"
-    case surrender = "SURRENDER"
-    case disconnect = "DISCONNECT"
-    case timeout = "TIMEOUT"
-}
-
-enum EvolutionTier: String, Codable, CaseIterable {
-    case common = "COMMON"
-    case uncommon = "UNCOMMON"
-    case rare = "RARE"
-    case epic = "EPIC"
-    case legendary = "LEGENDARY"
-
-    var borderColor: UIColor {
-        switch self {
-        case .common: return UIColor(hex: "#9E9E9E")
-        case .uncommon: return UIColor(hex: "#4CAF50")
-        case .rare: return UIColor(hex: "#2196F3")
-        case .epic: return UIColor(hex: "#9C27B0")
-        case .legendary: return UIColor(hex: "#FF9800")
-        }
-    }
-}
-
 import UIKit
 
 // MARK: - Battle Card Data (from server)
@@ -160,14 +38,18 @@ struct BattleCardData: Codable, Identifiable {
         case factionId = "faction_id"
     }
 
+    var factionShortName: FactionShortName? {
+        FactionShortName(rawValue: factionId)
+    }
+
     var faction: Faction {
-        Faction(rawValue: factionId) ?? .ironwright
+        factionShortName?.asFaction ?? .ironwright
     }
 }
 
 // MARK: - Battle Creature Data (on board, extends BattleCard)
 
-struct BattleCreatureData: Codable, Identifiable {
+struct BattleCreatureData: Codable, Identifiable, Equatable {
     let instanceId: String
     let templateId: String
     let cardType: CardType
@@ -223,8 +105,8 @@ struct BattleCreatureData: Codable, Identifiable {
         case boardSlot = "board_slot"
     }
 
-    var faction: Faction {
-        Faction(rawValue: factionId) ?? .ironwright
+    var factionShortName: FactionShortName? {
+        FactionShortName(rawValue: factionId)
     }
 
     var hasTaunt: Bool {
@@ -234,16 +116,30 @@ struct BattleCreatureData: Codable, Identifiable {
     var hasFlying: Bool {
         activeKeywords.contains(.flying)
     }
+
+    static func == (lhs: BattleCreatureData, rhs: BattleCreatureData) -> Bool {
+        lhs.instanceId == rhs.instanceId
+    }
 }
 
-// MARK: - BattleCard (legacy Identifiable conformance)
+// MARK: - Chaos Roll Outcome (server-specific, distinct from RollResult)
 
-struct BattleCard: Identifiable {
-    let id: String
-    let data: BattleCardData
+enum ChaosRollOutcome: String, Codable {
+    case order = "ORDER"
+    case chaos = "CHAOS"
+    case nothing = "NOTHING"
+}
 
-    init(data: BattleCardData) {
-        self.id = data.instanceId
-        self.data = data
+// MARK: - Evolution Tier UIKit Extension (for SpriteKit use)
+
+extension EvolutionTier {
+    var borderUIColor: UIColor {
+        switch self {
+        case .common: return UIColor(red: 0.62, green: 0.62, blue: 0.62, alpha: 1.0)
+        case .uncommon: return UIColor(red: 0.30, green: 0.69, blue: 0.31, alpha: 1.0)
+        case .rare: return UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 1.0)
+        case .epic: return UIColor(red: 0.61, green: 0.15, blue: 0.69, alpha: 1.0)
+        case .legendary: return UIColor(red: 1.0, green: 0.60, blue: 0.0, alpha: 1.0)
+        }
     }
 }
