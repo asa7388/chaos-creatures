@@ -534,14 +534,6 @@ enum PlayerSide: String, Codable {
     case player2 = "PLAYER_2"
 }
 
-// MARK: - Roll Result
-
-enum RollResult: String, Codable {
-    case order
-    case chaos
-    case nothing
-}
-
 // MARK: - Log Entry Types (Section 13)
 
 enum LogEntryType: String, Codable, CaseIterable {

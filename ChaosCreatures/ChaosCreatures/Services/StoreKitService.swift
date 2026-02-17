@@ -13,14 +13,16 @@ final class StoreKitService {
 
     // MARK: - Product IDs
 
+    // Product IDs must match App Store Connect configuration.
+    // Source: docs/design/09-monetization-details.md Section 2.
     enum ProductID {
-        static let subscriptionMid = "com.chaoscreatures.sub.mid"
-        static let subscriptionHigh = "com.chaoscreatures.sub.high"
-        static let subscriptionMidMonthly = "com.chaoscreatures.sub.mid.monthly"
-        static let subscriptionHighMonthly = "com.chaoscreatures.sub.high.monthly"
+        static let midMonthly = "com.chaoscreatures.app.sub_mid_monthly_699"
+        static let midAnnual = "com.chaoscreatures.app.sub_mid_annual_5599"
+        static let highMonthly = "com.chaoscreatures.app.sub_high_monthly_1299"
+        static let highAnnual = "com.chaoscreatures.app.sub_high_annual_9999"
         static let allSubscriptions: Set<String> = [
-            subscriptionMid, subscriptionHigh,
-            subscriptionMidMonthly, subscriptionHighMonthly
+            midMonthly, midAnnual,
+            highMonthly, highAnnual
         ]
     }
 
@@ -40,8 +42,8 @@ final class StoreKitService {
     var currentTier: SubscriptionTier {
         guard let product = activeSubscription else { return .free }
         switch product.id {
-        case ProductID.subscriptionMid, ProductID.subscriptionMidMonthly: return .mid
-        case ProductID.subscriptionHigh, ProductID.subscriptionHighMonthly: return .high
+        case ProductID.midMonthly, ProductID.midAnnual: return .mid
+        case ProductID.highMonthly, ProductID.highAnnual: return .high
         default: return .free
         }
     }
@@ -102,12 +104,12 @@ final class StoreKitService {
         }
     }
 
-    /// Purchase subscription by tier
+    /// Purchase subscription by tier (defaults to monthly)
     func purchaseSubscription(tier: SubscriptionTier) async throws -> StoreKit.Transaction? {
         let productId: String
         switch tier {
-        case .mid: productId = ProductID.subscriptionMid
-        case .high: productId = ProductID.subscriptionHigh
+        case .mid: productId = ProductID.midMonthly
+        case .high: productId = ProductID.highMonthly
         case .free: return nil
         }
 
@@ -224,11 +226,11 @@ final class StoreKitService {
         products.first { $0.id == id }
     }
 
-    /// Get the subscription product for a tier
+    /// Get the subscription product for a tier (returns monthly variant)
     func subscriptionProduct(for tier: SubscriptionTier) -> Product? {
         switch tier {
-        case .mid: return product(for: ProductID.subscriptionMid)
-        case .high: return product(for: ProductID.subscriptionHigh)
+        case .mid: return product(for: ProductID.midMonthly)
+        case .high: return product(for: ProductID.highMonthly)
         case .free: return nil
         }
     }

@@ -12,11 +12,12 @@ import { errorResponse, handleCors, getCorsHeaders, ErrorCode } from "../_shared
 import { MAX_DECK_SLOTS, SubscriptionTier } from "../_shared/types.ts";
 
 // Product ID to subscription tier mapping
+// Source: docs/design/09-monetization-details.md Section 2
 const PRODUCT_TIER_MAP: Record<string, SubscriptionTier> = {
-  "com.chaoscreatures.sub.mid": "MID",
-  "com.chaoscreatures.sub.high": "HIGH",
-  "com.chaoscreatures.sub.mid.monthly": "MID",
-  "com.chaoscreatures.sub.high.monthly": "HIGH",
+  "com.chaoscreatures.app.sub_mid_monthly_699": "MID",
+  "com.chaoscreatures.app.sub_mid_annual_5599": "MID",
+  "com.chaoscreatures.app.sub_high_monthly_1299": "HIGH",
+  "com.chaoscreatures.app.sub_high_annual_9999": "HIGH",
 };
 
 // Max cards per faction by tier

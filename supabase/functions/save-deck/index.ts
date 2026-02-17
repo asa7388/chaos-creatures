@@ -24,7 +24,7 @@ serve(async (req: Request) => {
   const body = await req.json();
 
   const url = new URL(req.url);
-  const deckId = url.searchParams.get("id"); // For PUT updates
+  const deckId = url.searchParams.get("id") || body.id || null; // For PUT updates (query param or body)
 
   // Get player for subscription tier check
   const { data: player, error: playerError } = await supabase
