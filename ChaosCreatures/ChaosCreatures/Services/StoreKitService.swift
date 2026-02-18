@@ -185,24 +185,28 @@ final class StoreKitService {
             let transactionId: String
             let productId: String
             let originalTransactionId: String
-            let jwsRepresentation: String
+            let jsonRepresentation: String
 
             enum CodingKeys: String, CodingKey {
                 case transactionId = "transaction_id"
                 case productId = "product_id"
                 case originalTransactionId = "original_transaction_id"
-                case jwsRepresentation = "jws_representation"
+                case jsonRepresentation = "json_representation"
             }
         }
 
         do {
+            // Encode transaction JSON for server-side verification
+            let jsonData = try JSONEncoder().encode(transaction)
+            let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
+
             try await SupabaseService.shared.callFunction(
                 "sync-entitlements",
                 body: EntitlementSync(
                     transactionId: String(transaction.id),
                     productId: transaction.productID,
                     originalTransactionId: String(transaction.originalID),
-                    jwsRepresentation: transaction.jwsRepresentation
+                    jsonRepresentation: jsonString
                 )
             )
         } catch {

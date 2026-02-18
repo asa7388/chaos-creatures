@@ -3,7 +3,7 @@
 // ObservableObject bridging BattleStateMachine to SwiftUI HUD overlays.
 // Source: docs/design/07-ui-ux-specs.md Section 3, docs/design/06-technical-architecture.md
 
-import Foundation
+import SwiftUI
 import Combine
 import SpriteKit
 
@@ -212,6 +212,8 @@ final class BattleViewModel: ObservableObject {
     /// Use chaos spark
     func useChaosSpark() {
         guard hasChaosSpark else { return }
+        // SFX: chaos spark crackle
+        BattleAudioManager.shared.playSFX(.chaosSpark)
         sendAction(.useChaosSpark)
     }
 
@@ -363,6 +365,9 @@ final class BattleViewModel: ObservableObject {
 
     /// Perform the primary action for the current phase
     func performPrimaryAction() {
+        // SFX: UI button tap
+        BattleAudioManager.shared.playSFX(.buttonTap)
+
         switch currentPhase {
         case .mainPhase: endMainPhase()
         case .declareAttackers: confirmAttackers()
