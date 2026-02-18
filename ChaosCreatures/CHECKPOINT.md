@@ -131,6 +131,7 @@ The iOS app shell is fully implemented. All SwiftUI views, navigation infrastruc
 | `fe981b5` | build(ios): implement collection, deck builder, and reusable card components |
 | `8b45fc3` | build(ios): implement shop views with StoreKit 2 subscriptions and pack opening |
 | `9eaec45` | build(ios): implement all core services for game client |
+| `84701c7` | build(ios): add CardFrameView component and replace all system fonts with CardFont |
 
 ## File Count
 
