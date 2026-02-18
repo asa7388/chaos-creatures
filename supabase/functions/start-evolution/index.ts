@@ -87,7 +87,7 @@ serve(async (req: Request) => {
 
   const { data: player, error: playerError } = await supabase
     .from("players")
-    .select(`id, ${shardColumn}, subscription_tier`)
+    .select("id, lesser_shards, greater_shards, supreme_shards, subscription_tier")
     .eq("id", auth.playerId)
     .single();
 

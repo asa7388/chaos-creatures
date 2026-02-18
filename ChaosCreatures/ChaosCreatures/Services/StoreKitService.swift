@@ -196,9 +196,8 @@ final class StoreKitService {
         }
 
         do {
-            // Encode transaction JSON for server-side verification
-            let jsonData = try JSONEncoder().encode(transaction)
-            let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
+            // Use Transaction's built-in jsonRepresentation (Transaction is not Encodable)
+            let jsonString = String(data: transaction.jsonRepresentation, encoding: .utf8) ?? "{}"
 
             try await SupabaseService.shared.callFunction(
                 "sync-entitlements",
