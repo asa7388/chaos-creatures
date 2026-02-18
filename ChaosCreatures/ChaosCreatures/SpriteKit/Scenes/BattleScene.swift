@@ -72,6 +72,12 @@ final class BattleScene: SKScene {
         setupCenterDivider()
     }
 
+    override func willMove(from view: SKView) {
+        super.willMove(from: view)
+        // Clean up all audio when leaving battle
+        BattleAudioManager.shared.cleanup()
+    }
+
     // MARK: - Configuration
 
     /// Configure the scene with a state machine. Called by BattleContainerView.

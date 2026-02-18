@@ -221,6 +221,7 @@ final class BattleAudioManager {
         case victory = "sfx_victory"
         case defeat = "sfx_defeat"
         case chaosSpark = "sfx_chaos_spark"
+        case evolutionReveal = "sfx_evolution_reveal"
     }
 
     /// Play a SFX via SpriteKit (fire-and-forget).

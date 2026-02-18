@@ -289,6 +289,9 @@ struct EvolutionRevealView: View {
     // MARK: - Animation Sequence
 
     private func runRevealSequence() {
+        // SFX: evolution reveal sound
+        BattleAudioManager.shared.playSFX(.evolutionReveal)
+
         // Phase 1: Glow build-up (0 - 0.6s)
         withAnimation(.easeIn(duration: 0.6)) {
             glowOpacity = 0.8
