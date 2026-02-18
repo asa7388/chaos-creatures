@@ -33,12 +33,12 @@ struct EmptyStateView: View {
                 .foregroundColor(.textTertiary)
 
             Text(message)
-                .font(.system(size: 17, weight: .semibold))
+                .font(CardFont.bodyBold(size: 17))
                 .foregroundColor(.textPrimary)
 
             if let description {
                 Text(description)
-                    .font(.system(size: 14))
+                    .font(CardFont.body(size: 14))
                     .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
@@ -47,7 +47,7 @@ struct EmptyStateView: View {
             if let actionTitle, let action {
                 Button(action: action) {
                     Text(actionTitle)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 14))
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 10)

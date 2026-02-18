@@ -2,6 +2,7 @@
 // Chaos Creatures
 // Pack reveal animation with card fan reveal.
 // Players purchase a pack with Chaos Dust, then watch cards revealed one-by-one.
+// Now uses CardFrameView for revealed cards and CardFont for themed typography.
 // Source: docs/design/07-ui-ux-specs.md Section 6, 09-monetization-details.md
 
 import SwiftUI
@@ -123,7 +124,7 @@ struct CardPackOpeningView: View {
                                 .scaleEffect(1.5)
                                 .tint(packType.color)
                             Text("Opening pack...")
-                                .font(.system(size: 16, weight: .medium))
+                                .font(CardFont.body(size: 16))
                                 .foregroundColor(.textSecondary)
                         }
 
@@ -176,11 +177,11 @@ struct CardPackOpeningView: View {
             }
 
             Text(packType.displayName)
-                .font(.system(size: 22, weight: .bold))
+                .font(CardFont.cardName(size: 22))
                 .foregroundColor(.textPrimary)
 
             Text(packDescription)
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
 
@@ -189,14 +190,14 @@ struct CardPackOpeningView: View {
                 Image(systemName: "sparkle")
                     .foregroundColor(.tauntGold)
                 Text("\(packType.dustCost) Chaos Dust")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 16))
                     .foregroundColor(.tauntGold)
             }
 
             // Balance
             if let dust = appState.player?.chaosDust {
                 Text("Your balance: \(dust)")
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textTertiary)
             }
         }
@@ -248,12 +249,12 @@ struct CardPackOpeningView: View {
                 let card = revealedCards[currentIndex]
                 VStack(spacing: 4) {
                     Text(card.currentName)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(CardFont.cardName(size: 18))
                         .foregroundColor(.textPrimary)
 
                     HStack(spacing: 8) {
                         Text(card.tier.displayName)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 13))
                             .foregroundColor(.white)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
@@ -262,12 +263,12 @@ struct CardPackOpeningView: View {
 
                         if let atk = card.currentAttack, let hp = card.currentHealth {
                             Text("\(atk)/\(hp)")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(CardFont.stats(size: 13))
                                 .foregroundColor(.textSecondary)
                         }
 
                         Text("\(card.currentManaCost) CM")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(CardFont.stats(size: 13))
                             .foregroundColor(.orderBlue)
                     }
                 }
@@ -278,10 +279,10 @@ struct CardPackOpeningView: View {
             if phase == .allRevealed {
                 VStack(spacing: 4) {
                     Text("Pack Complete!")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(CardFont.cardName(size: 18))
                         .foregroundColor(.tauntGold)
                     Text("\(revealedCards.count) cards added to your collection")
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textSecondary)
                 }
             }
@@ -310,76 +311,28 @@ struct CardPackOpeningView: View {
         }()
 
         return ZStack {
-            // Card back
-            RoundedRectangle(cornerRadius: 10)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.bgElevated, Color.bgQuaternary],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            // Card back (using card-back-universal asset)
+            Image("card-back-universal")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
                 .frame(width: 90, height: 130)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.borderDefault, lineWidth: 1)
                 )
-                .overlay(
-                    Image(systemName: "sparkle")
-                        .font(.system(size: 24))
-                        .foregroundColor(.textDisabled)
-                )
                 .opacity(isRevealed ? 0 : 1)
 
-            // Card front
-            VStack(spacing: 4) {
-                // Mini art placeholder
-                if let url = card.artURL {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        default:
-                            Rectangle()
-                                .fill(Color.bgTertiary)
-                        }
-                    }
-                    .frame(width: 80, height: 80)
-                    .cornerRadius(6)
-                } else {
-                    Rectangle()
-                        .fill(Color.bgTertiary)
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(6)
-                        .overlay(
-                            Image(systemName: "photo")
-                                .foregroundColor(.textDisabled)
-                        )
-                }
-
-                // Name
-                Text(card.currentName)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundColor(.textPrimary)
-                    .lineLimit(1)
-                    .frame(width: 80)
-
-                // Tier indicator
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.tierColor(card.tier))
-                    .frame(width: 80, height: 3)
-            }
-            .padding(5)
-            .frame(width: 90, height: 130)
-            .background(Color.bgSecondary)
-            .cornerRadius(10)
+            // Card front — uses CardFrameView for professional rendering
+            CardFrameView(
+                data: CardDisplayData(instance: card),
+                size: .hand
+            )
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 8)
                     .stroke(
-                        isCurrentReveal ? packType.color : Color.tierColor(card.tier).opacity(0.6),
-                        lineWidth: isCurrentReveal ? 2 : 1
+                        isCurrentReveal ? packType.color : Color.clear,
+                        lineWidth: isCurrentReveal ? 2 : 0
                     )
             )
             .opacity(isRevealed ? 1 : 0)
@@ -405,7 +358,7 @@ struct CardPackOpeningView: View {
                         Image(systemName: "sparkle")
                         Text("Open for \(packType.dustCost) Dust")
                     }
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 16))
                     .foregroundColor(canAfford ? .black : .textDisabled)
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .background(canAfford ? packType.color : Color.bgQuaternary)
@@ -415,7 +368,7 @@ struct CardPackOpeningView: View {
 
                 if !canAfford {
                     Text("Not enough Chaos Dust")
-                        .font(.system(size: 12))
+                        .font(CardFont.body(size: 12))
                         .foregroundColor(.warningYellow)
                 }
 
@@ -431,7 +384,7 @@ struct CardPackOpeningView: View {
                         revealNext()
                     }) {
                         Text("Tap to Reveal Next")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 16))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity, minHeight: 50)
                             .background(packType.color)
@@ -442,7 +395,7 @@ struct CardPackOpeningView: View {
                         revealAll()
                     }) {
                         Text("Reveal All")
-                            .font(.system(size: 14))
+                            .font(CardFont.body(size: 14))
                             .foregroundColor(.textTertiary)
                     }
                 } else {
@@ -452,7 +405,7 @@ struct CardPackOpeningView: View {
                         }
                     }) {
                         Text("Continue")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 16))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity, minHeight: 50)
                             .background(packType.color)
@@ -465,7 +418,7 @@ struct CardPackOpeningView: View {
 
                 Button(action: { dismiss() }) {
                     Text("Done")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 16))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(packType.color)
@@ -477,7 +430,7 @@ struct CardPackOpeningView: View {
                         resetAndReopen()
                     }) {
                         Text("Open Another (\(packType.dustCost) Dust)")
-                            .font(.system(size: 14))
+                            .font(CardFont.body(size: 14))
                             .foregroundColor(packType.color)
                     }
                 }

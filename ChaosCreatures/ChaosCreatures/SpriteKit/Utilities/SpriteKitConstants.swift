@@ -234,4 +234,117 @@ enum SK {
         /// Body text, descriptions — Alegreya Regular
         static let regular = CardFont.spriteKitBody         // "Alegreya-Regular"
     }
+
+    // MARK: - Card Frame Asset Names
+
+    enum CardFrames {
+        /// Asset name for a card frame by faction and rarity.
+        /// Format: "CardFrames/{faction}-{rarity}" e.g. "CardFrames/ironwright-common"
+        static func assetName(faction: FactionShortName, tier: EvolutionTier) -> String {
+            let factionKey: String
+            switch faction {
+            case .ironwright: factionKey = "ironwright"
+            case .feyCourts: factionKey = "fey"
+            case .demonicKingdoms: factionKey = "demonic"
+            }
+            let tierKey: String
+            switch tier {
+            case .common, .uncommon: tierKey = "common"
+            case .rare: tierKey = "rare"
+            case .epic, .legendary: tierKey = "epic"
+            }
+            return "CardFrames/\(factionKey)-\(tierKey)"
+        }
+
+        /// Spell card frame asset name
+        static let spell = "CardFrames/spell"
+
+        /// Stabilizer card frame asset name
+        static let stabilizer = "CardFrames/stabilizer"
+    }
+
+    // MARK: - Keyword Icon Asset Names
+
+    enum KeywordIcons {
+        /// Asset name for a keyword icon: "KeywordIcons/{keyword}"
+        static func assetName(keyword: Keyword) -> String {
+            let key: String
+            switch keyword {
+            case .shield: key = "shield"
+            case .lifesteal: key = "lifesteal"
+            case .flying: key = "flying"
+            case .reach: key = "reach"
+            case .deathtouch: key = "deathtouch"
+            case .taunt: key = "taunt"
+            case .piercing: key = "piercing"
+            }
+            return "KeywordIcons/\(key)"
+        }
+    }
+
+    // MARK: - Faction Emblem Asset Names
+
+    enum FactionEmblems {
+        static func assetName(faction: FactionShortName) -> String {
+            let key: String
+            switch faction {
+            case .ironwright: key = "ironwright"
+            case .feyCourts: key = "fey"
+            case .demonicKingdoms: key = "demonic"
+            }
+            return "FactionEmblems/\(key)"
+        }
+    }
+
+    // MARK: - Card Back Asset Names
+
+    enum CardBacks {
+        static let universal = "CardBacks/card-back-universal"
+
+        static func factionBack(faction: FactionShortName) -> String {
+            let key: String
+            switch faction {
+            case .ironwright: key = "ironwright"
+            case .feyCourts: key = "fey"
+            case .demonicKingdoms: key = "demonic"
+            }
+            return "CardBacks/card-back-\(key)"
+        }
+    }
+
+    // MARK: - Rarity Effects
+
+    enum RarityEffects {
+        /// Uncommon: subtle metallic sheen overlay
+        static let uncommonOverlayAlpha: CGFloat = 0.08
+        static let uncommonSheenDuration: TimeInterval = 2.0
+        static let uncommonSheenColor = UIColor(hex: "#C0C0C0") // Silver
+
+        /// Rare: energy glow pulse
+        static let rareGlowColor = UIColor(hex: "#2196F3")  // Blue
+        static let rareGlowAlphaMin: CGFloat = 0.15
+        static let rareGlowAlphaMax: CGFloat = 0.4
+        static let rareGlowPulseDuration: TimeInterval = 1.2
+
+        /// Epic: purple shimmer
+        static let epicShimmerColor = UIColor(hex: "#9C27B0")
+        static let epicShimmerAlphaMin: CGFloat = 0.1
+        static let epicShimmerAlphaMax: CGFloat = 0.35
+        static let epicShimmerDuration: TimeInterval = 1.5
+
+        /// Legendary: gold prismatic + particle sparkles
+        static let legendaryGlowColor = UIColor(hex: "#FF9800")
+        static let legendaryParticleColor = UIColor(hex: "#FFD700")
+        static let legendaryGlowAlphaMin: CGFloat = 0.2
+        static let legendaryGlowAlphaMax: CGFloat = 0.5
+        static let legendaryGlowDuration: TimeInterval = 1.0
+        static let legendaryParticleBirthRate: CGFloat = 8
+    }
+
+    // MARK: - Card Flip Animation
+
+    enum CardFlip {
+        static let totalDuration: TimeInterval = 0.4
+        static let halfDuration: TimeInterval = 0.2
+    }
 }

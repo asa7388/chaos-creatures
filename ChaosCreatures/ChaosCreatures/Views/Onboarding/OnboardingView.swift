@@ -107,7 +107,7 @@ struct IntroCinematicView: View {
 
                 // Panel text
                 Text(panels[currentPanelIndex].text)
-                    .font(.system(size: 20, weight: .medium))
+                    .font(CardFont.body(size: 20))
                     .foregroundColor(.textPrimary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
@@ -132,7 +132,7 @@ struct IntroCinematicView: View {
                     Spacer()
                     Button(action: onComplete) {
                         Text("Skip")
-                            .font(.system(size: 14))
+                            .font(CardFont.body(size: 14))
                             .foregroundColor(.textTertiary)
                             .frame(width: 44, height: 44)
                     }
@@ -198,11 +198,11 @@ struct ReadyToPlayView: View {
                 .foregroundColor(.healGreen)
 
             Text("You're Ready!")
-                .font(.system(size: 28, weight: .bold))
+                .font(CardFont.displayTitle(size: 28))
                 .foregroundColor(.textPrimary)
 
             Text("Build your deck. Evolve your creatures.\nDominate the chaos.")
-                .font(.system(size: 16))
+                .font(CardFont.body(size: 16))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
 
@@ -210,7 +210,7 @@ struct ReadyToPlayView: View {
 
             Button(action: onStart) {
                 Text("Start Playing")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 17))
                     .foregroundColor(.black)
                     .frame(width: 200, height: 52)
                     .background(Color.tauntGold)

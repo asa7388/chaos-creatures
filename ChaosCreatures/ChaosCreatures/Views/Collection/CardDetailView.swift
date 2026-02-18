@@ -1,6 +1,7 @@
 // CardDetailView.swift
 // Chaos Creatures
 // Full card detail with stats, keywords, evolution history, and evolve button.
+// Now uses CardFrameView for professional card rendering with frames and themed fonts.
 // Source: docs/design/07-ui-ux-specs.md Section 5.2
 
 import SwiftUI
@@ -18,10 +19,10 @@ struct CardDetailView: View {
             ZStack(alignment: .bottom) {
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Card art
-                        cardArtSection
+                        // Card rendered with professional frame
+                        cardFrameSection
 
-                        // Card info
+                        // Card info (name, tier, flavor text — shown outside the frame for detail)
                         cardInfoSection
 
                         // Stats (creatures only)
@@ -74,28 +75,20 @@ struct CardDetailView: View {
         }
     }
 
-    // MARK: - Card Art
+    // MARK: - Card Frame Section
 
-    private var cardArtSection: some View {
+    private var cardFrameSection: some View {
         Group {
-            if let artUrl = router.selectedCardInstance?.artUrl, let url = URL(string: artUrl) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(5.0 / 7.0, contentMode: .fit)
-                            .cornerRadius(12)
-                    default:
-                        artPlaceholder
-                    }
-                }
+            if let card = router.selectedCardInstance {
+                CardFrameView(
+                    data: CardDisplayData(instance: card),
+                    size: .detail
+                )
+                .frame(maxWidth: .infinity)
             } else {
                 artPlaceholder
             }
         }
-        .frame(maxWidth: 280)
-        .frame(maxWidth: .infinity)
     }
 
     private var artPlaceholder: some View {
@@ -108,6 +101,8 @@ struct CardDetailView: View {
                     .font(.system(size: 40))
                     .foregroundColor(.textDisabled)
             )
+            .frame(maxWidth: 280)
+            .frame(maxWidth: .infinity)
     }
 
     // MARK: - Card Info
@@ -118,7 +113,7 @@ struct CardDetailView: View {
                 // Name + mana cost
                 HStack {
                     Text(card.currentName)
-                        .font(.system(size: 22, weight: .bold))
+                        .font(CardFont.cardName(size: 22))
                         .foregroundColor(.textPrimary)
                     Spacer()
                     LargeManaGemView(cost: card.currentManaCost)
@@ -127,14 +122,14 @@ struct CardDetailView: View {
                 // Tier info
                 HStack {
                     Text(card.tier.displayName)
-                        .font(.system(size: 14))
+                        .font(CardFont.body(size: 14))
                         .foregroundColor(.textSecondary)
 
                     Spacer()
 
                     // Tier badge
                     Text(card.tier.displayName)
-                        .font(.system(size: 12, weight: .bold))
+                        .font(CardFont.bodyBold(size: 12))
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -145,7 +140,7 @@ struct CardDetailView: View {
                 // Flavor text
                 if !card.flavorText.isEmpty {
                     Text(card.flavorText)
-                        .font(.system(size: 13).italic())
+                        .font(CardFont.flavorText(size: 13))
                         .foregroundColor(.textTertiary)
                         .padding(.top, 4)
                 }
@@ -170,10 +165,10 @@ struct CardDetailView: View {
     private func statBox(title: String, value: String, color: Color) -> some View {
         VStack(spacing: 4) {
             Text(title)
-                .font(.system(size: 11, weight: .bold))
+                .font(CardFont.bodyBold(size: 11))
                 .foregroundColor(color)
             Text(value)
-                .font(.system(size: 24, weight: .bold))
+                .font(CardFont.stats(size: 24))
                 .foregroundColor(.textPrimary)
         }
         .frame(maxWidth: .infinity)
@@ -184,7 +179,7 @@ struct CardDetailView: View {
     private func keywordsSection(card: CardInstance) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Keywords")
-                .font(.system(size: 14, weight: .bold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.textPrimary)
 
             KeywordRowView(keywords: card.effectiveKeywords)
@@ -199,18 +194,18 @@ struct CardDetailView: View {
     private func evolutionSection(card: CardInstance) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Evolution")
-                .font(.system(size: 14, weight: .bold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.textPrimary)
 
             // Energy progress
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("Chaos Energy")
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textSecondary)
                     Spacer()
                     Text("\(card.chaosEnergy)/\(card.nextEnergyThreshold ?? 0)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 13))
                         .foregroundColor(.textPrimary)
                 }
 
@@ -238,7 +233,7 @@ struct CardDetailView: View {
                         Image(systemName: "arrow.up.circle.fill")
                         Text("Evolve Now")
                     }
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 15))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Color.tauntGold)
@@ -255,7 +250,7 @@ struct CardDetailView: View {
     private func triggeredAbilitiesSection(card: CardInstance) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Triggered Abilities")
-                .font(.system(size: 14, weight: .bold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.textPrimary)
 
             ForEach(card.triggeredAbilities) { ability in
@@ -270,11 +265,11 @@ struct CardDetailView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(ability.name)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 13))
                             .foregroundColor(.textPrimary)
 
                         Text(ability.description)
-                            .font(.system(size: 12))
+                            .font(CardFont.body(size: 12))
                             .foregroundColor(.textSecondary)
                             .lineLimit(3)
                     }
@@ -318,7 +313,7 @@ struct CardDetailView: View {
     private func modifiersSection(card: CardInstance) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Applied Modifiers")
-                .font(.system(size: 14, weight: .bold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.textPrimary)
 
             ForEach(card.modifiers) { modifier in
@@ -336,12 +331,12 @@ struct CardDetailView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 4) {
                             Text(modifier.name)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(CardFont.bodyBold(size: 13))
                                 .foregroundColor(.textPrimary)
 
                             if let keyword = modifier.grantsKeyword {
                                 Text(keyword.displayName)
-                                    .font(.system(size: 10, weight: .bold))
+                                    .font(CardFont.bodyBold(size: 10))
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 1)
@@ -352,13 +347,13 @@ struct CardDetailView: View {
 
                         HStack(spacing: 4) {
                             Text("Step \(modifier.evolutionStep)")
-                                .font(.system(size: 11))
+                                .font(CardFont.body(size: 11))
                                 .foregroundColor(.textTertiary)
 
                             if modifier.instabilityAdjustment != 0 {
                                 let sign = modifier.instabilityAdjustment > 0 ? "+" : ""
                                 Text("Inst \(sign)\(modifier.instabilityAdjustment)")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(CardFont.bodyBold(size: 11))
                                     .foregroundColor(modifier.instabilityAdjustment > 0 ? .chaosRed : .orderBlue)
                             }
                         }
@@ -390,7 +385,7 @@ struct CardDetailView: View {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 16))
                         Text("Evolve")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 15))
                     }
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -408,7 +403,7 @@ struct CardDetailView: View {
                     Image(systemName: "plus.rectangle.on.rectangle")
                         .font(.system(size: 14))
                     Text("Add to Deck")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 15))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -429,7 +424,7 @@ struct CardDetailView: View {
     private func evolutionHistorySection(card: CardInstance) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Evolution History")
-                .font(.system(size: 14, weight: .bold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.textPrimary)
 
             ForEach(card.evolutionHistory) { record in
@@ -439,13 +434,13 @@ struct CardDetailView: View {
                         .frame(width: 8, height: 8)
 
                     Text("\(record.fromTier.displayName) -> \(record.toTier.displayName)")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(CardFont.bodyBold(size: 13))
                         .foregroundColor(.textPrimary)
 
                     Spacer()
 
                     Text(record.nameChosen)
-                        .font(.system(size: 11))
+                        .font(CardFont.body(size: 11))
                         .foregroundColor(.textTertiary)
                 }
                 .padding(8)

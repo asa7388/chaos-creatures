@@ -230,6 +230,39 @@ enum ParticleEffects {
         return emitter
     }
 
+    // MARK: - Legendary Sparkles
+
+    /// Golden sparkle particles around a legendary card border.
+    /// Positioned at the card's center, particles emanate from the edges.
+    static func legendarySparkles(cardSize: CGSize) -> SKEmitterNode {
+        let emitter = SKEmitterNode()
+
+        emitter.particleBirthRate = SK.RarityEffects.legendaryParticleBirthRate
+        emitter.particleLifetime = 1.2
+        emitter.particleLifetimeRange = 0.4
+
+        emitter.emissionAngleRange = .pi * 2
+        emitter.particleSpeed = 12
+        emitter.particleSpeedRange = 8
+
+        emitter.particleAlpha = 0.9
+        emitter.particleAlphaSpeed = -0.7
+
+        emitter.particleScale = 0.15
+        emitter.particleScaleRange = 0.08
+        emitter.particleScaleSpeed = -0.05
+
+        emitter.particleColor = SK.RarityEffects.legendaryParticleColor
+        emitter.particleColorBlendFactor = 1.0
+        emitter.particleSize = CGSize(width: 4, height: 4)
+
+        // Emit from around the card border using a rectangle emission area
+        emitter.particlePositionRange = CGVector(dx: cardSize.width + 4, dy: cardSize.height + 4)
+
+        emitter.particleBlendMode = .add
+        return emitter
+    }
+
     // MARK: - Spell Effect Trail
 
     /// Particle trail for spell projectile

@@ -49,11 +49,11 @@ struct ModifierPickerView: View {
     private var header: some View {
         VStack(spacing: 8) {
             Text("Choose a Modifier")
-                .font(.system(size: 22, weight: .bold))
+                .font(CardFont.displayTitle(size: 22))
                 .foregroundColor(.textPrimary)
 
             Text("Select a modifier for \(cardName)'s evolution")
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
         }
         .padding(.top, 20)
@@ -65,7 +65,7 @@ struct ModifierPickerView: View {
     private var channelDirectionPicker: some View {
         VStack(spacing: 8) {
             Text("Channel Direction")
-                .font(.system(size: 14, weight: .semibold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.textTertiary)
 
             HStack(spacing: 0) {
@@ -79,7 +79,7 @@ struct ModifierPickerView: View {
                         Image(systemName: "shield.lefthalf.filled")
                             .font(.system(size: 14))
                         Text("ORDER")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(CardFont.bodyBold(size: 14))
                     }
                     .foregroundColor(channelDirection == .order ? .white : .orderBlue)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -96,7 +96,7 @@ struct ModifierPickerView: View {
                         Image(systemName: "flame.fill")
                             .font(.system(size: 14))
                         Text("CHAOS")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(CardFont.bodyBold(size: 14))
                     }
                     .foregroundColor(channelDirection == .chaos ? .white : .chaosRed)
                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -113,7 +113,7 @@ struct ModifierPickerView: View {
             Text(channelDirection == .order
                 ? "Order channels grant stability and defensive bonuses"
                 : "Chaos channels increase instability but unlock powerful effects")
-                .font(.system(size: 12))
+                .font(CardFont.body(size: 12))
                 .foregroundColor(channelDirection == .order ? .orderBlue : .chaosRed)
                 .multilineTextAlignment(.center)
                 .padding(.top, 4)
@@ -125,7 +125,7 @@ struct ModifierPickerView: View {
     private var modifierGrid: some View {
         VStack(spacing: 12) {
             Text("Available Modifiers")
-                .font(.system(size: 14, weight: .semibold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -151,7 +151,7 @@ struct ModifierPickerView: View {
                 // Top row: name + attunement badge
                 HStack {
                     Text(modifier.name)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(CardFont.cardName(size: 16))
                         .foregroundColor(.textPrimary)
 
                     Spacer()
@@ -161,7 +161,7 @@ struct ModifierPickerView: View {
                         Image(systemName: modifier.attunement == .order ? "shield.lefthalf.filled" : "flame.fill")
                             .font(.system(size: 10))
                         Text(modifier.attunement == .order ? "Order" : "Chaos")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 11))
                     }
                     .foregroundColor(modifier.attunement == .order ? .orderBlue : .chaosRed)
                     .padding(.horizontal, 8)
@@ -172,7 +172,7 @@ struct ModifierPickerView: View {
 
                 // Flavor text
                 Text(modifier.flavorText)
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textTertiary)
                     .lineLimit(2)
 
@@ -184,7 +184,7 @@ struct ModifierPickerView: View {
                             Image(systemName: keyword.iconName)
                                 .font(.system(size: 11))
                             Text(keyword.displayName)
-                                .font(.system(size: 12, weight: .medium))
+                                .font(CardFont.body(size: 12))
                         }
                         .foregroundColor(.healGreen)
                     }
@@ -196,7 +196,7 @@ struct ModifierPickerView: View {
                             Image(systemName: instAdj > 0 ? "arrow.up" : "arrow.down")
                                 .font(.system(size: 10, weight: .bold))
                             Text("\(abs(instAdj)) Instability")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(CardFont.body(size: 12))
                         }
                         .foregroundColor(instAdj > 0 ? .chaosRed : .orderBlue)
                     }
@@ -208,7 +208,7 @@ struct ModifierPickerView: View {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 10))
                         Text("Power \(modifier.powerRating)")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(CardFont.body(size: 11))
                     }
                     .foregroundColor(.tauntGold)
                 }
@@ -219,7 +219,7 @@ struct ModifierPickerView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 10))
                         Text("Has penalty effect")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(CardFont.body(size: 11))
                     }
                     .foregroundColor(.warningYellow)
                 }
@@ -244,26 +244,26 @@ struct ModifierPickerView: View {
     private func selectedModifierDetail(_ modifier: ModifierDefinition) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Selected: \(modifier.name)")
-                .font(.system(size: 14, weight: .bold))
+                .font(CardFont.bodyBold(size: 14))
                 .foregroundColor(.tauntGold)
 
             // Base effect description
             VStack(alignment: .leading, spacing: 4) {
                 Text("Base Effect")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 12))
                     .foregroundColor(.textSecondary)
                 Text(effectDescription(modifier.baseEffect))
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textTertiary)
             }
 
             // Attuned effect
             VStack(alignment: .leading, spacing: 4) {
                 Text("Attuned Effect (\(modifier.attunement == .order ? "Order" : "Chaos"))")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 12))
                     .foregroundColor(modifier.attunement == .order ? .orderBlue : .chaosRed)
                 Text(effectDescription(modifier.attunedEffect))
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textTertiary)
             }
 
@@ -271,10 +271,10 @@ struct ModifierPickerView: View {
             if modifier.hasPenalty, let penalty = modifier.penaltyEffect {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Penalty")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 12))
                         .foregroundColor(.warningYellow)
                     Text(effectDescription(penalty))
-                        .font(.system(size: 12))
+                        .font(CardFont.body(size: 12))
                         .foregroundColor(.textTertiary)
                 }
             }
@@ -296,7 +296,7 @@ struct ModifierPickerView: View {
             HStack(spacing: 12) {
                 Button(action: onCancel) {
                     Text("Cancel")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 15))
                         .foregroundColor(.textSecondary)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(Color.bgQuaternary)
@@ -308,7 +308,7 @@ struct ModifierPickerView: View {
                     onConfirm(modifier, channelDirection)
                 }) {
                     Text("Confirm Evolution")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 15))
                         .foregroundColor(selectedModifier != nil ? .black : .textDisabled)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(selectedModifier != nil ? Color.tauntGold : Color.bgQuaternary)

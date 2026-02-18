@@ -92,7 +92,7 @@ struct HomeView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Welcome back, \(appState.player?.displayName ?? "Player")")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 16))
                     .foregroundColor(.textPrimary)
 
                 if let rank = appState.player?.seasonRank {
@@ -101,7 +101,7 @@ struct HomeView: View {
                             .fill(Color.rankColor(rank))
                             .frame(width: 8, height: 8)
                         Text(rank.displayName)
-                            .font(.system(size: 13))
+                            .font(CardFont.body(size: 13))
                             .foregroundColor(.textSecondary)
                     }
                 }
@@ -113,10 +113,10 @@ struct HomeView: View {
             if let player = appState.player {
                 VStack(spacing: 2) {
                     Text("Level \(player.playerXp / 100)")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(CardFont.stats(size: 12))
                         .foregroundColor(.ironwright)
                     Text("\(player.playerXp % 100) XP")
-                        .font(.system(size: 10))
+                        .font(CardFont.body(size: 10))
                         .foregroundColor(.textTertiary)
                 }
                 .padding(8)
@@ -140,10 +140,10 @@ struct HomeView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Build Your First Deck")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(CardFont.cardName(size: 16))
                         .foregroundColor(.textPrimary)
                     Text("You need a valid 20-card deck before you can play. Create one now!")
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textSecondary)
                 }
             }
@@ -156,7 +156,7 @@ struct HomeView: View {
                     Image(systemName: "plus.rectangle.on.rectangle")
                         .font(.system(size: 14))
                     Text("Create Deck")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 15))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -181,10 +181,10 @@ struct HomeView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("PLAY")
-                        .font(.system(size: 24, weight: .bold))
+                        .font(CardFont.displayTitle(size: 24))
                         .foregroundColor(.textPrimary)
                     Text("Ranked, Casual, or Practice")
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textSecondary)
                 }
                 Spacer()
@@ -213,7 +213,7 @@ struct HomeView: View {
     private var quickStatsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Your Stats")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             LazyVGrid(columns: [
@@ -261,11 +261,11 @@ struct StatTile: View {
                 .foregroundColor(color)
 
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .font(CardFont.stats(size: 18))
                 .foregroundColor(.textPrimary)
 
             Text(title)
-                .font(.system(size: 11))
+                .font(CardFont.body(size: 11))
                 .foregroundColor(.textTertiary)
         }
         .frame(maxWidth: .infinity)

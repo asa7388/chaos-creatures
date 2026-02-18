@@ -46,7 +46,7 @@ struct DeckBuilderView: View {
                     Task { await saveDeck() }
                 }) {
                     Text("Save")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 15))
                         .foregroundColor(.orderBlue)
                 }
                 .disabled(isSaving)
@@ -64,14 +64,14 @@ struct DeckBuilderView: View {
         VStack(spacing: 0) {
             HStack {
                 TextField("Deck Name", text: $deckName)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(CardFont.cardName(size: 16))
                     .foregroundColor(.textPrimary)
                     .textFieldStyle(.plain)
 
                 Spacer()
 
                 Text("\(totalCards)/\(maxCards)")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(CardFont.stats(size: 14))
                     .foregroundColor(totalCards == maxCards ? .healGreen : .warningYellow)
             }
             .padding(.horizontal, 16)
@@ -83,7 +83,7 @@ struct DeckBuilderView: View {
                 HStack(spacing: 0) {
                     Button(action: { withAnimation { showDeckPanel = false } }) {
                         Text("Available Cards")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 13))
                             .foregroundColor(showDeckPanel ? .textTertiary : .white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
@@ -93,9 +93,9 @@ struct DeckBuilderView: View {
                     Button(action: { withAnimation { showDeckPanel = true } }) {
                         HStack(spacing: 4) {
                             Text("Deck")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(CardFont.bodyBold(size: 13))
                             Text("(\(totalCards))")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(CardFont.stats(size: 12))
                         }
                         .foregroundColor(showDeckPanel ? .white : .textTertiary)
                         .frame(maxWidth: .infinity)
@@ -174,7 +174,7 @@ struct DeckBuilderView: View {
     private var deckListSection: some View {
         VStack(spacing: 0) {
             Text("Deck (\(totalCards)/\(maxCards))")
-                .font(.system(size: 13, weight: .bold))
+                .font(CardFont.bodyBold(size: 13))
                 .foregroundColor(.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(8)
@@ -187,7 +187,7 @@ struct DeckBuilderView: View {
                         .font(.system(size: 28))
                         .foregroundColor(.textDisabled)
                     Text("Tap cards to add")
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textTertiary)
                     Spacer()
                 }

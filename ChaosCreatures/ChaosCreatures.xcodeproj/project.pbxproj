@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		011251E18ECE5C181762C220 /* MatchEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7666073DB2F13CDC08B1CD15 /* MatchEvent.swift */; };
 		054E64408EE249254ABE50F7 /* HealAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6505DC27566B9985818EDEF /* HealAction.swift */; };
+		AA44444444444444CCCCCC01 /* OpponentHandCardNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA44444444444444BBBBBB01 /* OpponentHandCardNode.swift */; };
+		AA44444444444444CCCCCC02 /* CardFlipAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA44444444444444BBBBBB02 /* CardFlipAction.swift */; };
 		05D0DC999CAFB666671FC3EB /* PostMatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F86950CC6F3092FC7A30CB /* PostMatchView.swift */; };
 		076ED3D6BDB44C5B519C0904 /* GameplayKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3AB95B740838B12CB51EE495 /* GameplayKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0A45B072636D29D4B0280B42 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045868C4CFB7E10DE62507F4 /* GameState.swift */; };
@@ -33,6 +35,7 @@
 		3562A4A64BB4355D3E8E3C46 /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42B077B311549DC068F078C3 /* StoreKitService.swift */; };
 		35BAA07E717FF5E5898645AC /* PhaseIndicatorNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 180734839ABFE3E33CD068E9 /* PhaseIndicatorNode.swift */; };
 		3709549D72B1DD85EB41E0D0 /* MatchmakingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0F9959D975D39012E4F720 /* MatchmakingService.swift */; };
+		3A1CF2A0B1E7D3F4A9C85E60 /* CardFrameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */; };
 		3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B487311E9E0110DA6121F9A /* CardView.swift */; };
 		3BC837205AE555B437984697 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308097FB7D4FEB7E802BFC9E /* ContentView.swift */; };
 		3F1A1C86C6C0AD96E32784E1 /* SpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E7B70326AD4C66B85692318 /* SpriteKit.framework */; };
@@ -156,6 +159,8 @@
 		2329480B2632559AD1A906C9 /* BattleAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleAudioManager.swift; sourceTree = "<group>"; };
 		24D7E4B1CDCE29ED0753A839 /* HandCardNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandCardNode.swift; sourceTree = "<group>"; };
 		2543BCD0B2A4CF8431F6F473 /* CardPlayAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardPlayAction.swift; sourceTree = "<group>"; };
+		AA44444444444444BBBBBB01 /* OpponentHandCardNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpponentHandCardNode.swift; sourceTree = "<group>"; };
+		AA44444444444444BBBBBB02 /* CardFlipAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFlipAction.swift; sourceTree = "<group>"; };
 		268D221CEB23F3A1A8A87851 /* OnboardingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingUITests.swift; sourceTree = "<group>"; };
 		303BB140CA61FC0BA112B250 /* DeckListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckListView.swift; sourceTree = "<group>"; };
 		308097FB7D4FEB7E802BFC9E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -171,6 +176,7 @@
 		43E4F5227CEFA93CDFAA600A /* BattleStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleStateMachine.swift; sourceTree = "<group>"; };
 		4781670C0F98E38FE15E8653 /* DailyMissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyMissionsView.swift; sourceTree = "<group>"; };
 		49CF45F9013860294E4763B8 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFrameView.swift; sourceTree = "<group>"; };
 		4B487311E9E0110DA6121F9A /* CardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardView.swift; sourceTree = "<group>"; };
 		4CC2BA355A2E2C9A0D4874B2 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		4DA5BD6AD9E7FB6BF516258B /* EvolutionFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvolutionFlowView.swift; sourceTree = "<group>"; };
@@ -266,6 +272,7 @@
 			isa = PBXGroup;
 			children = (
 				1B040DED301F79E73867B51B /* AttackAction.swift */,
+				AA44444444444444BBBBBB02 /* CardFlipAction.swift */,
 				2543BCD0B2A4CF8431F6F473 /* CardPlayAction.swift */,
 				D2BEF873D0D9368C58159E49 /* ChaosRollAction.swift */,
 				556A052E4E594B258B70C98B /* DamageAction.swift */,
@@ -392,6 +399,7 @@
 				24D7E4B1CDCE29ED0753A839 /* HandCardNode.swift */,
 				94A8B2B140C3673DBECEC65A /* HandNode.swift */,
 				0C2F46F3E1D63BF639931F8B /* ManaBarNode.swift */,
+				AA44444444444444BBBBBB01 /* OpponentHandCardNode.swift */,
 				180734839ABFE3E33CD068E9 /* PhaseIndicatorNode.swift */,
 				8E65E2A23F3410D6A7BB835A /* TimerNode.swift */,
 			);
@@ -567,6 +575,7 @@
 		E136B175D8655AF4461EF60F /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */,
 				4B487311E9E0110DA6121F9A /* CardView.swift */,
 				5AE64322615B77DD0D2F9A62 /* EmptyStateView.swift */,
 				A4688B60BDB611CE942CEFC5 /* ErrorView.swift */,
@@ -775,9 +784,11 @@
 				D190FCB57CA0EB21C2359F90 /* CardDetailView.swift in Sources */,
 				4AA97C71FE62FB44C57CABA6 /* CardInstance.swift in Sources */,
 				92BC197589C204CDEDA75CB2 /* CardPackOpeningView.swift in Sources */,
+				AA44444444444444CCCCCC02 /* CardFlipAction.swift in Sources */,
 				C25DF14A5DC08257272BC588 /* CardPlayAction.swift in Sources */,
 				D4DAB6A87FEDA69762F7CE31 /* CardTemplate.swift in Sources */,
 				DD11111111111111DDDDDDDD /* CardFont.swift in Sources */,
+				3A1CF2A0B1E7D3F4A9C85E60 /* CardFrameView.swift in Sources */,
 				3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */,
 				11DCA5933CE01CADC1B34BA1 /* ChaosCreaturesApp.swift in Sources */,
 				8DA80DDB662FE44064989616 /* ChaosRollAction.swift in Sources */,
@@ -821,6 +832,7 @@
 				3709549D72B1DD85EB41E0D0 /* MatchmakingService.swift in Sources */,
 				169138CD400D062E6FEB5280 /* MatchmakingView.swift in Sources */,
 				72B8FE806AE9653781AA0D98 /* ModifierPickerView.swift in Sources */,
+				AA44444444444444CCCCCC01 /* OpponentHandCardNode.swift in Sources */,
 				2A843FE5CFB4BAEA111BEE6A /* OnboardingView.swift in Sources */,
 				A2BCD83F53B52280B80A0BF5 /* ParticleEffects.swift in Sources */,
 				35BAA07E717FF5E5898645AC /* PhaseIndicatorNode.swift in Sources */,

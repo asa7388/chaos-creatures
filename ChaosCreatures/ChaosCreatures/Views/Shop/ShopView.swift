@@ -60,7 +60,7 @@ struct ShopView: View {
                     .frame(width: 18, height: 18)
                     .foregroundColor(.tauntGold)
                 Text("\(appState.player?.chaosDust ?? 0)")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(CardFont.cardName(size: 18))
                     .foregroundColor(.tauntGold)
             }
 
@@ -86,7 +86,7 @@ struct ShopView: View {
                 .frame(width: 14, height: 14)
                 .foregroundColor(shardColor(tier))
             Text("\(count)")
-                .font(.system(size: 12, weight: .medium))
+                .font(CardFont.body(size: 12))
                 .foregroundColor(.textSecondary)
         }
     }
@@ -106,7 +106,7 @@ struct ShopView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Subscription")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(CardFont.cardName(size: 16))
                     .foregroundColor(.textPrimary)
 
                 Spacer()
@@ -114,7 +114,7 @@ struct ShopView: View {
                 // Current tier badge
                 let tier = appState.player?.subscriptionTier ?? .free
                 Text(tier.displayName)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(CardFont.bodyBold(size: 11))
                     .foregroundColor(tier == .free ? .textTertiary : .black)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -152,7 +152,7 @@ struct ShopView: View {
     private var cardPacksSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Card Packs")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
                 .padding(.horizontal, 16)
 
@@ -195,12 +195,12 @@ struct ShopView: View {
     private var shardsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Planar Shards")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
                 .padding(.horizontal, 16)
 
             Text("Shards are earned through gameplay. Use them to evolve your creatures.")
-                .font(.system(size: 13))
+                .font(CardFont.body(size: 13))
                 .foregroundColor(.textTertiary)
                 .padding(.horizontal, 16)
         }
@@ -222,12 +222,12 @@ struct SubscriptionCardItem: View {
             // Tier name
             HStack {
                 Text(tier.displayName)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(CardFont.cardName(size: 18))
                     .foregroundColor(.textPrimary)
                 Spacer()
                 if isCurrent {
                     Text("CURRENT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(CardFont.bodyBold(size: 10))
                         .foregroundColor(.black)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -238,7 +238,7 @@ struct SubscriptionCardItem: View {
 
             // Price
             Text(tierPrice)
-                .font(.system(size: 15))
+                .font(CardFont.body(size: 15))
                 .foregroundColor(.textSecondary)
 
             Divider()
@@ -256,7 +256,7 @@ struct SubscriptionCardItem: View {
             // Action button
             Button(action: onUpgrade) {
                 Text(isCurrent ? "Current Tier" : "Upgrade")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 14))
                     .foregroundColor(isCurrent ? .textTertiary : .white)
                     .frame(maxWidth: .infinity, minHeight: 40)
                     .background(isCurrent ? Color.bgQuaternary : tierAccentColor)
@@ -280,7 +280,7 @@ struct SubscriptionCardItem: View {
                 .font(.system(size: 10, weight: .bold))
                 .foregroundColor(.healGreen)
             Text(text)
-                .font(.system(size: 12))
+                .font(CardFont.body(size: 12))
                 .foregroundColor(.textSecondary)
         }
     }
@@ -353,10 +353,10 @@ struct PackRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 15))
                     .foregroundColor(.textPrimary)
                 Text(description)
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textTertiary)
                     .lineLimit(1)
             }
@@ -365,7 +365,7 @@ struct PackRow: View {
 
             Button(action: onPurchase) {
                 Text(price)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 13))
                     .foregroundColor(canAfford ? .white : .textDisabled)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)

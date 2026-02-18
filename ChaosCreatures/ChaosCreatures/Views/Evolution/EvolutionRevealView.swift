@@ -2,6 +2,7 @@
 // Chaos Creatures
 // Dramatic art reveal after evolution completes.
 // Shows before/after comparison, new modifier, evolved art, and a "Continue" button.
+// Now uses CardFrameView for the card reveal and CardFont for themed typography.
 // Source: docs/design/07-ui-ux-specs.md Section 5
 
 import SwiftUI
@@ -69,7 +70,7 @@ struct EvolutionRevealView: View {
                 Spacer()
                     .frame(height: 16)
 
-                // Main card reveal
+                // Main card reveal — uses CardFrameView
                 cardReveal
                     .scaleEffect(cardScale)
                     .opacity(cardOpacity)
@@ -104,7 +105,7 @@ struct EvolutionRevealView: View {
             // Previous tier
             VStack(spacing: 4) {
                 Text(previousTier.displayName)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 14))
                     .foregroundColor(Color.tierColor(previousTier))
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.tierColor(previousTier))
@@ -119,7 +120,7 @@ struct EvolutionRevealView: View {
             // New tier
             VStack(spacing: 4) {
                 Text(result.tier.displayName)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(CardFont.bodyBold(size: 14))
                     .foregroundColor(Color.tierColor(result.tier))
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.tierColor(result.tier))
@@ -132,62 +133,18 @@ struct EvolutionRevealView: View {
         .cornerRadius(12)
     }
 
-    // MARK: - Card Reveal
+    // MARK: - Card Reveal (uses CardFrameView)
 
     private var cardReveal: some View {
-        VStack(spacing: 0) {
-            // Art image
-            if let url = URL(string: result.newArtUrl) {
-                AsyncImage(url: url) { imagePhase in
-                    switch imagePhase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    default:
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.tierColor(result.tier).opacity(0.3),
-                                        Color.bgTertiary
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .overlay(
-                                ProgressView()
-                                    .tint(Color.tierColor(result.tier))
-                            )
-                    }
-                }
-                .frame(width: 260, height: 260)
-                .clipped()
-                .cornerRadius(16)
-            } else {
-                Rectangle()
-                    .fill(Color.bgTertiary)
-                    .frame(width: 260, height: 260)
-                    .cornerRadius(16)
-                    .overlay(
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 48))
-                            .foregroundColor(Color.tierColor(result.tier))
-                    )
-            }
-        }
-        .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.bgSecondary)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(
-                    Color.tierColor(result.tier).opacity(pulseGlow ? 1.0 : 0.5),
-                    lineWidth: 3
-                )
+        CardFrameView(
+            data: CardDisplayData(
+                name: result.newName,
+                artUrl: result.newArtUrl,
+                manaCost: 0, // Mana cost not shown in reveal context
+                tier: result.tier,
+                flavorText: result.newFlavorText
+            ),
+            size: .detail
         )
         .shadow(
             color: Color.tierColor(result.tier).opacity(pulseGlow ? 0.6 : 0.2),
@@ -201,13 +158,13 @@ struct EvolutionRevealView: View {
         VStack(spacing: 12) {
             // New name
             Text(result.newName)
-                .font(.system(size: 24, weight: .bold))
+                .font(CardFont.cardName(size: 24))
                 .foregroundColor(.textPrimary)
                 .multilineTextAlignment(.center)
 
             // Tier badge
             Text(result.tier.displayName)
-                .font(.system(size: 13, weight: .bold))
+                .font(CardFont.bodyBold(size: 13))
                 .foregroundColor(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 5)
@@ -217,7 +174,7 @@ struct EvolutionRevealView: View {
             // Flavor text
             if !result.newFlavorText.isEmpty {
                 Text("\"\(result.newFlavorText)\"")
-                    .font(.system(size: 13).italic())
+                    .font(CardFont.flavorText(size: 13))
                     .foregroundColor(.textTertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -230,7 +187,7 @@ struct EvolutionRevealView: View {
                         .font(.system(size: 12))
                         .foregroundColor(.tauntGold)
                     Text("Modifier: \(modName)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 13))
                         .foregroundColor(.tauntGold)
                 }
                 .padding(.horizontal, 14)
@@ -247,7 +204,7 @@ struct EvolutionRevealView: View {
             // Previous name reference
             if previousName != result.newName {
                 Text("Previously: \(previousName)")
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textDisabled)
             }
         }
@@ -282,10 +239,10 @@ struct EvolutionRevealView: View {
     private func statBadge(label: String, value: Int, color: Color) -> some View {
         VStack(spacing: 2) {
             Text(value > 0 ? "+\(value)" : "\(value)")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.stats(size: 16))
                 .foregroundColor(color)
             Text(label)
-                .font(.system(size: 10, weight: .semibold))
+                .font(CardFont.bodyBold(size: 10))
                 .foregroundColor(.textTertiary)
         }
         .padding(.horizontal, 12)
@@ -299,7 +256,7 @@ struct EvolutionRevealView: View {
     private var continueButton: some View {
         Button(action: onContinue) {
             Text("Continue")
-                .font(.system(size: 16, weight: .semibold))
+                .font(CardFont.bodyBold(size: 16))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(Color.tauntGold)

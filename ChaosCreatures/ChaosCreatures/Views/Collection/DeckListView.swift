@@ -72,11 +72,11 @@ struct DeckListView: View {
                 // Deck count header
                 HStack {
                     Text("Decks")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(CardFont.bodyBold(size: 14))
                         .foregroundColor(.textSecondary)
                     Spacer()
                     Text("\(decks.count)/\(maxDeckSlots) slots")
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textTertiary)
                 }
                 .padding(.horizontal, 16)
@@ -101,7 +101,7 @@ struct DeckListView: View {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 20))
                             Text("Create New Deck")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(CardFont.body(size: 15))
                         }
                         .foregroundColor(.orderBlue)
                         .frame(maxWidth: .infinity, minHeight: 52)
@@ -161,18 +161,18 @@ struct DeckRowView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(deck.name)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(CardFont.cardName(size: 16))
                     .foregroundColor(.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
                     Text("\(deck.totalCards)/20 cards")
-                        .font(.system(size: 12))
+                        .font(CardFont.body(size: 12))
                         .foregroundColor(deck.totalCards == 20 ? .textSecondary : .warningYellow)
 
                     if deck.isValid {
                         Text("VALID")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(CardFont.bodyBold(size: 10))
                             .foregroundColor(.healGreen)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)

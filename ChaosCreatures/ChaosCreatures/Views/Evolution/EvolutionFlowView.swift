@@ -148,7 +148,7 @@ struct EvolutionFlowView: View {
                 .tint(Color.tierColor(card.tier))
 
             Text("Preparing evolution choices...")
-                .font(.system(size: 15, weight: .medium))
+                .font(CardFont.body(size: 15))
                 .foregroundColor(.textSecondary)
 
             // Card stats
@@ -170,7 +170,7 @@ struct EvolutionFlowView: View {
                     .tint(.tauntGold)
 
                 Text(evolutionService.evolutionStatus.displayMessage)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(CardFont.body(size: 16))
                     .foregroundColor(.textSecondary)
                     .animation(.easeInOut, value: evolutionService.evolutionStatus)
 
@@ -184,7 +184,7 @@ struct EvolutionFlowView: View {
                         .font(.system(size: 12))
                         .foregroundColor(.tauntGold)
                     Text("Applying: \(modifier.name)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 13))
                         .foregroundColor(.tauntGold)
                 }
                 .padding(.horizontal, 14)
@@ -246,7 +246,7 @@ struct EvolutionFlowView: View {
             }
 
             Text(label)
-                .font(.system(size: 13, weight: isActive ? .semibold : .regular))
+                .font(isActive ? CardFont.bodyBold(size: 13) : CardFont.body(size: 13))
                 .foregroundColor(isActive ? .textPrimary : (isComplete ? .textSecondary : .textDisabled))
         }
     }
@@ -282,12 +282,12 @@ struct EvolutionFlowView: View {
             }
 
             Text(card.currentName)
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             HStack(spacing: 8) {
                 Text(card.tier.displayName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 12))
                     .foregroundColor(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -300,7 +300,7 @@ struct EvolutionFlowView: View {
                         .foregroundColor(.textDisabled)
 
                     Text(nextTier.displayName)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 12))
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -320,12 +320,12 @@ struct EvolutionFlowView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.tauntGold)
                 Text("Chaos Energy: \(card.chaosEnergy)")
-                    .font(.system(size: 13))
+                    .font(CardFont.body(size: 13))
                     .foregroundColor(.textSecondary)
 
                 if let threshold = card.nextEnergyThreshold {
                     Text("/ \(threshold)")
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textDisabled)
                 }
             }
@@ -361,11 +361,11 @@ struct EvolutionFlowView: View {
                 .foregroundColor(.warningYellow)
 
             Text("Evolution Failed")
-                .font(.system(size: 20, weight: .bold))
+                .font(CardFont.cardName(size: 20))
                 .foregroundColor(.textPrimary)
 
             Text(message)
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -376,7 +376,7 @@ struct EvolutionFlowView: View {
                     Task { await startEvolution() }
                 }) {
                     Text("Try Again")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 15))
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(Color.tauntGold)
@@ -388,7 +388,7 @@ struct EvolutionFlowView: View {
                     dismiss()
                 }) {
                     Text("Cancel")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(CardFont.body(size: 15))
                         .foregroundColor(.textSecondary)
                 }
             }

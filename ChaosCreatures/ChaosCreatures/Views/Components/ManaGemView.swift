@@ -1,6 +1,6 @@
 // ManaGemView.swift
 // Chaos Creatures
-// Mana cost display with gem-shaped background.
+// Mana cost display with gem-shaped background and themed font.
 // Source: docs/design/07-ui-ux-specs.md Section 3.2
 
 import SwiftUI
@@ -23,9 +23,14 @@ struct ManaGemView: View {
                 .frame(width: size, height: size)
                 .shadow(color: Color(hex: "#1565C0").opacity(0.5), radius: 2)
 
+            // Outer ring for polish
+            Circle()
+                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                .frame(width: size, height: size)
+
             // Cost number
             Text("\(cost)")
-                .font(.system(size: size * 0.55, weight: .bold))
+                .font(CardFont.stats(size: size * 0.55))
                 .foregroundColor(.white)
         }
     }

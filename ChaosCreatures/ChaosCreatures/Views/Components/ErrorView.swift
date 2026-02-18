@@ -16,11 +16,11 @@ struct ErrorView: View {
                 .foregroundColor(.warningYellow)
 
             Text("Something went wrong")
-                .font(.system(size: 18, weight: .bold))
+                .font(CardFont.cardName(size: 18))
                 .foregroundColor(.textPrimary)
 
             Text(message)
-                .font(.system(size: 14, weight: .medium))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -30,7 +30,7 @@ struct ErrorView: View {
                     Image(systemName: "arrow.clockwise")
                     Text("Retry")
                 }
-                .font(.system(size: 15, weight: .semibold))
+                .font(CardFont.bodyBold(size: 15))
                 .foregroundColor(.white)
                 .padding(.horizontal, 28)
                 .padding(.vertical, 12)

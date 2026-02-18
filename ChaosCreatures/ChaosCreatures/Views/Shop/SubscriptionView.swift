@@ -65,7 +65,7 @@ struct SubscriptionView: View {
                     Button("Restore") {
                         Task { await restorePurchases() }
                     }
-                    .font(.system(size: 14))
+                    .font(CardFont.body(size: 14))
                     .foregroundColor(.orderBlue)
                 }
             }
@@ -91,11 +91,11 @@ struct SubscriptionView: View {
                 .foregroundColor(.tauntGold)
 
             Text("Unlock Your Potential")
-                .font(.system(size: 24, weight: .bold))
+                .font(CardFont.displayTitle(size: 24))
                 .foregroundColor(.textPrimary)
 
             Text("More cards, more decks, more modifier choices.\nLevel up your Chaos Creatures experience.")
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -129,18 +129,18 @@ struct SubscriptionView: View {
 
                 // Tier name
                 Text(tier.displayName)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(CardFont.bodyBold(size: 13))
                     .foregroundColor(.textPrimary)
 
                 // Price
                 Text(tierPriceLabel(tier))
-                    .font(.system(size: 11))
+                    .font(CardFont.body(size: 11))
                     .foregroundColor(.textSecondary)
 
                 // Current badge
                 if isCurrent {
                     Text("CURRENT")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(CardFont.bodyBold(size: 9))
                         .foregroundColor(.black)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -217,7 +217,7 @@ struct SubscriptionView: View {
         HStack(spacing: 0) {
             // Label column
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(CardFont.body(size: 12))
                 .foregroundColor(.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 12)
@@ -247,12 +247,12 @@ struct SubscriptionView: View {
                         .foregroundColor(.healGreen)
                 } else {
                     Text(value)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 12))
                         .foregroundColor(selectedTier == tier ? tierColor(tier) : .textPrimary)
                 }
             } else {
                 Text("--")
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textDisabled)
             }
         }
@@ -264,7 +264,7 @@ struct SubscriptionView: View {
     private var faqSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("FAQ")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             faqItem(
@@ -285,10 +285,10 @@ struct SubscriptionView: View {
     private func faqItem(question: String, answer: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(question)
-                .font(.system(size: 13, weight: .semibold))
+                .font(CardFont.bodyBold(size: 13))
                 .foregroundColor(.textPrimary)
             Text(answer)
-                .font(.system(size: 12))
+                .font(CardFont.body(size: 12))
                 .foregroundColor(.textTertiary)
         }
         .padding(12)
@@ -301,7 +301,7 @@ struct SubscriptionView: View {
 
     private var legalText: some View {
         Text("Payment is charged to your Apple ID account. Subscription automatically renews unless cancelled at least 24 hours before the end of the current period. Manage subscriptions in Settings > Apple ID > Subscriptions.")
-            .font(.system(size: 10))
+            .font(CardFont.body(size: 10))
             .foregroundColor(.textDisabled)
             .multilineTextAlignment(.center)
             .padding(.top, 8)
@@ -318,7 +318,7 @@ struct SubscriptionView: View {
                 if selectedTier == .free || selectedTier == currentTier {
                     Button(action: { dismiss() }) {
                         Text(selectedTier == currentTier ? "Current Plan" : "Continue with Free")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 16))
                             .foregroundColor(.textSecondary)
                             .frame(maxWidth: .infinity, minHeight: 50)
                             .background(Color.bgQuaternary)
@@ -334,7 +334,7 @@ struct SubscriptionView: View {
                                     .tint(.black)
                             } else {
                                 Text("Subscribe to \(selectedTier.displayName) - \(tierPriceLabel(selectedTier))")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(CardFont.bodyBold(size: 16))
                                     .foregroundColor(.black)
                             }
                         }

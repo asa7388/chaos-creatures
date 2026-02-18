@@ -21,6 +21,7 @@ struct BattleCardData: Codable, Identifiable {
     let baseInstability: Int
     let innateKeywords: [Keyword]
     let factionId: String
+    let evolutionTier: EvolutionTier
     let modifiers: [BattleModifier]?
     let triggeredAbilities: [BattleTriggeredAbility]?
 
@@ -38,8 +39,27 @@ struct BattleCardData: Codable, Identifiable {
         case baseInstability = "base_instability"
         case innateKeywords = "innate_keywords"
         case factionId = "faction_id"
+        case evolutionTier = "evolution_tier"
         case modifiers
         case triggeredAbilities = "triggered_abilities"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        instanceId = try container.decode(String.self, forKey: .instanceId)
+        templateId = try container.decode(String.self, forKey: .templateId)
+        cardType = try container.decode(CardType.self, forKey: .cardType)
+        name = try container.decode(String.self, forKey: .name)
+        manaCost = try container.decode(Int.self, forKey: .manaCost)
+        artUrl = try container.decode(String.self, forKey: .artUrl)
+        baseAttack = try container.decodeIfPresent(Int.self, forKey: .baseAttack)
+        baseHealth = try container.decodeIfPresent(Int.self, forKey: .baseHealth)
+        baseInstability = try container.decode(Int.self, forKey: .baseInstability)
+        innateKeywords = try container.decode([Keyword].self, forKey: .innateKeywords)
+        factionId = try container.decode(String.self, forKey: .factionId)
+        evolutionTier = try container.decodeIfPresent(EvolutionTier.self, forKey: .evolutionTier) ?? .common
+        modifiers = try container.decodeIfPresent([BattleModifier].self, forKey: .modifiers)
+        triggeredAbilities = try container.decodeIfPresent([BattleTriggeredAbility].self, forKey: .triggeredAbilities)
     }
 
     var factionShortName: FactionShortName? {
@@ -66,6 +86,7 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
     let baseInstability: Int
     let innateKeywords: [Keyword]
     let factionId: String
+    let evolutionTier: EvolutionTier
 
     // Current combat stats
     let attack: Int
@@ -100,6 +121,7 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
         case baseInstability = "base_instability"
         case innateKeywords = "innate_keywords"
         case factionId = "faction_id"
+        case evolutionTier = "evolution_tier"
         case attack, health
         case maxHealth = "max_health"
         case hasAttacked = "has_attacked"
@@ -108,6 +130,31 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
         case activeKeywords = "active_keywords"
         case shieldActive = "shield_active"
         case boardSlot = "board_slot"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        instanceId = try container.decode(String.self, forKey: .instanceId)
+        templateId = try container.decode(String.self, forKey: .templateId)
+        cardType = try container.decode(CardType.self, forKey: .cardType)
+        name = try container.decode(String.self, forKey: .name)
+        manaCost = try container.decode(Int.self, forKey: .manaCost)
+        artUrl = try container.decode(String.self, forKey: .artUrl)
+        baseAttack = try container.decodeIfPresent(Int.self, forKey: .baseAttack)
+        baseHealth = try container.decodeIfPresent(Int.self, forKey: .baseHealth)
+        baseInstability = try container.decode(Int.self, forKey: .baseInstability)
+        innateKeywords = try container.decode([Keyword].self, forKey: .innateKeywords)
+        factionId = try container.decode(String.self, forKey: .factionId)
+        evolutionTier = try container.decodeIfPresent(EvolutionTier.self, forKey: .evolutionTier) ?? .common
+        attack = try container.decode(Int.self, forKey: .attack)
+        health = try container.decode(Int.self, forKey: .health)
+        maxHealth = try container.decode(Int.self, forKey: .maxHealth)
+        hasAttacked = try container.decode(Bool.self, forKey: .hasAttacked)
+        isAlive = try container.decode(Bool.self, forKey: .isAlive)
+        instabilityValue = try container.decode(Int.self, forKey: .instabilityValue)
+        activeKeywords = try container.decode([Keyword].self, forKey: .activeKeywords)
+        shieldActive = try container.decode(Bool.self, forKey: .shieldActive)
+        boardSlot = try container.decode(Int.self, forKey: .boardSlot)
     }
 
     var factionShortName: FactionShortName? {

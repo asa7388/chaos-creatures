@@ -314,7 +314,7 @@ struct OpponentHUDView: View {
                         .foregroundColor(.textSecondary)
                         .font(.system(size: 10))
                     Text("\(handCount)")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(CardFont.stats(size: 12))
                         .foregroundColor(.textSecondary)
                 }
 
@@ -324,7 +324,7 @@ struct OpponentHUDView: View {
                         .foregroundColor(.textSecondary)
                         .font(.system(size: 10))
                     Text("\(deckCount)")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(CardFont.stats(size: 12))
                         .foregroundColor(.textSecondary)
                 }
 
@@ -334,7 +334,7 @@ struct OpponentHUDView: View {
                         .foregroundColor(instabilityColor)
                         .font(.system(size: 10))
                     Text("\(instability)")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(CardFont.stats(size: 12))
                         .foregroundColor(instabilityColor)
                 }
             }
@@ -379,7 +379,7 @@ struct PlayerHUDView: View {
                         .foregroundColor(.timerBlue)
                         .font(.system(size: 12))
                     Text("\(mana)/\(manaCap)")
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .font(CardFont.stats(size: 13))
                         .foregroundColor(.white)
                 }
 
@@ -400,7 +400,7 @@ struct PlayerHUDView: View {
                         Image(systemName: "archivebox.fill")
                             .font(.system(size: 11))
                         Text("\(graveyardCount)")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(CardFont.stats(size: 11))
                     }
                     .foregroundColor(.textSecondary)
                 }
@@ -410,7 +410,7 @@ struct PlayerHUDView: View {
                     Image(systemName: "square.stack.fill")
                         .font(.system(size: 11))
                     Text("\(deckCount)")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(CardFont.stats(size: 11))
                 }
                 .foregroundColor(.textSecondary)
 
@@ -483,18 +483,18 @@ struct HandCardView: View {
 
             // Name
             Text(card.name.prefix(8))
-                .font(.system(size: 8, weight: .semibold))
+                .font(CardFont.bodyBold(size: 8))
                 .foregroundColor(.white)
                 .lineLimit(1)
 
             // Stats
             if let atk = card.baseAttack, let hp = card.baseHealth {
                 Text("\(atk)/\(hp)")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(CardFont.stats(size: 9))
                     .foregroundColor(.textSecondary)
             } else {
                 Text("Spell")
-                    .font(.system(size: 9))
+                    .font(CardFont.body(size: 9))
                     .foregroundColor(.textSecondary)
             }
         }
@@ -511,7 +511,7 @@ struct HandCardView: View {
         .overlay(alignment: .topLeading) {
             // Mana cost badge
             Text("\(card.manaCost)")
-                .font(.system(size: 10, weight: .heavy))
+                .font(CardFont.stats(size: 10))
                 .foregroundColor(.white)
                 .frame(width: 18, height: 18)
                 .background(canAfford ? Color.timerBlue : Color.textDisabled)
@@ -534,7 +534,7 @@ struct PrimaryActionButton: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 15, weight: .bold))
+                .font(CardFont.bodyBold(size: 15))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -554,7 +554,7 @@ struct ConnectionLostOverlay: View {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 Text("Reconnecting...")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 16))
                     .foregroundColor(.white)
             }
         }
@@ -611,7 +611,7 @@ struct HPBarView: View {
 
             if showLabel {
                 Text("\(current)")
-                    .font(.system(size: fontSize, weight: .bold, design: .monospaced))
+                    .font(CardFont.stats(size: fontSize))
                     .foregroundColor(.white)
                     .frame(minWidth: 20, alignment: .trailing)
             }
@@ -657,7 +657,7 @@ struct TurnTimerBar: View {
             .frame(height: 6)
 
             Text("\(timeRemaining)s")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(CardFont.stats(size: 11))
                 .foregroundColor(timerColor)
                 .frame(minWidth: 30, alignment: .trailing)
         }
@@ -684,19 +684,19 @@ struct GraveyardSheetView: View {
                             .font(.system(size: 40))
                             .foregroundColor(.textDisabled)
                         Text("No cards in graveyard")
-                            .font(.system(size: 15))
+                            .font(CardFont.body(size: 15))
                             .foregroundColor(.textSecondary)
                         Spacer()
                     }
                 } else {
                     VStack(spacing: 8) {
                         Text("\(graveyardCount) card(s) in graveyard")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(CardFont.body(size: 15))
                             .foregroundColor(.textSecondary)
                             .padding(.top, 16)
 
                         Text("Destroyed creatures are sent here.")
-                            .font(.system(size: 13))
+                            .font(CardFont.body(size: 13))
                             .foregroundColor(.textTertiary)
 
                         Spacer()
@@ -736,12 +736,12 @@ struct BattleLogSheetView: View {
                                     .frame(width: 16)
 
                                 Text("T\(entry.turn)")
-                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .font(CardFont.stats(size: 10))
                                     .foregroundColor(.textTertiary)
                                     .frame(width: 24)
 
                                 Text(entry.message)
-                                    .font(.system(size: 12))
+                                    .font(CardFont.body(size: 12))
                                     .foregroundColor(.textSecondary)
                                     .lineLimit(2)
 
@@ -786,7 +786,7 @@ struct ConnectionQualityIndicator: View {
 
             if quality == .poor || quality == .disconnected {
                 Text(quality == .disconnected ? "Offline" : "Weak")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 10))
                     .foregroundColor(indicatorColor)
             }
         }

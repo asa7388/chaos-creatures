@@ -164,12 +164,12 @@ struct TutorialOverlayView: View {
 
                     // Title
                     Text(step.title)
-                        .font(.system(size: 20, weight: .bold))
+                        .font(CardFont.cardName(size: 20))
                         .foregroundColor(.textPrimary)
 
                     // Message
                     Text(step.message)
-                        .font(.system(size: 14))
+                        .font(CardFont.body(size: 14))
                         .foregroundColor(.textSecondary)
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)
@@ -192,7 +192,7 @@ struct TutorialOverlayView: View {
                         }
                     }) {
                         Text(step == .complete ? "Start Playing!" : "Got It")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 15))
                             .foregroundColor(.white)
                             .frame(maxWidth: 200)
                             .padding(.vertical, 12)

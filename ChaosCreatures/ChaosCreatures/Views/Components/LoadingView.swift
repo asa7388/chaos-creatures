@@ -20,7 +20,7 @@ struct LoadingView: View {
                 .scaleEffect(1.3)
 
             Text(message)
-                .font(.system(size: 15, weight: .medium))
+                .font(CardFont.body(size: 15))
                 .foregroundColor(.textSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

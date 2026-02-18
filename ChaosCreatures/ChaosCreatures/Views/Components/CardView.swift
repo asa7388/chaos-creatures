@@ -1,6 +1,7 @@
 // CardView.swift
 // Chaos Creatures
 // Reusable card rendering component for collection, deck builder, and shop.
+// Now delegates to CardFrameView for professional frame-based rendering.
 // Source: docs/design/07-ui-ux-specs.md Section 5.1
 
 import SwiftUI
@@ -9,82 +10,23 @@ import SwiftUI
 
 struct CardGridItemView: View {
     let card: CardInstance
+    let faction: FactionShortName?
     let showEvolutionBadge: Bool
 
-    init(card: CardInstance, showEvolutionBadge: Bool = true) {
+    init(card: CardInstance, faction: FactionShortName? = nil, showEvolutionBadge: Bool = true) {
         self.card = card
+        self.faction = faction
         self.showEvolutionBadge = showEvolutionBadge
     }
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            // Card art
-            AsyncImage(url: URL(string: card.artUrl ?? "")) { phase in
-                switch phase {
-                case .empty:
-                    cardPlaceholder
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(5.0 / 7.0, contentMode: .fill)
-                case .failure:
-                    cardPlaceholder
-                @unknown default:
-                    cardPlaceholder
-                }
-            }
-            .aspectRatio(5.0 / 7.0, contentMode: .fit)
-            .cornerRadius(8)
-
-            // Tier border
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.tierColor(card.tier), lineWidth: 2)
-
-            // Tier badge
-            Text(card.tier.displayName)
-                .font(.system(size: 9, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.tierColor(card.tier))
-                .cornerRadius(4)
-                .padding(4)
-
-            // Evolution ready badge
-            if showEvolutionBadge && card.isEvolutionReady {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.tauntGold)
-                            .padding(4)
-                    }
-                }
-            }
-
-            // Mana cost
-            VStack {
-                HStack {
-                    ManaGemView(cost: card.currentManaCost)
-                        .padding(4)
-                    Spacer()
-                }
-                Spacer()
-            }
-        }
-    }
-
-    private var cardPlaceholder: some View {
-        Rectangle()
-            .fill(Color.bgTertiary)
-            .aspectRatio(5.0 / 7.0, contentMode: .fit)
-            .overlay(
-                Image(systemName: "photo")
-                    .font(.system(size: 24))
-                    .foregroundColor(.textDisabled)
-            )
+        CardFrameView(
+            data: CardDisplayData(
+                instance: card,
+                faction: faction
+            ),
+            size: .grid
+        )
     }
 }
 
@@ -93,41 +35,43 @@ struct CardGridItemView: View {
 struct CardListRowView: View {
     let card: CardInstance
     let quantity: Int
+    let faction: FactionShortName?
+
+    init(card: CardInstance, quantity: Int, faction: FactionShortName? = nil) {
+        self.card = card
+        self.quantity = quantity
+        self.faction = faction
+    }
 
     var body: some View {
         HStack(spacing: 12) {
-            // Mini art
-            AsyncImage(url: URL(string: card.artUrl ?? "")) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(1, contentMode: .fill)
-                        .frame(width: 44, height: 44)
-                        .cornerRadius(6)
-                default:
-                    Rectangle()
-                        .fill(Color.bgTertiary)
-                        .frame(width: 44, height: 44)
-                        .cornerRadius(6)
-                }
-            }
+            // Mini card frame
+            CardFrameView(
+                data: CardDisplayData(
+                    instance: card,
+                    faction: faction
+                ),
+                size: .hand
+            )
+            .frame(width: 48, height: 67)
+            .scaleEffect(48.0 / 90.0) // Scale down hand-size to fit row
+            .frame(width: 48, height: 67)
 
             // Card info
             VStack(alignment: .leading, spacing: 2) {
                 Text(card.currentName)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(CardFont.cardName(size: 14))
                     .foregroundColor(.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
                     Text(card.tier.displayName)
-                        .font(.system(size: 11))
+                        .font(CardFont.body(size: 11))
                         .foregroundColor(.textTertiary)
 
                     if let atk = card.currentAttack, let hp = card.currentHealth {
                         Text("\(atk)/\(hp)")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(CardFont.stats(size: 11))
                             .foregroundColor(.textSecondary)
                     }
                 }
@@ -138,7 +82,7 @@ struct CardListRowView: View {
             // Quantity
             if quantity > 1 {
                 Text("x\(quantity)")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(CardFont.stats(size: 14))
                     .foregroundColor(.textSecondary)
             }
 
@@ -153,45 +97,20 @@ struct CardListRowView: View {
 
 struct CardTemplateView: View {
     let template: CardTemplate
+    let faction: FactionShortName?
+
+    init(template: CardTemplate, faction: FactionShortName? = nil) {
+        self.template = template
+        self.faction = faction
+    }
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            AsyncImage(url: URL(string: template.artUrl ?? "")) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(5.0 / 7.0, contentMode: .fill)
-                case .failure, .empty:
-                    Rectangle()
-                        .fill(Color.bgTertiary)
-                        .aspectRatio(5.0 / 7.0, contentMode: .fit)
-                        .overlay(
-                            VStack(spacing: 4) {
-                                Image(systemName: "photo")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.textDisabled)
-                                Text(template.name)
-                                    .font(.system(size: 10))
-                                    .foregroundColor(.textTertiary)
-                            }
-                        )
-                @unknown default:
-                    EmptyView()
-                }
-            }
-            .aspectRatio(5.0 / 7.0, contentMode: .fit)
-            .cornerRadius(8)
-
-            // Mana cost
-            VStack {
-                HStack {
-                    ManaGemView(cost: template.manaCost)
-                        .padding(4)
-                    Spacer()
-                }
-                Spacer()
-            }
-        }
+        CardFrameView(
+            data: CardDisplayData(
+                template: template,
+                faction: faction
+            ),
+            size: .grid
+        )
     }
 }

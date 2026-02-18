@@ -61,7 +61,7 @@ struct AchievementsView: View {
     private func categoryPill(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                .font(isSelected ? CardFont.bodyBold(size: 13) : CardFont.body(size: 13))
                 .foregroundColor(isSelected ? .white : .textSecondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
@@ -102,10 +102,10 @@ struct AchievementsView: View {
             // Unlocked count
             VStack(spacing: 2) {
                 Text("\(unlockedCount)")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(CardFont.stats(size: 24))
                     .foregroundColor(.tauntGold)
                 Text("Unlocked")
-                    .font(.system(size: 11))
+                    .font(CardFont.body(size: 11))
                     .foregroundColor(.textTertiary)
             }
             .frame(maxWidth: .infinity)
@@ -113,10 +113,10 @@ struct AchievementsView: View {
             // Total count
             VStack(spacing: 2) {
                 Text("\(achievements.count)")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(CardFont.stats(size: 24))
                     .foregroundColor(.textPrimary)
                 Text("Total")
-                    .font(.system(size: 11))
+                    .font(CardFont.body(size: 11))
                     .foregroundColor(.textTertiary)
             }
             .frame(maxWidth: .infinity)
@@ -124,10 +124,10 @@ struct AchievementsView: View {
             // Completion %
             VStack(spacing: 2) {
                 Text("\(completionPercent)%")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(CardFont.stats(size: 24))
                     .foregroundColor(.ironwright)
                 Text("Complete")
-                    .font(.system(size: 11))
+                    .font(CardFont.body(size: 11))
                     .foregroundColor(.textTertiary)
             }
             .frame(maxWidth: .infinity)
@@ -144,7 +144,7 @@ struct AchievementsView: View {
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: .ironwright))
             Text("Loading achievements...")
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
             Spacer()
         }
@@ -157,14 +157,14 @@ struct AchievementsView: View {
                 .font(.system(size: 40))
                 .foregroundColor(.warningYellow)
             Text(message)
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
             Button("Retry") {
                 Task { await loadAchievements() }
             }
-            .font(.system(size: 15, weight: .semibold))
+            .font(CardFont.bodyBold(size: 15))
             .foregroundColor(.white)
             .padding(.horizontal, 24)
             .padding(.vertical, 10)
@@ -181,7 +181,7 @@ struct AchievementsView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.textDisabled)
             Text("No achievements available yet")
-                .font(.system(size: 16))
+                .font(CardFont.body(size: 16))
                 .foregroundColor(.textSecondary)
             Spacer()
         }
@@ -273,19 +273,19 @@ struct AchievementRowView: View {
                 // Title
                 HStack {
                     Text(achievement.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 15))
                         .foregroundColor(isUnlocked ? .textPrimary : .textSecondary)
 
                     if isUnlocked {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12))
+                            .font(CardFont.body(size: 12))
                             .foregroundColor(.healGreen)
                     }
                 }
 
                 // Description
                 Text(achievement.description)
-                    .font(.system(size: 12))
+                    .font(CardFont.body(size: 12))
                     .foregroundColor(.textTertiary)
                     .lineLimit(2)
 
@@ -305,7 +305,7 @@ struct AchievementRowView: View {
                         .frame(height: 6)
 
                         Text("\(currentValue)/\(achievement.targetValue)")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .font(CardFont.stats(size: 10))
                             .foregroundColor(.textTertiary)
                             .frame(minWidth: 40, alignment: .trailing)
                     }
@@ -344,12 +344,12 @@ struct AchievementRowView: View {
                 .foregroundColor(.ironwright)
 
             Text(rewardText)
-                .font(.system(size: 11, weight: .medium))
+                .font(CardFont.body(size: 11))
                 .foregroundColor(.ironwright)
 
             if let title = achievement.rewardTitle {
                 Text("+ \"\(title)\"")
-                    .font(.system(size: 11).italic())
+                    .font(CardFont.flavorText(size: 11))
                     .foregroundColor(.tauntGold)
             }
         }

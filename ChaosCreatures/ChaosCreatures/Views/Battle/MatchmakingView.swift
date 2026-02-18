@@ -21,13 +21,13 @@ struct MatchmakingView: View {
             // Header
             HStack {
                 Text(router.selectedGameMode.displayName)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(CardFont.cardName(size: 18))
                     .foregroundColor(.textPrimary)
                 Spacer()
                 Button("Cancel") {
                     Task { await cancelMatchmaking() }
                 }
-                .font(.system(size: 16, weight: .semibold))
+                .font(CardFont.bodyBold(size: 16))
                 .foregroundColor(.chaosRed)
             }
             .padding(.horizontal, 20)
@@ -55,7 +55,7 @@ struct MatchmakingView: View {
                     Task { await cancelMatchmaking() }
                 }) {
                     Text("Cancel Search")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 16))
                         .foregroundColor(.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -122,15 +122,15 @@ struct MatchmakingView: View {
 
             VStack(spacing: 8) {
                 Text(router.selectedGameMode == .practice ? "Setting up AI opponent..." : "Finding Opponent...")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(CardFont.cardName(size: 20))
                     .foregroundColor(.textPrimary)
 
                 Text(matchmakingService.searchDurationFormatted)
-                    .font(.system(size: 36, weight: .heavy, design: .monospaced))
+                    .font(CardFont.stats(size: 36))
                     .foregroundColor(.ironwright)
 
                 Text("Estimated wait: ~\(Int(matchmakingService.estimatedWait))s")
-                    .font(.system(size: 13))
+                    .font(CardFont.body(size: 13))
                     .foregroundColor(.textTertiary)
             }
         }
@@ -146,11 +146,11 @@ struct MatchmakingView: View {
                 .transition(.scale.combined(with: .opacity))
 
             Text("Match Found!")
-                .font(.system(size: 24, weight: .bold))
+                .font(CardFont.displayTitle(size: 24))
                 .foregroundColor(.textPrimary)
 
             Text("Preparing battle...")
-                .font(.system(size: 15))
+                .font(CardFont.body(size: 15))
                 .foregroundColor(.textSecondary)
 
             ProgressView()
@@ -168,11 +168,11 @@ struct MatchmakingView: View {
                 .foregroundColor(.warningYellow)
 
             Text("Queue Error")
-                .font(.system(size: 20, weight: .bold))
+                .font(CardFont.cardName(size: 20))
                 .foregroundColor(.textPrimary)
 
             Text(error)
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -188,7 +188,7 @@ struct MatchmakingView: View {
                         Image(systemName: "plus.rectangle.on.rectangle")
                         Text("Build a Deck")
                     }
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 16))
                     .foregroundColor(.white)
                     .padding(.horizontal, 32)
                     .padding(.vertical, 12)
@@ -201,7 +201,7 @@ struct MatchmakingView: View {
                 joinError = nil
                 Task { await joinQueue() }
             }
-            .font(.system(size: 16, weight: .semibold))
+            .font(CardFont.bodyBold(size: 16))
             .foregroundColor(.white)
             .padding(.horizontal, 32)
             .padding(.vertical, 12)

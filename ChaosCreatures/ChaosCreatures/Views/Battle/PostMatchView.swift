@@ -65,7 +65,7 @@ struct PostMatchView: View {
                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 .scaleEffect(1.5)
             Text("Loading results...")
-                .font(.system(size: 16))
+                .font(CardFont.body(size: 16))
                 .foregroundColor(.textSecondary)
             Spacer()
         }
@@ -82,11 +82,11 @@ struct PostMatchView: View {
                 .foregroundColor(.warningYellow)
 
             Text("Could not load match results")
-                .font(.system(size: 18, weight: .semibold))
+                .font(CardFont.bodyBold(size: 18))
                 .foregroundColor(.textPrimary)
 
             Text(error)
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -143,13 +143,13 @@ struct PostMatchView: View {
 
             // Title
             Text(isVictory ? "VICTORY" : "DEFEAT")
-                .font(.system(size: 40, weight: .black))
+                .font(CardFont.displayTitle(size: 40))
                 .foregroundColor(isVictory ? .tauntGold : .chaosRed)
 
             // Subtitle
             if let record = matchRecord {
                 Text(endReasonText(record.endReason))
-                    .font(.system(size: 15))
+                    .font(CardFont.body(size: 15))
                     .foregroundColor(.textSecondary)
             }
         }
@@ -160,7 +160,7 @@ struct PostMatchView: View {
     private var matchStatsView: some View {
         VStack(spacing: 12) {
             Text("Match Stats")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             HStack(spacing: 16) {
@@ -178,10 +178,10 @@ struct PostMatchView: View {
     private func statBox(title: String, value: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                .font(CardFont.stats(size: 20))
                 .foregroundColor(.textPrimary)
             Text(title)
-                .font(.system(size: 11))
+                .font(CardFont.body(size: 11))
                 .foregroundColor(.textTertiary)
         }
         .frame(maxWidth: .infinity)
@@ -207,11 +207,11 @@ struct PostMatchView: View {
     private var practiceRewardsView: some View {
         VStack(spacing: 8) {
             Text("Practice Match")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             Text("No rewards in practice mode. Play Ranked or Casual to earn XP, Dust, and Chaos Energy!")
-                .font(.system(size: 13))
+                .font(CardFont.body(size: 13))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
@@ -222,7 +222,7 @@ struct PostMatchView: View {
                     .font(.system(size: 14))
                     .foregroundColor(.warningYellow)
                 Text("All deck cards earned +\(energyEarned) Chaos Energy")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(CardFont.body(size: 13))
                     .foregroundColor(.warningYellow)
             }
             .padding(.top, 4)
@@ -232,7 +232,7 @@ struct PostMatchView: View {
     private var pvpRewardsView: some View {
         VStack(spacing: 12) {
             Text("Rewards")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             HStack(spacing: 20) {
@@ -265,7 +265,7 @@ struct PostMatchView: View {
                         .foregroundColor(isVictory ? .orderBlue : .chaosRed)
                         .font(.system(size: 16))
                     Text(isVictory ? "Rank Points +15" : "Rank Points -10")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 14))
                         .foregroundColor(isVictory ? .orderBlue : .chaosRed)
                 }
                 .padding(.top, 4)
@@ -273,7 +273,7 @@ struct PostMatchView: View {
 
             // Energy explanation
             Text("All 20 deck cards gained +\(energyEarned) Chaos Energy")
-                .font(.system(size: 11))
+                .font(CardFont.body(size: 11))
                 .foregroundColor(.textTertiary)
                 .padding(.top, 2)
         }
@@ -286,11 +286,11 @@ struct PostMatchView: View {
                 .foregroundColor(color)
 
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .font(CardFont.stats(size: 18))
                 .foregroundColor(.textPrimary)
 
             Text(label)
-                .font(.system(size: 11))
+                .font(CardFont.body(size: 11))
                 .foregroundColor(.textTertiary)
         }
         .frame(maxWidth: .infinity)
@@ -303,7 +303,7 @@ struct PostMatchView: View {
             router.dismissPostMatch()
         }) {
             Text("Continue")
-                .font(.system(size: 18, weight: .bold))
+                .font(CardFont.bodyBold(size: 18))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)

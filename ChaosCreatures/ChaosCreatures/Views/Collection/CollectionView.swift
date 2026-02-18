@@ -127,7 +127,7 @@ struct CollectionView: View {
                     }) {
                         VStack(spacing: 4) {
                             Text(faction.displayName)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(CardFont.body(size: 14))
                                 .foregroundColor(selectedFaction == faction ? .white : .textTertiary)
 
                             Rectangle()
@@ -162,7 +162,7 @@ struct CollectionView: View {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 12))
                     Text(sortOption.rawValue)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(CardFont.body(size: 12))
                 }
                 .foregroundColor(.textSecondary)
                 .padding(.horizontal, 8)

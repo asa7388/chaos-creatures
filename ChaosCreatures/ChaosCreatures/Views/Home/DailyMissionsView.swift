@@ -12,14 +12,14 @@ struct DailyMissionsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Daily Missions")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(CardFont.cardName(size: 16))
                     .foregroundColor(.textPrimary)
 
                 Spacer()
 
                 if !appState.activeMissions.isEmpty {
                     Text("\(completedCount)/\(appState.activeMissions.count)")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.textTertiary)
                 }
             }
@@ -29,7 +29,7 @@ struct DailyMissionsView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.healGreen)
                     Text("All missions complete! Check back tomorrow.")
-                        .font(.system(size: 14))
+                        .font(CardFont.body(size: 14))
                         .foregroundColor(.textSecondary)
                 }
                 .padding(12)
@@ -72,12 +72,12 @@ struct MissionRowView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(mission.description)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(CardFont.body(size: 14))
                         .foregroundColor(.textPrimary)
                         .lineLimit(1)
 
                     Text(rewardText(mission))
-                        .font(.system(size: 12))
+                        .font(CardFont.body(size: 12))
                         .foregroundColor(.textTertiary)
                 }
 
@@ -85,7 +85,7 @@ struct MissionRowView: View {
 
                 // Progress label
                 Text("\(mission.currentValue)/\(mission.targetValue)")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(CardFont.stats(size: 13))
                     .foregroundColor(mission.isCompleted ? .healGreen : .textSecondary)
             }
 

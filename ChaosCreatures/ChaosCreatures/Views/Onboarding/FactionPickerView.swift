@@ -14,13 +14,13 @@ struct FactionPickerView: View {
         VStack(spacing: 0) {
             // Header
             Text("Choose Your Faction")
-                .font(.system(size: 26, weight: .bold))
+                .font(CardFont.displayTitle(size: 26))
                 .foregroundColor(.textPrimary)
                 .padding(.top, 40)
                 .padding(.bottom, 8)
 
             Text("Each faction has a unique mechanic that shapes your strategy.")
-                .font(.system(size: 14))
+                .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
@@ -56,12 +56,12 @@ struct FactionCardView: View {
 
             // Faction name
             Text(faction.displayName)
-                .font(.system(size: 24, weight: .bold))
+                .font(CardFont.displayTitle(size: 24))
                 .foregroundColor(.textPrimary)
 
             // Mechanic badge
             Text(faction.mechanic.rawValue)
-                .font(.system(size: 13, weight: .semibold))
+                .font(CardFont.bodyBold(size: 13))
                 .foregroundColor(.black)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
@@ -70,7 +70,7 @@ struct FactionCardView: View {
 
             // Description
             Text(factionDescription(faction))
-                .font(.system(size: 15))
+                .font(CardFont.body(size: 15))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
@@ -80,7 +80,7 @@ struct FactionCardView: View {
             HStack(spacing: 12) {
                 ForEach(factionKeywords(faction), id: \.self) { keyword in
                     Text(keyword)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(CardFont.body(size: 12))
                         .foregroundColor(.textTertiary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -94,7 +94,7 @@ struct FactionCardView: View {
             // Choose button
             Button(action: onChoose) {
                 Text("Choose \(faction.shortDisplayName)")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(CardFont.bodyBold(size: 17))
                     .foregroundColor(.black)
                     .frame(width: 200, height: 52)
                     .background(faction.swiftUIColor)

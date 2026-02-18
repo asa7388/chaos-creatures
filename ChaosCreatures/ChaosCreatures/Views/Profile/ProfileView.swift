@@ -30,7 +30,7 @@ struct ProfileView: View {
                         Image(systemName: "medal.fill")
                             .foregroundColor(.tauntGold)
                         Text("Achievements")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 16))
                             .foregroundColor(.textPrimary)
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -75,7 +75,7 @@ struct ProfileView: View {
 
             // Username
             Text(appState.player?.displayName ?? "Player")
-                .font(.system(size: 22, weight: .bold))
+                .font(CardFont.displayTitle(size: 22))
                 .foregroundColor(.textPrimary)
 
             // Faction badge
@@ -85,7 +85,7 @@ struct ProfileView: View {
                     Image(systemName: faction.systemIconName)
                         .font(.system(size: 13))
                     Text(faction.displayName)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(CardFont.body(size: 13))
                 }
                 .foregroundColor(faction.swiftUIColor)
                 .padding(.horizontal, 12)
@@ -97,7 +97,7 @@ struct ProfileView: View {
             // Subscription tier
             if let tier = appState.player?.subscriptionTier, tier != .free {
                 Text(tier.displayName)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(CardFont.bodyBold(size: 12))
                     .foregroundColor(.tauntGold)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -116,7 +116,7 @@ struct ProfileView: View {
     private var rankSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Season Rank")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             if let rank = appState.player?.seasonRank {
@@ -132,7 +132,7 @@ struct ProfileView: View {
                                     .foregroundColor(.black.opacity(0.6))
                             )
                         Text(rank.displayName)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 14))
                             .foregroundColor(Color.rankColor(rank))
                     }
 
@@ -140,10 +140,10 @@ struct ProfileView: View {
                         // LP progress
                         HStack {
                             Text("LP")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(CardFont.body(size: 13))
                                 .foregroundColor(.textTertiary)
                             Text("\(appState.player?.seasonRankPoints ?? 0)")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(CardFont.cardName(size: 16))
                                 .foregroundColor(.textPrimary)
                         }
 
@@ -151,23 +151,23 @@ struct ProfileView: View {
                         HStack(spacing: 16) {
                             HStack(spacing: 4) {
                                 Text("W")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(CardFont.bodyBold(size: 12))
                                     .foregroundColor(.healGreen)
                                 Text("\(appState.player?.totalWins ?? 0)")
-                                    .font(.system(size: 13))
+                                    .font(CardFont.stats(size: 13))
                                     .foregroundColor(.textSecondary)
                             }
                             HStack(spacing: 4) {
                                 Text("L")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(CardFont.bodyBold(size: 12))
                                     .foregroundColor(.chaosRed)
                                 Text("\(appState.player?.totalLosses ?? 0)")
-                                    .font(.system(size: 13))
+                                    .font(CardFont.stats(size: 13))
                                     .foregroundColor(.textSecondary)
                             }
                             if let player = appState.player, player.totalGames > 0 {
                                 Text("\(Int(Double(player.totalWins) / Double(player.totalGames) * 100))%")
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(CardFont.stats(size: 12))
                                     .foregroundColor(.textTertiary)
                             }
                         }
@@ -177,7 +177,7 @@ struct ProfileView: View {
                 }
             } else {
                 Text("Play ranked matches to earn your rank!")
-                    .font(.system(size: 14))
+                    .font(CardFont.body(size: 14))
                     .foregroundColor(.textSecondary)
             }
         }
@@ -190,7 +190,7 @@ struct ProfileView: View {
     private var battleStatsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Battle Statistics")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             LazyVGrid(columns: [
@@ -212,7 +212,7 @@ struct ProfileView: View {
     private var factionMasterySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Faction Mastery")
-                .font(.system(size: 16, weight: .bold))
+                .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
             ForEach(FactionShortName.allCases) { faction in
@@ -226,7 +226,7 @@ struct ProfileView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(faction.shortDisplayName)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(CardFont.body(size: 14))
                             .foregroundColor(.textPrimary)
 
                         // Progress bar
@@ -248,7 +248,7 @@ struct ProfileView: View {
                     Spacer()
 
                     Text("Lv. 0")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(CardFont.bodyBold(size: 13))
                         .foregroundColor(.textTertiary)
                 }
                 .padding(10)
@@ -265,11 +265,11 @@ struct ProfileView: View {
     private func profileStatRow(_ title: String, value: String) -> some View {
         HStack {
             Text(title)
-                .font(.system(size: 13))
+                .font(CardFont.body(size: 13))
                 .foregroundColor(.textSecondary)
             Spacer()
             Text(value)
-                .font(.system(size: 14, weight: .semibold))
+                .font(CardFont.stats(size: 14))
                 .foregroundColor(.textPrimary)
         }
         .padding(10)

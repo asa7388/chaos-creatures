@@ -25,7 +25,7 @@ struct LoadingOverlayModifier: ViewModifier {
                         .scaleEffect(1.2)
                     if !message.isEmpty {
                         Text(message)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(CardFont.body(size: 14))
                             .foregroundColor(.textSecondary)
                     }
                 }
@@ -57,7 +57,7 @@ struct ErrorOverlayModifier: ViewModifier {
                         .foregroundColor(.warningYellow)
 
                     Text(error)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(CardFont.body(size: 14))
                         .foregroundColor(.textPrimary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 16)
@@ -65,7 +65,7 @@ struct ErrorOverlayModifier: ViewModifier {
                     if let onRetry {
                         Button(action: onRetry) {
                             Text("Retry")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(CardFont.bodyBold(size: 14))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 10)
@@ -101,7 +101,7 @@ struct EmptyStateModifier: ViewModifier {
                     .foregroundColor(.textTertiary)
 
                 Text(message)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(CardFont.body(size: 16))
                     .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -109,7 +109,7 @@ struct EmptyStateModifier: ViewModifier {
                 if let actionTitle, let action {
                     Button(action: action) {
                         Text(actionTitle)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(CardFont.bodyBold(size: 14))
                             .foregroundColor(.white)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 10)
@@ -155,7 +155,7 @@ struct ToastModifier: ViewModifier {
 
             if isPresented {
                 Text(message)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(CardFont.body(size: 14))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)

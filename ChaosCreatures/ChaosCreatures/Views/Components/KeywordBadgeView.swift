@@ -1,6 +1,7 @@
 // KeywordBadgeView.swift
 // Chaos Creatures
-// Keyword badge with icon and tooltip on long press.
+// Keyword badge with custom icon asset and tooltip on long press.
+// Now uses keyword icon assets from Assets.xcassets/KeywordIcons/ and CardFont.
 // Source: docs/design/07-ui-ux-specs.md Section 8.3
 
 import SwiftUI
@@ -11,10 +12,14 @@ struct KeywordBadgeView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: keyword.iconName)
-                .font(.system(size: 11))
+            // Custom keyword icon from asset catalog, with SF Symbol fallback
+            Image(keyword.assetIconName)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 12, height: 12)
             Text(keyword.displayName)
-                .font(.system(size: 11, weight: .medium))
+                .font(CardFont.bodyBold(size: 11))
         }
         .foregroundColor(keywordColor)
         .padding(.horizontal, 8)
@@ -51,15 +56,18 @@ struct KeywordTooltipView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: keyword.iconName)
-                    .font(.system(size: 16))
+                Image(keyword.assetIconName)
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 18, height: 18)
                 Text(keyword.displayName)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(CardFont.cardName(size: 16))
             }
             .foregroundColor(.textPrimary)
 
             Text(keyword.description)
-                .font(.system(size: 13))
+                .font(CardFont.body(size: 13))
                 .foregroundColor(.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
