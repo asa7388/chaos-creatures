@@ -109,6 +109,27 @@
 		BB22222222222222BBBBBBBB /* Alegreya-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA22222222222222AAAAAAAA /* Alegreya-Variable.ttf */; };
 		BB33333333333333BBBBBBBB /* Alegreya-Italic-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA33333333333333AAAAAAAA /* Alegreya-Italic-Variable.ttf */; };
 		DD11111111111111DDDDDDDD /* CardFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11111111111111CCCCCCCC /* CardFont.swift */; };
+		SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */; };
+		SFX00002BBBBBBBBBBBBBB02 /* sfx_attack.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */; };
+		SFX00003BBBBBBBBBBBBBB03 /* sfx_damage.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00003AAAAAAAAAAAAAAA03 /* sfx_damage.wav */; };
+		SFX00004BBBBBBBBBBBBBB04 /* sfx_death.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00004AAAAAAAAAAAAAAA04 /* sfx_death.wav */; };
+		SFX00005BBBBBBBBBBBBBB05 /* sfx_heal.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00005AAAAAAAAAAAAAAA05 /* sfx_heal.wav */; };
+		SFX00006BBBBBBBBBBBBBB06 /* sfx_shield_break.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00006AAAAAAAAAAAAAAA06 /* sfx_shield_break.wav */; };
+		SFX00007BBBBBBBBBBBBBB07 /* sfx_chaos_roll_start.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00007AAAAAAAAAAAAAAA07 /* sfx_chaos_roll_start.wav */; };
+		SFX00008BBBBBBBBBBBBBB08 /* sfx_chaos_roll_order.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00008AAAAAAAAAAAAAAA08 /* sfx_chaos_roll_order.wav */; };
+		SFX00009BBBBBBBBBBBBBB09 /* sfx_chaos_roll_chaos.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00009AAAAAAAAAAAAAAA09 /* sfx_chaos_roll_chaos.wav */; };
+		SFX00010BBBBBBBBBBBBBB10 /* sfx_chaos_roll_nothing.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00010AAAAAAAAAAAAAAA10 /* sfx_chaos_roll_nothing.wav */; };
+		SFX00011BBBBBBBBBBBBBB11 /* sfx_event_order.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00011AAAAAAAAAAAAAAA11 /* sfx_event_order.wav */; };
+		SFX00012BBBBBBBBBBBBBB12 /* sfx_event_chaos.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00012AAAAAAAAAAAAAAA12 /* sfx_event_chaos.wav */; };
+		SFX00013BBBBBBBBBBBBBB13 /* sfx_turn_start.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00013AAAAAAAAAAAAAAA13 /* sfx_turn_start.wav */; };
+		SFX00014BBBBBBBBBBBBBB14 /* sfx_mana_gain.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00014AAAAAAAAAAAAAAA14 /* sfx_mana_gain.wav */; };
+		SFX00015BBBBBBBBBBBBBB15 /* sfx_button_tap.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00015AAAAAAAAAAAAAAA15 /* sfx_button_tap.wav */; };
+		SFX00016BBBBBBBBBBBBBB16 /* sfx_victory.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00016AAAAAAAAAAAAAAA16 /* sfx_victory.wav */; };
+		SFX00017BBBBBBBBBBBBBB17 /* sfx_defeat.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00017AAAAAAAAAAAAAAA17 /* sfx_defeat.wav */; };
+		SFX00018BBBBBBBBBBBBBB18 /* sfx_chaos_spark.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00018AAAAAAAAAAAAAAA18 /* sfx_chaos_spark.wav */; };
+		SFX00019BBBBBBBBBBBBBB19 /* sfx_evolution_reveal.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00019AAAAAAAAAAAAAAA19 /* sfx_evolution_reveal.wav */; };
+		BB11111111111111AAAAAA03 /* TutorialOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */; };
+		BB11111111111111AAAAAA04 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB11111111111111AAAAAA02 /* AchievementsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -146,6 +167,25 @@
 		AA22222222222222AAAAAAAA /* Alegreya-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Alegreya-Variable.ttf"; sourceTree = "<group>"; };
 		AA33333333333333AAAAAAAA /* Alegreya-Italic-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Alegreya-Italic-Variable.ttf"; sourceTree = "<group>"; };
 		CC11111111111111CCCCCCCC /* CardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFont.swift; sourceTree = "<group>"; };
+		SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_card_play.wav; sourceTree = "<group>"; };
+		SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_attack.wav; sourceTree = "<group>"; };
+		SFX00003AAAAAAAAAAAAAAA03 /* sfx_damage.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_damage.wav; sourceTree = "<group>"; };
+		SFX00004AAAAAAAAAAAAAAA04 /* sfx_death.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_death.wav; sourceTree = "<group>"; };
+		SFX00005AAAAAAAAAAAAAAA05 /* sfx_heal.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_heal.wav; sourceTree = "<group>"; };
+		SFX00006AAAAAAAAAAAAAAA06 /* sfx_shield_break.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_shield_break.wav; sourceTree = "<group>"; };
+		SFX00007AAAAAAAAAAAAAAA07 /* sfx_chaos_roll_start.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_chaos_roll_start.wav; sourceTree = "<group>"; };
+		SFX00008AAAAAAAAAAAAAAA08 /* sfx_chaos_roll_order.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_chaos_roll_order.wav; sourceTree = "<group>"; };
+		SFX00009AAAAAAAAAAAAAAA09 /* sfx_chaos_roll_chaos.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_chaos_roll_chaos.wav; sourceTree = "<group>"; };
+		SFX00010AAAAAAAAAAAAAAA10 /* sfx_chaos_roll_nothing.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_chaos_roll_nothing.wav; sourceTree = "<group>"; };
+		SFX00011AAAAAAAAAAAAAAA11 /* sfx_event_order.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_event_order.wav; sourceTree = "<group>"; };
+		SFX00012AAAAAAAAAAAAAAA12 /* sfx_event_chaos.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_event_chaos.wav; sourceTree = "<group>"; };
+		SFX00013AAAAAAAAAAAAAAA13 /* sfx_turn_start.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_turn_start.wav; sourceTree = "<group>"; };
+		SFX00014AAAAAAAAAAAAAAA14 /* sfx_mana_gain.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_mana_gain.wav; sourceTree = "<group>"; };
+		SFX00015AAAAAAAAAAAAAAA15 /* sfx_button_tap.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_button_tap.wav; sourceTree = "<group>"; };
+		SFX00016AAAAAAAAAAAAAAA16 /* sfx_victory.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_victory.wav; sourceTree = "<group>"; };
+		SFX00017AAAAAAAAAAAAAAA17 /* sfx_defeat.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_defeat.wav; sourceTree = "<group>"; };
+		SFX00018AAAAAAAAAAAAAAA18 /* sfx_chaos_spark.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_chaos_spark.wav; sourceTree = "<group>"; };
+		SFX00019AAAAAAAAAAAAAAA19 /* sfx_evolution_reveal.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_evolution_reveal.wav; sourceTree = "<group>"; };
 		045868C4CFB7E10DE62507F4 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		0A38E147622BB772FF5D2920 /* Deck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deck.swift; sourceTree = "<group>"; };
 		0C2F46F3E1D63BF639931F8B /* ManaBarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManaBarNode.swift; sourceTree = "<group>"; };
@@ -244,6 +284,8 @@
 		F1DC1EA14BB53FE59FCAFBDB /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		F3041A6D083B249AB7E9564C /* BattleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleViewModel.swift; sourceTree = "<group>"; };
 		F9539FD65D9F09F58E7114D0 /* SpriteKitConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteKitConstants.swift; sourceTree = "<group>"; };
+		BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialOverlayView.swift; sourceTree = "<group>"; };
+		BB11111111111111AAAAAA02 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -264,8 +306,43 @@
 		091DCB2CFF3DE401D1DAEA30 /* Sounds */ = {
 			isa = PBXGroup;
 			children = (
+				SFX0GRP0AAAAAAAAAAAAAAA /* SFX */,
+				SFX0GRP0BBBBBBBBBBBBBBM /* Music */,
 			);
 			path = Sounds;
+			sourceTree = "<group>";
+		};
+		SFX0GRP0AAAAAAAAAAAAAAA /* SFX */ = {
+			isa = PBXGroup;
+			children = (
+				SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */,
+				SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */,
+				SFX00003AAAAAAAAAAAAAAA03 /* sfx_damage.wav */,
+				SFX00004AAAAAAAAAAAAAAA04 /* sfx_death.wav */,
+				SFX00005AAAAAAAAAAAAAAA05 /* sfx_heal.wav */,
+				SFX00006AAAAAAAAAAAAAAA06 /* sfx_shield_break.wav */,
+				SFX00007AAAAAAAAAAAAAAA07 /* sfx_chaos_roll_start.wav */,
+				SFX00008AAAAAAAAAAAAAAA08 /* sfx_chaos_roll_order.wav */,
+				SFX00009AAAAAAAAAAAAAAA09 /* sfx_chaos_roll_chaos.wav */,
+				SFX00010AAAAAAAAAAAAAAA10 /* sfx_chaos_roll_nothing.wav */,
+				SFX00011AAAAAAAAAAAAAAA11 /* sfx_event_order.wav */,
+				SFX00012AAAAAAAAAAAAAAA12 /* sfx_event_chaos.wav */,
+				SFX00013AAAAAAAAAAAAAAA13 /* sfx_turn_start.wav */,
+				SFX00014AAAAAAAAAAAAAAA14 /* sfx_mana_gain.wav */,
+				SFX00015AAAAAAAAAAAAAAA15 /* sfx_button_tap.wav */,
+				SFX00016AAAAAAAAAAAAAAA16 /* sfx_victory.wav */,
+				SFX00017AAAAAAAAAAAAAAA17 /* sfx_defeat.wav */,
+				SFX00018AAAAAAAAAAAAAAA18 /* sfx_chaos_spark.wav */,
+				SFX00019AAAAAAAAAAAAAAA19 /* sfx_evolution_reveal.wav */,
+			);
+			path = SFX;
+			sourceTree = "<group>";
+		};
+		SFX0GRP0BBBBBBBBBBBBBBM /* Music */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Music;
 			sourceTree = "<group>";
 		};
 		17F54A6270BFE9ADE3D68F71 /* Actions */ = {
@@ -373,6 +450,7 @@
 		420625B698DA05E2745FAE67 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
+				BB11111111111111AAAAAA02 /* AchievementsView.swift */,
 				6AFC359E4D67C950A59AC574 /* ProfileView.swift */,
 				C532C40E79E074F1A72DCCB3 /* SettingsView.swift */,
 			);
@@ -622,6 +700,7 @@
 				39DF5512B44FF548DBAF1464 /* BattleContainerView.swift */,
 				D17E7B8C57E7D047BD219AC7 /* MatchmakingView.swift */,
 				B3F86950CC6F3092FC7A30CB /* PostMatchView.swift */,
+				BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */,
 			);
 			path = Battle;
 			sourceTree = "<group>";
@@ -736,6 +815,25 @@
 				BB22222222222222BBBBBBBB /* Alegreya-Variable.ttf in Resources */,
 				5B3816B072A4804A58FBAEFC /* Assets.xcassets in Resources */,
 				BB11111111111111BBBBBBBB /* Cinzel-Variable.ttf in Resources */,
+				SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */,
+				SFX00002BBBBBBBBBBBBBB02 /* sfx_attack.wav in Resources */,
+				SFX00003BBBBBBBBBBBBBB03 /* sfx_damage.wav in Resources */,
+				SFX00004BBBBBBBBBBBBBB04 /* sfx_death.wav in Resources */,
+				SFX00005BBBBBBBBBBBBBB05 /* sfx_heal.wav in Resources */,
+				SFX00006BBBBBBBBBBBBBB06 /* sfx_shield_break.wav in Resources */,
+				SFX00007BBBBBBBBBBBBBB07 /* sfx_chaos_roll_start.wav in Resources */,
+				SFX00008BBBBBBBBBBBBBB08 /* sfx_chaos_roll_order.wav in Resources */,
+				SFX00009BBBBBBBBBBBBBB09 /* sfx_chaos_roll_chaos.wav in Resources */,
+				SFX00010BBBBBBBBBBBBBB10 /* sfx_chaos_roll_nothing.wav in Resources */,
+				SFX00011BBBBBBBBBBBBBB11 /* sfx_event_order.wav in Resources */,
+				SFX00012BBBBBBBBBBBBBB12 /* sfx_event_chaos.wav in Resources */,
+				SFX00013BBBBBBBBBBBBBB13 /* sfx_turn_start.wav in Resources */,
+				SFX00014BBBBBBBBBBBBBB14 /* sfx_mana_gain.wav in Resources */,
+				SFX00015BBBBBBBBBBBBBB15 /* sfx_button_tap.wav in Resources */,
+				SFX00016BBBBBBBBBBBBBB16 /* sfx_victory.wav in Resources */,
+				SFX00017BBBBBBBBBBBBBB17 /* sfx_defeat.wav in Resources */,
+				SFX00018BBBBBBBBBBBBBB18 /* sfx_chaos_spark.wav in Resources */,
+				SFX00019BBBBBBBBBBBBBB19 /* sfx_evolution_reveal.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -849,6 +947,8 @@
 				3562A4A64BB4355D3E8E3C46 /* StoreKitService.swift in Sources */,
 				51429FFB6A2F68F6BBCC704F /* SubscriptionView.swift in Sources */,
 				E6A0E10CF5D789AA31A15711 /* SupabaseService.swift in Sources */,
+				BB11111111111111AAAAAA03 /* TutorialOverlayView.swift in Sources */,
+				BB11111111111111AAAAAA04 /* AchievementsView.swift in Sources */,
 				BA1CB07B97965E89C653F43A /* TimerNode.swift in Sources */,
 				2D420C70835D5AA68DE2D07E /* View+Loading.swift in Sources */,
 			);
