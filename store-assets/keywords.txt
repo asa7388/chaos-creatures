@@ -1,0 +1,1 @@
+card game,TCG,CCG,collectible,battle,strategy,AI,fantasy,PvP,deck builder,evolve,D20,factions,rpg
