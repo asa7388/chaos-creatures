@@ -1,25 +1,30 @@
 // HandCardNode.swift
 // Chaos Creatures
-// Individual card in hand (compact view). Rendered in SpriteKit for potential
-// future drag-to-play interactions from within the scene.
+// Individual card in hand — full-art design with unified text panel.
+// Rendered in SpriteKit for drag-to-play interactions from within the scene.
 // Source: docs/design/07-ui-ux-specs.md Section 3
 
 import SpriteKit
 
 /// Represents a card in the player's hand within the SpriteKit scene.
-/// Currently hand cards are rendered via SwiftUI overlay (HandScrollView),
-/// but this node is available for drag-to-board animation source points.
+/// Full-bleed art fills the card bounds. A dark semi-transparent panel at the
+/// bottom 28% holds the card name and ATK/HP stats with sword-atk and heart-hp
+/// icons. A mana cost badge with chaos-motes icon sits at the top-right.
 final class HandCardNode: SKSpriteNode {
 
     // MARK: - Properties
 
     private(set) var cardData: BattleCardData
-    private let frameNode: SKSpriteNode
-    private let cardArt: SKSpriteNode
+    private let cardArtNode: SKSpriteNode
+    private let textPanel: SKSpriteNode
     private let nameLabel: SKLabelNode
-    private let costLabel: SKLabelNode
-    private let costBadge: SKShapeNode
-    private let statsLabel: SKLabelNode
+    private let atkIcon: SKSpriteNode
+    private let atkLabel: SKLabelNode
+    private let hpIcon: SKSpriteNode
+    private let hpLabel: SKLabelNode
+    private let manaBadge: SKSpriteNode
+    private let manaIcon: SKSpriteNode
+    private let manaCostLabel: SKLabelNode
     private var keywordIcons: [SKSpriteNode] = []
     private var rarityOverlay: SKNode?
 
@@ -31,81 +36,116 @@ final class HandCardNode: SKSpriteNode {
     init(card: BattleCardData) {
         self.cardData = card
         let cardSize = SK.Card.handSize
+        let panelHeight = cardSize.height * SK.Card.textPanelRatio
 
-        // Card frame texture — faction and rarity-aware
-        let frameAssetName: String
-        if card.cardType == .spell {
-            frameAssetName = SK.CardFrames.spell
-        } else if card.cardType == .stabilizer {
-            frameAssetName = SK.CardFrames.stabilizer
-        } else if let faction = card.factionShortName {
-            frameAssetName = SK.CardFrames.assetName(faction: faction, tier: card.evolutionTier)
-        } else {
-            frameAssetName = SK.CardFrames.assetName(faction: .ironwright, tier: .common)
-        }
-
-        if let _ = UIImage(named: frameAssetName) {
-            frameNode = SKSpriteNode(imageNamed: frameAssetName)
-            frameNode.size = cardSize
-        } else {
-            // Fallback: solid dark card background when frame assets are missing
-            frameNode = SKSpriteNode(color: UIColor(hex: "#1A1A1A"), size: cardSize)
-        }
-        frameNode.zPosition = 0
-
-        // Card art placeholder
         let factionColor = card.factionPrimaryColor
-        let artHeight = cardSize.height * 0.55
-        cardArt = SKSpriteNode(color: factionColor.withAlphaComponent(0.3),
-                                size: CGSize(width: cardSize.width - 6, height: artHeight))
-        cardArt.anchorPoint = CGPoint(x: 0.5, y: 1.0)
-        cardArt.position = CGPoint(x: 0, y: cardSize.height / 2 - 3)
-        cardArt.zPosition = 1
 
-        // Name — Cinzel Bold for card names
+        // --- Full-bleed card art (fills entire card) ---
+        cardArtNode = SKSpriteNode(color: factionColor.withAlphaComponent(0.3), size: cardSize)
+        cardArtNode.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        cardArtNode.position = .zero
+        cardArtNode.zPosition = 0
+
+        // --- Unified text panel at bottom 28% ---
+        textPanel = SKSpriteNode(color: .black.withAlphaComponent(SK.Card.textPanelAlpha),
+                                 size: CGSize(width: cardSize.width, height: panelHeight))
+        textPanel.anchorPoint = CGPoint(x: 0.5, y: 0.0)
+        textPanel.position = CGPoint(x: 0, y: -cardSize.height / 2)
+        textPanel.zPosition = 1
+
+        // --- Card name (upper portion of text panel) ---
         nameLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
-        nameLabel.fontSize = 8
+        nameLabel.fontSize = SK.Card.handNameFontSize
         nameLabel.fontColor = .white
         nameLabel.horizontalAlignmentMode = .center
         nameLabel.verticalAlignmentMode = .center
-        nameLabel.position = CGPoint(x: 0, y: -cardSize.height / 2 + 30)
+        nameLabel.position = CGPoint(x: 0, y: -cardSize.height / 2 + panelHeight * 0.65)
         nameLabel.zPosition = 2
-        let displayName = card.name.count > 10 ? String(card.name.prefix(9)) + "..." : card.name
+
+        let displayName = card.name.count > 12 ? String(card.name.prefix(11)) + "\u{2026}" : card.name
         nameLabel.text = displayName
 
-        // Mana cost badge
-        costBadge = SKShapeNode(circleOfRadius: 10)
-        costBadge.fillColor = UIColor(hex: "#4A90E2")
-        costBadge.strokeColor = .clear
-        costBadge.position = CGPoint(x: -cardSize.width / 2 + 12, y: cardSize.height / 2 - 12)
-        costBadge.zPosition = 3
+        // --- ATK: sword icon + label (bottom-left of text panel) ---
+        let statIconSize = SK.Card.handStatIconSize
+        let statFontSize = SK.Card.handStatFontSize
+        let statsY = -cardSize.height / 2 + panelHeight * 0.25
 
-        costLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
-        costLabel.fontSize = 12
-        costLabel.fontColor = .white
-        costLabel.horizontalAlignmentMode = .center
-        costLabel.verticalAlignmentMode = .center
-        costLabel.text = "\(card.manaCost)"
-        costBadge.addChild(costLabel)
+        atkIcon = SKSpriteNode(imageNamed: "StatIcons/sword-atk")
+        atkIcon.size = CGSize(width: statIconSize, height: statIconSize)
+        atkIcon.position = CGPoint(x: -cardSize.width / 2 + 9, y: statsY)
+        atkIcon.zPosition = 2
 
-        // Stats (ATK/HP for creatures) — Alegreya Bold for stats
-        statsLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
-        statsLabel.fontSize = 11
-        statsLabel.fontColor = .white
-        statsLabel.horizontalAlignmentMode = .center
-        statsLabel.verticalAlignmentMode = .center
-        statsLabel.position = CGPoint(x: 0, y: -cardSize.height / 2 + 14)
-        statsLabel.zPosition = 2
+        atkLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
+        atkLabel.fontSize = statFontSize
+        atkLabel.fontColor = UIColor(hex: "#FF7043")
+        atkLabel.horizontalAlignmentMode = .left
+        atkLabel.verticalAlignmentMode = .center
+        atkLabel.position = CGPoint(x: -cardSize.width / 2 + 9 + statIconSize / 2 + 3, y: statsY)
+        atkLabel.zPosition = 2
+
+        hpIcon = SKSpriteNode(imageNamed: "StatIcons/heart-hp")
+        hpIcon.size = CGSize(width: statIconSize, height: statIconSize)
+        hpIcon.position = CGPoint(x: cardSize.width / 2 - 9, y: statsY)
+        hpIcon.zPosition = 2
+
+        hpLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
+        hpLabel.fontSize = statFontSize
+        hpLabel.fontColor = UIColor(hex: "#4CAF50")
+        hpLabel.horizontalAlignmentMode = .right
+        hpLabel.verticalAlignmentMode = .center
+        hpLabel.position = CGPoint(x: cardSize.width / 2 - 9 - statIconSize / 2 - 3, y: statsY)
+        hpLabel.zPosition = 2
+
+        // For creatures show ATK/HP; for spells/stabilizers show type label
         if let atk = card.baseAttack, let hp = card.baseHealth {
-            statsLabel.text = "\(atk)/\(hp)"
+            atkLabel.text = "\(atk)"
+            hpLabel.text = "\(hp)"
         } else {
-            statsLabel.text = card.cardType == .spell ? "Spell" : ""
+            // Non-creature: hide stat icons, show type text centered
+            atkIcon.isHidden = true
+            hpIcon.isHidden = true
+            atkLabel.text = ""
+            hpLabel.text = ""
+
+            // Use hpLabel for centered type text
+            hpLabel.isHidden = true
+            atkLabel.horizontalAlignmentMode = .center
+            atkLabel.position = CGPoint(x: 0, y: statsY)
+            atkLabel.fontColor = UIColor(hex: "#AAAAAA")
+            atkLabel.text = card.cardType == .spell ? "Spell" : "Stabilizer"
         }
 
+        // --- Mana cost badge (top-right) ---
+        let manaBadgeSize = SK.Card.handManaBadgeSize
+        let manaIconSize = SK.Card.handManaIconSize
+
+        manaBadge = SKSpriteNode(color: UIColor(hex: "#1A1A1A").withAlphaComponent(0.75),
+                                 size: CGSize(width: manaBadgeSize, height: manaBadgeSize))
+        manaBadge.position = CGPoint(x: cardSize.width / 2 - manaBadgeSize / 2 - 3,
+                                     y: cardSize.height / 2 - manaBadgeSize / 2 - 3)
+        manaBadge.zPosition = 3
+
+        manaIcon = SKSpriteNode(imageNamed: "StatIcons/chaos-motes")
+        manaIcon.size = CGSize(width: manaIconSize, height: manaIconSize)
+        manaIcon.position = CGPoint(x: -manaIconSize / 4, y: 0)
+        manaIcon.zPosition = 1
+        manaBadge.addChild(manaIcon)
+
+        manaCostLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
+        manaCostLabel.fontSize = SK.Card.handManaCostFontSize
+        manaCostLabel.fontColor = .white
+        manaCostLabel.horizontalAlignmentMode = .center
+        manaCostLabel.verticalAlignmentMode = .center
+        manaCostLabel.position = CGPoint(x: manaIconSize / 4, y: 0)
+        manaCostLabel.zPosition = 1
+        manaCostLabel.text = "\(card.manaCost)"
+        manaBadge.addChild(manaCostLabel)
+
+        // --- Super init ---
         super.init(texture: nil, color: .clear, size: cardSize)
         self.name = "handCard_\(card.instanceId)"
 
-        // Background rounded rect (visible behind frame)
+        // Background rounded rect
         let bg = SKShapeNode(rectOf: cardSize, cornerRadius: 8)
         bg.fillColor = UIColor(hex: "#1A1A1A")
         bg.strokeColor = card.evolutionTier.borderUIColor.withAlphaComponent(0.5)
@@ -113,18 +153,21 @@ final class HandCardNode: SKSpriteNode {
         bg.zPosition = -1
         addChild(bg)
 
-        addChild(frameNode)
-        addChild(cardArt)
+        addChild(cardArtNode)
+        addChild(textPanel)
         addChild(nameLabel)
-        addChild(costBadge)
-        addChild(statsLabel)
+        addChild(atkIcon)
+        addChild(atkLabel)
+        addChild(hpIcon)
+        addChild(hpLabel)
+        addChild(manaBadge)
 
-        // Setup keyword icons for hand cards (small icons below art)
+        // Keyword icons above the text panel (creatures only)
         if card.cardType == .creature {
             setupKeywordIcons(card.innateKeywords)
         }
 
-        // Apply rarity effect (lighter at hand scale)
+        // Rarity effect (lighter at hand scale)
         applyRarityEffect(card.evolutionTier)
 
         // Load art
@@ -143,9 +186,9 @@ final class HandCardNode: SKSpriteNode {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 if let image = UIImage(data: data) {
-                    self.cardArt.texture = SKTexture(image: image)
-                    self.cardArt.color = .clear
-                    self.cardArt.colorBlendFactor = 0
+                    self.cardArtNode.texture = SKTexture(image: image)
+                    self.cardArtNode.color = .clear
+                    self.cardArtNode.colorBlendFactor = 0
                 }
             } catch { }
         }
@@ -160,10 +203,14 @@ final class HandCardNode: SKSpriteNode {
         let displayKeywords = Array(keywords.prefix(SK.Card.maxKeywordIcons))
         guard !displayKeywords.isEmpty else { return }
 
-        let iconSize: CGFloat = 10 // Slightly smaller for hand cards
+        let iconSize: CGFloat = 10
         let spacing: CGFloat = iconSize + 2
         let totalWidth = CGFloat(displayKeywords.count) * spacing - 2
         let startX = -totalWidth / 2 + iconSize / 2
+
+        // Position keyword icons just above the text panel
+        let panelHeight = size.height * SK.Card.textPanelRatio
+        let iconsY = -size.height / 2 + panelHeight + iconSize / 2 + 2
 
         for (index, keyword) in displayKeywords.enumerated() {
             let icon: SKSpriteNode
@@ -176,9 +223,7 @@ final class HandCardNode: SKSpriteNode {
                 icon = SKSpriteNode(color: keywordColor(keyword), size: CGSize(width: iconSize, height: iconSize))
             }
 
-            // Position just above the stats bar
-            icon.position = CGPoint(x: startX + CGFloat(index) * spacing,
-                                    y: -size.height / 2 + 42)
+            icon.position = CGPoint(x: startX + CGFloat(index) * spacing, y: iconsY)
             icon.zPosition = 2
             icon.name = "keyword_\(keyword.rawValue)"
             addChild(icon)
@@ -187,15 +232,14 @@ final class HandCardNode: SKSpriteNode {
     }
 
     private func keywordColor(_ keyword: Keyword) -> UIColor {
-        // Colors must match CardFrameView.keywordColor() in SwiftUI
         switch keyword {
-        case .shield: return UIColor(hex: "#5BC0EB")     // orderBlue
-        case .lifesteal: return UIColor(hex: "#4CAF50")  // healGreen
-        case .flying: return UIColor(hex: "#90CAF9")     // light blue
-        case .reach: return UIColor(hex: "#FF7043")      // damageOrange
-        case .deathtouch: return UIColor(hex: "#E63946") // chaosRed
-        case .taunt: return UIColor(hex: "#FFD700")      // tauntGold
-        case .piercing: return UIColor(hex: "#FFC107")   // warningYellow
+        case .shield: return UIColor(hex: "#5BC0EB")
+        case .lifesteal: return UIColor(hex: "#4CAF50")
+        case .flying: return UIColor(hex: "#90CAF9")
+        case .reach: return UIColor(hex: "#FF7043")
+        case .deathtouch: return UIColor(hex: "#E63946")
+        case .taunt: return UIColor(hex: "#FFD700")
+        case .piercing: return UIColor(hex: "#FFC107")
         }
     }
 
@@ -287,7 +331,9 @@ final class HandCardNode: SKSpriteNode {
     /// Highlight if player can afford this card
     func setPlayable(_ canPlay: Bool) {
         alpha = canPlay ? 1.0 : 0.6
-        costBadge.fillColor = canPlay ? UIColor(hex: "#4A90E2") : UIColor(hex: "#555555")
+        manaBadge.color = canPlay
+            ? UIColor(hex: "#1A1A1A").withAlphaComponent(0.75)
+            : UIColor(hex: "#555555").withAlphaComponent(0.75)
     }
 
     /// Scale up when selected/previewed

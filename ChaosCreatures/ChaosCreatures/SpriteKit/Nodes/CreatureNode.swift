@@ -1,29 +1,33 @@
 // CreatureNode.swift
 // Chaos Creatures
-// BoardCardNode — card on board with frame texture, art, stats overlay, keyword icons,
-// rarity visual effects, and glow states for attacker/blocker selection.
+// BoardCardNode — full-art card on board with unified text panel, stat icons,
+// mana cost badge, keyword icons, rarity glow, and selection states.
 // Source: docs/design/07-ui-ux-specs.md Section 3.3
 
 import SpriteKit
 
-/// A card on the battlefield board. Renders faction-themed card frame, art,
-/// ATK/HP stats, keyword icons, rarity border effects, and selection glows.
+/// A card on the battlefield board. Full-bleed art fills the card bounds.
+/// A dark semi-transparent panel at the bottom 28% holds the card name and ATK/HP
+/// stats with sword-atk and heart-hp icons. A mana cost badge with chaos-motes
+/// icon sits at the top-right. Rarity is expressed as a colored glow behind the card.
 final class CreatureNode: SKSpriteNode {
 
     // MARK: - Child Nodes
 
-    private let frameNode: SKSpriteNode
     private let cardArtNode: SKSpriteNode
-    private let statsBarNode: SKSpriteNode
-    private let atkLabel: SKLabelNode
-    private let hpLabel: SKLabelNode
+    private let textPanel: SKSpriteNode
     private let nameLabel: SKLabelNode
-    private let manaCostBadge: SKShapeNode
+    private let atkIcon: SKSpriteNode
+    private let atkLabel: SKLabelNode
+    private let hpIcon: SKSpriteNode
+    private let hpLabel: SKLabelNode
+    private let manaBadge: SKSpriteNode
+    private let manaIcon: SKSpriteNode
     private let manaCostLabel: SKLabelNode
     private var keywordIcons: [SKSpriteNode] = []
     private var tauntIcon: SKSpriteNode?
     private var shieldOverlay: SKShapeNode?
-    private var rarityOverlay: SKNode?
+    private var rarityGlowNode: SKSpriteNode?
 
     // MARK: - State
 
@@ -46,101 +50,100 @@ final class CreatureNode: SKSpriteNode {
 
         let factionColor = creature.factionPrimaryColor
         let cardSize = SK.Board.slotSize
+        let panelHeight = cardSize.height * SK.Card.textPanelRatio
 
-        // Card frame — the primary visual background, loaded from asset catalog.
-        // Falls back to a solid dark rect if frame image is not yet in the asset catalog.
-        let frameAssetName: String
-        if creature.cardType == .spell {
-            frameAssetName = SK.CardFrames.spell
-        } else if creature.cardType == .stabilizer {
-            frameAssetName = SK.CardFrames.stabilizer
-        } else if let faction = creature.factionShortName {
-            frameAssetName = SK.CardFrames.assetName(faction: faction, tier: creature.evolutionTier)
-        } else {
-            frameAssetName = SK.CardFrames.assetName(faction: .ironwright, tier: .common)
-        }
+        // --- Full-bleed card art (fills entire card) ---
+        cardArtNode = SKSpriteNode(color: factionColor.withAlphaComponent(0.3), size: cardSize)
+        cardArtNode.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        cardArtNode.position = .zero
+        cardArtNode.zPosition = 0
 
-        if let _ = UIImage(named: frameAssetName) {
-            frameNode = SKSpriteNode(imageNamed: frameAssetName)
-            frameNode.size = cardSize
-        } else {
-            // Fallback: solid dark card background when frame assets are missing
-            frameNode = SKSpriteNode(color: UIColor(hex: "#1A1A1A"), size: cardSize)
-        }
-        frameNode.zPosition = 0
+        // --- Unified text panel at bottom 28% ---
+        textPanel = SKSpriteNode(color: .black.withAlphaComponent(SK.Card.textPanelAlpha),
+                                 size: CGSize(width: cardSize.width, height: panelHeight))
+        textPanel.anchorPoint = CGPoint(x: 0.5, y: 0.0)
+        textPanel.position = CGPoint(x: 0, y: -cardSize.height / 2)
+        textPanel.zPosition = 1
 
-        // Card art — top 60%
-        let artHeight = cardSize.height * SK.Card.artRatio
-        cardArtNode = SKSpriteNode(color: factionColor.withAlphaComponent(0.3),
-                                    size: CGSize(width: cardSize.width - 4, height: artHeight))
-        cardArtNode.anchorPoint = CGPoint(x: 0.5, y: 1.0)
-        cardArtNode.position = CGPoint(x: 0, y: cardSize.height / 2 - 2)
-        cardArtNode.zPosition = 1
-
-        // Stats bar — bottom 25%
-        let statsHeight = cardSize.height * SK.Card.statsBarRatio
-        statsBarNode = SKSpriteNode(color: UIColor(hex: "#0D0D0D").withAlphaComponent(0.85),
-                                     size: CGSize(width: cardSize.width - 4, height: statsHeight))
-        statsBarNode.anchorPoint = CGPoint(x: 0.5, y: 0.0)
-        statsBarNode.position = CGPoint(x: 0, y: -cardSize.height / 2 + 2)
-        statsBarNode.zPosition = 1
-
-        // ATK label — left of stats bar (Alegreya Bold for stats)
-        atkLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
-        atkLabel.fontSize = SK.Card.statsFontSize
-        atkLabel.fontColor = UIColor(hex: "#FF7043")
-        atkLabel.horizontalAlignmentMode = .left
-        atkLabel.verticalAlignmentMode = .center
-        atkLabel.position = CGPoint(x: -cardSize.width / 2 + 6, y: -cardSize.height / 2 + statsHeight / 2 + 2)
-        atkLabel.zPosition = 2
-        atkLabel.text = "\(creature.attack)"
-
-        // HP label — right of stats bar (Alegreya Bold for stats)
-        hpLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
-        hpLabel.fontSize = SK.Card.statsFontSize
-        hpLabel.fontColor = UIColor(hex: "#4CAF50")
-        hpLabel.horizontalAlignmentMode = .right
-        hpLabel.verticalAlignmentMode = .center
-        hpLabel.position = CGPoint(x: cardSize.width / 2 - 6, y: -cardSize.height / 2 + statsHeight / 2 + 2)
-        hpLabel.zPosition = 2
-        hpLabel.text = "\(creature.health)"
-
-        // Name label — centered between ATK and HP
-        // At board scale (64x90pt), name is very small (~7pt).
-        // Cinzel is unreadable below 7pt, so use Alegreya Bold as fallback at small sizes.
-        let nameFontSize = max(SK.Card.nameFontSize - 3, 6)
-        let nameFontName = nameFontSize < 8 ? SK.Fonts.medium : SK.Fonts.bold
-        nameLabel = SKLabelNode(fontNamed: nameFontName)
+        // --- Card name (top of text panel) ---
+        let nameFontSize = SK.Card.boardNameFontSize
+        nameLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
         nameLabel.fontSize = nameFontSize
         nameLabel.fontColor = .white
         nameLabel.horizontalAlignmentMode = .center
         nameLabel.verticalAlignmentMode = .center
-        nameLabel.position = CGPoint(x: 0, y: -cardSize.height / 2 + statsHeight / 2 + 2)
+        // Position name in upper portion of text panel
+        nameLabel.position = CGPoint(x: 0, y: -cardSize.height / 2 + panelHeight * 0.65)
         nameLabel.zPosition = 2
 
-        // Truncate long names for board scale
-        let displayName = creature.name.count > 8 ? String(creature.name.prefix(7)) + "..." : creature.name
+        let displayName = creature.name.count > 8 ? String(creature.name.prefix(7)) + "\u{2026}" : creature.name
         nameLabel.text = displayName
 
-        // Mana cost badge — top-left
-        manaCostBadge = SKShapeNode(circleOfRadius: SK.Card.manaCostBadgeSize / 2)
-        manaCostBadge.fillColor = UIColor(hex: "#4A90E2")
-        manaCostBadge.strokeColor = .clear
-        manaCostBadge.position = CGPoint(x: -cardSize.width / 2 + 10, y: cardSize.height / 2 - 10)
-        manaCostBadge.zPosition = 3
+        // --- ATK: sword icon + label (bottom-left of text panel) ---
+        let statIconSize = SK.Card.boardStatIconSize
+        let statFontSize = SK.Card.boardStatFontSize
+        let statsY = -cardSize.height / 2 + panelHeight * 0.25
 
-        manaCostLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
-        manaCostLabel.fontSize = 10
+        atkIcon = SKSpriteNode(imageNamed: "StatIcons/sword-atk")
+        atkIcon.size = CGSize(width: statIconSize, height: statIconSize)
+        atkIcon.position = CGPoint(x: -cardSize.width / 2 + 7, y: statsY)
+        atkIcon.zPosition = 2
+
+        atkLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
+        atkLabel.fontSize = statFontSize
+        atkLabel.fontColor = UIColor(hex: "#FF7043")
+        atkLabel.horizontalAlignmentMode = .left
+        atkLabel.verticalAlignmentMode = .center
+        atkLabel.position = CGPoint(x: -cardSize.width / 2 + 7 + statIconSize / 2 + 2, y: statsY)
+        atkLabel.zPosition = 2
+        atkLabel.text = "\(creature.attack)"
+
+        // --- HP: heart icon + label (bottom-right of text panel) ---
+        hpIcon = SKSpriteNode(imageNamed: "StatIcons/heart-hp")
+        hpIcon.size = CGSize(width: statIconSize, height: statIconSize)
+        hpIcon.position = CGPoint(x: cardSize.width / 2 - 7, y: statsY)
+        hpIcon.zPosition = 2
+
+        hpLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
+        hpLabel.fontSize = statFontSize
+        hpLabel.fontColor = UIColor(hex: "#4CAF50")
+        hpLabel.horizontalAlignmentMode = .right
+        hpLabel.verticalAlignmentMode = .center
+        hpLabel.position = CGPoint(x: cardSize.width / 2 - 7 - statIconSize / 2 - 2, y: statsY)
+        hpLabel.zPosition = 2
+        hpLabel.text = "\(creature.health)"
+
+        // --- Mana cost badge (top-right) ---
+        let manaBadgeSize = SK.Card.boardManaBadgeSize
+        let manaIconSize = SK.Card.boardManaIconSize
+
+        manaBadge = SKSpriteNode(color: UIColor(hex: "#1A1A1A").withAlphaComponent(0.75),
+                                 size: CGSize(width: manaBadgeSize, height: manaBadgeSize))
+        manaBadge.position = CGPoint(x: cardSize.width / 2 - manaBadgeSize / 2 - 2,
+                                     y: cardSize.height / 2 - manaBadgeSize / 2 - 2)
+        manaBadge.zPosition = 3
+
+        manaIcon = SKSpriteNode(imageNamed: "StatIcons/chaos-motes")
+        manaIcon.size = CGSize(width: manaIconSize, height: manaIconSize)
+        manaIcon.position = CGPoint(x: -manaIconSize / 4, y: 0)
+        manaIcon.zPosition = 1
+        manaBadge.addChild(manaIcon)
+
+        manaCostLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
+        manaCostLabel.fontSize = SK.Card.boardManaCostFontSize
         manaCostLabel.fontColor = .white
         manaCostLabel.horizontalAlignmentMode = .center
         manaCostLabel.verticalAlignmentMode = .center
+        manaCostLabel.position = CGPoint(x: manaIconSize / 4, y: 0)
+        manaCostLabel.zPosition = 1
         manaCostLabel.text = "\(creature.manaCost)"
-        manaCostBadge.addChild(manaCostLabel)
+        manaBadge.addChild(manaCostLabel)
 
+        // --- Super init ---
         super.init(texture: nil, color: .clear, size: cardSize)
         self.name = "creature_\(creature.instanceId)"
 
-        // Background rounded rect (visible behind frame if frame has transparent areas)
+        // Background rounded rect with thin rarity-tinted border
         let bg = SKShapeNode(rectOf: cardSize, cornerRadius: SK.Board.slotCornerRadius)
         bg.fillColor = UIColor(hex: "#1A1A1A")
         bg.strokeColor = creature.evolutionTier.borderUIColor.withAlphaComponent(0.6)
@@ -148,15 +151,19 @@ final class CreatureNode: SKSpriteNode {
         bg.zPosition = -1
         addChild(bg)
 
-        addChild(frameNode)
-        addChild(cardArtNode)
-        addChild(statsBarNode)
-        addChild(atkLabel)
-        addChild(hpLabel)
-        addChild(nameLabel)
-        addChild(manaCostBadge)
+        // Rarity glow (colored sprite behind card)
+        applyRarityGlow(creature.evolutionTier)
 
-        // Setup keywords with icon textures
+        addChild(cardArtNode)
+        addChild(textPanel)
+        addChild(nameLabel)
+        addChild(atkIcon)
+        addChild(atkLabel)
+        addChild(hpIcon)
+        addChild(hpLabel)
+        addChild(manaBadge)
+
+        // Keyword icons above the text panel
         setupKeywordIcons(creature.activeKeywords)
 
         // Taunt indicator
@@ -168,9 +175,6 @@ final class CreatureNode: SKSpriteNode {
         if creature.shieldActive {
             showShield()
         }
-
-        // Apply rarity visual effects
-        applyRarityEffect(creature.evolutionTier)
 
         // Load art async
         loadCardArt(urlString: creature.artUrl)
@@ -200,10 +204,35 @@ final class CreatureNode: SKSpriteNode {
         }
     }
 
+    // MARK: - Rarity Glow (background behind card)
+
+    private func applyRarityGlow(_ tier: EvolutionTier) {
+        rarityGlowNode?.removeFromParent()
+        rarityGlowNode = nil
+
+        guard let glowColor = SK.RarityEffects.glowColor(for: tier) else { return }
+
+        let oversize = SK.RarityEffects.glowOversize
+        let glowSize = CGSize(width: size.width + oversize * 2, height: size.height + oversize * 2)
+        let glow = SKSpriteNode(color: glowColor.withAlphaComponent(SK.RarityEffects.glowAlpha),
+                                size: glowSize)
+        glow.zPosition = -2
+        glow.name = "rarity_glow"
+
+        // Subtle pulse animation
+        let pulse = SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.6, duration: SK.RarityEffects.glowPulseDuration),
+            SKAction.fadeAlpha(to: 0.3, duration: SK.RarityEffects.glowPulseDuration)
+        ])
+        glow.run(SKAction.repeatForever(pulse), withKey: "rarityGlowPulse")
+
+        addChild(glow)
+        rarityGlowNode = glow
+    }
+
     // MARK: - Keyword Icons
 
     private func setupKeywordIcons(_ keywords: [Keyword]) {
-        // Remove old icons
         keywordIcons.forEach { $0.removeFromParent() }
         keywordIcons.removeAll()
 
@@ -213,21 +242,22 @@ final class CreatureNode: SKSpriteNode {
         let totalWidth = CGFloat(displayKeywords.count) * spacing - 2
         let startX = -totalWidth / 2 + iconSize / 2
 
+        // Position keyword icons just above the text panel
+        let panelHeight = size.height * SK.Card.textPanelRatio
+        let iconsY = -size.height / 2 + panelHeight + iconSize / 2 + 2
+
         for (index, keyword) in displayKeywords.enumerated() {
             let icon: SKSpriteNode
 
-            // Try loading keyword icon texture from asset catalog
             let assetName = SK.KeywordIcons.assetName(keyword: keyword)
             if let _ = UIImage(named: assetName) {
                 icon = SKSpriteNode(imageNamed: assetName)
                 icon.size = CGSize(width: iconSize, height: iconSize)
             } else {
-                // Fallback: colored square with same color coding as before
                 icon = SKSpriteNode(color: keywordColor(keyword), size: CGSize(width: iconSize, height: iconSize))
             }
 
-            icon.position = CGPoint(x: startX + CGFloat(index) * spacing,
-                                    y: -size.height / 2 + size.height * SK.Card.statsBarRatio + iconSize)
+            icon.position = CGPoint(x: startX + CGFloat(index) * spacing, y: iconsY)
             icon.zPosition = 2
             icon.name = "keyword_\(keyword.rawValue)"
             addChild(icon)
@@ -236,15 +266,14 @@ final class CreatureNode: SKSpriteNode {
     }
 
     private func keywordColor(_ keyword: Keyword) -> UIColor {
-        // Colors must match CardFrameView.keywordColor() in SwiftUI
         switch keyword {
-        case .shield: return UIColor(hex: "#5BC0EB")     // orderBlue
-        case .lifesteal: return UIColor(hex: "#4CAF50")  // healGreen
-        case .flying: return UIColor(hex: "#90CAF9")     // light blue
-        case .reach: return UIColor(hex: "#FF7043")      // damageOrange
-        case .deathtouch: return UIColor(hex: "#E63946") // chaosRed
-        case .taunt: return UIColor(hex: "#FFD700")      // tauntGold
-        case .piercing: return UIColor(hex: "#FFC107")   // warningYellow
+        case .shield: return UIColor(hex: "#5BC0EB")
+        case .lifesteal: return UIColor(hex: "#4CAF50")
+        case .flying: return UIColor(hex: "#90CAF9")
+        case .reach: return UIColor(hex: "#FF7043")
+        case .deathtouch: return UIColor(hex: "#E63946")
+        case .taunt: return UIColor(hex: "#FFD700")
+        case .piercing: return UIColor(hex: "#FFC107")
         }
     }
 
@@ -266,7 +295,6 @@ final class CreatureNode: SKSpriteNode {
         icon.zPosition = 3
         icon.name = "taunt_icon"
 
-        // Pulse animation (per doc 07 Section 3.6)
         let pulse = SKAction.sequence([
             SKAction.scale(to: 1.3, duration: 0.75),
             SKAction.scale(to: 1.0, duration: 0.75)
@@ -288,7 +316,6 @@ final class CreatureNode: SKSpriteNode {
         shield.zPosition = 4
         shield.name = "shield_overlay"
 
-        // Breathing animation
         let breathe = SKAction.sequence([
             SKAction.fadeAlpha(to: 0.7, duration: 1.0),
             SKAction.fadeAlpha(to: 1.0, duration: 1.0)
@@ -302,124 +329,6 @@ final class CreatureNode: SKSpriteNode {
     func removeShield() {
         shieldOverlay?.removeFromParent()
         shieldOverlay = nil
-    }
-
-    // MARK: - Rarity Visual Effects
-
-    private func applyRarityEffect(_ tier: EvolutionTier) {
-        // Remove any existing rarity effect
-        rarityOverlay?.removeFromParent()
-        rarityOverlay = nil
-
-        switch tier {
-        case .common:
-            // No extra effect (matte frame)
-            break
-
-        case .uncommon:
-            applyUncommonSheen()
-
-        case .rare:
-            applyRareGlow()
-
-        case .epic:
-            applyEpicShimmer()
-
-        case .legendary:
-            applyLegendaryPrismatic()
-        }
-    }
-
-    /// Uncommon: subtle metallic sheen — low-opacity silver overlay that drifts
-    private func applyUncommonSheen() {
-        let overlay = SKShapeNode(rectOf: size, cornerRadius: SK.Board.slotCornerRadius)
-        overlay.fillColor = SK.RarityEffects.uncommonSheenColor.withAlphaComponent(SK.RarityEffects.uncommonOverlayAlpha)
-        overlay.strokeColor = .clear
-        overlay.zPosition = 5
-        overlay.name = "rarity_overlay"
-
-        let sheenAnim = SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.15, duration: SK.RarityEffects.uncommonSheenDuration),
-            SKAction.fadeAlpha(to: 0.04, duration: SK.RarityEffects.uncommonSheenDuration)
-        ])
-        overlay.run(SKAction.repeatForever(sheenAnim), withKey: "uncommonSheen")
-
-        addChild(overlay)
-        rarityOverlay = overlay
-    }
-
-    /// Rare: blue energy glow pulse on the border
-    private func applyRareGlow() {
-        let glowRect = CGSize(width: size.width + 4, height: size.height + 4)
-        let overlay = SKShapeNode(rectOf: glowRect, cornerRadius: SK.Board.slotCornerRadius + 2)
-        overlay.fillColor = .clear
-        overlay.strokeColor = SK.RarityEffects.rareGlowColor
-        overlay.lineWidth = 2.5
-        overlay.alpha = SK.RarityEffects.rareGlowAlphaMin
-        overlay.zPosition = 5
-        overlay.name = "rarity_overlay"
-        overlay.glowWidth = 3
-
-        let pulse = SKAction.sequence([
-            SKAction.fadeAlpha(to: SK.RarityEffects.rareGlowAlphaMax, duration: SK.RarityEffects.rareGlowPulseDuration),
-            SKAction.fadeAlpha(to: SK.RarityEffects.rareGlowAlphaMin, duration: SK.RarityEffects.rareGlowPulseDuration)
-        ])
-        overlay.run(SKAction.repeatForever(pulse), withKey: "rareGlow")
-
-        addChild(overlay)
-        rarityOverlay = overlay
-    }
-
-    /// Epic: purple shimmer — oscillating purple overlay opacity
-    private func applyEpicShimmer() {
-        let overlay = SKShapeNode(rectOf: size, cornerRadius: SK.Board.slotCornerRadius)
-        overlay.fillColor = SK.RarityEffects.epicShimmerColor.withAlphaComponent(0.15)
-        overlay.strokeColor = SK.RarityEffects.epicShimmerColor
-        overlay.lineWidth = 2
-        overlay.alpha = SK.RarityEffects.epicShimmerAlphaMin
-        overlay.zPosition = 5
-        overlay.name = "rarity_overlay"
-        overlay.glowWidth = 2
-
-        let shimmer = SKAction.sequence([
-            SKAction.fadeAlpha(to: SK.RarityEffects.epicShimmerAlphaMax, duration: SK.RarityEffects.epicShimmerDuration),
-            SKAction.fadeAlpha(to: SK.RarityEffects.epicShimmerAlphaMin, duration: SK.RarityEffects.epicShimmerDuration)
-        ])
-        overlay.run(SKAction.repeatForever(shimmer), withKey: "epicShimmer")
-
-        addChild(overlay)
-        rarityOverlay = overlay
-    }
-
-    /// Legendary: gold prismatic glow + particle sparkles
-    private func applyLegendaryPrismatic() {
-        let container = SKNode()
-        container.zPosition = 5
-        container.name = "rarity_overlay"
-
-        // Gold glow border
-        let glowRect = CGSize(width: size.width + 6, height: size.height + 6)
-        let glowBorder = SKShapeNode(rectOf: glowRect, cornerRadius: SK.Board.slotCornerRadius + 3)
-        glowBorder.fillColor = .clear
-        glowBorder.strokeColor = SK.RarityEffects.legendaryGlowColor
-        glowBorder.lineWidth = 3
-        glowBorder.alpha = SK.RarityEffects.legendaryGlowAlphaMin
-        glowBorder.glowWidth = 4
-
-        let pulse = SKAction.sequence([
-            SKAction.fadeAlpha(to: SK.RarityEffects.legendaryGlowAlphaMax, duration: SK.RarityEffects.legendaryGlowDuration),
-            SKAction.fadeAlpha(to: SK.RarityEffects.legendaryGlowAlphaMin, duration: SK.RarityEffects.legendaryGlowDuration)
-        ])
-        glowBorder.run(SKAction.repeatForever(pulse), withKey: "legendaryGlow")
-        container.addChild(glowBorder)
-
-        // Particle sparkles around the border
-        let emitter = ParticleEffects.legendarySparkles(cardSize: size)
-        emitter.zPosition = 1
-        container.addChild(emitter)
-
-        addChild(container)
-        rarityOverlay = container
     }
 
     // MARK: - State Updates

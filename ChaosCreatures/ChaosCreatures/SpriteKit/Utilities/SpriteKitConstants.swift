@@ -70,17 +70,62 @@ enum SK {
         /// Board card size (same as slot size)
         static let boardSize = Board.slotSize
 
-        /// Art takes top 60% of card
-        static let artRatio: CGFloat = 0.6
+        // MARK: Full-Art Layout
 
-        /// Stats bar takes bottom 25%
-        static let statsBarRatio: CGFloat = 0.25
+        /// Unified text panel occupies the bottom 28% of the card
+        static let textPanelRatio: CGFloat = 0.28
 
-        /// ATK/HP label font size on board cards
-        static let statsFontSize: CGFloat = 14
+        /// Text panel background opacity
+        static let textPanelAlpha: CGFloat = 0.78
 
-        /// Name label font size
-        static let nameFontSize: CGFloat = 10
+        /// Corner radius for the text panel
+        static let textPanelCornerRadius: CGFloat = 0
+
+        // MARK: Font Sizes — Board (64x90pt)
+
+        /// Name label font size on board cards
+        static let boardNameFontSize: CGFloat = 7
+
+        /// ATK/HP stat font size on board cards
+        static let boardStatFontSize: CGFloat = 9
+
+        /// Mana cost font size on board cards
+        static let boardManaCostFontSize: CGFloat = 8
+
+        // MARK: Font Sizes — Hand (90x130pt)
+
+        /// Name label font size on hand cards
+        static let handNameFontSize: CGFloat = 9
+
+        /// ATK/HP stat font size on hand cards
+        static let handStatFontSize: CGFloat = 11
+
+        /// Mana cost font size on hand cards
+        static let handManaCostFontSize: CGFloat = 10
+
+        // MARK: Stat Icon Sizes
+
+        /// Stat icon size (sword-atk, heart-hp) on board cards
+        static let boardStatIconSize: CGFloat = 8
+
+        /// Stat icon size on hand cards
+        static let handStatIconSize: CGFloat = 10
+
+        // MARK: Mana Cost Badge
+
+        /// Mana cost badge diameter on board cards
+        static let boardManaBadgeSize: CGFloat = 14
+
+        /// Mana cost badge diameter on hand cards
+        static let handManaBadgeSize: CGFloat = 18
+
+        /// Chaos-motes icon size inside mana badge on board cards
+        static let boardManaIconSize: CGFloat = 10
+
+        /// Chaos-motes icon size inside mana badge on hand cards
+        static let handManaIconSize: CGFloat = 13
+
+        // MARK: Keyword Icons
 
         /// Keyword icon size
         static let keywordIconSize: CGFloat = 12
@@ -88,10 +133,24 @@ enum SK {
         /// Max keyword icons displayed
         static let maxKeywordIcons: Int = 3
 
+        // MARK: Legacy (kept for compatibility)
+
+        /// Art fills 100% of card (full-bleed design)
+        static let artRatio: CGFloat = 1.0
+
+        /// Stats bar takes bottom 25% (legacy — replaced by textPanelRatio)
+        static let statsBarRatio: CGFloat = 0.25
+
+        /// ATK/HP label font size on board cards (legacy)
+        static let statsFontSize: CGFloat = 14
+
+        /// Name label font size (legacy)
+        static let nameFontSize: CGFloat = 10
+
         /// Tier badge size
         static let tierBadgeSize: CGFloat = 10
 
-        /// Mana cost badge size
+        /// Mana cost badge size (legacy)
         static let manaCostBadgeSize: CGFloat = 16
     }
 
@@ -339,6 +398,25 @@ enum SK {
         static let legendaryGlowAlphaMax: CGFloat = 0.5
         static let legendaryGlowDuration: TimeInterval = 1.0
         static let legendaryParticleBirthRate: CGFloat = 8
+
+        // MARK: Rarity Background Glow (full-art cards)
+        /// Colored glow behind the card based on rarity tier.
+        /// Used as a slightly-oversized SKSpriteNode behind the card.
+
+        static let glowOversize: CGFloat = 6  // pt larger per side than card
+        static let glowAlpha: CGFloat = 0.45
+        static let glowPulseDuration: TimeInterval = 1.5
+
+        /// Color per tier for the background glow
+        static func glowColor(for tier: EvolutionTier) -> UIColor? {
+            switch tier {
+            case .common: return nil  // no glow
+            case .uncommon: return UIColor(hex: "#C0C0C0")  // silver
+            case .rare: return UIColor(hex: "#2196F3")       // blue
+            case .epic: return UIColor(hex: "#9C27B0")       // purple
+            case .legendary: return UIColor(hex: "#FFD700")  // gold
+            }
+        }
     }
 
     // MARK: - Card Flip Animation

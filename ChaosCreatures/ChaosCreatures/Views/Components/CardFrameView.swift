@@ -1,7 +1,7 @@
 // CardFrameView.swift
 // Chaos Creatures
-// Professional card rendering component that composites frame, art, text, and stat badges.
-// Replaces the old placeholder card rendering with real card frames and themed typography.
+// Full-art card renderer with unified text panel. No bordered frames.
+// Art fills 100% of the card. All card info is in a gradient text panel at the bottom ~28%.
 // Source: CLAUDE.md Card Visual System, docs/design/07-ui-ux-specs.md Section 5
 
 import SwiftUI
@@ -9,9 +9,9 @@ import SwiftUI
 // MARK: - Card Display Size
 
 enum CardDisplaySize {
-    /// Grid view in collection (~100x140pt). Minimal info: art, frame, mana cost, tiny ATK/HP.
+    /// Grid view in collection (~100x140pt). Condensed: name + ATK/HP only.
     case grid
-    /// Hand view in battle (~90x130pt). Similar to grid.
+    /// Hand view in battle (~90x130pt). Condensed: name + ATK/HP only.
     case hand
     /// Detail view in card detail sheet (~280x392pt). Full info: all elements.
     case detail
@@ -158,50 +158,7 @@ struct CardDisplayData {
         self.isEvolutionReady = false
     }
 
-    // MARK: - Frame Asset Name
-
-    /// Returns the asset catalog name for this card's frame image.
-    /// Format matches SK.CardFrames.assetName() — e.g. "CardFrames/ironwright-common"
-    var frameAssetName: String {
-        switch cardType {
-        case .spell:
-            return "CardFrames/spell"
-        case .stabilizer:
-            return "CardFrames/stabilizer"
-        case .creature:
-            let factionPrefix = factionFramePrefix
-            let tierSuffix = frameTierSuffix
-            return "CardFrames/\(factionPrefix)-\(tierSuffix)"
-        }
-    }
-
-    private var factionFramePrefix: String {
-        switch faction {
-        case .ironwright: return "ironwright"
-        case .feyCourts: return "fey"
-        case .demonicKingdoms: return "demonic"
-        case nil: return "ironwright" // Fallback
-        }
-    }
-
-    private var frameTierSuffix: String {
-        switch tier {
-        case .common, .uncommon: return "common"
-        case .rare: return "rare"
-        case .epic, .legendary: return "legendary"
-        }
-    }
-
-    /// Faction emblem asset name for watermark.
-    /// Format matches SK.FactionEmblems.assetName() — e.g. "FactionEmblems/ironwright"
-    var factionEmblemAssetName: String? {
-        switch faction {
-        case .ironwright: return "FactionEmblems/ironwright"
-        case .feyCourts: return "FactionEmblems/fey"
-        case .demonicKingdoms: return "FactionEmblems/demonic"
-        case nil: return nil
-        }
-    }
+    // MARK: - Computed Properties
 
     /// Type line text (e.g. "Creature -- Ironwright", "Spell -- Fey Courts").
     var typeLine: String {
@@ -210,6 +167,16 @@ struct CardDisplayData {
             return "\(typeText) \u{2014} \(faction.shortDisplayName)"
         }
         return typeText
+    }
+
+    /// Faction emblem asset name for watermark.
+    var factionEmblemAssetName: String? {
+        switch faction {
+        case .ironwright: return "FactionEmblems/ironwright"
+        case .feyCourts: return "FactionEmblems/fey"
+        case .demonicKingdoms: return "FactionEmblems/demonic"
+        case nil: return nil
+        }
     }
 }
 
@@ -220,59 +187,24 @@ struct CardFrameView: View {
     let size: CardDisplaySize
 
     var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
+        ZStack(alignment: .topTrailing) {
+            // Layer 1: Full-bleed card art (fills 100% of card)
+            artLayer
 
-            ZStack(alignment: .topLeading) {
-                // Layer 1: Card art (fills art window area)
-                artLayer(width: w, height: h)
+            // Layer 2: Gradient text panel at bottom ~28%
+            textPanel
 
-                // Layer 2: Frame overlay
-                frameLayer(width: w, height: h)
+            // Layer 3: Mana cost badge (top-right corner)
+            manaCostBadge
 
-                // Layer 3: Faction emblem watermark (behind text, very subtle)
-                if size == .detail {
-                    emblemWatermark(width: w, height: h)
-                }
-
-                // Layer 4: Card name bar
-                cardNameOverlay(width: w, height: h)
-
-                // Layer 5: Type line (detail only)
-                if size.showTypeLine {
-                    typeLineOverlay(width: w, height: h)
-                }
-
-                // Layer 6: Keywords (detail only)
-                if size.showKeywords && !data.keywords.isEmpty {
-                    keywordsOverlay(width: w, height: h)
-                }
-
-                // Layer 7: Flavor text (detail only)
-                if size.showFlavorText && !data.flavorText.isEmpty {
-                    flavorTextOverlay(width: w, height: h)
-                }
-
-                // Layer 8: Mana cost badge (top-right)
-                manaCostBadge(width: w, height: h)
-
-                // Layer 9: ATK/HP badges (bottom corners, creatures only)
-                if data.attack != nil, data.health != nil {
-                    statBadges(width: w, height: h)
-                }
-
-                // Layer 10: Rarity glow border
-                rarityBorder(width: w, height: h)
-
-                // Layer 11: Evolution ready indicator
-                if data.isEvolutionReady && size != .detail {
-                    evolutionReadyBadge(width: w, height: h)
-                }
+            // Layer 4: Evolution ready indicator (grid/hand only)
+            if data.isEvolutionReady && size != .detail {
+                evolutionReadyBadge
             }
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .modifier(RarityGlowModifier(tier: data.tier, cornerRadius: cornerRadius))
     }
 
     // MARK: - Corner Radius
@@ -284,45 +216,35 @@ struct CardFrameView: View {
         }
     }
 
-    // MARK: - Art Layer
+    // MARK: - Full-Bleed Art Layer
 
-    private func artLayer(width: CGFloat, height: CGFloat) -> some View {
-        let artHeight = height * artHeightRatio
-
-        return VStack(spacing: 0) {
+    private var artLayer: some View {
+        Group {
             if let urlString = data.artUrl, !urlString.isEmpty, let url = URL(string: urlString) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:
-                        artPlaceholder(width: width, height: artHeight)
+                        artPlaceholder
                     case .success(let image):
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: width, height: artHeight)
+                            .frame(width: size.width, height: size.height)
                             .clipped()
                     case .failure:
-                        artPlaceholder(width: width, height: artHeight)
+                        artPlaceholder
                     @unknown default:
-                        artPlaceholder(width: width, height: artHeight)
+                        artPlaceholder
                     }
                 }
-                .frame(width: width, height: artHeight)
             } else {
-                artPlaceholder(width: width, height: artHeight)
+                artPlaceholder
             }
-            Spacer(minLength: 0)
         }
+        .frame(width: size.width, height: size.height)
     }
 
-    private var artHeightRatio: CGFloat {
-        switch size {
-        case .grid, .hand: return 0.65
-        case .detail: return 0.55
-        }
-    }
-
-    private func artPlaceholder(width: CGFloat, height: CGFloat) -> some View {
+    private var artPlaceholder: some View {
         Rectangle()
             .fill(
                 LinearGradient(
@@ -331,314 +253,175 @@ struct CardFrameView: View {
                     endPoint: .bottomTrailing
                 )
             )
-            .frame(width: width, height: height)
+            .frame(width: size.width, height: size.height)
             .overlay(
                 Image(systemName: "photo")
-                    .font(.system(size: max(width * 0.2, 12)))
+                    .font(.system(size: max(size.width * 0.2, 12)))
                     .foregroundColor(.textDisabled)
             )
     }
 
-    // MARK: - Frame Layer
+    // MARK: - Unified Text Panel (Bottom ~28%)
 
-    private func frameLayer(width: CGFloat, height: CGFloat) -> some View {
-        Image(data.frameAssetName)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: width, height: height)
-            .clipped()
-            .allowsHitTesting(false)
+    private var textPanel: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            ZStack(alignment: .bottom) {
+                // Gradient background: clear at top -> 78% opacity black at bottom
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0.0),
+                        .init(color: .black.opacity(0.35), location: 0.25),
+                        .init(color: .black.opacity(0.78), location: 0.65),
+                        .init(color: .black.opacity(0.88), location: 1.0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: size.height * textPanelHeightRatio)
+
+                // Text content
+                panelContent
+            }
+        }
+        .frame(width: size.width, height: size.height)
     }
 
-    // MARK: - Faction Emblem Watermark
+    private var textPanelHeightRatio: CGFloat {
+        switch size {
+        case .grid, .hand: return 0.32
+        case .detail: return 0.36
+        }
+    }
 
-    private func emblemWatermark(width: CGFloat, height: CGFloat) -> some View {
-        Group {
-            if let emblemName = data.factionEmblemAssetName {
-                VStack {
+    @ViewBuilder
+    private var panelContent: some View {
+        switch size {
+        case .grid, .hand:
+            condensedPanel
+        case .detail:
+            fullPanel
+        }
+    }
+
+    // MARK: - Condensed Panel (Grid / Hand) — Name + Stats
+
+    private var condensedPanel: some View {
+        VStack(spacing: 2) {
+            // Card name
+            Text(data.name)
+                .font(CardFont.cardName(size: condensedNameFontSize))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            // ATK/HP stats row
+            if let atk = data.attack, let hp = data.health {
+                HStack(spacing: 0) {
                     Spacer()
-                    HStack {
-                        Spacer()
-                        Image(emblemName)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: width * 0.35)
-                            .opacity(0.06)
-                        Spacer()
-                    }
-                    Spacer()
-                        .frame(height: height * 0.08)
+                    statIcon(imageName: "StatIcons/sword-atk", value: atk, color: .damageOrange)
+                    Spacer().frame(width: 6)
+                    statIcon(imageName: "StatIcons/heart-hp", value: hp, color: .healGreen)
                 }
             }
         }
+        .padding(.horizontal, 6)
+        .padding(.bottom, 6)
+        .padding(.top, 4)
     }
 
-    // MARK: - Card Name
+    private var condensedNameFontSize: CGFloat {
+        size == .grid ? 9 : 8
+    }
 
-    private func cardNameOverlay(width: CGFloat, height: CGFloat) -> some View {
-        let nameY = height * nameYRatio
-        let fontSize = nameFontSize
+    // MARK: - Full Panel (Detail) — All Info
 
-        return VStack(spacing: 0) {
-            Spacer()
-                .frame(height: nameY)
+    private var fullPanel: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // Card name
+            Text(data.name)
+                .font(CardFont.cardName(size: 18))
+                .foregroundColor(.white)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Name bar background
-            ZStack {
-                Rectangle()
-                    .fill(Color.bgPrimary.opacity(nameBarOpacity))
-                    .frame(height: nameBarHeight)
-
-                Text(data.name)
-                    .font(CardFont.cardName(size: fontSize))
-                    .foregroundColor(.textPrimary)
+            // Type line + faction badge
+            HStack(spacing: 6) {
+                Text(data.typeLine)
+                    .font(CardFont.body(size: 12))
+                    .foregroundColor(Color(hex: "#BBBBBB"))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .padding(.horizontal, namePadding)
+
+                if let faction = data.faction {
+                    factionBadge(faction: faction)
+                }
+
+                Spacer()
             }
 
-            Spacer(minLength: 0)
+            // Keywords
+            if !data.keywords.isEmpty {
+                keywordBadgesRow
+            }
+
+            // Flavor text
+            if !data.flavorText.isEmpty {
+                Text(data.flavorText)
+                    .font(CardFont.flavorText(size: 11))
+                    .foregroundColor(Color(hex: "#999999"))
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(3)
+                    .padding(.top, 2)
+            }
+
+            // ATK/HP stats row (bottom-right)
+            if let atk = data.attack, let hp = data.health {
+                HStack(spacing: 0) {
+                    Spacer()
+                    statIcon(imageName: "StatIcons/sword-atk", value: atk, color: .damageOrange)
+                    Spacer().frame(width: 10)
+                    statIcon(imageName: "StatIcons/heart-hp", value: hp, color: .healGreen)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
+        .padding(.top, 8)
+    }
+
+    // MARK: - Stat Icon (ATK / HP)
+
+    private func statIcon(imageName: String, value: Int, color: Color) -> some View {
+        HStack(spacing: statIconSpacing) {
+            Image(imageName)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: statIconSize, height: statIconSize)
+                .foregroundColor(color)
+
+            Text("\(value)")
+                .font(CardFont.stats(size: statFontSize))
+                .foregroundColor(color)
         }
     }
 
-    private var nameYRatio: CGFloat {
+    private var statIconSize: CGFloat {
         switch size {
-        case .grid, .hand: return 0.62
-        case .detail: return 0.53
-        }
-    }
-
-    private var nameFontSize: CGFloat {
-        switch size {
-        case .grid: return 9
-        case .hand: return 8
+        case .grid: return 10
+        case .hand: return 9
         case .detail: return 18
         }
     }
 
-    private var nameBarHeight: CGFloat {
+    private var statIconSpacing: CGFloat {
         switch size {
-        case .grid, .hand: return 18
-        case .detail: return 34
-        }
-    }
-
-    private var nameBarOpacity: Double {
-        switch size {
-        case .grid, .hand: return 0.7
-        case .detail: return 0.8
-        }
-    }
-
-    private var namePadding: CGFloat {
-        switch size {
-        case .grid, .hand: return 4
-        case .detail: return 16
-        }
-    }
-
-    // MARK: - Type Line
-
-    private func typeLineOverlay(width: CGFloat, height: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(height: height * 0.59)
-
-            Text(data.typeLine)
-                .font(CardFont.body(size: 12))
-                .foregroundColor(.textSecondary)
-                .lineLimit(1)
-                .padding(.horizontal, 16)
-
-            Spacer(minLength: 0)
-        }
-    }
-
-    // MARK: - Keywords
-
-    private func keywordsOverlay(width: CGFloat, height: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(height: height * 0.64)
-
-            HStack(spacing: 4) {
-                ForEach(data.keywords) { keyword in
-                    compactKeywordBadge(keyword: keyword)
-                }
-            }
-            .padding(.horizontal, 12)
-
-            Spacer(minLength: 0)
-        }
-    }
-
-    private func compactKeywordBadge(keyword: Keyword) -> some View {
-        HStack(spacing: 3) {
-            // Use asset catalog keyword icon with SF Symbol fallback
-            Image(keyword.assetIconName)
-                .resizable()
-                .renderingMode(.template)
-                .aspectRatio(contentMode: .fit)
-                .frame(width: keywordIconSize, height: keywordIconSize)
-
-            if size == .detail {
-                Text(keyword.displayName)
-                    .font(CardFont.body(size: 10))
-                    .lineLimit(1)
-            }
-        }
-        .foregroundColor(keywordColor(keyword))
-        .padding(.horizontal, size == .detail ? 6 : 3)
-        .padding(.vertical, 2)
-        .background(keywordColor(keyword).opacity(0.15))
-        .cornerRadius(4)
-    }
-
-    private var keywordIconSize: CGFloat {
-        switch size {
-        case .grid, .hand: return 8
-        case .detail: return 12
-        }
-    }
-
-    // MARK: - Flavor Text
-
-    private func flavorTextOverlay(width: CGFloat, height: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(height: height * 0.72)
-
-            Text(data.flavorText)
-                .font(CardFont.flavorText(size: 11))
-                .foregroundColor(.textTertiary)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .padding(.horizontal, 16)
-
-            Spacer(minLength: 0)
-        }
-    }
-
-    // MARK: - Mana Cost Badge
-
-    private func manaCostBadge(width: CGFloat, height: CGFloat) -> some View {
-        let gemSize = manaGemSize
-
-        return VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Spacer()
-                ZStack {
-                    // Gem background
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "#1565C0"), Color(hex: "#0D47A1")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: gemSize, height: gemSize)
-                        .shadow(color: Color(hex: "#1565C0").opacity(0.6), radius: 3)
-
-                    // Outer ring
-                    Circle()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        .frame(width: gemSize, height: gemSize)
-
-                    // Cost number
-                    Text("\(data.manaCost)")
-                        .font(CardFont.stats(size: gemSize * 0.5))
-                        .foregroundColor(.white)
-                }
-                .padding(.trailing, manaCostPadding)
-                .padding(.top, manaCostPadding)
-            }
-            Spacer(minLength: 0)
-        }
-    }
-
-    private var manaGemSize: CGFloat {
-        switch size {
-        case .grid: return 22
-        case .hand: return 20
-        case .detail: return 36
-        }
-    }
-
-    private var manaCostPadding: CGFloat {
-        switch size {
-        case .grid, .hand: return 4
-        case .detail: return 8
-        }
-    }
-
-    // MARK: - Stat Badges (ATK / HP)
-
-    private func statBadges(width: CGFloat, height: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            HStack(spacing: 0) {
-                // ATK badge (bottom-left)
-                if let atk = data.attack {
-                    statBadge(
-                        value: atk,
-                        icon: "bolt.fill",
-                        color: .damageOrange,
-                        bgColor: Color(hex: "#1A0800")
-                    )
-                    .padding(.leading, statBadgePadding)
-                }
-
-                Spacer()
-
-                // HP badge (bottom-right)
-                if let hp = data.health {
-                    statBadge(
-                        value: hp,
-                        icon: "heart.fill",
-                        color: .healGreen,
-                        bgColor: Color(hex: "#001A00")
-                    )
-                    .padding(.trailing, statBadgePadding)
-                }
-            }
-            .padding(.bottom, statBadgePadding)
-        }
-    }
-
-    private func statBadge(value: Int, icon: String, color: Color, bgColor: Color) -> some View {
-        let badgeSize = statBadgeSize
-
-        return ZStack {
-            // Badge shape
-            RoundedRectangle(cornerRadius: badgeSize * 0.2)
-                .fill(bgColor.opacity(0.85))
-                .frame(width: badgeSize, height: badgeSize)
-
-            RoundedRectangle(cornerRadius: badgeSize * 0.2)
-                .stroke(color.opacity(0.6), lineWidth: 1)
-                .frame(width: badgeSize, height: badgeSize)
-
-            VStack(spacing: size == .detail ? 1 : 0) {
-                if size == .detail {
-                    Image(systemName: icon)
-                        .font(.system(size: badgeSize * 0.22))
-                        .foregroundColor(color.opacity(0.7))
-                }
-
-                Text("\(value)")
-                    .font(CardFont.stats(size: statFontSize))
-                    .foregroundColor(color)
-            }
-        }
-    }
-
-    private var statBadgeSize: CGFloat {
-        switch size {
-        case .grid: return 22
-        case .hand: return 20
-        case .detail: return 44
+        case .grid, .hand: return 2
+        case .detail: return 4
         }
     }
 
@@ -650,96 +433,143 @@ struct CardFrameView: View {
         }
     }
 
-    private var statBadgePadding: CGFloat {
+    // MARK: - Faction Badge (Colored Pill)
+
+    private func factionBadge(faction: FactionShortName) -> some View {
+        Text(faction.shortDisplayName)
+            .font(CardFont.body(size: 9))
+            .foregroundColor(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(factionBadgeColor(faction))
+            )
+    }
+
+    private func factionBadgeColor(_ faction: FactionShortName) -> Color {
+        switch faction {
+        case .ironwright: return Color(hex: "#e8c06a")
+        case .feyCourts: return Color(hex: "#6edba0")
+        case .demonicKingdoms: return Color(hex: "#e86a6a")
+        }
+    }
+
+    // MARK: - Keyword Badges Row
+
+    private var keywordBadgesRow: some View {
+        HStack(spacing: 4) {
+            ForEach(data.keywords) { keyword in
+                keywordBadge(keyword: keyword)
+            }
+        }
+    }
+
+    private func keywordBadge(keyword: Keyword) -> some View {
+        HStack(spacing: 3) {
+            Image(keyword.assetIconName)
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 12, height: 12)
+
+            Text(keyword.displayName)
+                .font(CardFont.body(size: 10))
+                .lineLimit(1)
+        }
+        .foregroundColor(keywordColor(keyword))
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(keywordColor(keyword).opacity(0.15))
+        .cornerRadius(4)
+    }
+
+    // MARK: - Mana Cost Badge (Top-Right)
+
+    private var manaCostBadge: some View {
+        HStack(spacing: manaCostIconSpacing) {
+            Image("StatIcons/chaos-motes")
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: manaCostIconSize, height: manaCostIconSize)
+                .foregroundColor(.white)
+
+            Text("\(data.manaCost)")
+                .font(CardFont.stats(size: manaCostFontSize))
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, manaCostPillPaddingH)
+        .padding(.vertical, manaCostPillPaddingV)
+        .background(
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [Color(hex: "#1565C0"), Color(hex: "#0D47A1")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            Capsule()
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color(hex: "#1565C0").opacity(0.5), radius: 3)
+        .padding(.trailing, manaCostEdgePadding)
+        .padding(.top, manaCostEdgePadding)
+    }
+
+    private var manaCostIconSize: CGFloat {
         switch size {
-        case .grid, .hand: return 3
+        case .grid: return 9
+        case .hand: return 8
+        case .detail: return 16
+        }
+    }
+
+    private var manaCostIconSpacing: CGFloat {
+        switch size {
+        case .grid, .hand: return 2
+        case .detail: return 4
+        }
+    }
+
+    private var manaCostFontSize: CGFloat {
+        switch size {
+        case .grid: return 10
+        case .hand: return 9
+        case .detail: return 16
+        }
+    }
+
+    private var manaCostPillPaddingH: CGFloat {
+        switch size {
+        case .grid, .hand: return 4
         case .detail: return 8
         }
     }
 
-    // MARK: - Rarity Border
-
-    private func rarityBorder(width: CGFloat, height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
-            .stroke(
-                rarityBorderGradient,
-                lineWidth: rarityBorderWidth
-            )
-            .frame(width: width, height: height)
-            .opacity(rarityBorderOpacity)
-    }
-
-    private var rarityBorderWidth: CGFloat {
-        switch data.tier {
-        case .common: return 1
-        case .uncommon: return 1.5
-        case .rare: return 2
-        case .epic: return 2.5
-        case .legendary: return 3
+    private var manaCostPillPaddingV: CGFloat {
+        switch size {
+        case .grid, .hand: return 2
+        case .detail: return 4
         }
     }
 
-    private var rarityBorderOpacity: Double {
-        switch data.tier {
-        case .common: return 0.3
-        case .uncommon: return 0.5
-        case .rare: return 0.7
-        case .epic: return 0.8
-        case .legendary: return 1.0
-        }
-    }
-
-    private var rarityBorderGradient: LinearGradient {
-        let color = Color.tierColor(data.tier)
-        switch data.tier {
-        case .common:
-            return LinearGradient(
-                colors: [color.opacity(0.3), color.opacity(0.5)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .uncommon:
-            return LinearGradient(
-                colors: [color.opacity(0.5), color],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .rare:
-            return LinearGradient(
-                colors: [color, color.opacity(0.7), color],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .epic:
-            return LinearGradient(
-                colors: [
-                    Color(hex: "#9C27B0"),
-                    Color(hex: "#CE93D8"),
-                    Color(hex: "#9C27B0")
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .legendary:
-            return LinearGradient(
-                colors: [
-                    Color(hex: "#FFD700"),
-                    Color(hex: "#FFA000"),
-                    Color(hex: "#FFD700"),
-                    Color(hex: "#FFA000")
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+    private var manaCostEdgePadding: CGFloat {
+        switch size {
+        case .grid, .hand: return 4
+        case .detail: return 8
         }
     }
 
     // MARK: - Evolution Ready Badge
 
-    private func evolutionReadyBadge(width: CGFloat, height: CGFloat) -> some View {
-        VStack(spacing: 0) {
+    private var evolutionReadyBadge: some View {
+        VStack {
             Spacer()
-            HStack(spacing: 0) {
+            HStack {
                 Spacer()
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: size == .grid ? 14 : 12))
@@ -748,6 +578,7 @@ struct CardFrameView: View {
                     .padding(4)
             }
         }
+        .frame(width: size.width, height: size.height)
     }
 
     // MARK: - Helper Colors
@@ -770,11 +601,91 @@ struct CardFrameView: View {
     }
 }
 
+// MARK: - Rarity Glow Modifier
+
+/// Applies rarity-based glow effects via shadow modifiers instead of frame overlays.
+private struct RarityGlowModifier: ViewModifier {
+    let tier: EvolutionTier
+    let cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        switch tier {
+        case .common:
+            // No special border
+            content
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                )
+
+        case .uncommon:
+            // Subtle silver border + shadow
+            content
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(Color(hex: "#C0C0C0").opacity(0.5), lineWidth: 1)
+                )
+                .shadow(color: Color(hex: "#C0C0C0").opacity(0.3), radius: 4)
+
+        case .rare:
+            // Blue glow border + shadow
+            content
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(Color(hex: "#2196F3").opacity(0.6), lineWidth: 1.5)
+                )
+                .shadow(color: Color(hex: "#2196F3").opacity(0.4), radius: 6)
+
+        case .epic:
+            // Purple glow border + shadow
+            content
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: "#9C27B0").opacity(0.7),
+                                    Color(hex: "#CE93D8").opacity(0.8),
+                                    Color(hex: "#9C27B0").opacity(0.7)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 2
+                        )
+                )
+                .shadow(color: Color(hex: "#9C27B0").opacity(0.5), radius: 8)
+
+        case .legendary:
+            // Gold glow border + shadow
+            content
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: "#FFD700").opacity(0.8),
+                                    Color(hex: "#FFA000").opacity(0.9),
+                                    Color(hex: "#FFD700").opacity(0.8),
+                                    Color(hex: "#FFA000").opacity(0.9)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 2.5
+                        )
+                )
+                .shadow(color: Color(hex: "#FFD700").opacity(0.5), radius: 10)
+                .shadow(color: Color(hex: "#FFA000").opacity(0.3), radius: 4)
+        }
+    }
+}
+
 // MARK: - Keyword Asset Name Extension
 
 extension Keyword {
     /// The asset catalog image name for this keyword's icon.
-    /// Format matches SK.KeywordIcons.assetName() — e.g. "KeywordIcons/shield"
+    /// Format matches SK.KeywordIcons.assetName() -- e.g. "KeywordIcons/shield"
     var assetIconName: String {
         switch self {
         case .shield: return "KeywordIcons/shield"
