@@ -36,8 +36,10 @@ dist/
 supabase/.branches/
 supabase/.temp/
 
-# Generated validation images
+# Generated preview/test art (large PNGs)
+scripts/preview/*.png
 scripts/preview/validation/
+scripts/preview/stat-icons/
 
 # Misc
 .vercel

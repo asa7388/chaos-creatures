@@ -5,8 +5,8 @@
 
 import { createClient } from '../packages/game-server/node_modules/@supabase/supabase-js/dist/index.mjs';
 import { createHmac, createHash } from 'crypto';
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 // Load env from game-server/.env
@@ -295,7 +295,7 @@ const FACTION_IDS = {
 const CARD_SPECS = [
   // Ironwright — a weary old construct, not a shiny hero
   {
-    spec_id: 'iron-v3-01',
+    spec_id: 'iron-v4-01',
     faction_key: 'IRONWRIGHT',
     faction_id: FACTION_IDS.IRONWRIGHT,
     creature_archetype: 'Furnace Warden',
@@ -309,9 +309,25 @@ const CARD_SPECS = [
     keywords: ['Shield'],
     rarity: 'COMMON',
   },
+  // Ironwright — epic tier war engine, dramatic overhead composition
+  {
+    spec_id: 'iron-v4-02',
+    faction_key: 'IRONWRIGHT',
+    faction_id: FACTION_IDS.IRONWRIGHT,
+    creature_archetype: 'Siege Colossus',
+    creature_description: 'A towering bipedal war machine three stories tall built from riveted boiler plates and locomotive parts, its torso is a converted steam engine with exhaust stacks belching black smoke, massive piston-driven legs each ending in iron-shod crushing feet, a battering ram jaw mounted where a head should be, chains and grappling hooks dangle from its arms, rust and battle damage everywhere',
+    visual_description: 'Towering steam-engine war machine with piston legs and battering ram jaw',
+    card_type: 'CREATURE',
+    cm_cost: 7,
+    base_attack: 6,
+    base_health: 8,
+    base_instability: 4,
+    keywords: ['Piercing'],
+    rarity: 'EPIC',
+  },
   // Fey Courts — something ancient and unsettling, not pretty
   {
-    spec_id: 'fey-v3-01',
+    spec_id: 'fey-v4-01',
     faction_key: 'FEY_COURTS',
     faction_id: FACTION_IDS.FEY_COURTS,
     creature_archetype: 'Rootmaw Lurker',
@@ -325,9 +341,25 @@ const CARD_SPECS = [
     keywords: ['Lifesteal'],
     rarity: 'COMMON',
   },
+  // Fey Courts — flying faerie, environmental skyborne composition
+  {
+    spec_id: 'fey-v4-02',
+    faction_key: 'FEY_COURTS',
+    faction_id: FACTION_IDS.FEY_COURTS,
+    creature_archetype: 'Moonwing Harbinger',
+    creature_description: 'An ethereal moth-like fey creature with four translucent wings patterned like stained glass, its body is slender and insectoid wrapped in living ivy and silver thread, antennae trail luminous pollen, its face is eerily humanoid with compound eyes reflecting moonlight, it carries a staff of petrified wood capped with a glowing seed pod',
+    visual_description: 'Moth-winged fey with stained-glass wings, compound eyes, and glowing seed staff',
+    card_type: 'CREATURE',
+    cm_cost: 4,
+    base_attack: 2,
+    base_health: 3,
+    base_instability: 2,
+    keywords: ['Flying'],
+    rarity: 'UNCOMMON',
+  },
   // Demonic Kingdoms — grotesque and heavy, not a clean demon
   {
-    spec_id: 'demon-v3-01',
+    spec_id: 'demon-v4-01',
     faction_key: 'DEMONIC',
     faction_id: FACTION_IDS.DEMONIC,
     creature_archetype: 'Slag Brute',
@@ -340,6 +372,22 @@ const CARD_SPECS = [
     base_instability: 3,
     keywords: ['Deathtouch'],
     rarity: 'COMMON',
+  },
+  // Demonic Kingdoms — legendary overlord, narrative composition
+  {
+    spec_id: 'demon-v4-02',
+    faction_key: 'DEMONIC',
+    faction_id: FACTION_IDS.DEMONIC,
+    creature_archetype: 'Tyrant of the Black Altar',
+    creature_description: 'A massive horned demon seated on a throne of fused skulls and molten obsidian, four arms each gripping a different weapon — a serrated blade, a bone scepter, a chain whip, and a still-beating heart, its chest is split open revealing a furnace of hellfire within, a crown of broken swords sits atop its ram-like horns, lesser demons grovel at its feet',
+    visual_description: 'Four-armed throne demon with hellfire chest, broken sword crown, skull throne',
+    card_type: 'CREATURE',
+    cm_cost: 8,
+    base_attack: 7,
+    base_health: 7,
+    base_instability: 5,
+    keywords: ['Deathtouch', 'Piercing'],
+    rarity: 'LEGENDARY',
   },
 ];
 
@@ -470,6 +518,7 @@ async function generateCard(spec) {
   // 1. Build art prompt with composition, environment, and v4 variety dimensions
   const factionPrefix = FACTION_PREFIXES[spec.faction_key];
   const composition = selectComposition(spec);
+  const compositionName = Object.entries(COMPOSITION_POOL).find(([, v]) => v === composition)?.[0] || 'UNKNOWN';
   const environment = selectEnvironment(spec.faction_key);
   const weather = selectWeather();
   const timeOfDay = selectTimeOfDay();
@@ -511,6 +560,14 @@ async function generateCard(spec) {
   if (!imgResponse.ok) throw new Error(`Image download failed: ${imgResponse.status}`);
   const imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
   console.log(`  Image downloaded: ${(imageBuffer.length / 1024).toFixed(0)}KB`);
+
+  // 3b. Save image locally to scripts/preview/
+  const previewDir = join(__dirname, 'preview');
+  if (!existsSync(previewDir)) mkdirSync(previewDir, { recursive: true });
+  const localFileName = `${spec.spec_id}.png`;
+  const localPath = join(previewDir, localFileName);
+  writeFileSync(localPath, imageBuffer);
+  console.log(`  Saved locally: scripts/preview/${localFileName}`);
 
   // 4. Upload to R2
   const r2Key = `cards/${spec.faction_key.toLowerCase()}/${spec.rarity.toLowerCase()}/${spec.spec_id}.png`;
@@ -590,7 +647,15 @@ Respond ONLY with this JSON:
   if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`);
 
   console.log(`  Inserted card_template: ${inserted.id}`);
-  return { id: inserted.id, name, flavor_text, art_url: artUrl };
+  return {
+    id: inserted.id,
+    name,
+    flavor_text,
+    art_url: artUrl,
+    localFile: `${spec.spec_id}.png`,
+    compositionName,
+    spec,
+  };
 }
 
 // ==========================================================================
@@ -633,6 +698,32 @@ async function main() {
   console.log('─'.repeat(60));
   console.log(`Total: ${results.filter(r => r.success).length}/${results.length} succeeded`);
   console.log(`Estimated cost: $${totalCost.toFixed(3)}`);
+
+  // 7. Write cards.json for preview server
+  const FACTION_TYPE_LINES = {
+    IRONWRIGHT: 'Ironwright Creature',
+    FEY_COURTS: 'Fey Creature',
+    DEMONIC: 'Demonic Creature',
+  };
+  const cardsJson = results.filter(r => r.success).map(r => ({
+    name: r.name,
+    faction: r.faction,
+    rarity: (r.spec?.rarity || 'common').toLowerCase(),
+    cardType: r.spec?.card_type === 'SPELL' ? 'Spell' : 'Creature',
+    typeLine: `${FACTION_TYPE_LINES[r.faction] || 'Creature'} - ${r.spec?.creature_archetype || ''}`,
+    manaCost: r.spec?.cm_cost ?? 3,
+    attack: r.spec?.card_type === 'SPELL' ? null : (r.spec?.base_attack ?? 0),
+    health: r.spec?.card_type === 'SPELL' ? null : (r.spec?.base_health ?? 0),
+    keywords: r.spec?.keywords || [],
+    flavorText: r.flavor_text || '',
+    artFile: r.localFile,
+    composition: r.compositionName,
+  }));
+
+  const previewDir = join(__dirname, 'preview');
+  const cardsJsonPath = join(previewDir, 'cards.json');
+  writeFileSync(cardsJsonPath, JSON.stringify(cardsJson, null, 2));
+  console.log(`\nWrote ${cardsJson.length} cards to scripts/preview/cards.json`);
 }
 
 main().catch(err => {
