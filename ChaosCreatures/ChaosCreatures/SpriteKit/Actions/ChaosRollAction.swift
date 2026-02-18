@@ -159,6 +159,28 @@ enum ChaosRollAction {
             SKAction.wait(forDuration: 1.0),
             SKAction.removeFromParent()
         ]))
+
+        // Additional themed energy effect for order/chaos outcomes
+        switch result {
+        case .chaos:
+            let swirl = ParticleEffects.chaosEnergySwirl(at: position)
+            swirl.zPosition = SK.ZPosition.particles
+            scene.addChild(swirl)
+            swirl.run(SKAction.sequence([
+                SKAction.wait(forDuration: 1.5),
+                SKAction.removeFromParent()
+            ]))
+        case .order:
+            let crystallize = ParticleEffects.orderEnergyCrystallize(at: position)
+            crystallize.zPosition = SK.ZPosition.particles
+            scene.addChild(crystallize)
+            crystallize.run(SKAction.sequence([
+                SKAction.wait(forDuration: 1.5),
+                SKAction.removeFromParent()
+            ]))
+        case .nothing:
+            break // No additional effect for nothing
+        }
     }
 
     /// Screen-wide color flash for the roll result

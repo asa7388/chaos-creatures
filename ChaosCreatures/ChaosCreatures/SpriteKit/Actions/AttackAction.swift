@@ -83,6 +83,15 @@ enum AttackAction {
                 // On impact:
                 impactShake(on: target)
                 damageFlash(on: target)
+
+                // Damage impact particles at target position
+                let impactEmitter = ParticleEffects.damageImpact(at: target.position)
+                impactEmitter.zPosition = SK.ZPosition.particles
+                scene.addChild(impactEmitter)
+                impactEmitter.run(SKAction.sequence([
+                    SKAction.wait(forDuration: 0.3),
+                    SKAction.removeFromParent()
+                ]))
             }
 
             // Clear glow after snap-back

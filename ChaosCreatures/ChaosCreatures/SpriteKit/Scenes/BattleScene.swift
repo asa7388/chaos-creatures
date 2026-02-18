@@ -86,6 +86,9 @@ final class BattleScene: SKScene {
                 self?.phaseIndicator?.updatePhase(phase)
             }
             .store(in: &cancellables)
+
+        // Start battle music
+        BattleAudioManager.shared.startBattleMusic()
     }
 
     /// Set faction colors for both players
@@ -94,6 +97,11 @@ final class BattleScene: SKScene {
         self.opponentFactionColor = opponent
         playerManaBar?.setFactionColor(player)
         opponentManaBar?.setFactionColor(opponent)
+    }
+
+    /// Set the player's faction for audio theming
+    func setPlayerFaction(_ faction: FactionShortName) {
+        BattleAudioManager.shared.setFaction(faction)
     }
 
     // MARK: - Setup
@@ -201,6 +209,15 @@ final class BattleScene: SKScene {
 
         // Update creature dim states for main phase
         updateCreatureInteractivity(state)
+
+        // Update adaptive music stems based on game state
+        BattleAudioManager.shared.updateMusicState(
+            playerHp: state.me.currentHp,
+            opponentHp: state.opponent.currentHp,
+            isMyTurn: state.isMyTurn,
+            phase: state.phase,
+            lastRollResult: nil
+        )
     }
 
     /// Sync board nodes to match server state
@@ -281,6 +298,9 @@ final class BattleScene: SKScene {
         creatureNode.position = startPos
         boardNode.addChild(creatureNode)
 
+        // SFX: card play whoosh
+        BattleAudioManager.shared.playSFX(.cardPlay, in: self)
+
         CardPlayAction.fullPlaySequence(
             cardNode: creatureNode,
             from: startPos,
@@ -304,6 +324,9 @@ final class BattleScene: SKScene {
     /// Animate a spell being cast (no board placement)
     private func animateSpellCast(_ data: CardPlayedData) {
         let factionColor = data.card.factionPrimaryColor
+
+        // SFX: card play whoosh for spell cast
+        BattleAudioManager.shared.playSFX(.cardPlay, in: self)
 
         // Flash the screen with faction color
         let flash = SKSpriteNode(color: factionColor, size: size)
@@ -331,6 +354,9 @@ final class BattleScene: SKScene {
         addChild(d20)
         self.d20Node = d20
 
+        // SFX: chaos roll start
+        BattleAudioManager.shared.playSFX(.chaosRollStart, in: self)
+
         // Fade in
         d20.run(SKAction.fadeIn(withDuration: 0.15)) { [weak self] in
             guard let self = self else { return }
@@ -342,6 +368,9 @@ final class BattleScene: SKScene {
                 instability: data.instability,
                 result: data.result
             ) {
+                // SFX: chaos roll result
+                BattleAudioManager.shared.playChaosRollSFX(data.result, in: self)
+
                 // Result particles and flash
                 ChaosRollAction.resultParticles(result: data.result, at: .zero, in: self)
                 ChaosRollAction.resultFlash(result: data.result, in: self)
@@ -361,6 +390,10 @@ final class BattleScene: SKScene {
 
     /// Animate an Order/Chaos event
     func animateEventTriggered(_ data: EventTriggeredData) {
+        // SFX: event trigger based on type
+        let eventSfx: BattleAudioManager.SFX = (data.eventType == .order) ? .eventOrder : .eventChaos
+        BattleAudioManager.shared.playSFX(eventSfx, in: self)
+
         EventSlideAction.showEvent(
             eventName: data.eventName,
             eventType: data.eventType,
@@ -400,23 +433,29 @@ final class BattleScene: SKScene {
             return
         }
 
+        // SFX: attack
+        BattleAudioManager.shared.playSFX(.attack, in: self)
+
         // Attacker lunges at blocker
         AttackAction.fullAttackSequence(attacker: attackerNode, target: blockerNode, in: self) { [weak self] in
             guard let self = self else { return }
 
-            // Show damage numbers
+            // Show damage numbers + SFX
             if pair.attackerDamageDealt > 0 {
+                BattleAudioManager.shared.playSFX(.damage, in: self)
                 DamageAction.showDamage(pair.attackerDamageDealt, on: blockerNode, in: self, isLethal: pair.blockerDied)
             }
             if pair.blockerDamageDealt > 0 {
                 DamageAction.showDamage(pair.blockerDamageDealt, on: attackerNode, in: self, isLethal: pair.attackerDied)
             }
 
-            // Shield breaks
+            // Shield breaks + SFX
             if pair.attackerShieldBroke {
+                BattleAudioManager.shared.playSFX(.shieldBreak, in: self)
                 ShieldBreakAction.playShieldBreak(on: attackerNode, in: self)
             }
             if pair.blockerShieldBroke {
+                BattleAudioManager.shared.playSFX(.shieldBreak, in: self)
                 ShieldBreakAction.playShieldBreak(on: blockerNode, in: self)
             }
 
@@ -443,11 +482,16 @@ final class BattleScene: SKScene {
         let isPlayerAttacker = attackerNode.isPlayerCard
         let targetAvatar = isPlayerAttacker ? opponentAvatar! : playerAvatar!
 
+        // SFX: attack
+        BattleAudioManager.shared.playSFX(.attack, in: self)
+
         AttackAction.faceAttackSequence(attacker: attackerNode, avatarNode: targetAvatar, in: self) { [weak self] in
             guard let self = self else { return }
+            BattleAudioManager.shared.playSFX(.damage, in: self)
             DamageAction.showFaceDamage(attack.faceDamage, on: targetAvatar, in: self)
 
             if attack.lifesteal > 0 {
+                BattleAudioManager.shared.playSFX(.heal, in: self)
                 let healAvatar = isPlayerAttacker ? self.playerAvatar! : self.opponentAvatar!
                 HealAction.showPlayerHeal(attack.lifesteal, on: healAvatar, in: self)
             }
@@ -462,6 +506,11 @@ final class BattleScene: SKScene {
         let deathEntries: [(node: CreatureNode, faction: FactionShortName?)] = deaths.compactMap { death in
             guard let node = creatureNodes[death.creatureId] else { return nil }
             return (node: node, faction: node.factionShortName)
+        }
+
+        // SFX: death
+        if !deathEntries.isEmpty {
+            BattleAudioManager.shared.playSFX(.death, in: self)
         }
 
         DeathAction.playMultipleDeaths(creatures: deathEntries, in: self) { [weak self] in
@@ -483,6 +532,9 @@ final class BattleScene: SKScene {
             return
         }
 
+        // SFX: death
+        BattleAudioManager.shared.playSFX(.death, in: self)
+
         DeathAction.playDeath(creature: node, faction: node.factionShortName, in: self) { [weak self] in
             self?.creatureNodes.removeValue(forKey: data.creatureId)
             let board = (data.player == self?.lastGameState?.mySide) ? self?.playerBoard : self?.opponentBoard
@@ -498,8 +550,10 @@ final class BattleScene: SKScene {
         let delta = data.newHp - data.oldHp
 
         if delta < 0 {
+            BattleAudioManager.shared.playSFX(.damage, in: self)
             DamageAction.showFaceDamage(abs(delta), on: avatar, in: self)
         } else if delta > 0 {
+            BattleAudioManager.shared.playSFX(.heal, in: self)
             HealAction.showPlayerHeal(delta, on: avatar, in: self)
         }
 
@@ -529,12 +583,28 @@ final class BattleScene: SKScene {
         let manaBar = isPlayer ? playerManaBar! : opponentManaBar!
         manaBar.update(filled: data.currentMana, total: data.manaCap)
         manaBar.animateGain(newFilled: data.currentMana)
+
+        // SFX: mana crystal clink
+        BattleAudioManager.shared.playSFX(.manaGain, in: self)
+
+        // Mana gain sparkle particles at mana bar position
+        let sparkle = ParticleEffects.manaGainSparkle(at: manaBar.position)
+        sparkle.zPosition = SK.ZPosition.particles
+        addChild(sparkle)
+        sparkle.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.4),
+            SKAction.removeFromParent()
+        ]))
+
         stateMachine?.animationDidComplete()
     }
 
     /// Handle turn start banner
     func animateTurnStart(_ data: TurnStartData) {
         let isMyTurn = (data.activePlayer == lastGameState?.mySide)
+
+        // SFX: turn start ping
+        BattleAudioManager.shared.playSFX(.turnStart, in: self)
 
         // Start timer for decision phases
         if isMyTurn {
@@ -552,6 +622,13 @@ final class BattleScene: SKScene {
     /// Handle match end
     func animateMatchEnd(_ data: MatchEndData) {
         let isVictory = (data.winner == lastGameState?.mySide)
+
+        // SFX: victory or defeat
+        BattleAudioManager.shared.playSFX(isVictory ? .victory : .defeat, in: self)
+
+        // Music: game end sting
+        BattleAudioManager.shared.playGameEndMusic(isVictory: isVictory)
+
         EventSlideAction.showGameOverBanner(isVictory: isVictory, in: self) { [weak self] in
             self?.stateMachine?.animationDidComplete()
         }

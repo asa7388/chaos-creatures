@@ -17,12 +17,14 @@ final class EventBannerNode: SKNode {
     private let descriptionLabel: SKLabelNode
     private let borderNode: SKShapeNode
     private let flashNode: SKSpriteNode
+    private let storedEventType: EventType
 
     private var onDismiss: (() -> Void)?
 
     // MARK: - Init
 
     init(eventName: String, eventType: EventType, description: String, sceneSize: CGSize) {
+        self.storedEventType = eventType
         let bannerSize = SK.EventOverlay.size
         let isOrder = eventType == .order
         let themeColor = isOrder ? SK.Colors.orderBlue : SK.Colors.chaosRed
@@ -138,6 +140,25 @@ final class EventBannerNode: SKNode {
         flashNode.run(flash)
         run(sequence) { [weak self] in
             self?.onDismiss?()
+        }
+
+        // Add chaos/order energy particles at banner center after slide-in
+        let centerPos = CGPoint(x: scene.size.width / 2, y: targetY)
+        let eventType = self.storedEventType
+        DispatchQueue.main.asyncAfter(deadline: .now() + SK.Duration.eventOverlayFade) {
+            let emitter: SKEmitterNode
+            switch eventType {
+            case .order:
+                emitter = ParticleEffects.orderEnergyCrystallize(at: centerPos)
+            case .chaos:
+                emitter = ParticleEffects.chaosEnergySwirl(at: centerPos)
+            }
+            emitter.zPosition = SK.ZPosition.particles
+            scene.addChild(emitter)
+            emitter.run(SKAction.sequence([
+                SKAction.wait(forDuration: 1.5),
+                SKAction.removeFromParent()
+            ]))
         }
     }
 

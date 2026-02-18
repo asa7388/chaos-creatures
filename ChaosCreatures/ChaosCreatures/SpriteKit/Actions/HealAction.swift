@@ -39,6 +39,15 @@ enum HealAction {
             SKAction.wait(forDuration: SK.Duration.healFloat),
             SKAction.removeFromParent()
         ]))
+
+        // Additional heal shimmer for richer visual
+        let shimmer = ParticleEffects.healShimmer(at: target.position)
+        shimmer.zPosition = SK.ZPosition.particles
+        scene.addChild(shimmer)
+        shimmer.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.9),
+            SKAction.removeFromParent()
+        ]))
     }
 
     /// Lifesteal: show heal on attacker after dealing damage

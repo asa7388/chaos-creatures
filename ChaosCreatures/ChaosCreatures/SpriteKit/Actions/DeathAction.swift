@@ -50,6 +50,21 @@ enum DeathAction {
         emitter.zPosition = SK.ZPosition.particles
         scene.addChild(emitter)
 
+        // Additional death shatter burst for extra impact
+        let factionColor: UIColor
+        switch effectiveFaction {
+        case .ironwright: factionColor = UIColor(hex: "#D4AF37")
+        case .feyCourts: factionColor = UIColor(hex: "#81C784")
+        case .demonicKingdoms: factionColor = UIColor(hex: "#FF5252")
+        }
+        let shatter = ParticleEffects.deathShatter(at: position, color: factionColor)
+        shatter.zPosition = SK.ZPosition.particles
+        scene.addChild(shatter)
+        shatter.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.6),
+            SKAction.removeFromParent()
+        ]))
+
         // Auto-remove emitter after particles finish
         emitter.run(SKAction.sequence([
             SKAction.wait(forDuration: SK.Duration.deathParticles),

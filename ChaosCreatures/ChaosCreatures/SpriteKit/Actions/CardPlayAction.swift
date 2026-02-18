@@ -46,7 +46,7 @@ enum CardPlayAction {
         emitter.run(SKAction.sequence([wait, remove]))
     }
 
-    /// Full card play sequence: move + glow + screen flash
+    /// Full card play sequence: move + trail + glow + screen flash
     static func fullPlaySequence(
         cardNode: SKNode,
         from startPos: CGPoint,
@@ -58,7 +58,20 @@ enum CardPlayAction {
         cardNode.position = startPos
         let playAction = playCard(from: startPos, to: targetPos, factionColor: factionColor)
 
+        // Attach particle trail to card during movement
+        let trail = ParticleEffects.cardPlayTrail()
+        trail.targetNode = scene // Trail particles stay in world space
+        trail.zPosition = SK.ZPosition.particles
+        cardNode.addChild(trail)
+
         cardNode.run(playAction) {
+            // Remove trail emitter after card lands
+            trail.particleBirthRate = 0 // Stop emitting
+            trail.run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.3), // Let remaining particles fade
+                SKAction.removeFromParent()
+            ]))
+
             // Landing effects
             landingGlow(at: targetPos, factionColor: factionColor, in: scene)
 
