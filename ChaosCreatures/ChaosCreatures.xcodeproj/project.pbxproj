@@ -130,6 +130,7 @@
 		SFX00019BBBBBBBBBBBBBB19 /* sfx_evolution_reveal.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00019AAAAAAAAAAAAAAA19 /* sfx_evolution_reveal.wav */; };
 		BB11111111111111AAAAAA03 /* TutorialOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */; };
 		BB11111111111111AAAAAA04 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB11111111111111AAAAAA02 /* AchievementsView.swift */; };
+		W7B0000000000001CCCCCC01 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = W7B0000000000001AAAAAA01 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -286,6 +287,8 @@
 		F9539FD65D9F09F58E7114D0 /* SpriteKitConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteKitConstants.swift; sourceTree = "<group>"; };
 		BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialOverlayView.swift; sourceTree = "<group>"; };
 		BB11111111111111AAAAAA02 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
+		W7B0000000000001AAAAAA01 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		W7B0000000000002AAAAAA01 /* ChaosCreatures.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ChaosCreatures.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -610,12 +613,14 @@
 			isa = PBXGroup;
 			children = (
 				B8709C99AE6ABADCDF1F4EC1 /* App */,
+				W7B0000000000002AAAAAA01 /* ChaosCreatures.entitlements */,
 				3FD9A3D478CBAC6E4D5D1C74 /* Config */,
 				999DA759FD512EFFCA1AB3C0 /* Extensions */,
 				B2E3ED1E141FBE67F097F30B /* Models */,
 				8359928251C29FE8481E9070 /* Resources */,
 				F743893648C1D253A96D2B84 /* Services */,
 				62C8F51004E1BB3EBDAF75D4 /* SpriteKit */,
+				W7B0000000000001AAAAAA01 /* PrivacyInfo.xcprivacy */,
 				7A786FDCF17E8CB42F5A9167 /* Views */,
 			);
 			path = ChaosCreatures;
@@ -834,6 +839,7 @@
 				SFX00017BBBBBBBBBBBBBB17 /* sfx_defeat.wav in Resources */,
 				SFX00018BBBBBBBBBBBBBB18 /* sfx_chaos_spark.wav in Resources */,
 				SFX00019BBBBBBBBBBBBBB19 /* sfx_evolution_reveal.wav in Resources */,
+				W7B0000000000001CCCCCC01 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1166,6 +1172,7 @@
 			baseConfigurationReference = 686CE587496D29638F775D17 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ChaosCreatures/ChaosCreatures.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1188,6 +1195,7 @@
 			baseConfigurationReference = 686CE587496D29638F775D17 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ChaosCreatures/ChaosCreatures.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

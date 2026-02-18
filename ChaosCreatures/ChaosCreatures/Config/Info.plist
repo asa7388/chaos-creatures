@@ -41,6 +41,8 @@
     <string>$(R2_PUBLIC_URL)</string>
     <key>GAME_SERVER_URL</key>
     <string>$(GAME_SERVER_URL)</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>UIAppFonts</key>
     <array>
         <string>Cinzel-Variable.ttf</string>
