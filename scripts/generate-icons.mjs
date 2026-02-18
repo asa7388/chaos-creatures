@@ -35,6 +35,7 @@ const ASSETS_BASE = join(PROJECT_ROOT, 'ChaosCreatures/ChaosCreatures/Resources/
 const ICON_STYLE = 'painterly oil painting style, heavy visible brushwork, traditional fantasy RPG game icon, dark moody background, glowing magical energy, high detail, single centered symbol, no text, no letters, no words, no borders, no watermarks, square format';
 const EMBLEM_STYLE = 'painterly oil painting style, heavy visible brushwork, fantasy guild crest emblem, dark moody background, ornate heraldic design, high detail, centered composition, no text, no letters, no words, no borders, no watermarks, square format';
 const CURRENCY_STYLE = 'painterly oil painting style, heavy visible brushwork, fantasy game currency icon, dark moody background, magical glow, centered composition, no text, no letters, no words, no borders, no watermarks, square format';
+const STAT_STYLE = 'painterly oil painting style, heavy visible brushwork, traditional fantasy RPG game icon, dark moody background, no text no letters no words no borders no watermarks, square format, centered composition';
 
 const NEGATIVE_PROMPT =
   'text, words, letters, numbers, watermarks, signatures, logos, borders, frames, NSFW, ' +
@@ -132,6 +133,32 @@ const ICONS = [
     size: 256,
     prompt: `${CURRENCY_STYLE}, a stack of ancient gold coins with fantasy emblems stamped on them, warm golden glow, gleaming precious metal, secondary currency, rich and abundant, fantasy gold coin treasure`,
   },
+
+  // --- Stat Icons (3) — 256x256, @2x for Retina card display ---
+  {
+    name: 'chaos-motes',
+    category: 'StatIcons',
+    size: 256,
+    scaleLabel: '2x',
+    filenameSuffix: '@2x',
+    prompt: `${STAT_STYLE}, a swirling vortex of multicolored chaotic energy motes, purple red gold and blue magical particles spiraling inward to a bright unstable core, volatile magical energy`,
+  },
+  {
+    name: 'sword-atk',
+    category: 'StatIcons',
+    size: 256,
+    scaleLabel: '2x',
+    filenameSuffix: '@2x',
+    prompt: `${STAT_STYLE}, a single upright fantasy battle sword, ornate crossguard, glowing warm orange-red magical energy along the blade edge, attack power weapon icon`,
+  },
+  {
+    name: 'heart-hp',
+    category: 'StatIcons',
+    size: 256,
+    scaleLabel: '2x',
+    filenameSuffix: '@2x',
+    prompt: `${STAT_STYLE}, a stylized heart symbol glowing with green protective energy, organic and warm, health and vitality, subtle magical shimmer`,
+  },
 ];
 
 // App Icon — separate because it has special handling
@@ -182,11 +209,11 @@ async function callFal(body) {
 // Asset catalog helpers
 // ==========================================================================
 
-function writeImageset(dir, filename, buffer) {
+function writeImageset(dir, filename, buffer, scale = '1x') {
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, filename), buffer);
   writeFileSync(join(dir, 'Contents.json'), JSON.stringify({
-    images: [{ filename, idiom: 'universal', scale: '1x' }],
+    images: [{ filename, idiom: 'universal', scale }],
     info: { author: 'xcode', version: 1 },
   }, null, 2));
 }
@@ -207,8 +234,11 @@ function writeCategoryContentsJson(categoryDir) {
 // ==========================================================================
 
 async function generateIcon(icon) {
+  const suffix = icon.filenameSuffix || '';
+  const scale = icon.scaleLabel || '1x';
+  const pngFilename = `${icon.name}${suffix}.png`;
   const imagesetDir = join(ASSETS_BASE, icon.category, `${icon.name}.imageset`);
-  const pngPath = join(imagesetDir, `${icon.name}.png`);
+  const pngPath = join(imagesetDir, pngFilename);
 
   // Skip if already generated
   if (existsSync(pngPath)) {
@@ -249,7 +279,7 @@ async function generateIcon(icon) {
 
   // Write to Assets.xcassets
   writeCategoryContentsJson(join(ASSETS_BASE, icon.category));
-  writeImageset(imagesetDir, `${icon.name}.png`, buffer);
+  writeImageset(imagesetDir, pngFilename, buffer, scale);
   console.log(`    Saved: ${icon.category}/${icon.name}.imageset/`);
 
   return { name: icon.name, success: true, skipped: false, size: buffer.length };
