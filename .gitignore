@@ -36,6 +36,9 @@ dist/
 supabase/.branches/
 supabase/.temp/
 
+# Generated validation images
+scripts/preview/validation/
+
 # Misc
 .vercel
 .turbo
