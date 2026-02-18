@@ -5,15 +5,19 @@
 
 // =============================================================================
 // 1. STYLE ANCHOR (Section 1.1) -- Prefixes EVERY image generation request
-// v3 style anchor with artist references for traditional oil painting aesthetics.
+// v4 style anchor: 1990s MTG artists, ink linework, sketchy atmospheric rendering.
+// Key changes from v3: removed "single creature portrait" (blocked group compositions),
+// replaced Donato/Frazetta with actual 1990s MTG artists Ron Spencer/Pete Venters/Mark Poole,
+// added ink linework and sketchy rendering for authentic MTG feel.
 // =============================================================================
 
 export const STYLE_ANCHOR =
-  'traditional oil painting on canvas by Donato Giancola and Frank Frazetta, ' +
-  'visible heavy brushwork and palette knife texture, cracked oil paint surface, ' +
-  'classical fantasy illustration from 1990s Magic: The Gathering, muted earth tone palette, ' +
-  'chiaroscuro lighting, raw and gritty not polished, imperfect asymmetric anatomy, ' +
-  'single creature portrait 3:4 ratio, no text no borders no watermarks';
+  '1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, ' +
+  'traditional media on illustration board, visible brushstrokes and ink linework, ' +
+  'sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, ' +
+  'muted earth tones and desaturated palette, gritty textured surface with grain and tooth, ' +
+  'raw unpolished asymmetric forms, dark atmospheric mood, ' +
+  '3:4 portrait ratio, no text no borders no watermarks';
 
 // =============================================================================
 // 2. FACTION PREFIXES (Section 1.3) -- Used for base card art generation
@@ -30,19 +34,19 @@ const DEMONIC_PREFIX =
   'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
   'lit from below by hellfire glow, deep shadow obscuring details, ' +
   'burnt crimson and charcoal black palette, oppressive and heavy, ' +
-  'painted like a Wayne Barlowe or Zdzislaw Beksinski hellscape';
+  'painted like a Pete Venters or Anson Maddocks grotesque dark fantasy';
 
 export const FACTION_PREFIXES: Record<string, string> = {
   IRONWRIGHT:
     'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
     'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
     'warm ochre and raw umber palette, smoky atmospheric background, ' +
-    'painted like a Brom or Keith Parkinson illustration',
+    'painted like a Ron Spencer or Mark Tedin industrial horror',
   FEY_COURTS:
     'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
     'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
     'overgrown with moss and lichen, more Brothers Grimm than Disney, ' +
-    'painted like a Brian Froud or Alan Lee illustration',
+    'painted like a Rebecca Guay or Quinton Hoover ethereal watercolor',
   DEMONIC: DEMONIC_PREFIX,
   DEMONIC_KINGDOMS: DEMONIC_PREFIX, // DB alias
 };
@@ -57,10 +61,12 @@ export const COMPOSITION_INSTRUCTION =
   'rough textured brushwork throughout, NOT clean NOT smooth NOT digital';
 
 // =============================================================================
-// 3a. COMPOSITION POOL -- 12 templates for art variety (selected by card metadata)
+// 3a. COMPOSITION POOL -- 25 templates for art variety (selected by card metadata)
+// Original 12 preserved. 13 new templates added for v4 expansion.
 // =============================================================================
 
 export const COMPOSITION_POOL: Record<string, string> = {
+  // --- Original 12 ---
   PORTRAIT_CLOSE: 'extreme close-up portrait, face fills frame, intense eye contact, shallow depth of field',
   PORTRAIT_THREE_QUARTER: 'three-quarter view portrait, shoulders and head, slight turn, atmospheric background',
   ACTION_ATTACK: 'dynamic action pose mid-strike, motion blur on weapon, debris flying, low camera angle',
@@ -73,35 +79,137 @@ export const COMPOSITION_POOL: Record<string, string> = {
   DETAIL_MACRO: 'macro detail shot of distinctive feature (claws/eyes/armor/wings), shallow depth of field',
   NARRATIVE_MOMENT: 'mid-narrative scene, creature interacting with environment, storytelling composition',
   NARRATIVE_DUAL: 'two creatures in frame, confrontation or alliance, split composition',
+  // --- 13 new templates added v4 ---
+  PORTRAIT_PROFILE: 'strict side profile portrait, single eye visible, dramatic rim light on edges, shallow depth of field',
+  PORTRAIT_FROM_BEHIND: 'creature seen from behind, looking over shoulder, mysterious and atmospheric, environment visible ahead',
+  PORTRAIT_EXTREME_WIDE: 'creature tiny in vast panoramic landscape, sense of scale and isolation, atmospheric perspective',
+  ACTION_LEAP: 'creature mid-leap through air, dynamic diagonal composition, wind and debris, frozen motion',
+  ACTION_PROWL: 'creature stalking low to the ground, predatory tension, compressed coiled energy, ground-level camera',
+  ACTION_COMMAND: 'creature in commanding stance, arm or limb raised directing others, imperial authority, elevated position',
+  ENVIRONMENTAL_UNDERGROUND: 'deep underground cavern scene, creature amid stalactites and mineral formations, bioluminescent or firelit',
+  ENVIRONMENTAL_SKYBORNE: 'creature high above ground, aerial perspective, clouds and landscape far below, vertigo-inducing',
+  ENVIRONMENTAL_THRESHOLD: 'creature standing in doorway or arch, light from one side dark from other, liminal dramatic framing',
+  DRAMATIC_OVERHEAD: 'extreme overhead bird-eye view looking straight down, creature foreshortened, dramatic radial composition',
+  DRAMATIC_DUTCH_ANGLE: 'tilted camera angle creating unease, diagonal horizon line, off-balance dynamic energy',
+  NARRATIVE_AFTERMATH: 'creature surveying aftermath of battle, wreckage and smoke, contemplative or victorious mood',
+  NARRATIVE_RITUAL: 'creature engaged in ritual or transformation, magical energy gathering, ceremonial setting',
 };
 
 // =============================================================================
-// 3b. FACTION ENVIRONMENTS -- 5 per faction for rich atmospheric backgrounds
+// 3b. FACTION ENVIRONMENTS -- 13 per faction for rich atmospheric backgrounds
+// Original 5 preserved per faction. 8 new environments added per faction for v4.
 // =============================================================================
 
 export const FACTION_ENVIRONMENTS: Record<string, string[]> = {
   ironwright: [
+    // --- Original 5 ---
     'inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery',
     'atop a massive clockwork bridge spanning a canyon of interlocking gears',
     'in a brass and copper workshop littered with half-finished automata and blueprints',
     'on the observation deck of a towering industrial spire belching steam into orange skies',
     'inside a walking factory, mechanical legs visible through floor grates, landscape moving outside windows',
+    // --- 8 new v4 environments ---
+    'inside a collapsed mine shaft, sparking electrical cables and leaking hydraulic fluid, emergency red lighting',
+    'on the deck of a massive iron warship, smokestacks belching, ocean of molten slag',
+    'in a subterranean geothermal plant where pipes carry magma through brass conduits',
+    'atop a rusted water tower overlooking an endless industrial sprawl of chimneys and rail yards',
+    'inside an abandoned automaton graveyard, defunct mechanical bodies piled high, one eye still flickering',
+    'in a pressurized boiler room, gauges redlining, steam jetting from failed seals',
+    'on an elevated rail bridge during a thunderstorm, lightning striking copper rod arrays',
+    'inside a crystal-powered computation engine room, spinning relay drums and clicking gears processing data',
   ],
   fey: [
+    // --- Original 5 ---
     'in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on ancient stones',
     'beneath the canopy of the World Tree, roots thick as rivers, leaves filtering golden twilight',
     'at the shore of an enchanted lake reflecting a sky full of aurora and floating islands',
     'in a twilight meadow of giant wildflowers where fireflies spell out forgotten runes',
     'deep inside a crystal cave where living gemstones hum with harmonic resonance',
+    // --- 8 new v4 environments ---
+    'in a flooded temple ruin overtaken by sacred lotus and silver fish, moonlight on still water',
+    'on the back of a slowly walking mountain-turtle, forest growing on its shell, horizon tilting',
+    'inside the hollow trunk of a dead god-tree, fungal constellations on the inner walls',
+    'at the border where the fey realm bleeds into the mortal world, colors shifting from vibrant to muted',
+    'in a field of petrified ancient trees, stone bark crumbling, new saplings pushing through',
+    'beneath a frozen waterfall at midnight, ice refracting auroral light into prismatic shards',
+    'in a vast underground root network, bioluminescent sap flowing through translucent root walls',
+    'on a cliff edge where the forest meets the sea, salt spray and wild roses, storm approaching',
   ],
   demonic: [
+    // --- Original 5 ---
     'on a volcanic cliff overlooking a sea of lava, obsidian spires rising from the molten surface',
     'in a throne room built from the bones of fallen titans, hellfire braziers lining the walls',
     'at the edge of a reality rift where the material world crumbles into the void',
     'on an ash-covered battlefield strewn with shattered weapons and smoldering craters',
     'inside a collapsed citadel where gravity fails and stone blocks float in burning air',
+    // --- 8 new v4 environments ---
+    'in a flesh cathedral where walls are living skin and pillars are bone, candles of rendered fat',
+    'on a bridge over a river of screaming souls, the far bank shrouded in perpetual darkness',
+    'inside a volcanic glass maze reflecting distorted hellfire from every surface',
+    'in a coliseum of skulls where lesser demons spectate from tiered bone seats',
+    'at the foot of a fallen angel statue, wings broken, altar of dark offerings before it',
+    'on a floating obsidian platform above an infinite void, chains anchoring it to nothing visible',
+    'in a blood-rain storm, the sky cracked open like a wound, crimson precipitation pooling on basalt',
+    'inside a demonic war forge where weapons are hammered from cursed iron and quenched in ichor',
   ],
 };
+
+// =============================================================================
+// 3c. VARIETY DIMENSIONS -- Weather, Time of Day, Creature Scale (added v4)
+// These are applied probabilistically in buildArtPrompt().
+// Weather: ~30% chance. Time of day: ~40% chance. Scale: mapped to mana cost.
+// =============================================================================
+
+/** 8 weather modifiers — applied ~30% of the time. */
+export const WEATHER_MODIFIERS: string[] = [
+  'during a violent thunderstorm, rain slashing across the scene, lightning illuminating',
+  'in thick rolling fog, visibility limited, shapes half-hidden',
+  'during a blizzard of ash or snow, particles filling the air',
+  'in scorching heat shimmer, air distorted, mirages at edges',
+  'during an eclipse, eerie half-light, corona visible',
+  'in gentle rainfall, water droplets catching light, reflective wet surfaces',
+  'during a sandstorm of dust or magical particles, abrasive atmosphere',
+  'in perfectly still dead air, no movement, oppressive calm before catastrophe',
+];
+
+/** 6 time-of-day modifiers — applied ~40% of the time. */
+export const TIME_OF_DAY: string[] = [
+  'at golden hour, warm amber directional light, long shadows',
+  'at blue hour pre-dawn, cool steel-blue atmosphere, world waking',
+  'at high noon, harsh overhead light, deep black shadows directly below',
+  'at twilight, purple-orange sky gradient, silhouette potential',
+  'in deep night, lit only by moonlight and ambient sources, deep blacks',
+  'at an unnatural hour, the sky the wrong color, time distorted',
+];
+
+/** Scale modifiers mapped to mana cost (CM 3-4 omitted — medium is default). */
+export const SCALE_MODIFIERS: Record<string, string> = {
+  TINY: 'the creature is very small, shown relative to normal-sized objects for scale contrast',
+  SMALL: 'the creature is smaller than human-sized, compact and agile',
+  LARGE: 'the creature is much larger than human-sized, imposing mass and bulk',
+  COLOSSAL: 'the creature is enormous, dwarfing the environment, shown from a distance to capture its scale',
+};
+
+/** Returns a scale modifier string for the given mana cost. Returns '' for CM 3-4 (medium default). */
+export function selectScale(manaCost: number): string {
+  if (manaCost === 1) return SCALE_MODIFIERS.TINY;
+  if (manaCost === 2) return SCALE_MODIFIERS.SMALL;
+  if (manaCost >= 5 && manaCost <= 6) return SCALE_MODIFIERS.LARGE;
+  if (manaCost >= 7) return SCALE_MODIFIERS.COLOSSAL;
+  return ''; // CM 3-4: medium, no scale modifier
+}
+
+/** Returns a random weather modifier ~30% of the time, otherwise ''. */
+export function selectWeather(): string {
+  if (Math.random() > 0.30) return '';
+  return WEATHER_MODIFIERS[Math.floor(Math.random() * WEATHER_MODIFIERS.length)];
+}
+
+/** Returns a random time-of-day modifier ~40% of the time, otherwise ''. */
+export function selectTimeOfDay(): string {
+  if (Math.random() > 0.40) return '';
+  return TIME_OF_DAY[Math.floor(Math.random() * TIME_OF_DAY.length)];
+}
 
 // =============================================================================
 // 4. NEGATIVE PROMPTS (Section 1.3)
@@ -139,10 +247,10 @@ export const CHAOS_INSTRUCTION =
 // =============================================================================
 
 export const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
-  IRONWRIGHT: 'grimy industrial steampunk, corroded brass and blackened iron, painted like Brom',
-  FEY_COURTS: 'dark fey forest creature, twisted ancient wood, painted like Brian Froud',
-  DEMONIC: 'grotesque infernal creature, fused bone and volcanic rock, painted like Wayne Barlowe',
-  DEMONIC_KINGDOMS: 'grotesque infernal creature, fused bone and volcanic rock, painted like Wayne Barlowe',
+  IRONWRIGHT: 'grimy industrial steampunk, corroded brass and blackened iron, painted like Ron Spencer and Mark Tedin',
+  FEY_COURTS: 'dark fey forest creature, twisted ancient wood, painted like Rebecca Guay and Quinton Hoover',
+  DEMONIC: 'grotesque infernal creature, fused bone and volcanic rock, painted like Pete Venters and Anson Maddocks',
+  DEMONIC_KINGDOMS: 'grotesque infernal creature, fused bone and volcanic rock, painted like Pete Venters and Anson Maddocks',
 };
 
 // =============================================================================
@@ -384,6 +492,7 @@ export interface CardPromptMetadata {
  * Select a composition template based on card metadata.
  * Higher-tier and more expensive cards get more dramatic compositions.
  * Keyword-driven cards get action-oriented compositions.
+ * v4: expanded to 25 compositions with probabilistic selection for new templates.
  * Falls back to PORTRAIT_THREE_QUARTER for generic creatures.
  */
 export function selectComposition(card: CardPromptMetadata): string {
@@ -392,32 +501,53 @@ export function selectComposition(card: CardPromptMetadata): string {
   const manaCost = card.manaCost ?? 3;
   const cardType = card.cardType?.toUpperCase() || 'CREATURE';
 
-  // Legendary -> narrative compositions
+  // Global probabilistic overrides (checked first, low probability)
+  if (Math.random() < 0.10) return COMPOSITION_POOL.DRAMATIC_DUTCH_ANGLE;
+  if (Math.random() < 0.15) return COMPOSITION_POOL.ENVIRONMENTAL_THRESHOLD;
+
+  // Stabilizers -> ritual composition
+  if (cardType === 'STABILIZER') return COMPOSITION_POOL.NARRATIVE_RITUAL;
+
+  // Legendary -> narrative compositions (50/50 aftermath vs. narrative moment)
   if (tier === 'LEGENDARY') {
     return Math.random() > 0.5
-      ? COMPOSITION_POOL.NARRATIVE_MOMENT
-      : COMPOSITION_POOL.NARRATIVE_DUAL;
+      ? COMPOSITION_POOL.NARRATIVE_AFTERMATH
+      : COMPOSITION_POOL.NARRATIVE_MOMENT;
   }
-  // Epic -> dramatic compositions
+  // Epic -> dramatic compositions (add DRAMATIC_OVERHEAD as third option)
   if (tier === 'EPIC') {
-    return Math.random() > 0.5
-      ? COMPOSITION_POOL.DRAMATIC_SILHOUETTE
-      : COMPOSITION_POOL.DRAMATIC_LOW_ANGLE;
+    const r = Math.random();
+    if (r < 0.33) return COMPOSITION_POOL.DRAMATIC_OVERHEAD;
+    if (r < 0.67) return COMPOSITION_POOL.DRAMATIC_SILHOUETTE;
+    return COMPOSITION_POOL.DRAMATIC_LOW_ANGLE;
   }
   // Spells -> casting pose
   if (cardType === 'SPELL') return COMPOSITION_POOL.ACTION_CAST;
-  // High cost (7+) -> imposing low angle
+  // High cost (CM 6, not Legendary) -> commanding stance
+  if (manaCost >= 6) return COMPOSITION_POOL.ACTION_COMMAND;
+  // High cost (CM 7+) -> imposing low angle
   if (manaCost >= 7) return COMPOSITION_POOL.DRAMATIC_LOW_ANGLE;
   // Keywords drive composition
-  if (keywords.includes('PIERCING') || keywords.includes('DEATHTOUCH')) {
-    return COMPOSITION_POOL.ACTION_ATTACK;
+  if (keywords.includes('LIFESTEAL')) return COMPOSITION_POOL.PORTRAIT_PROFILE;
+  if (keywords.includes('REACH')) return COMPOSITION_POOL.PORTRAIT_FROM_BEHIND;
+  if (keywords.includes('PIERCING')) {
+    return Math.random() > 0.5 ? COMPOSITION_POOL.ACTION_ATTACK : COMPOSITION_POOL.ACTION_LEAP;
+  }
+  if (keywords.includes('DEATHTOUCH')) {
+    return Math.random() > 0.5 ? COMPOSITION_POOL.ACTION_ATTACK : COMPOSITION_POOL.ACTION_PROWL;
   }
   if (keywords.includes('SHIELD') || keywords.includes('TAUNT')) {
     return COMPOSITION_POOL.ACTION_DEFEND;
   }
-  if (keywords.includes('FLYING')) return COMPOSITION_POOL.ENVIRONMENTAL_WIDE;
-  // Low cost -> close portrait
-  if (manaCost <= 2) return COMPOSITION_POOL.PORTRAIT_CLOSE;
+  if (keywords.includes('FLYING')) {
+    return Math.random() > 0.5
+      ? COMPOSITION_POOL.ENVIRONMENTAL_WIDE
+      : COMPOSITION_POOL.ENVIRONMENTAL_SKYBORNE;
+  }
+  // Low cost (CM 1) -> extreme wide for scale contrast
+  if (manaCost === 1) return COMPOSITION_POOL.PORTRAIT_EXTREME_WIDE;
+  // Low cost (CM 2) -> close portrait
+  if (manaCost === 2) return COMPOSITION_POOL.PORTRAIT_CLOSE;
   // Default -> three-quarter
   return COMPOSITION_POOL.PORTRAIT_THREE_QUARTER;
 }
@@ -473,10 +603,17 @@ export function buildArtPrompt(
   // Environment: only added when card metadata is provided for variety
   const environment = cardMeta ? selectEnvironment(factionId) : '';
 
+  // Variety dimensions (v4): weather, time of day, scale — probabilistic
+  const weather = cardMeta ? selectWeather() : '';
+  const timeOfDay = cardMeta ? selectTimeOfDay() : '';
+  const scale = cardMeta && cardMeta.manaCost !== undefined ? selectScale(cardMeta.manaCost) : '';
+
   const promptParts = [STYLE_ANCHOR, factionPrefix, creatureDescription, composition];
-  if (environment) {
-    promptParts.push(environment);
-  }
+  if (environment) promptParts.push(environment);
+  // Append variety dimensions after environment (order: weather, time, scale)
+  if (weather) promptParts.push(weather);
+  if (timeOfDay) promptParts.push(timeOfDay);
+  if (scale) promptParts.push(scale);
 
   const prompt = promptParts.join(', ');
 

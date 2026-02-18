@@ -39,32 +39,37 @@ mkdirSync(OUTPUT_DIR, { recursive: true });
 // Prompt constants (mirrored from generate-test-cards.mjs / prompts.ts)
 // ---------------------------------------------------------------------------
 
+// v4 style anchor: 1990s MTG artists, ink linework, sketchy rendering
 const STYLE_ANCHOR =
-  'traditional oil painting on canvas by Donato Giancola and Frank Frazetta, ' +
-  'visible heavy brushwork and palette knife texture, cracked oil paint surface, ' +
-  'classical fantasy illustration from 1990s Magic: The Gathering, muted earth tone palette, ' +
-  'chiaroscuro lighting, raw and gritty not polished, imperfect asymmetric anatomy, ' +
-  'single creature portrait 3:4 ratio, no text no borders no watermarks';
+  '1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, ' +
+  'traditional media on illustration board, visible brushstrokes and ink linework, ' +
+  'sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, ' +
+  'muted earth tones and desaturated palette, gritty textured surface with grain and tooth, ' +
+  'raw unpolished asymmetric forms, dark atmospheric mood, ' +
+  '3:4 portrait ratio, no text no borders no watermarks';
 
+// v4 faction prefixes with updated artist references
 const FACTION_PREFIXES = {
   IRONWRIGHT:
     'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
     'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
     'warm ochre and raw umber palette, smoky atmospheric background, ' +
-    'painted like a Brom or Keith Parkinson illustration',
+    'painted like a Ron Spencer or Mark Tedin industrial horror',
   FEY_COURTS:
     'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
     'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
     'overgrown with moss and lichen, more Brothers Grimm than Disney, ' +
-    'painted like a Brian Froud or Alan Lee illustration',
+    'painted like a Rebecca Guay or Quinton Hoover ethereal watercolor',
   DEMONIC:
     'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
     'lit from below by hellfire glow, deep shadow obscuring details, ' +
     'burnt crimson and charcoal black palette, oppressive and heavy, ' +
-    'painted like a Wayne Barlowe or Zdzislaw Beksinski hellscape',
+    'painted like a Pete Venters or Anson Maddocks grotesque dark fantasy',
 };
 
+// v4: 25 composition templates (mirrors prompts.ts)
 const COMPOSITION_POOL = {
+  // Original 12
   PORTRAIT_CLOSE: 'extreme close-up portrait, face fills frame, intense eye contact, shallow depth of field',
   PORTRAIT_THREE_QUARTER: 'three-quarter view portrait, shoulders and head, slight turn, atmospheric background',
   ACTION_ATTACK: 'dynamic action pose mid-strike, motion blur on weapon, debris flying, low camera angle',
@@ -77,8 +82,23 @@ const COMPOSITION_POOL = {
   DETAIL_MACRO: 'macro detail shot of distinctive feature (claws/eyes/armor/wings), shallow depth of field',
   NARRATIVE_MOMENT: 'mid-narrative scene, creature interacting with environment, storytelling composition',
   NARRATIVE_DUAL: 'two creatures in frame, confrontation or alliance, split composition',
+  // 13 new v4 templates
+  PORTRAIT_PROFILE: 'strict side profile portrait, single eye visible, dramatic rim light on edges, shallow depth of field',
+  PORTRAIT_FROM_BEHIND: 'creature seen from behind, looking over shoulder, mysterious and atmospheric, environment visible ahead',
+  PORTRAIT_EXTREME_WIDE: 'creature tiny in vast panoramic landscape, sense of scale and isolation, atmospheric perspective',
+  ACTION_LEAP: 'creature mid-leap through air, dynamic diagonal composition, wind and debris, frozen motion',
+  ACTION_PROWL: 'creature stalking low to the ground, predatory tension, compressed coiled energy, ground-level camera',
+  ACTION_COMMAND: 'creature in commanding stance, arm or limb raised directing others, imperial authority, elevated position',
+  ENVIRONMENTAL_UNDERGROUND: 'deep underground cavern scene, creature amid stalactites and mineral formations, bioluminescent or firelit',
+  ENVIRONMENTAL_SKYBORNE: 'creature high above ground, aerial perspective, clouds and landscape far below, vertigo-inducing',
+  ENVIRONMENTAL_THRESHOLD: 'creature standing in doorway or arch, light from one side dark from other, liminal dramatic framing',
+  DRAMATIC_OVERHEAD: 'extreme overhead bird-eye view looking straight down, creature foreshortened, dramatic radial composition',
+  DRAMATIC_DUTCH_ANGLE: 'tilted camera angle creating unease, diagonal horizon line, off-balance dynamic energy',
+  NARRATIVE_AFTERMATH: 'creature surveying aftermath of battle, wreckage and smoke, contemplative or victorious mood',
+  NARRATIVE_RITUAL: 'creature engaged in ritual or transformation, magical energy gathering, ceremonial setting',
 };
 
+// v4: 13 environments per faction (mirrors prompts.ts)
 const FACTION_ENVIRONMENTS = {
   ironwright: [
     'inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery',
@@ -86,6 +106,14 @@ const FACTION_ENVIRONMENTS = {
     'in a brass and copper workshop littered with half-finished automata and blueprints',
     'on the observation deck of a towering industrial spire belching steam into orange skies',
     'inside a walking factory, mechanical legs visible through floor grates, landscape moving outside windows',
+    'inside a collapsed mine shaft, sparking electrical cables and leaking hydraulic fluid, emergency red lighting',
+    'on the deck of a massive iron warship, smokestacks belching, ocean of molten slag',
+    'in a subterranean geothermal plant where pipes carry magma through brass conduits',
+    'atop a rusted water tower overlooking an endless industrial sprawl of chimneys and rail yards',
+    'inside an abandoned automaton graveyard, defunct mechanical bodies piled high, one eye still flickering',
+    'in a pressurized boiler room, gauges redlining, steam jetting from failed seals',
+    'on an elevated rail bridge during a thunderstorm, lightning striking copper rod arrays',
+    'inside a crystal-powered computation engine room, spinning relay drums and clicking gears processing data',
   ],
   fey: [
     'in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on ancient stones',
@@ -93,6 +121,14 @@ const FACTION_ENVIRONMENTS = {
     'at the shore of an enchanted lake reflecting a sky full of aurora and floating islands',
     'in a twilight meadow of giant wildflowers where fireflies spell out forgotten runes',
     'deep inside a crystal cave where living gemstones hum with harmonic resonance',
+    'in a flooded temple ruin overtaken by sacred lotus and silver fish, moonlight on still water',
+    'on the back of a slowly walking mountain-turtle, forest growing on its shell, horizon tilting',
+    'inside the hollow trunk of a dead god-tree, fungal constellations on the inner walls',
+    'at the border where the fey realm bleeds into the mortal world, colors shifting from vibrant to muted',
+    'in a field of petrified ancient trees, stone bark crumbling, new saplings pushing through',
+    'beneath a frozen waterfall at midnight, ice refracting auroral light into prismatic shards',
+    'in a vast underground root network, bioluminescent sap flowing through translucent root walls',
+    'on a cliff edge where the forest meets the sea, salt spray and wild roses, storm approaching',
   ],
   demonic: [
     'on a volcanic cliff overlooking a sea of lava, obsidian spires rising from the molten surface',
@@ -100,6 +136,14 @@ const FACTION_ENVIRONMENTS = {
     'at the edge of a reality rift where the material world crumbles into the void',
     'on an ash-covered battlefield strewn with shattered weapons and smoldering craters',
     'inside a collapsed citadel where gravity fails and stone blocks float in burning air',
+    'in a flesh cathedral where walls are living skin and pillars are bone, candles of rendered fat',
+    'on a bridge over a river of screaming souls, the far bank shrouded in perpetual darkness',
+    'inside a volcanic glass maze reflecting distorted hellfire from every surface',
+    'in a coliseum of skulls where lesser demons spectate from tiered bone seats',
+    'at the foot of a fallen angel statue, wings broken, altar of dark offerings before it',
+    'on a floating obsidian platform above an infinite void, chains anchoring it to nothing visible',
+    'in a blood-rain storm, the sky cracked open like a wound, crimson precipitation pooling on basalt',
+    'inside a demonic war forge where weapons are hammered from cursed iron and quenched in ichor',
   ],
 };
 
@@ -120,19 +164,41 @@ const NEGATIVE_PROMPT =
 // Composition and environment selection (same logic as generate-test-cards.mjs)
 // ---------------------------------------------------------------------------
 
+// v4: updated selectComposition — 25 compositions with probabilistic selection
 function selectComposition(spec) {
   const tier = (spec.tier || '').toUpperCase();
   const keywords = (spec.keywords || []).map(k => k.toUpperCase());
   const manaCost = spec.manaCost ?? 3;
   const cardType = (spec.cardType || 'CREATURE').toUpperCase();
 
-  if (tier === 'LEGENDARY') return { key: 'NARRATIVE_MOMENT/DUAL', value: Math.random() > 0.5 ? COMPOSITION_POOL.NARRATIVE_MOMENT : COMPOSITION_POOL.NARRATIVE_DUAL };
-  if (tier === 'EPIC') return { key: 'DRAMATIC_SILHOUETTE/LOW_ANGLE', value: Math.random() > 0.5 ? COMPOSITION_POOL.DRAMATIC_SILHOUETTE : COMPOSITION_POOL.DRAMATIC_LOW_ANGLE };
+  if (Math.random() < 0.10) return { key: 'DRAMATIC_DUTCH_ANGLE', value: COMPOSITION_POOL.DRAMATIC_DUTCH_ANGLE };
+  if (Math.random() < 0.15) return { key: 'ENVIRONMENTAL_THRESHOLD', value: COMPOSITION_POOL.ENVIRONMENTAL_THRESHOLD };
+  if (cardType === 'STABILIZER') return { key: 'NARRATIVE_RITUAL', value: COMPOSITION_POOL.NARRATIVE_RITUAL };
+  if (tier === 'LEGENDARY') return Math.random() > 0.5
+    ? { key: 'NARRATIVE_AFTERMATH', value: COMPOSITION_POOL.NARRATIVE_AFTERMATH }
+    : { key: 'NARRATIVE_MOMENT', value: COMPOSITION_POOL.NARRATIVE_MOMENT };
+  if (tier === 'EPIC') {
+    const r = Math.random();
+    if (r < 0.33) return { key: 'DRAMATIC_OVERHEAD', value: COMPOSITION_POOL.DRAMATIC_OVERHEAD };
+    if (r < 0.67) return { key: 'DRAMATIC_SILHOUETTE', value: COMPOSITION_POOL.DRAMATIC_SILHOUETTE };
+    return { key: 'DRAMATIC_LOW_ANGLE', value: COMPOSITION_POOL.DRAMATIC_LOW_ANGLE };
+  }
   if (cardType === 'SPELL') return { key: 'ACTION_CAST', value: COMPOSITION_POOL.ACTION_CAST };
+  if (manaCost >= 6) return { key: 'ACTION_COMMAND', value: COMPOSITION_POOL.ACTION_COMMAND };
   if (manaCost >= 7) return { key: 'DRAMATIC_LOW_ANGLE', value: COMPOSITION_POOL.DRAMATIC_LOW_ANGLE };
-  if (keywords.includes('PIERCING') || keywords.includes('DEATHTOUCH')) return { key: 'ACTION_ATTACK', value: COMPOSITION_POOL.ACTION_ATTACK };
+  if (keywords.includes('LIFESTEAL')) return { key: 'PORTRAIT_PROFILE', value: COMPOSITION_POOL.PORTRAIT_PROFILE };
+  if (keywords.includes('REACH')) return { key: 'PORTRAIT_FROM_BEHIND', value: COMPOSITION_POOL.PORTRAIT_FROM_BEHIND };
+  if (keywords.includes('PIERCING')) return Math.random() > 0.5
+    ? { key: 'ACTION_ATTACK', value: COMPOSITION_POOL.ACTION_ATTACK }
+    : { key: 'ACTION_LEAP', value: COMPOSITION_POOL.ACTION_LEAP };
+  if (keywords.includes('DEATHTOUCH')) return Math.random() > 0.5
+    ? { key: 'ACTION_ATTACK', value: COMPOSITION_POOL.ACTION_ATTACK }
+    : { key: 'ACTION_PROWL', value: COMPOSITION_POOL.ACTION_PROWL };
   if (keywords.includes('SHIELD') || keywords.includes('TAUNT')) return { key: 'ACTION_DEFEND', value: COMPOSITION_POOL.ACTION_DEFEND };
-  if (keywords.includes('FLYING')) return { key: 'ENVIRONMENTAL_WIDE', value: COMPOSITION_POOL.ENVIRONMENTAL_WIDE };
+  if (keywords.includes('FLYING')) return Math.random() > 0.5
+    ? { key: 'ENVIRONMENTAL_WIDE', value: COMPOSITION_POOL.ENVIRONMENTAL_WIDE }
+    : { key: 'ENVIRONMENTAL_SKYBORNE', value: COMPOSITION_POOL.ENVIRONMENTAL_SKYBORNE };
+  if (manaCost === 1) return { key: 'PORTRAIT_EXTREME_WIDE', value: COMPOSITION_POOL.PORTRAIT_EXTREME_WIDE };
   if (manaCost <= 2) return { key: 'PORTRAIT_CLOSE', value: COMPOSITION_POOL.PORTRAIT_CLOSE };
   return { key: 'PORTRAIT_THREE_QUARTER', value: COMPOSITION_POOL.PORTRAIT_THREE_QUARTER };
 }

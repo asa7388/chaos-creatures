@@ -1,7 +1,7 @@
 # Chaos Creatures — Prompt Templates & AI Generation Pipeline
 
-**Version:** 3.0 (iOS platform alignment, locked style anchor, resumable batch pipeline, budget estimates)
-**Last Updated:** 2026-02-16
+**Version:** 4.0 (v4 style anchor, 25 compositions, 13 envs/faction, weather/time/scale variety dimensions)
+**Last Updated:** 2026-02-17
 **Dependencies:** `00-game-design-master.md`, `01-battle-mechanics.md`, `02-card-data-model.md`
 
 ---
@@ -37,16 +37,16 @@ This document defines the complete AI generation pipeline for Chaos Creatures. I
 
 ### 1.1 Global Visual Style Anchor
 
-**Every single image generation request — base card or evolution — prepends this string at the start of the prompt.** This is the locked visual style anchor that ensures all generated art looks like it belongs in the same card game. No card art is generated without it.
+**Every single image generation request — base card or evolution — prepends this string at the start of the prompt.** This is the locked visual style anchor (v4) that ensures all generated art looks like it belongs in the same card game. No card art is generated without it.
 
 ```
-STYLE_ANCHOR = "fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality"
+STYLE_ANCHOR = "1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks"
 ```
 
 This string is prepended to every prompt, before the faction prefix. Final prompt assembly order:
 
 ```
-{STYLE_ANCHOR}, {FACTION_PREFIX}, {CREATURE_DESCRIPTION}, {COMPOSITION_INSTRUCTION}
+{STYLE_ANCHOR}, {FACTION_PREFIX}, {CREATURE_DESCRIPTION}, {COMPOSITION_INSTRUCTION}, {ENVIRONMENT}, [{WEATHER}], [{TIME_OF_DAY}], [{SCALE}]
 ```
 
 For evolution prompts:
@@ -55,7 +55,13 @@ For evolution prompts:
 {STYLE_ANCHOR}, {EVOLUTION_DIRECTION_INSTRUCTION}, {HISTORY_CONTEXT}, {MODIFIER_DESCRIPTION}, {FACTION_SHORT_DESCRIPTION aesthetic maintenance instruction}
 ```
 
-The STYLE_ANCHOR enforces: painterly digital illustration style, consistent color richness, consistent card-portrait framing, and absence of text or borders. If a generated card looks like it came from a different game, the STYLE_ANCHOR was either omitted or the faction prefix is pulling too hard in a conflicting direction — reject and regenerate.
+**v4 changes from v3:**
+- Replaced Donato Giancola / Frank Frazetta with Ron Spencer / Pete Venters / Mark Poole (actual 1990s MTG illustrators)
+- Removed "single creature portrait" (previously blocked group/multi-figure compositions)
+- Added ink linework and sketchy atmospheric rendering descriptors
+- Changed from "oil painting" to "traditional media on illustration board" (broader, matches actual MTG production)
+
+The STYLE_ANCHOR enforces: 1990s MTG illustration aesthetic, consistent ink and brushwork, consistent color restraint, and absence of text or borders. If a generated card looks like it came from a different game (too digital, too smooth, too saturated), the STYLE_ANCHOR was either omitted or the faction prefix is pulling in a conflicting direction — reject and regenerate.
 
 ---
 
@@ -149,26 +155,164 @@ Base cards are generated during the batch pipeline before launch. These become t
 
 #### Faction Prefixes (Exact Strings — Copy Into Code as Constants)
 
+v4 prefixes use actual 1990s MTG artist references per faction. These replace the v3 references (Brom/Keith Parkinson, Brian Froud/Alan Lee, Wayne Barlowe/Zdzislaw Beksinski).
+
 **IRONWRIGHT_PREFIX:**
 ```
-steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses
+grimy industrial steampunk creature, corroded brass and blackened iron, oil-stained and soot-caked, dented riveted plates with weld scars, warm ochre and raw umber palette, smoky atmospheric background, painted like a Ron Spencer or Mark Tedin industrial horror
 ```
 
 **FEY_COURTS_PREFIX:**
 ```
-ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights
+dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, dappled green-gold light filtering through dense canopy, muted forest palette, overgrown with moss and lichen, more Brothers Grimm than Disney, painted like a Rebecca Guay or Quinton Hoover ethereal watercolor
 ```
 
 **DEMONIC_KINGDOMS_PREFIX:**
 ```
-demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence
+grotesque infernal creature, fused bone and volcanic rock and dried gore, lit from below by hellfire glow, deep shadow obscuring details, burnt crimson and charcoal black palette, oppressive and heavy, painted like a Pete Venters or Anson Maddocks grotesque dark fantasy
 ```
 
-#### Composition Instruction (Same for All Factions)
+#### Composition Selection (v4 — 25 Templates)
 
+Compositions are selected automatically based on card metadata (tier, keywords, mana cost, card type). The composition string is appended after the creature description. See the full composition pool and selection algorithm in Section 4.1.
+
+**Default composition (fallback for generic mid-range creatures):**
 ```
-portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view or frontal pose, simple contextual background not cluttered, clear distinct silhouette, card game art composition, eyes visible and facing viewer, dramatic directional lighting
+three-quarter view creature portrait, strong silhouette, atmospheric murky background, single harsh light source casting deep shadows, old master painting composition, rough textured brushwork throughout, NOT clean NOT smooth NOT digital
 ```
+
+#### Composition Pool — 25 Templates (v4)
+
+All 25 composition templates with selection rules. The `selectComposition()` function in `supabase/functions/_shared/prompts.ts` is the canonical implementation. Templates are sorted by category.
+
+| Key | Prompt String | Selection Rule |
+|---|---|---|
+| `PORTRAIT_CLOSE` | `extreme close-up portrait, face fills frame, intense eye contact, shallow depth of field` | CM 2 cards |
+| `PORTRAIT_THREE_QUARTER` | `three-quarter view portrait, shoulders and head, slight turn, atmospheric background` | Default fallback (CM 3–4, no keyword match) |
+| `PORTRAIT_PROFILE` | `strict side profile portrait, single eye visible, dramatic rim light on edges, shallow depth of field` | Lifesteal keyword |
+| `PORTRAIT_FROM_BEHIND` | `creature seen from behind, looking over shoulder, mysterious and atmospheric, environment visible ahead` | Reach keyword |
+| `PORTRAIT_EXTREME_WIDE` | `creature tiny in vast panoramic landscape, sense of scale and isolation, atmospheric perspective` | CM 1 |
+| `ACTION_ATTACK` | `dynamic action pose mid-strike, motion blur on weapon, debris flying, low camera angle` | Piercing (50%) or Deathtouch (50%) |
+| `ACTION_DEFEND` | `defensive stance, shield raised, bracing for impact, ground-level perspective` | Shield or Taunt keyword |
+| `ACTION_CAST` | `arms raised channeling energy, magical particles swirling, dramatic backlighting` | SPELL card type |
+| `ACTION_LEAP` | `creature mid-leap through air, dynamic diagonal composition, wind and debris, frozen motion` | Piercing (50% alt) |
+| `ACTION_PROWL` | `creature stalking low to the ground, predatory tension, compressed coiled energy, ground-level camera` | Deathtouch (50% alt) |
+| `ACTION_COMMAND` | `creature in commanding stance, arm or limb raised directing others, imperial authority, elevated position` | CM 6 (non-Legendary) |
+| `ENVIRONMENTAL_WIDE` | `wide establishing shot, creature small in vast landscape, epic scale, deep perspective` | Flying keyword (50%) |
+| `ENVIRONMENTAL_EMERGING` | `creature emerging from faction environment, half-hidden, atmospheric fog/mist` | No specific rule — accessible via DETAIL_MACRO slot |
+| `ENVIRONMENTAL_UNDERGROUND` | `deep underground cavern scene, creature amid stalactites and mineral formations, bioluminescent or firelit` | Ironwright: random 20% override |
+| `ENVIRONMENTAL_SKYBORNE` | `creature high above ground, aerial perspective, clouds and landscape far below, vertigo-inducing` | Flying keyword (50% alt) |
+| `ENVIRONMENTAL_THRESHOLD` | `creature standing in doorway or arch, light from one side dark from other, liminal dramatic framing` | ~15% global random override |
+| `DRAMATIC_LOW_ANGLE` | `extreme low angle looking up, creature towers overhead, dramatic sky behind` | CM 7+; Epic (33%) |
+| `DRAMATIC_SILHOUETTE` | `silhouette against dramatic sky/explosion/portal, rim lighting, high contrast` | Epic (33%) |
+| `DRAMATIC_OVERHEAD` | `extreme overhead bird-eye view looking straight down, creature foreshortened, dramatic radial composition` | Epic (33%) |
+| `DRAMATIC_DUTCH_ANGLE` | `tilted camera angle creating unease, diagonal horizon line, off-balance dynamic energy` | ~10% global random override |
+| `DETAIL_MACRO` | `macro detail shot of distinctive feature (claws/eyes/armor/wings), shallow depth of field` | Available in pool, not auto-selected |
+| `NARRATIVE_MOMENT` | `mid-narrative scene, creature interacting with environment, storytelling composition` | Legendary (50%) |
+| `NARRATIVE_DUAL` | `two creatures in frame, confrontation or alliance, split composition` | Available in pool, not auto-selected |
+| `NARRATIVE_AFTERMATH` | `creature surveying aftermath of battle, wreckage and smoke, contemplative or victorious mood` | Legendary (50% alt) |
+| `NARRATIVE_RITUAL` | `creature engaged in ritual or transformation, magical energy gathering, ceremonial setting` | STABILIZER card type |
+
+#### Variety Dimensions — Weather, Time of Day, Scale (v4 New)
+
+These are appended after the environment string. All three are optional — weather and time of day are probabilistic, scale is deterministic by mana cost.
+
+**Prompt assembly with variety dimensions:**
+```
+{STYLE_ANCHOR}, {FACTION_PREFIX}, {CREATURE_DESCRIPTION}, {COMPOSITION}, {ENVIRONMENT}, [{WEATHER}], [{TIME_OF_DAY}], [{SCALE}]
+```
+
+**Weather Modifiers** (8 options, applied ~30% of the time — `selectWeather()` returns `''` 70% of the time):
+
+| Prompt String |
+|---|
+| `during a violent thunderstorm, rain slashing across the scene, lightning illuminating` |
+| `in thick rolling fog, visibility limited, shapes half-hidden` |
+| `during a blizzard of ash or snow, particles filling the air` |
+| `in scorching heat shimmer, air distorted, mirages at edges` |
+| `during an eclipse, eerie half-light, corona visible` |
+| `in gentle rainfall, water droplets catching light, reflective wet surfaces` |
+| `during a sandstorm of dust or magical particles, abrasive atmosphere` |
+| `in perfectly still dead air, no movement, oppressive calm before catastrophe` |
+
+**Time of Day Modifiers** (6 options, applied ~40% of the time — `selectTimeOfDay()` returns `''` 60% of the time):
+
+| Prompt String |
+|---|
+| `at golden hour, warm amber directional light, long shadows` |
+| `at blue hour pre-dawn, cool steel-blue atmosphere, world waking` |
+| `at high noon, harsh overhead light, deep black shadows directly below` |
+| `at twilight, purple-orange sky gradient, silhouette potential` |
+| `in deep night, lit only by moonlight and ambient sources, deep blacks` |
+| `at an unnatural hour, the sky the wrong color, time distorted` |
+
+**Scale Modifiers** (mapped to mana cost — `selectScale(manaCost)` returns `''` for CM 3–4):
+
+| CM Cost | Scale Key | Prompt String |
+|---|---|---|
+| 1 | TINY | `the creature is very small, shown relative to normal-sized objects for scale contrast` |
+| 2 | SMALL | `the creature is smaller than human-sized, compact and agile` |
+| 3–4 | *(omit)* | *(no modifier — medium scale is default)* |
+| 5–6 | LARGE | `the creature is much larger than human-sized, imposing mass and bulk` |
+| 7+ | COLOSSAL | `the creature is enormous, dwarfing the environment, shown from a distance to capture its scale` |
+
+#### Faction Environments — 13 per Faction (v4)
+
+Each faction now has 13 environments (original 5 preserved, 8 new). The `selectEnvironment()` function picks one at random per card.
+
+**Ironwright Collective (13 environments):**
+
+| Environment String |
+|---|
+| `inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery` |
+| `atop a massive clockwork bridge spanning a canyon of interlocking gears` |
+| `in a brass and copper workshop littered with half-finished automata and blueprints` |
+| `on the observation deck of a towering industrial spire belching steam into orange skies` |
+| `inside a walking factory, mechanical legs visible through floor grates, landscape moving outside windows` |
+| `inside a collapsed mine shaft, sparking electrical cables and leaking hydraulic fluid, emergency red lighting` |
+| `on the deck of a massive iron warship, smokestacks belching, ocean of molten slag` |
+| `in a subterranean geothermal plant where pipes carry magma through brass conduits` |
+| `atop a rusted water tower overlooking an endless industrial sprawl of chimneys and rail yards` |
+| `inside an abandoned automaton graveyard, defunct mechanical bodies piled high, one eye still flickering` |
+| `in a pressurized boiler room, gauges redlining, steam jetting from failed seals` |
+| `on an elevated rail bridge during a thunderstorm, lightning striking copper rod arrays` |
+| `inside a crystal-powered computation engine room, spinning relay drums and clicking gears processing data` |
+
+**The Fey Courts (13 environments):**
+
+| Environment String |
+|---|
+| `in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on ancient stones` |
+| `beneath the canopy of the World Tree, roots thick as rivers, leaves filtering golden twilight` |
+| `at the shore of an enchanted lake reflecting a sky full of aurora and floating islands` |
+| `in a twilight meadow of giant wildflowers where fireflies spell out forgotten runes` |
+| `deep inside a crystal cave where living gemstones hum with harmonic resonance` |
+| `in a flooded temple ruin overtaken by sacred lotus and silver fish, moonlight on still water` |
+| `on the back of a slowly walking mountain-turtle, forest growing on its shell, horizon tilting` |
+| `inside the hollow trunk of a dead god-tree, fungal constellations on the inner walls` |
+| `at the border where the fey realm bleeds into the mortal world, colors shifting from vibrant to muted` |
+| `in a field of petrified ancient trees, stone bark crumbling, new saplings pushing through` |
+| `beneath a frozen waterfall at midnight, ice refracting auroral light into prismatic shards` |
+| `in a vast underground root network, bioluminescent sap flowing through translucent root walls` |
+| `on a cliff edge where the forest meets the sea, salt spray and wild roses, storm approaching` |
+
+**The Demonic Kingdoms (13 environments):**
+
+| Environment String |
+|---|
+| `on a volcanic cliff overlooking a sea of lava, obsidian spires rising from the molten surface` |
+| `in a throne room built from the bones of fallen titans, hellfire braziers lining the walls` |
+| `at the edge of a reality rift where the material world crumbles into the void` |
+| `on an ash-covered battlefield strewn with shattered weapons and smoldering craters` |
+| `inside a collapsed citadel where gravity fails and stone blocks float in burning air` |
+| `in a flesh cathedral where walls are living skin and pillars are bone, candles of rendered fat` |
+| `on a bridge over a river of screaming souls, the far bank shrouded in perpetual darkness` |
+| `inside a volcanic glass maze reflecting distorted hellfire from every surface` |
+| `in a coliseum of skulls where lesser demons spectate from tiered bone seats` |
+| `at the foot of a fallen angel statue, wings broken, altar of dark offerings before it` |
+| `on a floating obsidian platform above an infinite void, chains anchoring it to nothing visible` |
+| `in a blood-rain storm, the sky cracked open like a wound, crimson precipitation pooling on basalt` |
+| `inside a demonic war forge where weapons are hammered from cursed iron and quenched in ichor` |
 
 #### Negative Prompt (Used on Every Single Request — Never Omit)
 
@@ -184,68 +328,86 @@ These are fully assembled prompts with the STYLE_ANCHOR prepended. The batch scr
 
 **Ironwright — 3-cost Clockwork Wolf (instability 2, 3ATK/4HP):**
 ```
-fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses,
+grimy industrial steampunk creature, corroded brass and blackened iron, oil-stained and soot-caked, dented riveted plates with weld scars, warm ochre and raw umber palette, smoky atmospheric background, painted like a Ron Spencer or Mark Tedin industrial horror,
 
 clockwork wolf, sleek predatory design, articulated brass leg joints with visible pistons, mechanical jaw with copper fangs, glowing amber optical sensors, mid-prowl stance,
 
-portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view, industrial workshop background with soft-focus steam pipes, clear distinct silhouette, eyes facing viewer, dramatic lighting from upper left
+three-quarter view creature portrait, strong silhouette, atmospheric murky background, single harsh light source casting deep shadows, old master painting composition, rough textured brushwork throughout, NOT clean NOT smooth NOT digital,
+
+in a brass and copper workshop littered with half-finished automata and blueprints
 ```
 
-**Ironwright — 1-cost Gear Sprite (instability 1, 1ATK/2HP):**
+**Ironwright — 1-cost Gear Sprite (instability 1, 1ATK/2HP) — scale: TINY, composition: PORTRAIT_EXTREME_WIDE:**
 ```
-fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses,
+grimy industrial steampunk creature, corroded brass and blackened iron, oil-stained and soot-caked, dented riveted plates with weld scars, warm ochre and raw umber palette, smoky atmospheric background, painted like a Ron Spencer or Mark Tedin industrial horror,
 
 tiny clockwork sprite, insect-like brass wings with visible gear joints, small rounded body of copper plating, spinning gear on back like a propeller, curious alert posture, diminutive but precise,
 
-portrait orientation, centered creature filling 70 percent of frame, frontal pose, dark industrial girder background with atmospheric steam wisps, clear distinct silhouette, glowing eyes facing viewer, dramatic top-down lighting
+creature tiny in vast panoramic landscape, sense of scale and isolation, atmospheric perspective,
+
+inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery,
+
+the creature is very small, shown relative to normal-sized objects for scale contrast
 ```
 
-**Fey Courts — 4-cost Thornwood Warden (instability 1, 2ATK/6HP, Shield keyword):**
+**Fey Courts — 4-cost Thornwood Warden (instability 1, 2ATK/6HP, Shield keyword) — composition: ACTION_DEFEND:**
 ```
-fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights,
+dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, dappled green-gold light filtering through dense canopy, muted forest palette, overgrown with moss and lichen, more Brothers Grimm than Disney, painted like a Rebecca Guay or Quinton Hoover ethereal watercolor,
 
 tall fey knight, living bark armor grown into elegant broad plates, large shield woven from vines and glowing teal crystal, antlers crowned with moonflowers, luminous pale-green eyes, noble protective wide-stance pose, silver-green bioluminescent veins across armor,
 
-portrait orientation, centered creature filling 70 percent of frame, three-quarter view, ancient grove background with towering trees and floating magical motes, clear distinct silhouette, dramatic soft moonlight from above-right
+defensive stance, shield raised, bracing for impact, ground-level perspective,
+
+beneath the canopy of the World Tree, roots thick as rivers, leaves filtering golden twilight
 ```
 
-**Fey Courts — 2-cost Moonpetal Sprite (instability 3, 3ATK/2HP, Flying keyword):**
+**Fey Courts — 2-cost Moonpetal Sprite (instability 3, 3ATK/2HP, Flying keyword) — composition: ENVIRONMENTAL_SKYBORNE:**
 ```
-fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights,
+dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, dappled green-gold light filtering through dense canopy, muted forest palette, overgrown with moss and lichen, more Brothers Grimm than Disney, painted like a Rebecca Guay or Quinton Hoover ethereal watercolor,
 
 small agile fey scout, dragonfly-like translucent wings of solidified moonlight, lithe body clad in petal armor, sharp thorn-claws, crouched ready-to-spring stance, wild feral expression, bioluminescent marking streaks on skin,
 
-portrait orientation, centered creature filling 70 percent of frame, dynamic angled pose with wings spread, misty forest canopy background, clear distinct silhouette, eyes glowing violet facing viewer, dramatic rim lighting
+creature high above ground, aerial perspective, clouds and landscape far below, vertigo-inducing,
+
+at the shore of an enchanted lake reflecting a sky full of aurora and floating islands,
+
+the creature is smaller than human-sized, compact and agile
 ```
 
-**Demonic Kingdoms — 3-cost Ashclaw Ravager (instability 4, 5ATK/2HP, Piercing keyword):**
+**Demonic Kingdoms — 3-cost Ashclaw Ravager (instability 4, 5ATK/2HP, Piercing keyword) — composition: ACTION_LEAP:**
 ```
-fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence,
+grotesque infernal creature, fused bone and volcanic rock and dried gore, lit from below by hellfire glow, deep shadow obscuring details, burnt crimson and charcoal black palette, oppressive and heavy, painted like a Pete Venters or Anson Maddocks grotesque dark fantasy,
 
 lean predatory demon, elongated razor-edged obsidian claws, exposed rib-cage bone structure through torn corrupted flesh, swept-back obsidian horns, eyes burning with hellfire, crouched low pouncing stance, glowing crimson infernal rune tattoos across body, ash and embers drifting around,
 
-portrait orientation, centered creature filling 70 percent of frame, low three-quarter view emphasizing menace, volcanic wasteland background with lava rivers soft-focus, clear distinct silhouette, hellfire eyes facing viewer, dramatic underlighting from lava glow
+creature mid-leap through air, dynamic diagonal composition, wind and debris, frozen motion,
+
+on a volcanic cliff overlooking a sea of lava, obsidian spires rising from the molten surface
 ```
 
-**Demonic Kingdoms — 5-cost Bloodrite Warlord (instability 2, 4ATK/7HP, Lifesteal keyword):**
+**Demonic Kingdoms — 5-cost Bloodrite Warlord (instability 2, 4ATK/7HP, Lifesteal keyword) — composition: PORTRAIT_PROFILE, scale: LARGE:**
 ```
-fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality,
+1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence,
+grotesque infernal creature, fused bone and volcanic rock and dried gore, lit from below by hellfire glow, deep shadow obscuring details, burnt crimson and charcoal black palette, oppressive and heavy, painted like a Pete Venters or Anson Maddocks grotesque dark fantasy,
 
 massive demonic warlord, heavy obsidian plate armor etched with blood-glyphs, large weapon dripping with dark ichor, imposing upright commanding stance, prominent curved horns, deep-set burning eyes, blood ritual sigils glowing on pauldrons, veins of dark energy visible through armor joints,
 
-portrait orientation, centered creature filling 70 percent of frame, dramatic frontal command pose, obsidian fortress battlements background, clear distinct silhouette, burning eyes facing viewer, dramatic top lighting with hellfire from below
+strict side profile portrait, single eye visible, dramatic rim light on edges, shallow depth of field,
+
+in a throne room built from the bones of fallen titans, hellfire braziers lining the walls,
+
+the creature is much larger than human-sized, imposing mass and bulk
 ```
 
 ---
@@ -927,17 +1089,35 @@ function buildEvolutionImagePrompt(
 ): FalAiRequestBody
 ```
 
-**Step 1: Define the global style anchor constant**
+**Step 1: Define the global style anchor constant (v4)**
 ```typescript
-const STYLE_ANCHOR = 'fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality';
+const STYLE_ANCHOR =
+  '1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, ' +
+  'traditional media on illustration board, visible brushstrokes and ink linework, ' +
+  'sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, ' +
+  'muted earth tones and desaturated palette, gritty textured surface with grain and tooth, ' +
+  'raw unpolished asymmetric forms, dark atmospheric mood, ' +
+  '3:4 portrait ratio, no text no borders no watermarks';
 ```
 
-**Step 2: Determine faction prefix**
+**Step 2: Determine faction prefix (v4 artist references)**
 ```typescript
 const FACTION_PREFIXES: Record<string, string> = {
-  'IRONWRIGHT':       'steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses',
-  'FEY_COURTS':       'ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights',
-  'DEMONIC_KINGDOMS': 'demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence'
+  'IRONWRIGHT':
+    'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
+    'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
+    'warm ochre and raw umber palette, smoky atmospheric background, ' +
+    'painted like a Ron Spencer or Mark Tedin industrial horror',
+  'FEY_COURTS':
+    'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
+    'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
+    'overgrown with moss and lichen, more Brothers Grimm than Disney, ' +
+    'painted like a Rebecca Guay or Quinton Hoover ethereal watercolor',
+  'DEMONIC_KINGDOMS':
+    'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
+    'lit from below by hellfire glow, deep shadow obscuring details, ' +
+    'burnt crimson and charcoal black palette, oppressive and heavy, ' +
+    'painted like a Pete Venters or Anson Maddocks grotesque dark fantasy',
 };
 ```
 
@@ -1564,18 +1744,28 @@ Each card displays as a card-sized panel in a responsive grid (3 columns on desk
 
 ### 5.5 Batch Art Prompt Assembly
 
-The pipeline builds each card's art prompt by concatenating the STYLE_ANCHOR, faction prefix, creature description, and composition instruction:
+The pipeline builds each card's art prompt by concatenating STYLE_ANCHOR, faction prefix, creature description, composition, environment, and (probabilistically) weather/time of day/scale variety dimensions. Uses `buildArtPrompt()` from `supabase/functions/_shared/prompts.ts`.
 
 ```typescript
-const STYLE_ANCHOR = 'fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality';
+// Import from shared prompt module (source of truth)
+import { buildArtPrompt } from '../_shared/prompts.ts';
 
-const COMPOSITION_INSTRUCTION = 'portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view or frontal pose, simple contextual background not cluttered, clear distinct silhouette, card game art composition, eyes visible and facing viewer, dramatic directional lighting';
-
-function buildBaseCardPrompt(row: CsvRow): string {
-  const factionPrefix = FACTION_PREFIXES[row.faction_id];
-  return `${STYLE_ANCHOR},\n\n${factionPrefix},\n\n${row.creature_description},\n\n${COMPOSITION_INSTRUCTION}`;
+function buildBaseCardPrompt(row: CsvRow): FalAiBaseCardRequest {
+  return buildArtPrompt(
+    row.faction_id,
+    row.creature_description,
+    undefined, // no composition override — let auto-select run
+    {
+      tier:     'COMMON',
+      keywords: row.keywords ? row.keywords.split(',').map(k => k.trim()) : [],
+      manaCost: parseInt(row.mana_cost),
+      cardType: row.card_type,
+    }
+  );
 }
 ```
+
+`buildArtPrompt()` assembles: `STYLE_ANCHOR + FACTION_PREFIX + creatureDescription + selectComposition() + selectEnvironment() + selectWeather() + selectTimeOfDay() + selectScale(manaCost)`. The last three are only appended when their selector returns a non-empty string (weather ~30%, time of day ~40%, scale omitted for CM 3–4).
 
 The `negative_prompt` is always:
 ```
@@ -1871,8 +2061,24 @@ All batch-generated base cards go through owner approval in the Admin Dashboard 
 2. **"Two Applications" → "Three Tools."** CLAUDE.md updated to a Three Tools model (Game Client, Admin Dashboard, Supabase Dashboard). Overview section updated to list all three tools with ownership assignments.
 3. **Added Supabase Dashboard as third tool.** Player lookup, match history, auth management, and direct data fixes are handled via Supabase Dashboard (built-in, free) — no custom UI needed for those tasks.
 
-### Changes Made in Version 3.1 (2026-02-16)
+---
 
-1. **Admin Dashboard technology: React → Next.js (TypeScript).** Updated all references to the Admin Dashboard web app from "React" to "Next.js/TypeScript" (Sections 0 overview, 5.4 review gallery). Matches CLAUDE.md and doc 06 Section 9.
-2. **"Two Applications" → "Three Tools."** CLAUDE.md now defines Three Tools: Game Client (iOS), Admin Dashboard (Next.js on Railway), Supabase Dashboard (built-in). Updated overview section to include Supabase Dashboard as the third tool for player lookup, match history, and auth management.
-3. **No content changes.** All prompt templates, API shapes, and pipeline logic are unchanged. This is a technology label and tooling model update only.
+### Changes Made in Version 4.0 (2026-02-17)
+
+1. **Style anchor upgraded v3 → v4.** Replaced Donato Giancola / Frank Frazetta / oil painting descriptors with Ron Spencer / Pete Venters / Mark Poole / traditional media / ink linework. Reason: actual 1990s MTG artist references produce more authentic card-game aesthetic. Removed "single creature portrait" phrase which was blocking group compositions. Full v4 anchor in Section 1.1.
+
+2. **Faction prefixes updated with v4 artist references.** Ironwright: Brom/Keith Parkinson → Ron Spencer/Mark Tedin. Fey Courts: Brian Froud/Alan Lee → Rebecca Guay/Quinton Hoover. Demonic Kingdoms: Wayne Barlowe/Zdzislaw Beksinski → Pete Venters/Anson Maddocks. All updated in Sections 1.3, 4.1, and `supabase/functions/_shared/prompts.ts`.
+
+3. **Composition pool expanded from 12 to 25 templates.** Thirteen new templates added: `PORTRAIT_PROFILE`, `PORTRAIT_FROM_BEHIND`, `PORTRAIT_EXTREME_WIDE`, `ACTION_LEAP`, `ACTION_PROWL`, `ACTION_COMMAND`, `ENVIRONMENTAL_UNDERGROUND`, `ENVIRONMENTAL_SKYBORNE`, `ENVIRONMENTAL_THRESHOLD`, `DRAMATIC_OVERHEAD`, `DRAMATIC_DUTCH_ANGLE`, `NARRATIVE_AFTERMATH`, `NARRATIVE_RITUAL`. Full table with selection rules added to Section 1.3. `selectComposition()` updated in `prompts.ts` and both local scripts.
+
+4. **Faction environments expanded from 5 to 13 per faction.** Eight new environments added per faction (Ironwright, Fey Courts, Demonic Kingdoms). All 39 total environments documented in Section 1.3. Original 5 per faction preserved unchanged.
+
+5. **New variety dimension system added (v4).** Three new probabilistic variety dimensions appended to `buildArtPrompt()` output: weather modifiers (8 options, ~30% application rate), time-of-day modifiers (6 options, ~40% application rate), and scale modifiers (deterministic by mana cost — TINY/SMALL/LARGE/COLOSSAL). New functions `selectWeather()`, `selectTimeOfDay()`, `selectScale()` added to `prompts.ts`. Section 1.3 updated with full tables.
+
+6. **`buildArtPrompt()` updated to incorporate variety dimensions.** After environment, the function now optionally appends weather + time of day + scale. All three selectors return empty string when not activated, so existing callers require no changes.
+
+7. **Section 5.5 batch prompt assembly updated.** Now references `buildArtPrompt()` from shared prompts module instead of inline string concatenation.
+
+8. **Local scripts synced with prompts.ts.** `scripts/generate-test-cards.mjs` and `scripts/validate-art-quality.mjs` updated with: v4 STYLE_ANCHOR, v4 faction prefixes, 25-template COMPOSITION_POOL, 13-environment FACTION_ENVIRONMENTS per faction, and all three new variety dimension arrays and selector functions.
+
+9. **CLAUDE.md updated.** Art Quality Target artist references updated to v4 roster. Composition Variety updated to 25 templates + 13 environments + 3 variety dimensions. Card Visual System updated to full-art card design with translucent text panel (no bordered frames).

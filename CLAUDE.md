@@ -68,7 +68,7 @@ What's done:
 - Game Server: Deployed on Railway, health check passing, match engine + bot AI + matchmaking poller running
 - Admin Dashboard: Deployed on Vercel, 8 pages (login, dashboard, cards, economy, analytics, batch generate, settings, generation jobs)
 - iOS App: Builds and runs in Simulator, all screens implemented, practice match mode working
-- Card Art: 9 test cards + 3 evolution variants generated locally (v3 style anchor with artist references)
+- Card Art: 9 test cards + 3 evolution variants generated locally (v3 style anchor). Prompt system upgraded to v4 (Ron Spencer/Pete Venters/Mark Poole artists, 25 compositions, 13 envs/faction, weather/time/scale dimensions).
 
 What's NOT done:
 - Card art at scale (Edge Function pipeline blocked by verifyServiceRole 403 auth bug; generation works via local scripts)
@@ -133,7 +133,7 @@ This ships to the App Store only. Every doc must account for:
 
 Card art and visual quality must match Magic: The Gathering. Every card must look hand-painted by a professional fantasy illustrator. If a card looks AI-generated, smooth, generic, or "digital art"-looking, it is a failed generation and must be rejected/regenerated.
 
-The locked style anchor (v3) references specific artists: Donato Giancola, Frank Frazetta, Brom, Keith Parkinson, Brian Froud, Alan Lee, Wayne Barlowe, Zdzislaw Beksinski. This produces traditional oil painting aesthetics with visible brushwork, textured surfaces, and muted earth tones.
+The locked style anchor (v4) references actual 1990s MTG artists: Ron Spencer, Pete Venters, Mark Poole (base anchor), and faction-specific: Mark Tedin (Ironwright), Rebecca Guay and Quinton Hoover (Fey Courts), Anson Maddocks (Demonic). This produces traditional media aesthetics with visible brushstrokes, ink linework, sketchy atmospheric rendering, and muted earth tones. Removed "single creature portrait" constraint from v3 to allow group compositions.
 
 ## Art Consistency
 
@@ -141,13 +141,13 @@ All card art must look like it belongs in the same game. The visual style anchor
 
 ## Composition Variety
 
-Card art must use varied compositions — not every card should be a centered three-quarter portrait. The prompt system includes 12 composition templates (portraits, action shots, environmental, dramatic, narrative) selected automatically based on card tier, keywords, and mana cost. No two cards in a batch should have the same pose/composition. Each faction has 5 specific environment descriptions for rich, atmospheric backgrounds.
+Card art must use varied compositions — not every card should be a centered three-quarter portrait. The prompt system includes 25 composition templates (portraits, action shots, environmental, dramatic, narrative) selected automatically based on card tier, keywords, and mana cost. No two cards in a batch should have the same pose/composition. Each faction has 13 specific environment descriptions for rich, atmospheric backgrounds. Additional variety dimensions: 8 weather modifiers (applied ~30% of the time), 6 time-of-day modifiers (applied ~40% of the time), and scale modifiers mapped to mana cost (TINY for CM 1, SMALL for CM 2, LARGE for CM 5-6, COLOSSAL for CM 7+).
 
 ## Card Visual System
 
 Decided asset strategy for professional card appearance:
 
-- **Card Frames**: AI-generated via fal.ai. 15 frame variants (3 factions x 3 rarity tiers for creatures, + spell and stabilizer frames). Faction-themed decorative borders with transparent art windows.
+- **Card Frames**: Full-art cards with no bordered frames. Art fills the entire card face. A translucent text panel at the bottom contains card name (Cinzel font), stat icons (chaos-motes, sword-atk, heart-hp), faction icon, and flavor text. Rarity treatment applied as a thin edge glow at the card border.
 - **Fonts**: Cinzel (card names, headers — classical display font) + Alegreya (body text, flavor text, stats — readable serif). Both from Google Fonts, free, OFL license.
 - **Keyword Icons**: 7 AI-generated icons (Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing). 256x256, transparent background.
 - **Faction Icons**: 3 AI-generated emblems (Ironwright gear-flower, Fey moon-tree, Demonic horned skull). 512x512.
