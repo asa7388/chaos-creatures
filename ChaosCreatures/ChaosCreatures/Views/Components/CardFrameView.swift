@@ -161,10 +161,18 @@ struct CardDisplayData {
     // MARK: - Frame Asset Name
 
     /// Returns the asset catalog name for this card's frame image.
+    /// Format matches SK.CardFrames.assetName() — e.g. "CardFrames/ironwright-common"
     var frameAssetName: String {
-        let factionPrefix = factionFramePrefix
-        let tierSuffix = frameTierSuffix
-        return "\(factionPrefix)-\(tierSuffix)"
+        switch cardType {
+        case .spell:
+            return "CardFrames/spell"
+        case .stabilizer:
+            return "CardFrames/stabilizer"
+        case .creature:
+            let factionPrefix = factionFramePrefix
+            let tierSuffix = frameTierSuffix
+            return "CardFrames/\(factionPrefix)-\(tierSuffix)"
+        }
     }
 
     private var factionFramePrefix: String {
@@ -177,24 +185,20 @@ struct CardDisplayData {
     }
 
     private var frameTierSuffix: String {
-        switch cardType {
-        case .spell: return "spell"
-        case .stabilizer: return "stabilizer"
-        case .creature:
-            switch tier {
-            case .common, .uncommon: return "common"
-            case .rare: return "rare"
-            case .epic, .legendary: return "legendary"
-            }
+        switch tier {
+        case .common, .uncommon: return "common"
+        case .rare: return "rare"
+        case .epic, .legendary: return "legendary"
         }
     }
 
     /// Faction emblem asset name for watermark.
+    /// Format matches SK.FactionEmblems.assetName() — e.g. "FactionEmblems/ironwright"
     var factionEmblemAssetName: String? {
         switch faction {
-        case .ironwright: return "ironwright-emblem"
-        case .feyCourts: return "fey-emblem"
-        case .demonicKingdoms: return "demonic-emblem"
+        case .ironwright: return "FactionEmblems/ironwright"
+        case .feyCourts: return "FactionEmblems/fey"
+        case .demonicKingdoms: return "FactionEmblems/demonic"
         case nil: return nil
         }
     }
@@ -770,15 +774,16 @@ struct CardFrameView: View {
 
 extension Keyword {
     /// The asset catalog image name for this keyword's icon.
+    /// Format matches SK.KeywordIcons.assetName() — e.g. "KeywordIcons/shield"
     var assetIconName: String {
         switch self {
-        case .shield: return "shield"
-        case .lifesteal: return "lifesteal"
-        case .flying: return "flying"
-        case .reach: return "reach"
-        case .deathtouch: return "deathtouch"
-        case .taunt: return "taunt"
-        case .piercing: return "piercing"
+        case .shield: return "KeywordIcons/shield"
+        case .lifesteal: return "KeywordIcons/lifesteal"
+        case .flying: return "KeywordIcons/flying"
+        case .reach: return "KeywordIcons/reach"
+        case .deathtouch: return "KeywordIcons/deathtouch"
+        case .taunt: return "KeywordIcons/taunt"
+        case .piercing: return "KeywordIcons/piercing"
         }
     }
 }

@@ -88,7 +88,7 @@ final class CreatureNode: SKSpriteNode {
         // ATK label — left of stats bar (Alegreya Bold for stats)
         atkLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
         atkLabel.fontSize = SK.Card.statsFontSize
-        atkLabel.fontColor = UIColor(hex: "#F44336")
+        atkLabel.fontColor = UIColor(hex: "#FF7043")
         atkLabel.horizontalAlignmentMode = .left
         atkLabel.verticalAlignmentMode = .center
         atkLabel.position = CGPoint(x: -cardSize.width / 2 + 6, y: -cardSize.height / 2 + statsHeight / 2 + 2)
@@ -105,10 +105,13 @@ final class CreatureNode: SKSpriteNode {
         hpLabel.zPosition = 2
         hpLabel.text = "\(creature.health)"
 
-        // Name label — centered between ATK and HP (Cinzel Bold for card names)
-        // At board scale (64x90pt), name is very small (~6pt). Skip if unreadable.
-        nameLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
-        nameLabel.fontSize = max(SK.Card.nameFontSize - 3, 6)
+        // Name label — centered between ATK and HP
+        // At board scale (64x90pt), name is very small (~7pt).
+        // Cinzel is unreadable below 7pt, so use Alegreya Bold as fallback at small sizes.
+        let nameFontSize = max(SK.Card.nameFontSize - 3, 6)
+        let nameFontName = nameFontSize < 8 ? SK.Fonts.medium : SK.Fonts.bold
+        nameLabel = SKLabelNode(fontNamed: nameFontName)
+        nameLabel.fontSize = nameFontSize
         nameLabel.fontColor = .white
         nameLabel.horizontalAlignmentMode = .center
         nameLabel.verticalAlignmentMode = .center
@@ -126,7 +129,7 @@ final class CreatureNode: SKSpriteNode {
         manaCostBadge.position = CGPoint(x: -cardSize.width / 2 + 10, y: cardSize.height / 2 - 10)
         manaCostBadge.zPosition = 3
 
-        manaCostLabel = SKLabelNode(fontNamed: SK.Fonts.heavy)
+        manaCostLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
         manaCostLabel.fontSize = 10
         manaCostLabel.fontColor = .white
         manaCostLabel.horizontalAlignmentMode = .center
@@ -233,14 +236,15 @@ final class CreatureNode: SKSpriteNode {
     }
 
     private func keywordColor(_ keyword: Keyword) -> UIColor {
+        // Colors must match CardFrameView.keywordColor() in SwiftUI
         switch keyword {
-        case .shield: return UIColor(hex: "#5BC0EB")
-        case .lifesteal: return UIColor(hex: "#4CAF50")
-        case .flying: return UIColor(hex: "#81D4FA")
-        case .reach: return UIColor(hex: "#8D6E63")
-        case .deathtouch: return UIColor(hex: "#9C27B0")
-        case .taunt: return UIColor(hex: "#FFD700")
-        case .piercing: return UIColor(hex: "#FF7043")
+        case .shield: return UIColor(hex: "#5BC0EB")     // orderBlue
+        case .lifesteal: return UIColor(hex: "#4CAF50")  // healGreen
+        case .flying: return UIColor(hex: "#90CAF9")     // light blue
+        case .reach: return UIColor(hex: "#FF7043")      // damageOrange
+        case .deathtouch: return UIColor(hex: "#E63946") // chaosRed
+        case .taunt: return UIColor(hex: "#FFD700")      // tauntGold
+        case .piercing: return UIColor(hex: "#FFC107")   // warningYellow
         }
     }
 

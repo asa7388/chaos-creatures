@@ -251,7 +251,7 @@ enum SK {
             switch tier {
             case .common, .uncommon: tierKey = "common"
             case .rare: tierKey = "rare"
-            case .epic, .legendary: tierKey = "epic"
+            case .epic, .legendary: tierKey = "legendary"
             }
             return "CardFrames/\(factionKey)-\(tierKey)"
         }

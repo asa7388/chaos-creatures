@@ -80,7 +80,7 @@ final class HandCardNode: SKSpriteNode {
         costBadge.position = CGPoint(x: -cardSize.width / 2 + 12, y: cardSize.height / 2 - 12)
         costBadge.zPosition = 3
 
-        costLabel = SKLabelNode(fontNamed: SK.Fonts.heavy)
+        costLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
         costLabel.fontSize = 12
         costLabel.fontColor = .white
         costLabel.horizontalAlignmentMode = .center
@@ -187,14 +187,15 @@ final class HandCardNode: SKSpriteNode {
     }
 
     private func keywordColor(_ keyword: Keyword) -> UIColor {
+        // Colors must match CardFrameView.keywordColor() in SwiftUI
         switch keyword {
-        case .shield: return UIColor(hex: "#5BC0EB")
-        case .lifesteal: return UIColor(hex: "#4CAF50")
-        case .flying: return UIColor(hex: "#81D4FA")
-        case .reach: return UIColor(hex: "#8D6E63")
-        case .deathtouch: return UIColor(hex: "#9C27B0")
-        case .taunt: return UIColor(hex: "#FFD700")
-        case .piercing: return UIColor(hex: "#FF7043")
+        case .shield: return UIColor(hex: "#5BC0EB")     // orderBlue
+        case .lifesteal: return UIColor(hex: "#4CAF50")  // healGreen
+        case .flying: return UIColor(hex: "#90CAF9")     // light blue
+        case .reach: return UIColor(hex: "#FF7043")      // damageOrange
+        case .deathtouch: return UIColor(hex: "#E63946") // chaosRed
+        case .taunt: return UIColor(hex: "#FFD700")      // tauntGold
+        case .piercing: return UIColor(hex: "#FFC107")   // warningYellow
         }
     }
 
