@@ -141,6 +141,7 @@ Roll is a D20 (1–20).
 ```
 player_instability = avatar_instability_modifier
                    + sum(creature_instability for each creature on board)
+                   + sum(ruin_base_instability for each ruin on board)
 ```
 
 Where each creature's instability is:
@@ -355,11 +356,12 @@ AUTOMATIC:
 **What happens:**
 
 1. The turn counter advances.
-2. **"Start of turn" effects fire** in this order:
-   a. Active player's board effects (Corruption self-damage, stabilizer auras, modifier start-of-turn triggers)
-   b. Effects resolve left-to-right by board slot (slot 1 → slot 5)
-3. Check for creature deaths from start-of-turn effects. Remove dead creatures. Trigger on-death effects.
-4. **Recalculate player instability** after any board changes (creature deaths change the sum).
+2. **Ward expires** on any of the active player's creatures that had Ward from the previous turn.
+3. **"Start of turn" effects fire** in this order:
+   a. Active player's board effects (Corruption self-damage, stabilizer auras, Planar Ruin passive effects, modifier start-of-turn triggers, Exalt aura recalculation)
+   b. Effects resolve left-to-right by board slot (slot 1 → slot 5). Ruins fire in their slot position alongside creatures.
+4. Check for creature deaths from start-of-turn effects. Remove dead creatures. Trigger on-death effects (including Persist death triggers).
+5. **Recalculate player instability** after any board changes (creature deaths change the sum; ruins contribute base_instability to the calculation).
 
 **Design note:** Corruption's self-damage fires HERE, before the chaos roll. This means a Demonic creature might die before the chaos roll even happens, reducing instability. The Demonic player has to manage this — if their Corruption creatures are too fragile, they lose board presence (and instability) before the turn even starts.
 
@@ -429,12 +431,14 @@ AUTOMATIC:
 - **Play creature cards** from hand onto empty board slots (costs chaos motes). Creatures enter the board immediately with full stats. No summoning sickness — they can attack this same turn.
 - **Play spell cards** from hand (costs chaos motes). Spells resolve immediately and are discarded.
 - **Play stabilizer cards** from hand onto empty board slots (costs chaos motes). Stabilizers occupy creature slots.
+- **Play Planar Ruin cards** from hand onto empty board slots (costs chaos motes). Ruins occupy creature slots. Max 1 ruin on field at a time. If a ruin is already on the field, additional ruin cards in hand are dimmed and unplayable.
+- **Haste bonus attack:** When a creature with Haste is played, the controlling player may immediately declare it as attacking a specific enemy creature. Combat resolves instantly for that pair only (Shield check, damage, Deathtouch, Piercing, Lifesteal — full resolution). The Haste creature can still attack during the normal Declare Attackers phase that same turn.
 - **Actions can be done in any order.** Play a creature, then a spell, then another creature — as long as you have mana and board space.
 - **No spell response window.** The opponent cannot act during the active player's main phase. All spells resolve immediately without interaction.
 
 **Targeting spells:** When a targeted spell is played, valid targets highlight on the board. The player taps a target to confirm. Tapping outside cancels the spell back to hand (mana refunded).
 
-**Board slot limit:** 5 slots. If all 5 are occupied (by creatures and/or stabilizers), no more cards that require board slots can be played. Spells (which don't occupy slots) can still be cast.
+**Board slot limit:** 5 slots. If all 5 are occupied (by creatures, stabilizers, and/or ruins), no more cards that require board slots can be played. Spells (which don't occupy slots) can still be cast.
 
 **When finished:** The player taps "Attack" (transitions to Phase 6) or "End Turn" (skips directly to Phase 9). If the timer expires during main phase, the turn auto-ends with no attack.
 
@@ -445,13 +449,14 @@ AUTOMATIC:
 **What the active player does:**
 
 1. Tap each creature they want to attack with. Selected attackers are visually marked (glow, tilt forward, etc.).
-2. Creatures that **cannot** attack are dimmed:
+2. **Ruin targeting:** For each attacker, the player chooses whether it targets the opponent's HP (default) or the opponent's Planar Ruin (if one exists). Attackers targeting the ruin are marked with a ruin icon. Unblocked ruin-targeting attackers deal ATK damage to the ruin's HP. Unblocked face-targeting attackers deal damage to the player's HP as normal. If the ruin reaches 0 HP, it is destroyed and its destruction penalty fires immediately.
+3. Creatures that **cannot** attack are dimmed:
    - Creatures that attacked or were played on the previous turn? NO — there is no summoning sickness and no "tap" exhaustion. All creatures can attack every turn.
    - The only restriction: **P1 cannot attack on turn 1.** On all other turns, all creatures can attack.
-3. **Taunt forced-attack rule:** If the opponent controls any Taunt creatures, the active player MUST declare at least 1 attacker per opposing Taunt creature (up to the number of creatures they can legally attack with). The active player chooses which of their creatures to send — they'll typically send their weakest. If the active player has fewer creatures than the opponent has Taunt creatures, they must attack with all of them.
-4. The player can select additional attackers beyond the Taunt minimum.
-5. **Tap "Confirm Attackers"** to lock in the attack. This transitions to Phase 7.
-6. Alternatively, if there are no Taunt creatures forcing attacks, the player can tap "End Turn" to skip combat entirely.
+4. **Taunt forced-attack rule:** If the opponent controls any Taunt creatures, the active player MUST declare at least 1 attacker per opposing Taunt creature (up to the number of creatures they can legally attack with). The active player chooses which of their creatures to send — they'll typically send their weakest. If the active player has fewer creatures than the opponent has Taunt creatures, they must attack with all of them. **Note:** Taunt does NOT require attacking a ruin — Taunt forces attackers to be declared, not where they are directed. The attacker can target ruin or face; Taunt just ensures they attack.
+5. The player can select additional attackers beyond the Taunt minimum.
+6. **Tap "Confirm Attackers"** to lock in the attack. This transitions to Phase 7.
+7. Alternatively, if there are no Taunt creatures forcing attacks, the player can tap "End Turn" to skip combat entirely.
 
 **No additional spells after declaring attackers.** Once attackers are confirmed, the main phase is over. This is the key simplification from choosing main-phase-only spells — cast your buffs BEFORE committing to attack.
 
@@ -562,7 +567,7 @@ AFTER ALL COMBAT:
 
 **What happens:**
 
-1. **"End of turn" effects fire** (if any exist — currently none in base design, reserved for future).
+1. **"End of turn" effects fire** — includes Planar Ruin end-of-turn passive effects (e.g., Communion Altar's Shared Vitality) and any modifier end-of-turn triggers. Resolve left-to-right by board slot.
 2. **"This turn" buffs expire.** Any temporary stat modifications that last "this turn" are removed.
 3. **Recalculate creature stats** to remove expired buffs.
 4. **Turn passes to the opponent.** Their Phase 1 begins.
@@ -639,7 +644,7 @@ AFTER ALL COMBAT:
 
 ## 4. Keywords
 
-Seven creature keywords. Kept tight so that modifier-granted keywords feel impactful and players can internalize the full set quickly.
+Nine creature keywords. Kept tight so that modifier-granted keywords feel impactful and players can internalize the full set quickly.
 
 ### Keyword Definitions
 
@@ -664,36 +669,68 @@ Two-part rule: *forced attack* + *forced block.* While you control a creature wi
 **Piercing**
 When this creature deals combat damage to a blocking creature and the damage exceeds the blocker's remaining HP, the excess damage is dealt to the opponent's HP. A 6-ATK Piercing creature blocked by a 2-HP creature deals 2 damage to the creature (killing it) and 4 damage to the opponent. Piercing does NOT apply when this creature is the blocker.
 
+**Haste**
+When this creature is played, it may immediately declare an attack against a target creature before the normal Declare Attackers phase. This is a bonus attack that happens during the Main Phase as an immediate combat. The creature can still attack normally during the Declare Attackers phase that same turn, effectively attacking twice on its first turn. The bonus attack follows full combat resolution (Shield check, damage, Deathtouch, Piercing, Lifesteal) for that pair only. Haste creatures ignore deployment restrictions from Persist lingering effects, Planar Ruin deployment penalties, and any future mechanics that restrict freshly-played creatures.
+
+**Ward**
+This creature cannot be targeted by the opponent's modifier effects, triggered ability effects, or spell effects for 1 turn after deployment. Ward expires at the start of the controlling player's next turn. Key clarifications: (1) Ward only protects against targeted effects -- area-of-effect abilities and events bypass Ward. (2) Ward only protects against the OPPONENT's effects; the controlling player can still target their own Ward creature. (3) Ward does NOT protect against combat damage. (4) Ward does NOT prevent Chaos/Order event effects (events are system-level, not targeted). (5) Ward blocks targeted Persist death-trigger effects; if a Persist trigger randomly selects a Ward creature, the effect retargets to another valid target (fizzles if none). (6) Ward is consumed on expiry, not on absorption -- it simply expires after its duration.
+
 ### Keyword PP Costs
 
-| Keyword | PP Cost | Rationale |
-|---|---|---|
-| Shield | 3 | Absorbs one full hit — can negate massive damage. Very strong, especially on high-HP creatures. |
-| Lifesteal | 2 | Value scales with ATK; marginal on low-ATK creatures, powerful on high-ATK. |
-| Flying | 2 | Evasion is strong but hard-countered by Reach and other Flying. |
-| Reach | 1 | Purely defensive, only relevant vs. Flying. |
-| Deathtouch | 3 | Guarantees trades with any creature. Makes small creatures deadly efficient. |
-| Taunt | 1 | Forces opponent to attack and forces your creature to intercept. Strong defensive tool but opponent chooses what to send (counterplay: send weakest creature, spell removal, fly over). |
-| Piercing | 2 | Converts excess damage to face damage; scales with ATK vs. low-HP blockers. |
+| Keyword | PP Cost | Category | Rationale |
+|---|---|---|---|
+| Shield | 3 | Defensive | Absorbs one full hit — can negate massive damage. Very strong, especially on high-HP creatures. |
+| Lifesteal | 2 | Sustain | Value scales with ATK; marginal on low-ATK creatures, powerful on high-ATK. |
+| Flying | 2 | Evasion | Evasion is strong but hard-countered by Reach and other Flying. |
+| Reach | 1 | Defensive (situational) | Purely defensive, only relevant vs. Flying. |
+| Deathtouch | 3 | Removal | Guarantees trades with any creature. Makes small creatures deadly efficient. |
+| Taunt | 1 | Defensive (forced engagement) | Forces opponent to attack and forces your creature to intercept. Strong defensive tool but opponent chooses what to send (counterplay: send weakest creature, spell removal, fly over). |
+| Piercing | 2 | Aggressive | Converts excess damage to face damage; scales with ATK vs. low-HP blockers. |
+| Haste | 2 | Tempo | Bonus attack on play turn. Effectively attacks twice on first turn. Strong on high-ATK creatures and Deathtouch (instant removal on play). |
+| Ward | 1 | Protective (deployment) | One-turn protection from targeted effects. Comparable to Reach and Taunt at 1 PP. Does nothing against combat, AoE, or events. |
 
-### Keyword Interaction Matrix
+### Keyword Interaction Matrix (9x9)
 
-How keywords interact when they meet in combat.
+How every keyword interacts with every other keyword when they appear in combat or on the same creature.
 
-| Attacker Has | Defender Has | Resolution |
-|---|---|---|
-| **Piercing** | **Shield** | Shield absorbs ALL damage (including what would pierce). No pierce-through. Shield breaks. Attacker deals 0 to face. |
-| **Piercing** | **Taunt** | Taunt forces the opponent to send an attacker, and the Taunt creature must block it. Piercing still applies — excess damage goes to face. |
-| **Deathtouch** | **Shield** | Shield absorbs the Deathtouch hit. Shield breaks. Creature survives (Deathtouch was "absorbed" by the shield). |
-| **Deathtouch** | **Taunt** | Taunt forces the engagement. Deathtouch kills the Taunt creature regardless of HP. |
-| **Deathtouch** | **Lifesteal** (on defender) | Deathtouch kills defender. Defender's Lifesteal still triggers (simultaneous damage — see combat resolution). |
-| **Flying** | **Taunt** (no Reach/Flying) | Ground Taunt creature cannot block the Flying attacker. Taunt's forced-block obligation is waived. However, Taunt's forced-attack rule still applies — the opponent must still send at least 1 attacker, but the Flying creature bypasses the ground Taunt. |
-| **Flying** | **Taunt** + **Reach** | Taunt + Reach creature CAN block Flying. Both forced-attack and forced-block apply normally. |
-| **Flying** | **Reach** (no Taunt) | Reach creature CAN block the Flying attacker but is not forced to. Defender chooses. |
-| **Piercing** | **Deathtouch** (on defender) | Piercing attacker's excess damage goes to face. BUT the defender's Deathtouch kills the attacker (both creatures die, face damage still applies). |
-| **Lifesteal** | **Shield** | Lifesteal attacker deals damage → Shield absorbs all of it → attacker heals 0 (no damage was actually dealt to the creature). Shield breaks. |
-| **Lifesteal** | **Deathtouch** (on defender) | Lifesteal attacker deals damage and heals. Deathtouch defender kills the attacker. Both effects resolve. |
-| **Deathtouch** + **Piercing** | any | Deathtouch kills the blocker. Piercing applies — ALL of the attacker's ATK minus 1 (the minimum damage needed to "kill" via Deathtouch is 1) goes to face. Extremely powerful combo. |
+#### Combat Interactions (Attacker vs. Defender)
+
+| Attacker \ Defender | Shield | Lifesteal | Flying | Reach | Deathtouch | Taunt | Piercing | Haste | Ward |
+|---|---|---|---|---|---|---|---|---|---|
+| **Shield** | Both shields absorb. Shields cancel each other. No damage dealt. Both shields break. | Shield absorbs defender's damage. Lifesteal heals 0. Attacker deals damage normally. | No special interaction. | No special interaction. | Shield absorbs Deathtouch hit. Creature survives. Shield breaks. | No special interaction. Shield still absorbs first hit. | No special interaction. | No special interaction. | No combat interaction (Ward does not affect combat). |
+| **Lifesteal** | Lifesteal heals 0 if defender's Shield absorbs (no damage dealt). | Both heal for damage dealt. Both creatures survive longer in sustain matchups. | No special interaction. | No special interaction. | Lifesteal attacker heals for damage dealt. Deathtouch defender kills attacker regardless. Both resolve. | No special interaction. | No special interaction. | No special interaction. | No combat interaction. |
+| **Flying** | No special interaction. | No special interaction. | Both creatures can block each other. Standard combat. | Reach creature CAN block Flying attacker. Defender chooses. | Flying attacker killed by Deathtouch if blocked by creature with Deathtouch + Flying or Deathtouch + Reach. | Ground Taunt cannot block Flying (forced-block waived). Taunt + Reach/Flying CAN block. Forced-attack obligation still applies. | No special interaction. | No special interaction. | No combat interaction. |
+| **Reach** | No special interaction. | No special interaction. | Reach creature blocks Flying attacker normally. | No special interaction (standard combat). | No special interaction. | No special interaction. | No special interaction. | No special interaction. | No combat interaction. |
+| **Deathtouch** | Shield absorbs Deathtouch hit. Creature survives. Shield breaks. | Deathtouch kills defender. Defender's Lifesteal still heals (simultaneous damage). | No special interaction (still needs to be blocked). | No special interaction. | Both creatures kill each other regardless of stats (mutual Deathtouch). | Taunt forces engagement. Deathtouch kills the Taunt creature regardless of HP. | Deathtouch kills blocker. Piercing applies -- all ATK minus 1 goes to face. EXTREMELY powerful combo. | No special interaction. | No combat interaction. |
+| **Taunt** | No special interaction. | No special interaction. | Taunt forced-block waived against Flying if Taunt lacks Reach/Flying. Forced-attack still applies. | No special interaction. | Taunt forces engagement. Deathtouch kills the Taunt creature. | Multiple Taunts: opponent must send 1 attacker per Taunt. Defender chooses which Taunt blocks which. | No special interaction. | No special interaction. | No combat interaction. |
+| **Piercing** | Shield absorbs ALL damage. No pierce-through. Shield breaks. 0 damage to face. | No special interaction. | No special interaction. | No special interaction. | Piercing excess goes to face. Deathtouch defender kills attacker. Both resolve. Face damage still applies. | Piercing through Taunt blocker sends excess to face. | Piercing is attacker-only. Defender's Piercing does nothing when blocking. | No special interaction. | No combat interaction. |
+| **Haste** | No special combat interaction (Haste is a deployment keyword). | No special interaction. | No special interaction. | No special interaction. | No special interaction. | No special interaction. | No special interaction. | If both have Haste, no special interaction (Haste is about deployment). | No combat interaction. |
+| **Ward** | No combat interaction (Ward does not affect combat). | No combat interaction. | No combat interaction. | No combat interaction. | No combat interaction. Ward does NOT protect against Deathtouch in combat. | No combat interaction. Ward creature with Taunt still must block. | No combat interaction. | No combat interaction. | No combat interaction (Ward vs Ward is irrelevant). |
+
+#### Same-Creature Keyword Stacking
+
+When a creature has multiple keywords, they all apply simultaneously:
+
+| Combination | Effect |
+|---|---|
+| Shield + Taunt | Forces engagement AND absorbs first hit. Excellent defensive wall. |
+| Shield + Deathtouch | Shield protects the fragile Deathtouch creature for one engagement. After Shield breaks, Deathtouch trades with anything. |
+| Shield + Lifesteal | Shield absorbs the first hit (Lifesteal irrelevant on that exchange). After Shield breaks, Lifesteal sustains. |
+| Flying + Deathtouch | Evasive creature that kills anything it touches. Must be blocked by Flying/Reach, or it goes face. Very powerful. |
+| Flying + Piercing | Evasion + pierce. If blocked by Flying/Reach creature with less HP than ATK, excess goes to face. |
+| Flying + Lifesteal | Evasive Lifesteal. Hard to block, heals on hit. Strong sustain attacker. |
+| Deathtouch + Piercing | Kills blocker on 1 damage, ALL remaining ATK pierces to face. The most aggressive keyword combo. |
+| Deathtouch + Lifesteal | Kills anything it hits, heals for damage dealt. Efficient and sustaining. |
+| Taunt + Reach | Can block Flying attackers AND forces engagement. Complete defensive package. |
+| Taunt + Deathtouch | Forces engagement AND kills whatever it blocks. Opponent MUST send a creature to die. Nuclear deterrent. |
+| Haste + Deathtouch | Deploy and immediately kill an enemy creature with the bonus attack. Instant removal on a creature. |
+| Haste + Piercing | Deploy, bonus attack pierces through a blocker to face, then attack again in combat. Double damage window. |
+| Haste + Lifesteal | Deploy, immediately heal from the bonus attack, then heal again in combat. Burst healing. |
+| Ward + Shield | Protected from targeted removal (Ward) AND first combat hit (Shield). Maximum survival for one turn. |
+| Ward + Taunt | Cannot be removed by spells, must be attacked through. Opponent cannot use removal to bypass the Taunt. |
+| Ward + Deathtouch | Cannot be removed before combat. Opponent must commit a creature to kill it. |
+| Ward + Flying | Cannot be targeted AND hard to block. Very safe aggressive creature for one turn. |
+| Haste + Ward | Deploy, attack immediately, and be safe from targeted removal until next turn. Maximum tempo + safety. |
 
 ### Combat Resolution Order
 
@@ -712,38 +749,62 @@ Combat damage is simultaneous. Both attacker and blocker deal damage at the same
 | Flying | ★ | ★★★ | Evasion for pushing damage. Chaos wants to bypass blockers. |
 | Piercing | ★ | ★★★ | Converts overkill into face damage. Chaos wants every point of ATK to count. |
 | Deathtouch | ★★ | ★★★ | Efficient removal. Chaos loves it on cheap glass cannons; Order can use it defensively on Taunt creatures. |
+| Haste | ★ | ★★★ | Tempo keyword. Bonus attack on play turn rewards aggression. Primary for Endless (aggressive attrition), secondary for Demonic (fast burnout). |
+| Ward | ★★★ | ★ | Deployment protection. Ensures key creatures survive their first turn. Primary for Celestial (protect formation building), secondary for Ironwright (protect Augment investment). |
+
+### Keyword Affinity by Faction
+
+| Keyword | Ironwright | Fey Courts | Demonic | Celestial | Endless |
+|---|---|---|---|---|---|
+| Shield | High | Medium | Low | High | Low |
+| Lifesteal | Medium | Low | High | Low | Medium |
+| Flying | Low | Medium | Medium | High | Low |
+| Reach | Medium | High | Low | Medium | Low |
+| Deathtouch | Low | Low | High | Low | High |
+| Taunt | High | Medium | Low | High | Low |
+| Piercing | Medium | Low | High | Low | Medium |
+| Haste | Low | Low | Medium | Low | High |
+| Ward | Medium | Medium | Low | High | Low |
 
 ---
 
 ## 5. Factions
 
-Three factions at launch. Each faction defines a card art style, creature thematic identity, and an **exclusive mechanic** available only through that faction's modifier pool. Decks are single-faction — all cards in a deck must share a faction.
+Five factions. Each faction defines a card art style, creature thematic identity, and an **exclusive mechanic** available only through that faction's modifier pool. Decks are single-faction — all cards in a deck must share a faction.
 
-### The Ironwright Collective (Steampunk)
+### The Ironwright Collective (Brutalist Space-Industrial)
 
-**Art style:** Brass, gears, steam vents, riveted armor, clockwork creatures, industrial landscapes.
+**Art style:** Concrete, iron, hydraulics, rebar, void industry, star conquest, orbital machinery, reactor cores, gravity wells. Massive orbital shipyards, star-harvesting factories, void-faring siege engines. Exposed rebar, poured concrete, rusted iron, hydraulic pistons. NOT brass, gears, steam, clockwork, or Victorian.
+
+**Art references:** Piranesi "Carceri d'invenzione" (died 1778 — PD) + John Martin.
+
+**Sub-factions:** The Foundry Directorate (centralized, geometric, blueprinted, Order-aligned) and The Scrap Legions (self-assembled from battlefield wreckage, patchwork, jury-rigged, Chaos-aligned).
 
 **Exclusive mechanic: Augment**
 
-Augment modifiers stack small persistent effects that compound. The more Augment modifiers a creature has, the stronger each one becomes. Each evolution bolts another gadget onto the creature.
+Augment modifiers stack small persistent effects that compound. The more Augment modifiers a creature has, the stronger each one becomes. Each evolution bolts another component onto the creature.
 
 - Effects reference Augment count: "+1 ATK for each Augment modifier on this creature," "Shield regenerates at start of turn if this creature has 3+ Augment modifiers"
 - Stacking is self-contained per creature — no cross-creature Augment synergy. Rewards deep evolution investment on individual creatures.
-- Natural synergy with Shield (protect your investment), Lifesteal (sustain your big threats), Taunt (force trades on your terms)
+- Natural synergy with Shield (protect your investment), Lifesteal (sustain your big threats), Taunt (force trades on your terms), Ward (protect Augment investment from targeted removal)
 
 **Play identity:** Midrange/value. Fewer creatures, each heavily invested in. An Ironwright Legendary with 4 Augment modifiers is individually terrifying — a walking fortress of compounding effects. Vulnerable to Deathtouch (ignores all that stacked HP) and efficient 1-for-1 removal (each kill loses a lot of invested Augment value).
 
 **Example faction modifiers:**
-- **Brass Plating** (1 PP): Base +1 HP per Augment modifier on this creature. Order Attuned: +1 HP.
-- **Overclock Piston** (2 PP): Base +1 ATK per Augment modifier on this creature. Chaos Attuned: +1 ATK per Augment on this creature.
-- **Redundant Systems** (2 PP): Base: Shield. Order Attuned: regenerate Shield at start of turn if creature has 3+ Augment modifiers.
-- **Pressure Valve** (1 PP): Base: +1 instability, +1 ATK per Augment modifier. Chaos Attuned: +1 ATK.
-- **Governor Module** (2 PP): Base: -1 instability, +1 HP per Augment modifier. Order Attuned: +1 HP per Augment modifier.
-- **Failsafe Protocol** (3 PP): Base: when this creature would die, if it has 4 Augment modifiers, survive with 1 HP instead (once per game). Order Attuned: also gain Shield.
+- **Rebar Reinforcement** (1 PP): Base +1 HP per Augment modifier on this creature. Order Attuned: +1 HP.
+- **Overclock Protocol** (1 PP): Base +1 ATK per Augment modifier on this creature. Chaos Attuned: +1 ATK this turn.
+- **Void-Iron Bulkhead** (2 PP): Base: Shield. Order Attuned: regenerate Shield at start of turn if creature has 3+ Augment modifiers.
+- **Reactor Surge** (1 PP): Base: +1 instability, +1 ATK per Augment modifier. Chaos Attuned: +1 ATK.
+- **Gravity Dampener** (2 PP): Base: -1 instability, +1 HP per Augment modifier. Order Attuned: +1 HP per Augment modifier.
+- **Emergency Containment** (3 PP): Base: when this creature would die, if it has 4 Augment modifiers, survive with 1 HP instead (once per game). Order Attuned: also gain Shield.
 
 ### The Fey Courts (High Fantasy / Fey & Druidic)
 
 **Art style:** Ancient forests, bioluminescent flora, antlered fey lords, mossy stone circles, living wood armor, mycelial networks, wild hunt imagery.
+
+**Art references:** Arthur Rackham and Edmund Dulac.
+
+**Sub-factions:** The Verdant Throne (bright, growth, Spring/Summer) and The Hollow Court (dark, frost, Autumn/Winter).
 
 **Exclusive mechanic: Bond**
 
@@ -767,6 +828,10 @@ Bond modifiers create synergies between creatures on the board. They care about 
 
 **Art style:** Hellfire, obsidian fortresses, demonic horns and wings, blood rituals, ash-choked wastelands, infernal glyphs, corrupted flesh.
 
+**Art references:** Gustave Dore Inferno etchings, Hieronymus Bosch.
+
+**Sub-factions:** The Furnace Lords (wrath, volcanic) and The Obsidian Bureaucracy (schemes, contracts).
+
 **Exclusive mechanic: Corruption**
 
 Corruption modifiers trade your own resources (HP, creature health, board slots) for outsized effects. Every Corruption modifier is a dark bargain — tremendous power at a cost. The self-damage creates natural synergy with Lifesteal (heal back what you sacrifice) and Deathtouch (creatures were going to die anyway, trade up).
@@ -785,13 +850,77 @@ Corruption modifiers trade your own resources (HP, creature health, board slots)
 - **Binding Chains** (2 PP): Base: -1 instability, Lifesteal. Order Attuned: heal 1 HP to this creature at start of your turn.
 - **Infernal Bargain** (3 PP): Base: +3 ATK, this creature takes 2 damage at start of your turn. Chaos Attuned: Piercing. If creature dies from self-damage, deal 4 damage to enemy avatar.
 
-### Faction Triangle
+### The Celestial Crusade (Divine / Holy War)
 
-| Matchup | Dynamic |
-|---|---|
-| Ironwright vs Fey Courts | Individual powerhouses vs. networked board. Ironwright wants to trade 1-for-1 efficiently — each kill weakens the Bond network without weakening Augment stacks. Fey wants to go wide and overwhelm with cumulative Bond value. |
-| Fey Courts vs Demonic | Stable board vs. explosive burn. Demonic Corruption burst can shatter the Bond network, but if Fey stabilizes with Shield and healing, the Demonic player burns themselves out. |
-| Ironwright vs Demonic | Durability vs. burst. Ironwright's stacking defenses (Augment Shield regeneration, compounding HP) resist Corruption burst, but Demonic Deathtouch ignores all that HP stacking. |
+**Art style:** Self-righteous divine crusaders, holy gold armor, biblically-accurate multi-winged multi-eyed celestials, divine mandates, angelic formations, holy fire. Superior to all non-celestials, waging holy war for dominion.
+
+**Art references:** Gustave Dore biblical illustrations, William Blake visionary paintings (died 1827 — PD).
+
+**Sub-factions:** Knights of Deliverance (stoic paladins, divine armor, formation discipline, military arm) and Heaven's Chosen (biblically-accurate multi-winged, multi-eyed celestials, divine arm).
+
+**Exclusive mechanic: Exalt**
+
+Exalt modifiers provide aura effects that benefit the controlling player's board when specific board conditions are met. The Celestial player wins by building a wide, stable formation where every creature empowers every other creature through divine mandate.
+
+- Exalt effects are conditional auras. Each Exalt modifier has a threshold condition (e.g., "while you control 3+ creatures") and an aura effect that applies when the condition is met.
+- Exalt auras affect ALL friendly creatures (including the source), unless the modifier text specifies otherwise. Distinct from Bond (which references specific creatures or Bond-holders). Exalt is about divine commandment — all are uplifted.
+- Exalt thresholds are creature-count based. Early-tier: 2+ creatures (easy). Core: 3+ creatures (medium). Late-tier: 4+ creatures (hard). Full board (5): very hard, Legendary-tier only.
+- Exalt auras stack from different sources but a single source only applies its effect once.
+- Exalt collapses when the threshold is not met. Board wipes or targeted removal dropping creature count below threshold deactivate the aura immediately.
+- Order-attuned Exalt: defensive auras (HP, Shield propagation, healing). Chaos-attuned Exalt: offensive auras (ATK, damage-dealing, keyword sharing).
+- Natural synergy with Shield (protect formation), Taunt (protect Exalt sources), Ward (protect deployment), Reach (defend against Flying)
+
+**Play identity:** Board-centric formation. Slightly below-curve individually (paying for aura potential). A single Celestial creature with an Exalt modifier on an empty board has a dead modifier. But 4+ creatures with stacking Exalt auras creates an overwhelming defensive or offensive wall. Vulnerable to board wipes (collapse all auras simultaneously), targeted removal of high-value Exalt sources, and fast aggro before the formation stabilizes.
+
+**Example faction modifiers:**
+- **Blessed Vigil** (1 PP): Base: +1 HP while you control 2+ creatures (Exalt). Order Attuned: +1 HP to this creature.
+- **Righteous Fury** (1 PP): Base: +1 ATK while you control 2+ creatures (Exalt). Chaos Attuned: +1 ATK this turn.
+- **Divine Aegis** (2 PP): Base: Exalt aura — while you control 3+ creatures, all friendly creatures get +0/+1. Order Attuned: grant Shield to this creature.
+- **Holy Judgment** (2 PP): Base: Exalt aura — while you control 3+ creatures, all friendly creatures get +1/+0. Chaos Attuned: +1 ATK to this creature.
+- **Archangel's Mantle** (3 PP): Base: Shield. Exalt aura: while you control 3+ creatures, all friendly creatures get +0/+1. Order Attuned: regenerate Shield at start of turn.
+- **Celestial Purge** (3 PP): Base: +2 ATK. Exalt condition: while you control 5 creatures (full board), all friendly creatures get +3 ATK and Piercing. Chaos Attuned: deal 2 damage to all enemy creatures. Order penalty: this creature takes 2 damage.
+
+### The Endless (Undead / Necromantic)
+
+**Art style:** The undead — raised, summoned, abandoned. Necromancers and liches raising armies, bone constructs, ghostly spectres, skeletal hordes, phylacteries, ethereal mist, necrotic energy. Unnatural, relentless.
+
+**Art references:** Gustave Dore Inferno etchings, Francisco Goya "Black Paintings" (died 1828 — PD).
+
+**Sub-factions:** Necromantic Cabals (necromancers and liches raising armies, creating abominations — robed figures, bone constructs, phylacteries) and The Lost Spectres (ghosts and spectres summoned and abandoned by liches — ethereal, translucent, tragic).
+
+**Exclusive mechanic: Persist**
+
+Persist modifiers trigger effects when creatures die or create lingering effects that continue after death. The Endless player wins through attrition — every creature that dies (on either side) generates value. Trading is not just acceptable, it is the strategy.
+
+- Persist effects trigger on death. The primary trigger is ON_DEATH — when the creature carrying the Persist modifier is destroyed (from combat, spells, Chaos events, any source).
+- Persist lingering effects persist after death. Some modifiers create lasting effects that remain active for a number of turns after the creature dies, tracked as board-level effects.
+- Late-tier Persist modifiers can trigger when OTHER friendly creatures die (not just the carrier). Board wipes become actively dangerous for the opponent — killing 3 Endless creatures triggers 3+ death effects.
+- Persist effects fire exactly once per modifier per death. No recursion loops.
+- Persist does NOT bring creatures back. The value comes from death consequences, not resurrection.
+- Order-attuned Persist: sustain and board preservation (healing allies on death, buffing survivors, lingering defensive effects). Chaos-attuned Persist: aggression and punishment (dealing damage on death, debuffing enemies, lingering offensive effects).
+- Natural synergy with Deathtouch (trade with anything, trigger Persist), Haste (deploy, attack, die for triggers), Lifesteal (sustain through attrition), Piercing (push face damage alongside attrition)
+
+**Play identity:** Aggro/attrition. Creatures are expendable — the deck wants to trade, trigger death effects, and grind the opponent down. Persist modifiers do nothing while the creature is alive; value is back-loaded into the death moment. Vulnerable to face rush (if opponent ignores Endless creatures, Persist never triggers), Shield walls (prevents trading), and fast games ending before creatures die.
+
+**Example faction modifiers:**
+- **Parting Gift** (1 PP): Base: +1 HP. Persist: on death, heal a random friendly creature for 2 HP. Order Attuned: +1 HP.
+- **Death Rattle** (1 PP): Base: +1 ATK. Persist: on death, deal 1 damage to a random enemy creature. Chaos Attuned: +1 ATK this turn.
+- **Soul Shepherd** (2 PP): Base: +1 HP. Persist sympathy: when any friendly creature dies, this creature gets +0/+1 permanently. Order Attuned: +1 HP.
+- **Grave Eruption** (2 PP): Base: +1 ATK. Persist: on death, deal 2 damage to all enemy creatures. Chaos Attuned: +1 ATK.
+- **Requiem** (3 PP): Base: Shield, +1 HP. Persist: on death, all friendly creatures gain Shield and +0/+1 permanently. Order Attuned: +1 HP.
+- **Soul Bomb** (3 PP): Base: +1 instability, +2 ATK, +1 HP. Persist: on death, deal damage equal to this creature's ATK to the enemy avatar. Chaos Attuned: +2 ATK this turn.
+
+Full modifier definitions for all five factions: see `docs/design/PHASE1B-mechanics.md`.
+
+### Faction Matchup Matrix (5x5)
+
+| Attacker \ Defender | Ironwright (Augment) | Fey (Bond) | Demonic (Corruption) | Celestial (Exalt) | Endless (Persist) |
+|---|---|---|---|---|---|
+| **Ironwright** | Mirror: tall vs tall. First to assemble a 4-Augment creature wins. | IW wants efficient 1-for-1 trades. Each kill weakens Bond. Fey wants to go wide and overwhelm. | IW's stacked HP resists burst. Deathtouch is the Demonic answer. Slow grind favors IW. | IW's targeted threats vs Celestial's wide formation. Removal spells are key — kill Exalt sources. | IW's tall creatures are hard to trade into profitably for Endless. But Persist death value means even bad trades generate something. |
+| **Fey** | Bond network can overwhelm a single Augment stack with numbers. But if IW kills Bond creatures 1-for-1, the network weakens. | Mirror: both go wide. Whoever gets ahead in creature count snowballs. | Bond network can stabilize against Corruption burst if it survives the early game. | Similar board-centric strategies. Bond is more resilient to partial removal than Exalt's hard thresholds. | Fey wants to avoid trading (preserves Bond). Endless wants to force trades (triggers Persist). Taunt and Shield protect the Bond network. |
+| **Demonic** | Deathtouch ignores Augment HP stacking. Burst can kill before Augment fully stacks. | Corruption burst can shatter Bond network early. If Fey stabilizes, Demonic burns out. | Mirror: race to kill. Highest burst wins. Both players take self-damage. | Corruption aggro tries to kill Celestial creatures before formation stabilizes. If Exalt gets Shield auras up, Demonic burns out. | Both profit from death. Explosive matchup with creatures dying constantly. Demonic wants to close fast; Endless wants to grind. |
+| **Celestial** | Formation vs investment. Exalt auras on 4+ creatures can overwhelm a single Augment stack. IW removal targets Exalt sources. | Both are board-centric. Exalt auras are global; Bond effects are targeted. Exalt is more fragile to partial removal. | Shield auras and healing counter Corruption burst. Celestial stabilizes and grinds. | Mirror: who builds the wider board faster. AoE spells break the stalemate. | Celestial wants to avoid deaths (maintains formation). Endless wants to force trades. Tension between "keep alive" and "kill for value" defines the matchup. |
+| **Endless** | Persist death triggers generate value even when trading unfavorably against Augment stacks. Deathtouch is the key keyword. | Forcing trades weakens Bond AND triggers Persist. Endless favored if it can force engagement. | Both thrive on death. Volatile, explosive games. Whoever generates more death value wins. | Endless picks apart the formation one creature at a time. Each kill weakens Exalt AND triggers Persist. But Shield auras make forcing trades difficult. | Mirror: mutual death value. Whoever has better Persist triggers and more efficient trades wins. Haste creatures create tempo advantages. |
 
 ---
 
@@ -855,11 +984,13 @@ At every evolution, the player is always presented with **at least 1 universal o
 | Ironwright Collective | 12 | 4 | 48 |
 | The Fey Courts | 12 | 4 | 48 |
 | The Demonic Kingdoms | 12 | 4 | 48 |
-| **Grand Total** | | | **240** |
+| The Celestial Crusade | 12 | 4 | 48 |
+| The Endless | 12 | 4 | 48 |
+| **Grand Total** | | | **336** |
 
 ### Universal Modifier Design Principles
 
-Universal modifiers are straightforward stat, keyword, and instability adjustments that work in any faction. They don't reference faction-exclusive mechanics (no Augment/Bond/Corruption).
+Universal modifiers are straightforward stat, keyword, and instability adjustments that work in any faction. They don't reference faction-exclusive mechanics (no Augment/Bond/Corruption/Exalt/Persist).
 
 **By PP budget:**
 
@@ -887,7 +1018,7 @@ Universal modifiers are straightforward stat, keyword, and instability adjustmen
 
 ### Faction Modifier Design Principles
 
-Faction modifiers MUST reference their faction's exclusive mechanic. A modifier in the Ironwright pool that just says "+2 ATK" is wrong — it should say "+1 ATK per Augment modifier on this creature" or "Shield, regenerate if 3+ Augment." The faction mechanic keyword (Augment/Bond/Corruption) is what makes these modifiers unavailable to other factions.
+Faction modifiers MUST reference their faction's exclusive mechanic. A modifier in the Ironwright pool that just says "+2 ATK" is wrong — it should say "+1 ATK per Augment modifier on this creature" or "Shield, regenerate if 3+ Augment." The faction mechanic keyword (Augment/Bond/Corruption/Exalt/Persist) is what makes these modifiers unavailable to other factions.
 
 **By faction:**
 
@@ -896,6 +1027,12 @@ Faction modifiers MUST reference their faction's exclusive mechanic. A modifier 
 **Fey Courts (Bond):** Effects reference other creatures. Early-tier Bonds are simple board-count checks ("while you control 2+ creatures"). Late-tier Bonds reference adjacent creatures, Bond-count across the board, and create compounding networks. Order-attuned Bonds lean protective (HP to allies, Shield sharing). Chaos-attuned Bonds lean aggressive (ATK sharing, Piercing propagation).
 
 **Demonic Kingdoms (Corruption):** Effects trade self-damage for power. Early-tier Corruptions are mild bargains (1 self-damage for +2 ATK). Late-tier Corruptions are dramatic ("take 2 damage per turn, gain +4 ATK and Piercing" or "on death: deal ATK as damage to enemy avatar"). Order-attuned Corruptions include sustain (Lifesteal riders, self-healing, damage reduction). Chaos-attuned Corruptions go all-in on burst (more self-damage, more ATK, death triggers).
+
+**Celestial Crusade (Exalt):** Effects reference Exalt thresholds (creature count conditions) and aura buffing. Early-tier Exalt modifiers use low thresholds (2+ creatures) for modest auras. Late-tier Exalt modifiers use high thresholds (3+, 4+, or full board) for powerful formation-wide effects. Order-attuned Exalt modifiers lean toward protective auras (HP buffs, Shield propagation, healing auras, Ward grants). Chaos-attuned Exalt modifiers lean toward offensive auras (ATK buffs, damage-dealing auras, Piercing sharing). Design constraint: Exalt creatures are slightly below-curve individually — the power is in the formation, not the individual.
+
+**The Endless (Persist):** Effects reference death triggers and lingering effects. Early-tier Persist modifiers are simple death consequences (deal damage on death, heal allies on death, draw a card on death). Late-tier Persist modifiers include death sympathy (trigger when ANY friendly creature dies), lingering board-level effects that persist for N turns after death, and retaliation effects. Order-attuned Persist modifiers lean toward sustain and value (healing, buffing survivors, card draw on death). Chaos-attuned Persist modifiers lean toward burst and chain reactions (dealing damage on death, debuffing enemies, damage scaling with ATK). Design constraint: Persist value is entirely back-loaded — modifiers do nothing while the creature lives. The creature must die for value to be extracted.
+
+Full individual modifier definitions (CF01-CF48, EF01-EF48, IF01-IF48): see `docs/design/PHASE1B-mechanics.md`.
 
 ---
 
@@ -1078,8 +1215,9 @@ Spells are non-creature, non-stabilizer cards. They are played from hand during 
 | Creatures | ~70–100 |
 | Spells | ~15–20 |
 | Stabilizers | ~5–10 |
+| Planar Ruins | 8 neutral (shared) + faction-evolved variants |
 
-Decks are 20 cards. A typical deck runs 14-16 creatures, 2-4 spells, and 0-2 stabilizers. Creature-heavy builds are the norm — spells and stabilizers are support.
+Decks are 20 cards. A typical deck runs 14-16 creatures, 2-4 spells, 0-2 stabilizers, and 0-2 Planar Ruins. Creature-heavy builds are the norm — spells, stabilizers, and ruins are support.
 
 ### Spell Rarity
 
@@ -1199,12 +1337,268 @@ These occupy creature board slots but manipulate instability rather than fightin
 
 ---
 
-## 13. Card Acquisition & Progression
+## 13. Planar Ruins — Battlefield Mechanics
+
+Planar Ruins are ancient structures found in the Plane of Chaos, built by a vanished civilization known as the Ancient Builders. They stabilize chaotic energy, creating pockets of survivable space. Ruins are a distinct card type with unique battlefield rules.
+
+### Ruin Properties
+
+- **Takes a creature slot** on the battlefield (5-slot board). Reduces creature board presence in exchange for a passive benefit.
+- **High HP, zero ATK.** Ruins are structures, not combatants. HP scales with CM cost: `Ruin HP = (CM cost x 3) + 1`.
+- **Provides a passive benefit** to the controlling player while on the field.
+- **Can be attacked and destroyed** by opponent's creatures during combat (opponent assigns attackers to target the ruin during Declare Attackers).
+- **Cannot attack or block.** Ruins cannot be declared as attackers or assigned as blockers. They are structures.
+- **Destruction penalty:** When a ruin is destroyed (reaches 0 HP), a negative effect fires on the controlling player's side for 1 turn.
+- **Max 1 on field at a time.** If a player already has a ruin on the field, additional ruin cards in hand are unplayable.
+- **Max 2 in deck** (to preserve creature-heavy deckbuilding as the norm).
+- **Contributes instability.** Ruins have a base_instability value (0-2) that contributes to the player's instability calculation.
+
+### How Ruins Differ from Stabilizers
+
+| Property | Stabilizers | Planar Ruins |
+|---|---|---|
+| Card type | `STABILIZER` | `PLANAR_RUIN` |
+| Primary function | Manipulate instability/chaos roll system | Provide general passive battlefield benefits |
+| Instability contribution | 0 (modify instability via aura effects) | Low (0-2 base instability) |
+| Evolution | None — static cards | Neutral to Faction-Specific (1 evolution step) |
+| Faction | Universal (all factions) | Neutral OR faction-locked after evolution |
+| Destruction penalty | Effect simply ends | Negative penalty effect fires on own side for 1 turn |
+| Field limit | No special limit (just board slots) | Max 1 ruin on field at a time |
+| Deck limit | No special limit (just deck size) | Max 2 ruins per deck |
+| Combat targeting | Can be damaged by spells/events, not by creature attacks | Can be targeted by creature attacks (opponent assigns attackers) |
+| ATK | 0 | 0 |
+| Blocking | Cannot block | Cannot block |
+
+### Ruin Interaction with Game Mechanics
+
+| Mechanic | Does the Ruin Count? | Rationale |
+|---|---|---|
+| Board slot occupancy | **Yes** — ruins take 1 of 5 slots | Physical board presence |
+| Exalt threshold ("3+ creatures") | **No** — ruins are not creatures | Exalt counts creatures only |
+| Bond modifier synergy | **No** — ruins are not creatures | Bond references creatures explicitly |
+| "All friendly creatures" effects | **No** — ruins are not creatures | Effects targeting "creatures" skip ruins |
+| "All enemy creatures" damage | **No** — ruins are not creatures | Chaos events targeting "creatures" skip ruins |
+| Direct damage spells | **No** — spells targeting "any creature" cannot target ruins | Keeps existing spell targeting clean |
+| Instability calculation | **Yes** — ruins contribute base_instability | Ruins affect the chaos environment |
+
+### Ruin HP Scaling
+
+| CM Cost | HP |
+|---|---|
+| 2 | 7 |
+| 3 | 10 |
+| 4 | 13 |
+| 5 | 16 |
+| 6 | 19 |
+
+### The 8 Neutral Ruins (Launch Set)
+
+| # | Name | CM | HP | Instability | Neutral Effect | Destruction Penalty |
+|---|---|---|---|---|---|---|
+| 1 | The Resonance Spire | 2 | 7 | 0 | Heal 1 HP to most damaged creature at start of turn | All your creatures take 1 damage |
+| 2 | The Anchor Plinth | 3 | 10 | 0 | All your creatures gain +1 HP (max and current) | All creatures lose 1 max HP and 1 current HP |
+| 3 | The Mote Well | 3 | 10 | 1 | Gain +1 chaos mote at start of turn (subject to 10 cap) | Lose 2 chaos motes |
+| 4 | The Sight Glass | 4 | 13 | 1 | On draw, see top card; once per turn may bottom it instead | Skip next card draw |
+| 5 | The War Cairn | 4 | 13 | 2 | All your creatures gain +1 ATK | All creatures -1 ATK for 1 turn (min 1 ATK) |
+| 6 | The Threshold Gate | 5 | 16 | 1 | On Chaos/Order event, all creatures gain +1 evolution energy post-battle | Instability set to 10 for 1 turn |
+| 7 | The Communion Altar | 5 | 16 | 1 | At end of turn, if 3+ creatures (not counting ruin), heal all creatures 1 HP | All temporary buffs stripped |
+| 8 | The Oblivion Obelisk | 6 | 19 | 2 | At start of opponent's turn, deal 1 damage to random enemy creature | Deal 3 damage to your avatar |
+
+### Ruin Combat Targeting Rules
+
+1. During Declare Attackers (Phase 6), the attacking player selects which creatures attack and designates each as targeting **face** (default) or **ruin** (if opponent has one).
+2. During Assign Blockers (Phase 7), the defending player may assign blockers to any attacker regardless of target.
+3. Unblocked attackers targeting the ruin deal ATK damage to the ruin's HP.
+4. If a Taunt creature blocks an attacker targeting the ruin, the attacker deals damage to the Taunt creature (not the ruin).
+5. If the ruin reaches 0 HP, it is destroyed and its destruction penalty fires immediately.
+
+### Destruction Penalty Timing
+
+- Destroyed during combat (Phase 8): penalty fires after combat resolution completes, before Phase 9 (End of Turn).
+- Destroyed by start-of-turn effect: penalty fires immediately during Phase 1, before Phase 2 (Chaos Roll).
+- Penalty lasts "for 1 turn" — persists until the end of the controlling player's NEXT turn.
+- The player CANNOT voluntarily destroy their own ruin. Ruins only leave the field by being destroyed by the opponent.
+
+### Ruin Start-of-Turn and End-of-Turn Effects
+
+- Start-of-turn ruin effects resolve during Phase 1 alongside other board effects (Corruption self-damage, stabilizer auras, modifier triggers). Ruins resolve in board-slot order, left-to-right, intermixed with creature effects by slot position.
+- End-of-turn ruin effects resolve during Phase 9, before "this turn" buffs expire.
+
+Full ruin design, faction evolution paths, and effect pools: see `docs/design/PHASE1C-planar-ruins.md`.
+
+---
+
+## 14. Ruin Evolution Mechanics
+
+### Neutral to Faction-Specific Evolution
+
+Ruins start as neutral — ancient, unclaimed structures usable in any faction's deck. After accumulating enough familiarity through battles, a neutral ruin can be evolved **once** into a **faction-specific** ruin.
+
+### Familiarity Thresholds
+
+Ruin familiarity uses the same system as creature evolution energy:
+- Ruins earn familiarity when included in a deck that completes a battle (win or loss).
+- **Familiarity threshold for evolution: 10 battles** with the ruin in the deck.
+- Once the threshold is met, the ruin is eligible for evolution during the post-battle evolution phase.
+
+### Evolution Selection (Subscription Tier)
+
+The evolution uses the same subscription tier system for choice breadth:
+
+| Subscription Tier | Options Presented |
+|---|---|
+| Free (Planar Shard) | Pick 1 of 2 |
+| Mid (Refined Shard) | Pick 1 of 3 |
+| Top (Prismatic Shard) | Pick 1 of 4 |
+
+Each ruin has 4 evolved effect options per faction (40 total evolved variants across 8 ruins x 5 factions). Free players see Options 1 and 2 (guaranteed faction synergy in both). Mid-tier players additionally see Option 3. Top-tier players see all 4.
+
+### Post-Evolution Rules
+
+- Once evolved, the ruin is **faction-locked** — it can only be played in decks of that faction.
+- Evolved ruins have **stronger, faction-complementary effects** and **faction-themed destruction penalties**.
+- Evolution is permanent and one-time. A ruin cannot be re-evolved or reverted.
+- Evolved ruins retain the same CM cost and HP as their neutral version.
+
+### Ruin Evolution Does NOT Use Shards
+
+Unlike creature evolution (which costs Planar Shards), ruin evolution is free once the familiarity threshold is reached. The player simply picks from the available options. This is a deliberate accessibility decision — ruins are a smaller part of the collection and shouldn't have a separate shard economy.
+
+---
+
+## 15. Starter Deck Specifications
+
+### Existing Factions
+
+Starter decks for Ironwright Collective, Fey Courts, and Demonic Kingdoms are defined in the base card pool. See individual faction card lists.
+
+### Celestial Crusade Starter Deck
+
+20-card starter deck showcasing the Exalt mechanic. All cards are Common tier. Teaches go-wide formation play — cards are slightly below-curve individually but synergize when multiple creatures are on the board.
+
+| # | Name | Type | CM | ATK | HP | Instability | Keywords | Description |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Crusader Initiate | Creature | 1 | 1 | 2 | 1 | -- | Young knight of the Celestial order. |
+| 2 | Crusader Initiate | Creature | 1 | 1 | 2 | 1 | -- | (2nd copy) |
+| 3 | Herald of Dawn | Creature | 1 | 2 | 1 | 2 | -- | Swift messenger heralding the crusade. |
+| 4 | Sanctified Scout | Creature | 2 | 1 | 4 | 1 | -- | Blessed scout with divine protection. |
+| 5 | Sanctified Scout | Creature | 2 | 1 | 4 | 1 | -- | (2nd copy) |
+| 6 | Angelic Recruit | Creature | 2 | 2 | 3 | 2 | -- | Newly awakened celestial. |
+| 7 | Angelic Recruit | Creature | 2 | 2 | 3 | 2 | -- | (2nd copy) |
+| 8 | Burning Zealot | Creature | 2 | 3 | 2 | 3 | -- | Fanatical crusader wreathed in holy fire. |
+| 9 | Temple Guardian | Creature | 3 | 2 | 5 | 1 | Taunt | Protects the formation. |
+| 10 | Temple Guardian | Creature | 3 | 2 | 5 | 1 | Taunt | (2nd copy) |
+| 11 | Radiant Knight | Creature | 3 | 3 | 4 | 2 | -- | Balanced crusader, army backbone. |
+| 12 | Radiant Knight | Creature | 3 | 3 | 4 | 2 | -- | (2nd copy) |
+| 13 | Seraph Striker | Creature | 3 | 4 | 3 | 3 | -- | Aggressive angel. |
+| 14 | Celestial Warden | Creature | 4 | 3 | 6 | 1 | Shield | Heavily armored divine warden. |
+| 15 | Holy Avenger | Creature | 4 | 5 | 4 | 3 | -- | Wrathful angel delivering punishment. |
+| 16 | Choir of Blades | Creature | 5 | 4 | 7 | 2 | -- | Angelic warriors fighting as one. |
+| 17 | Archangel Vanguard | Creature | 5 | 3 | 7 | 1 | Flying | Winged commander leading from above. |
+| 18 | Divine Smite | Spell | 2 | -- | -- | 0 | -- | Deal 3 damage to target creature. |
+| 19 | Blessed Rally | Spell | 3 | -- | -- | 0 | -- | All friendly creatures get +1/+1 this turn. |
+| 20 | Warding Pillar | Stabilizer | 3 | 0 | 5 | 0 | -- | Avatar instability modifier doubled. |
+
+**Deck Statistics:** 17 creatures (85%), 2 spells (10%), 1 stabilizer (5%). Mana curve: 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2. Average CM: 2.65. Average instability (creatures): 1.71. Keywords: Taunt (2), Shield (1), Flying (1).
+
+**Play Pattern:** Turns 1-2: deploy cheap creatures for board presence. Turns 3-4: Temple Guardians protect the formation, Radiant Knights as flexible threats. Turns 5+: premium creatures complete the formation; 3-5 creatures positioned for Exalt auras once evolution begins. Avatar recommendation: Order-leaning (-5 or -6).
+
+### The Endless Starter Deck
+
+20-card starter deck showcasing the Persist mechanic. All cards are Common tier. Teaches aggressive trading — creatures are expendable, the deck wants to trade and trigger death effects once evolved.
+
+| # | Name | Type | CM | ATK | HP | Instability | Keywords | Description |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Shambling Corpse | Creature | 1 | 2 | 1 | 3 | -- | Mindless undead. Cheap, aggressive, expendable. |
+| 2 | Shambling Corpse | Creature | 1 | 2 | 1 | 3 | -- | (2nd copy) |
+| 3 | Grave Watcher | Creature | 1 | 1 | 2 | 1 | -- | Spectral sentinel. Defensive. |
+| 4 | Bone Collector | Creature | 2 | 3 | 2 | 3 | -- | Skeleton that gathers remains. Fragile. |
+| 5 | Bone Collector | Creature | 2 | 3 | 2 | 3 | -- | (2nd copy) |
+| 6 | Restless Shade | Creature | 2 | 2 | 3 | 2 | -- | Ghost that refuses to pass on. |
+| 7 | Restless Shade | Creature | 2 | 2 | 3 | 2 | -- | (2nd copy) |
+| 8 | Crypt Sentinel | Creature | 2 | 1 | 4 | 1 | -- | Undying guard of ancient tombs. |
+| 9 | Carrion Stalker | Creature | 3 | 4 | 3 | 3 | -- | Predatory undead drawn to death. |
+| 10 | Carrion Stalker | Creature | 3 | 4 | 3 | 3 | -- | (2nd copy) |
+| 11 | Necromancer's Thrall | Creature | 3 | 3 | 4 | 2 | -- | Bound servant of a lich. |
+| 12 | Necromancer's Thrall | Creature | 3 | 3 | 4 | 2 | -- | (2nd copy) |
+| 13 | Spectre Knight | Creature | 3 | 2 | 4 | 2 | Lifesteal | Ethereal knight draining life. |
+| 14 | Abomination | Creature | 4 | 5 | 4 | 3 | -- | Stitched-together horror. High ATK. |
+| 15 | Bone Leviathan | Creature | 4 | 2 | 6 | 1 | Taunt | Massive bone construct. Forces engagement. |
+| 16 | Lich Apprentice | Creature | 5 | 4 | 6 | 2 | Deathtouch | Apprentice lich with lethal touch. |
+| 17 | Dread Revenant | Creature | 5 | 6 | 5 | 4 | -- | Terrifying revenant. Glass cannon. |
+| 18 | Necrotic Bolt | Spell | 2 | -- | -- | 0 | -- | Deal 3 damage to target creature. |
+| 19 | Soul Drain | Spell | 3 | -- | -- | 0 | -- | Deal 2 damage to target creature. Heal avatar 2 HP. |
+| 20 | Chaos Rift | Stabilizer | 2 | 0 | 3 | 0 | -- | Each creature contributes +1 instability. |
+
+**Deck Statistics:** 17 creatures (85%), 2 spells (10%), 1 stabilizer (5%). Mana curve: 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2. Average CM: 2.65. Average instability (creatures): 2.24. Keywords: Lifesteal (1), Taunt (1), Deathtouch (1).
+
+**Play Pattern:** Turns 1-2: deploy cheap aggressive creatures (Shambling Corpses, Bone Collectors) for early pressure. Turns 3-4: Carrion Stalkers and Necromancer's Thralls trade aggressively; once evolved, deaths trigger Persist effects. Turns 5+: premium threats (Abomination, Lich Apprentice, Dread Revenant) trade up or push massive damage. Avatar recommendation: Chaos-leaning (-1 or -2).
+
+### Starter Deck Comparison (All 5 Factions)
+
+| Metric | Celestial | Endless |
+|---|---|---|
+| Average instability | 1.71 (Order-leaning) | 2.24 (Chaos-leaning) |
+| Avg ATK (creatures) | 2.53 | 2.88 |
+| Avg HP (creatures) | 3.71 | 3.35 |
+| Playstyle | Defensive formation | Aggressive attrition |
+| Win condition | Stabilize, compound, overwhelm | Trade, trigger, grind down |
+| Weakness | Board wipes, fast aggro | Face rush, Shield walls |
+| Keyword focus | Shield, Taunt, Flying | Lifesteal, Deathtouch, Taunt |
+
+---
+
+## 16. Game AI Strategy Notes
+
+### AI Strategy by Faction
+
+**Ironwright (Augment):**
+- Prioritize evolving 1-2 key creatures repeatedly. Stack Augment modifiers on the strongest threat.
+- Protect the Augment investment: use Taunt creatures and Shield to keep the main threat alive.
+- Trade only when favorable. Each creature loss is costly because the Augment stacks are gone.
+- Late game: a 4-Augment Legendary is the win condition. Protect it at all costs.
+
+**Fey Courts (Bond):**
+- Build a wide board. Play creatures in pairs and groups to maximize Bond synergy.
+- Avoid trades that reduce creature count below Bond thresholds.
+- Use Taunt and Shield to protect the network. Sacrifice spells for removal rather than creatures.
+- Late game: maintain 4-5 creatures with Bond modifiers for overwhelming cumulative value.
+
+**Demonic Kingdoms (Corruption):**
+- Aggro. Play fast, deal damage, close the game before Corruption self-damage kills your own board.
+- Target the opponent's face whenever possible. Every turn your creatures survive is borrowed time.
+- Use Lifesteal creatures to offset self-damage. Deathtouch creatures trade up efficiently.
+- Late game: you are losing. Corruption decks want to end games by turn 6-8.
+
+**Celestial Crusade (Exalt):**
+- Go wide. Deploy creatures quickly to meet Exalt thresholds (3+ creatures on board).
+- Protect the formation: use Taunt creatures to intercept attacks, Shield auras to absorb hits, Ward to prevent targeted removal of key Exalt sources.
+- Prioritize keeping creature count above the threshold. Losing even one creature can cascade (aura drops, other creatures become vulnerable, more deaths follow).
+- Target high-value Exalt sources on the opposing Celestial player. Killing one key creature can collapse the entire formation.
+- Late game: a stable 4-5 creature board with stacking Exalt auras is nearly impenetrable. Compound Order events for long-term dominance.
+
+**The Endless (Persist):**
+- Force trades. Attack aggressively to make the opponent block and kill your creatures, triggering Persist effects.
+- Use Deathtouch creatures to trade up — kill expensive creatures while triggering death effects.
+- Deploy Haste creatures for immediate impact: attack on play, deal damage, then serve as Persist fodder.
+- Do NOT go face if your creatures have strong Persist modifiers. You WANT your creatures to die in combat, not survive while the opponent takes face damage.
+- Late game: grind. Every death generates value. The Endless player is favored in long, attrition-heavy games where creatures die constantly.
+
+### AI Strategy for Planar Ruins
+
+- **When to play a ruin:** When the board has 2-3 creatures and the passive effect outweighs the lost creature slot. Never play a ruin on an empty board (no creatures to benefit from the effect). The Mote Well (mana acceleration) and War Cairn (ATK buff) are highest priority for early play.
+- **When to attack enemy ruins:** Attack the opponent's ruin when its passive effect is generating more value than the face damage you could deal. High-priority targets: Mote Well (denies mana), War Cairn (denies ATK), Communion Altar (denies healing). Low-priority: Resonance Spire (modest single-target healing).
+- **When to protect your ruin:** Use Taunt creatures to force the opponent to attack into your board instead of your ruin. Taunts don't force ruin targeting, but they force the opponent to declare attackers — those attackers can be intercepted by your blockers.
+- **Ruin destruction penalty management:** Consider the destruction penalty before playing a ruin. If the penalty would be catastrophic at a given board state (e.g., "all creatures take 2 damage" when your creatures are at low HP), delay playing the ruin.
+
+---
+
+## 17. Card Acquisition & Progression
 
 ### Onboarding Flow
 
 1. Player creates account, picks a username.
-2. **Trial phase:** player receives a premade 20-card Commons deck for each of the 3 factions. These are loaner decks — fixed lists, cannot be evolved or modified.
+2. **Trial phase:** player receives a premade 20-card Commons deck for each of the 5 factions. These are loaner decks — fixed lists, cannot be evolved or modified.
 3. Player plays 1–3 matches with each trial deck (vs. AI or other new players).
 4. **Faction commitment:** player picks one faction as their starter. That trial deck becomes their real collection — those 20 Commons are now owned CardInstances, fully evolvable. The other two trial decks are returned.
 5. Player now has: 20 Commons in one faction, a starter avatar for that faction, enough evolution shards to evolve 2–3 cards immediately, and a small amount of Chaos Dust.
@@ -1254,7 +1648,7 @@ Single currency earned through gameplay, spent on cards and shards. No premium c
 - Buying a card pack from another faction unlocks that faction permanently.
 - Once unlocked: can build decks from that faction, earn its cards, access its faction modifiers during evolution.
 - Decks are still single-faction — all cards must share a faction/style.
-- Natural long-term progression: master one faction → unlock second → unlock third.
+- Natural long-term progression: master one faction → unlock second → unlock remaining factions over time.
 
 ### Progression Rate Estimates
 
@@ -1278,7 +1672,7 @@ Single currency earned through gameplay, spent on cards and shards. No premium c
 
 ---
 
-## 14. Balance Validation Rules
+## 18. Balance Validation Rules
 
 Automated checks that should run against every card design to flag balance issues.
 
@@ -1312,8 +1706,10 @@ Automated checks that should run against every card design to flag balance issue
 1. Exactly 20 cards
 2. Max 2 copies of any single CardTemplate
 3. Max 2 Legendary cards, max 1 copy of each
-4. All cards from a single faction/style
+4. All cards from a single faction/style (neutral ruins are allowed in any faction deck)
 5. At least 1 creature in the deck
+6. Max 2 Planar Ruin cards per deck
+7. Max 1 Planar Ruin on the field at a time
 ```
 
 ### Evolution-Level Checks
@@ -1339,12 +1735,12 @@ Automated checks that should run against every card design to flag balance issue
 
 ---
 
-## 15. Design Space Reserved for Future
+## 19. Design Space Reserved for Future
 
 Mechanics and content categories that are intentionally NOT in the launch version but that the data model and balance system can support later.
 
-- **Additional keywords:** Haste (attack immediately when played), Regenerate (heal N at end of turn), Volatile (takes 1 damage at start of your turn), Stealth (can't be targeted for 1 turn after playing)
-- **Additional factions:** New art styles and exclusive mechanics. Data model supports unlimited factions.
+- **Additional keywords:** Regenerate (heal N at end of turn), Volatile (takes 1 damage at start of your turn), Stealth (can't be targeted for 1 turn after playing). (Note: Haste and Ward have been promoted from future to active — see Section 4.)
+- **Additional factions:** Data model supports unlimited factions beyond the current 5.
 - **Multi-target spells:** "Deal 2 damage to all creatures" or "Heal all friendly creatures for 2"
 - **Chaos mote cost reduction effects:** Modifiers or events that temporarily reduce a card's cost
 - **Board-wide auras:** "All friendly creatures have +1 ATK" — currently modifiers only affect the creature they're on (except Bond)
@@ -1355,8 +1751,8 @@ Mechanics and content categories that are intentionally NOT in the launch versio
 
 ---
 
-*Last updated: 2026-02-16*
-*Status: Core framework complete. All mechanical systems defined. Sections 8-9 (events) fully designed — 8 Order + 8 Chaos events with effects and design notes. Section 7 triggered ability framework complete with trigger/effect/targeting/duration type systems. Sections 10-11 (spells and stabilizers) frameworks defined. Section 6 modifier pools defined structurally — individual modifier definitions (240) to be authored as content. Individual triggered ability assignments per creature to be authored as content.*
+*Last updated: 2026-02-19*
+*Status: Faction expansion complete. 5 factions (Ironwright, Fey Courts, Demonic Kingdoms, Celestial Crusade, The Endless) with 9 keywords (added Haste, Ward). 336 total modifiers (96 universal + 48 per faction x 5). Planar Ruins battlefield system with 8 neutral ruins and faction evolution paths. Ironwright rethemed from steampunk to brutalist space-industrial. Full 9x9 keyword interaction matrix. Celestial and Endless starter decks specified. All mechanical systems defined.*
 
 ---
 
@@ -1367,3 +1763,4 @@ Mechanics and content categories that are intentionally NOT in the launch versio
 | 2026-02-16 | Platform-alignment pass: no platform-specific references existed in this document (it is purely game mechanics). No changes required. Revision Log added for consistency with other core docs. | N/A |
 | 2026-02-16 | Targeted factual error correction (CRIT-03, CRIT-04): Section 12 summary table had Void Lens listed as a Spell — corrected to match its Section 11 stabilizer definition (board stabilizer, HP 2, instability contribution 0). Removed Probability Anchor from Section 12 — it only existed in this summary table, was absent from Section 11 and doc 00, and would have caused content pipeline confusion. | 12 |
 | 2026-02-16 | v3.2 targeted error corrections: (1) Section 11 property "Faction-locked" → "Faction-agnostic (Universal)" to match all 7 stabilizer cards being Universal in the table immediately below. (2) Section 12 summary table: added missing Warding Pillar and Entropy Engine rows (were in Section 11 but absent from Section 12). (3) Section 6 modifier table and Section 13 subscription benefits: "Top" → "High", stale "$5–8/mo" and "$10–15/mo" → canonical "$6.99/mo" and "$12.99/mo" per doc 09. | 6, 11, 12, 13 |
+| 2026-02-19 | v4.0 Faction expansion: Exalt (Celestial Crusade) and Persist (The Endless) faction mechanics added (Section 5). Haste and Ward keywords added (Section 4). Full 9x9 keyword interaction matrix with combat and stacking tables. 96 new faction modifiers (CF01-CF48, EF01-EF48) — total modifiers 240→336 (Section 6). Ironwright rethemed from Victorian steampunk to brutalist space-industrial with updated modifier examples. Planar Ruins battlefield mechanics system (Section 13) with 8 neutral ruins, ruin combat targeting, destruction penalties, and turn structure integration. Ruin evolution mechanics (Section 14) with familiarity thresholds and subscription tier selection. Celestial and Endless starter decks (Section 15). Game AI strategy notes for all 5 factions and ruins (Section 16). Updated instability calculation to include ruins. Updated Main Phase for ruin play and Haste bonus attack. Updated Declare Attackers for ruin targeting. Updated all faction/keyword counts (3→5 factions, 7→9 keywords). Sections renumbered (old 13-15 → 17-19). | 1-6, 13-16, 17-19 |

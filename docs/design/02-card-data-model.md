@@ -23,8 +23,8 @@ Every card in the game traces back to exactly one template.
 CardTemplate {
   id:                string        // UUID — unique template ID
   name:              string        // "Ashscale Wyvern", "Binding Ward", etc.
-  card_type:         CardType      // CREATURE | SPELL | STABILIZER
-  faction_id:        string        // FK → Faction — immutable. One of: IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS
+  card_type:         CardType      // CREATURE | SPELL | STABILIZER (Note: PLANAR_RUIN uses RuinTemplate, not CardTemplate — see Section 21)
+  faction_id:        string        // FK → Faction — immutable. One of: IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS | CELESTIAL | ENDLESS
   
   // --- Base stats (Common tier values) ---
   base_attack:       int?          // Creatures only. null for spells/stabilizers
@@ -59,10 +59,21 @@ CardTemplate {
 **Enums:**
 
 ```
-CardType:        CREATURE | SPELL | STABILIZER
-Keyword:         SHIELD | LIFESTEAL | FLYING | REACH | DEATHTOUCH | TAUNT | PIERCING
+CardType:        CREATURE | SPELL | STABILIZER | PLANAR_RUIN
+Keyword:         SHIELD | LIFESTEAL | FLYING | REACH | DEATHTOUCH | TAUNT | PIERCING | HASTE | WARD
 StabilizerType:  ORDER | CHAOS | HYBRID
 ```
+
+**Keyword descriptions (9 total):**
+- **Shield**: Absorbs the first instance of damage, then is consumed.
+- **Lifesteal**: Damage dealt by this creature heals the controlling player.
+- **Flying**: Can only be blocked by creatures with Flying or Reach.
+- **Reach**: Can block creatures with Flying.
+- **Deathtouch**: Any damage dealt by this creature destroys the target creature.
+- **Taunt**: Must be attacked (forced attack) and must block if able (forced block).
+- **Piercing**: Excess combat damage is dealt to the defending player.
+- **Haste**: This creature can attack the turn it is played (ignores summoning sickness).
+- **Ward**: Cannot be targeted by opponent's modifier effects or targeted spells for 1 turn after deployment. Removed after the controlling player's next turn starts. Does not protect against combat damage or AoE effects.
 
 **Notes:**
 - Spells and stabilizers that sit on the board (like Chaos Anchor) use `card_type: STABILIZER` and have `base_health` set (they can be damaged/destroyed) but `base_attack: 0` (they cannot attack or block). Instant spells (like Binding Ward) use `card_type: SPELL` with null attack/health.
@@ -250,7 +261,7 @@ ModifierDefinition {
   instability_is_attuned: bool          // true = instability change only active when attuned; false = always active
   
   // --- Faction mechanic keyword (faction modifiers only) ---
-  faction_mechanic?:   FactionMechanic  // AUGMENT | BOND | CORRUPTION. Required for faction modifiers. Must match faction_id.
+  faction_mechanic?:   FactionMechanic  // AUGMENT | BOND | CORRUPTION | EXALT | PERSIST. Required for faction modifiers. Must match faction_id.
   
   // --- Metadata ---
   power_rating:        int              // 1-10 internal balance rating. Not shown to players.
@@ -262,10 +273,17 @@ ModifierDefinition {
 ```
 ModifierPoolType:  UNIVERSAL | FACTION
 TierBracket:       EARLY | LATE
-FactionMechanic:   AUGMENT | BOND | CORRUPTION
+FactionMechanic:   AUGMENT | BOND | CORRUPTION | EXALT | PERSIST
 ```
 
-**Pool structure:** 12 universal pools (3 PP × 2 tiers × 2 attunements) with 8 modifiers each, plus 12 faction pools per faction (same dimensions) with 4 modifiers each. 240 total modifier definitions at launch.
+**Faction mechanic descriptions (5 total):**
+- **Augment** (Ironwright): Systematic, stackable modifications. Each modifier compounds, making a single creature progressively more powerful. Tall-stack strategy.
+- **Bond** (Fey Courts): Symbiotic network effects between creatures. Creatures with Bond modifiers strengthen each other. Network-wide synergy.
+- **Corruption** (Demonic Kingdoms): Self-damage for power. Trade health for devastating effects. Aggressive, time-limited.
+- **Exalt** (Celestial Crusade): Conditional aura effects. When board conditions are met (creature count thresholds), all friendly creatures gain bonuses. Go-wide formation strategy. Collapses when creatures are removed.
+- **Persist** (The Endless): Death triggers and lingering effects. When creatures die, negative effects fire on the opponent. Every kill is pyrrhic. Attrition-based.
+
+**Pool structure:** 12 universal pools (3 PP x 2 tiers x 2 attunements) with 8 modifiers each = 96 universal modifiers. Plus 12 faction pools per faction (same dimensions) with 4 modifiers each = 48 per faction x 5 factions = 240 faction modifiers. **336 total modifier definitions at launch.** See PHASE1B-mechanics.md for full Celestial (CF01-CF48), Endless (EF01-EF48), and rethemed Ironwright (IF01-IF48) modifier definitions.
 
 **Modifier selection at evolution:**
 1. Determine PP budget from card's CM cost and evolution step (see 01-battle-mechanics.md Section 7)
@@ -289,7 +307,7 @@ ModifierInstance {
   // Denormalized from definition for runtime performance:
   name:                string
   pool_type:           ModifierPoolType // UNIVERSAL | FACTION
-  faction_mechanic?:   FactionMechanic  // AUGMENT | BOND | CORRUPTION (faction modifiers only)
+  faction_mechanic?:   FactionMechanic  // AUGMENT | BOND | CORRUPTION | EXALT | PERSIST (faction modifiers only)
   attunement:          EventType
   base_effect:         Effect
   attuned_effect:      Effect
@@ -304,6 +322,8 @@ ModifierInstance {
 
 **Notes:**
 - Denormalization is intentional. During battle resolution, we need fast access to modifier data without joining to the definition table on every turn. If a definition is ever rebalanced post-launch, a migration updates all instances.
+- **Exalt modifiers** have conditional aura effects encoded in `base_effect` with a `condition` of `CREATURE_COUNT_GTE(n)`. When the board condition is not met, the aura portion of the base effect is inactive. The attunement bonus is separate from the aura.
+- **Persist modifiers** have death-trigger effects encoded in `base_effect` or `attuned_effect` with a trigger context. The game engine checks for Persist effects when any creature dies.
 
 ---
 
@@ -375,6 +395,7 @@ TargetType:       SELF | FRIENDLY_CREATURE | ENEMY_CREATURE | ANY_CREATURE
                 | HIGHEST_ATK_FRIENDLY | HIGHEST_ATK_ENEMY
                 | HIGHEST_COST_IN_HAND
                 | PLAYER_SELF | PLAYER_OPPONENT
+                | FRIENDLY_RUIN | ENEMY_RUIN | ANY_RUIN
 
 Duration:         THIS_TURN | PERMANENT | WHILE_ON_FIELD | UNTIL_NEXT_ROLL
 ```
@@ -458,12 +479,15 @@ EventDefinition {
 
 ## 9. Avatar
 
+There are 10 avatars at launch — 2 per faction (1 per sub-faction). Each avatar has a distinct instability modifier that defines its play style on the Order-Chaos spectrum.
+
 ```typescript
 Avatar {
   id:                  string           // UUID
-  name:                string           // "Sir Aldric the Resolute", "Vex, Entropy Witch", etc.
+  name:                string           // "Korvax, Warden of the Star-Forge", "Vex, the Entropy Smith", etc.
   faction_id:          string           // FK → Faction — must match deck faction
-  
+  sub_faction:         string           // Sub-faction this avatar belongs to (e.g., "Foundry Directorate", "Scrap Legions")
+
   // --- Gameplay ---
   instability_modifier: int             // Added to instability calculation. Negative = pushes toward Order.
                                         // Order-leaning: -5 to -6
@@ -491,20 +515,37 @@ UnlockCondition:  FREE_STARTER          // Available at account creation / facti
                 | CHAOS_DUST(cost)       // Purchased with Chaos Dust
 ```
 
+**Avatar roster (10 total):**
+
+| # | Name | Faction | Sub-Faction | Instability Modifier | Alignment | Play Style |
+|---|---|---|---|---|---|---|
+| 1 | Korvax, Warden of the Star-Forge | Ironwright | Foundry Directorate | -5 | Order-leaning | Steady Augment stacking on heavy units. Low chaos risk. |
+| 2 | Vex, the Entropy Smith | Ironwright | Scrap Legions | -3 | Balanced | Fast, volatile Augment builds. Moderate chaos risk. |
+| 3 | Sylara, the Verdant Warden | Fey Courts | Verdant Throne | -5 | Order-leaning | Defensive Bond networks. Heal often, compound value. |
+| 4 | Morrigan, the Wild Huntress | Fey Courts | Hollow Court | -1 | Chaos-leaning | Fastest chaos buildup. ATK spikes from Chaos events. Glass cannon. |
+| 5 | Kael, the Bound Tyrant | Demonic Kingdoms | Obsidian Bureaucracy | -4 | Balanced/Order | Calculated Corruption with Order safety net. Long-game value. |
+| 6 | Lilith, the Unbound | Demonic Kingdoms | Furnace Lords | -2 | Chaos-leaning | Full Corruption + Chaos. Race to kill before self-destruction. |
+| 7 | Serevain, the Radiant Marshal | Celestial Crusade | Knights of Deliverance | -6 | Order-leaning | Maximum Order stability. Full Exalt auras. Formation strategy. |
+| 8 | Ophaniel, Voice of the Burning Wheels | Celestial Crusade | Heaven's Chosen | -1 | Chaos-leaning | Divine chaos. Overwhelming Exalt spikes. High-risk divine intervention. |
+| 9 | Vothrak, Architect of the Ossuary | The Endless | Necromantic Cabals | -3 | Balanced | Methodical Persist. Calculated death triggers. Attrition grind. |
+| 10 | Thessaly, the Unforgotten | The Endless | Lost Spectres | -2 | Chaos-leaning | Wild Persist chains. Spectral creatures, escalating death triggers. |
+
+Full backstories, personalities, and art prompts for all 10 avatars are defined in `11-lore-bible.md` Section 5.
+
 ---
 
 ## 10. Faction (replaces "Style")
 
-Factions define card art style, creature thematic identity, and an exclusive mechanic. At launch there are 3 factions. The data model supports additional factions.
+Factions define card art style, creature thematic identity, and an exclusive mechanic. At launch there are 5 factions with 2 sub-factions each (10 sub-factions total).
 
 ```typescript
 Faction {
   id:                  string           // UUID
-  name:                string           // "The Ironwright Collective", "The Fey Courts", "The Demonic Kingdoms"
-  short_name:          string           // "IRONWRIGHT" | "FEY_COURTS" | "DEMONIC_KINGDOMS"
+  name:                string           // "The Ironwright Collective", "The Fey Courts", "The Demonic Kingdoms", "The Celestial Crusade", "The Endless"
+  short_name:          string           // "IRONWRIGHT" | "FEY_COURTS" | "DEMONIC_KINGDOMS" | "CELESTIAL" | "ENDLESS"
   
   // --- Faction mechanic ---
-  exclusive_mechanic:  FactionMechanic  // AUGMENT | BOND | CORRUPTION
+  exclusive_mechanic:  FactionMechanic  // AUGMENT | BOND | CORRUPTION | EXALT | PERSIST
   
   // --- AI generation instructions ---
   art_prompt_prefix:   string           // Injected at start of all FLUX art prompts for this faction
@@ -533,13 +574,35 @@ Faction {
 
 **Enums:**
 ```
-FactionMechanic:   AUGMENT | BOND | CORRUPTION
+FactionMechanic:   AUGMENT | BOND | CORRUPTION | EXALT | PERSIST
+FactionShortName:  IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS | CELESTIAL | ENDLESS
 ```
 
+**Launch factions (5 total):**
+
+| Short Name | Full Name | Mechanic | Sub-Factions | Theme |
+|---|---|---|---|---|
+| IRONWRIGHT | The Ironwright Collective | AUGMENT | Foundry Directorate, Scrap Legions | Brutalist space-industrial empire. Concrete, iron, hydraulics, void industry. |
+| FEY_COURTS | The Fey Courts | BOND | Verdant Throne, Hollow Court | Living forests, symbiotic networks. Growth and decay cycles. |
+| DEMONIC_KINGDOMS | The Demonic Kingdoms | CORRUPTION | Furnace Lords, Obsidian Bureaucracy | Volcanic badlands, infernal contracts, self-destructive power. |
+| CELESTIAL | The Celestial Crusade | EXALT | Knights of Deliverance, Heaven's Chosen | Divine crusaders, angelic hosts, formation-based aura warfare. |
+| ENDLESS | The Endless | PERSIST | Necromantic Cabals, Lost Spectres | The undead. Liches, spectres, death triggers, relentless attrition. |
+
+**Color palettes:**
+
+| Faction | Primary | Secondary | Accent | Background |
+|---|---|---|---|---|
+| Ironwright | Steel blue-gray (#6B7B8D) | Cold iron (#4A5568) | Warning orange (#E07020) / Reactor blue (#3B82C4) | #1A1D23 |
+| Fey Courts | Emerald (#2D5A27) | Gold (#B8860B) | Bioluminescent teal (#4ECDC4) | #0A1F0A |
+| Demonic Kingdoms | Hellfire red (#8B0000) | Obsidian black (#1A0A0A) | Molten orange (#FF4500) | #1A0505 |
+| Celestial Crusade | Holy gold (#DAA520) | Divine ivory (#F5F0E1) | Celestial rose (#C47A8E) / Righteous blue (#3B5998) | #1A1520 |
+| The Endless | Necrotic purple (#6B3FA0) | Bone white (#E8DCC8) | Ghostly teal (#5F9EA0) / Sickly green (#7B9E5F) | #0D0D1A |
+
 **Notes:**
-- All 3 launch factions are available to all players during the trial phase. Players commit to one at onboarding; additional factions are unlocked by purchasing a card pack from that faction (150 Chaos Dust).
+- All 5 launch factions are available to all players during the trial phase. Players commit to one at onboarding; additional factions are unlocked by purchasing a card pack from that faction (150 Chaos Dust).
 - Factions are NOT purchasable with real money. Unlocking is gameplay-earned via Chaos Dust.
-- Future factions can be added with new exclusive mechanics.
+- Each faction has 2 sub-factions (10 total), each with 1 avatar. See Section 9 for avatar details.
+- Art references per faction are defined in `12-art-direction.md`. Lore per faction is defined in `11-lore-bible.md`.
 
 ---
 
@@ -554,7 +617,9 @@ Deck {
   avatar_id:           string           // FK → Avatar — must be from same faction
   
   // --- Contents ---
-  card_entries:        DeckEntry[]      // Exactly 20 entries for a valid deck
+  card_entries:        DeckEntry[]      // Creature/spell card entries
+  ruin_entries:        DeckRuinEntry[]  // 0-2 ruin entries (from deck_ruins table)
+  // Total deck size = sum(card_entry quantities) + count(ruin_entries) == 20
   
   // --- Validation state ---
   is_valid:            bool             // Meets all construction rules (20 cards, etc.)
@@ -572,15 +637,20 @@ DeckEntry {
   card_instance_id:    string           // FK → CardInstance
   quantity:            int              // 1 or 2 (max 2 copies of any template; max 1 for Legendaries)
 }
+
+DeckRuinEntry {
+  player_ruin_id:      string           // FK → PlayerRuin
+}
 ```
 
 **Validation rules (enforced at save and at queue):**
-- `card_entries` must contain exactly 20 cards (sum of all quantities)
+- Total deck size: `sum(card_entry quantities) + count(deck_ruins) == 20`
 - All `card_instance_id` references must belong to `owner_id`
 - All referenced CardInstances must have `template.faction_id == deck.faction_id`
 - No template appears more than 2 times across all entries
 - Legendary-tier cards: max 2 total, max 1 copy each
 - `avatar.faction_id == deck.faction_id`
+- **Ruin rules:** Max 2 ruins in deck (across all ruin types). Ruin entries reference PlayerRuin instances via `deck_ruins` table, not CardInstances via `card_entries`. Evolved ruins must have `faction_id == deck.faction_id`. Neutral ruins (unevolved) are allowed in any faction's deck.
 
 **Computed properties:**
 - `mana_curve`: histogram of mana costs across all cards
@@ -605,8 +675,8 @@ Player {
   created_at:          timestamp
   
   // --- Faction ---
-  primary_faction_id:  string           // FK → Faction — chosen at onboarding
-  unlocked_faction_ids: string[]        // FK → Faction — which factions the player can build decks from
+  primary_faction_id:  string           // FK → Faction — chosen at onboarding (one of 5 factions)
+  unlocked_faction_ids: string[]        // FK → Faction — which factions the player can build decks from (up to 5)
   onboarding_complete: bool             // true after trial phase + faction commitment
   
   // --- Progression ---
@@ -764,7 +834,8 @@ BattlePlayer {
   instability:         int              // Computed: avatar modifier + sum of board creature instabilities. Clamped 1-20 (D20 range).
   
   // --- Board ---
-  board:               BattleCreature?[5] // 5 slots, each null (empty) or occupied
+  board:               (BattleCreature | BattleRuin | null)[5] // 5 slots, each null, creature, or ruin
+  ruin_on_field:       bool             // Convenience flag: true if any slot contains a BattleRuin
   
   // --- Hand ---
   hand:                BattleCard[]     // Cards currently in hand
@@ -787,9 +858,9 @@ BattlePlayer {
 }
 
 BattleCard {
-  instance_id:         string           // FK → CardInstance
-  template_id:         string           // FK → CardTemplate
-  card_type:           CardType
+  instance_id:         string           // FK → CardInstance (or PlayerRuin for ruins)
+  template_id:         string           // FK → CardTemplate (or RuinTemplate for ruins)
+  card_type:           CardType         // CREATURE | SPELL | STABILIZER | PLANAR_RUIN
   name:                string
   
   // Denormalized for fast access:
@@ -826,11 +897,39 @@ BattleCreature extends BattleCard {
   board_slot:          int              // 0-4, which slot this creature occupies
 }
 
+BattleRuin {
+  instance_id:         string           // FK → PlayerRuin
+  template_id:         string           // FK → RuinTemplate
+  name:                string           // Current name (neutral or evolved)
+
+  // --- Stats ---
+  health:              int              // Current HP (damage reduces this)
+  max_health:          int              // Max HP from template
+
+  // --- State ---
+  is_alive:            bool             // false when health <= 0
+  board_slot:          int              // 0-4, which slot this ruin occupies
+
+  // --- Instability ---
+  instability_value:   int              // Base instability from template (no modifiers on ruins). 0-2.
+
+  // --- Effects ---
+  passive_effect:      RuinEffect       // Active passive effect (neutral or evolved)
+  destruction_penalty: RuinEffect       // Penalty that fires if destroyed
+
+  // --- Evolution state ---
+  evolution_state:     RuinEvolutionState // NEUTRAL | EVOLVED
+  faction_id?:         string           // Faction lock (null if neutral)
+
+  // --- Visual ---
+  art_url:             string
+}
+
 BattleModifier {
   definition_id:       string
   name:                string
   pool_type:           ModifierPoolType
-  faction_mechanic?:   FactionMechanic
+  faction_mechanic?:   FactionMechanic  // AUGMENT | BOND | CORRUPTION | EXALT | PERSIST
   attunement:          EventType
   base_effect:         Effect
   attuned_effect:      Effect
@@ -878,6 +977,9 @@ LogEntryType:  ROLL | EVENT_TRIGGERED | CARD_PLAYED | CARD_DRAWN
              | TRIGGER_FIRED | HP_CHANGED | MANA_CHANGED
              | INSTABILITY_CHANGED | GAME_START | GAME_END | SURRENDER
              | CHAOS_SPARK_USED | TURN_START | TURN_TIMEOUT
+             | RUIN_PLAYED | RUIN_DESTROYED | RUIN_PENALTY_FIRED
+             | RUIN_PASSIVE_TRIGGERED | EXALT_AURA_ACTIVATED | EXALT_AURA_DEACTIVATED
+             | PERSIST_TRIGGERED
 ```
 
 **Key implementation notes:**
@@ -886,6 +988,8 @@ LogEntryType:  ROLL | EVENT_TRIGGERED | CARD_PLAYED | CARD_DRAWN
 - `BattleModifier.is_attuned_active` and `.is_penalty_active` are recalculated after each chaos roll by comparing `attunement` to `BattlePlayer.last_event_type`.
 - The `deck` array order IS the draw order. Shuffle happens once at game start. No reshuffling.
 - `GameState` is the **single source of truth** during a match. Client receives a projection of this state (hiding opponent's hand/deck contents). All mutations happen server-side and are broadcast to both clients.
+- **Ruin rules in battle:** A `BattleRuin` occupies a creature slot but has 0 ATK, cannot attack, and cannot block. Max 1 ruin on the field at a time. Opponents may declare attackers targeting a ruin (unlike stabilizers, which cannot be attacked by creatures). When a ruin's HP reaches 0, it is destroyed, its `destruction_penalty` effect fires immediately on the controlling player's side, and the slot is freed. The ruin's `passive_effect` is active for as long as the ruin is alive.
+- **Ruin instability:** Ruins contribute their `instability_value` (0-2) to the player's instability calculation, just like creatures. Ruins have no modifiers, so their instability is always their base value from the template.
 
 ---
 
@@ -1056,17 +1160,29 @@ CardInstance  1 ←──→ * EvolutionRecord  (0-4 records per card)
 Player        1 ←──→ * CardInstance    (player owns many cards)
 Player        1 ←──→ * Deck           (player owns many decks)
 Deck          * ←──→ * CardInstance    (deck contains cards, card can be in multiple decks)
+Deck          * ←──→ * PlayerRuin      (deck contains ruins via deck_ruins junction table)
 Faction       1 ←──→ * CardTemplate   (faction has many templates)
-Faction       1 ←──→ * Avatar         (faction has avatars)
+Faction       1 ←──→ * Avatar         (faction has 2 avatars — 1 per sub-faction)
 Avatar        1 ←──→ * Deck           (deck uses one avatar)
 Player        1 ←──→ * Mission        (player has active missions)
 Player        1 ←──→ * PlayerAchievement (player progress on achievements)
+Player        1 ←──→ * PlayerRuin      (player owns ruin instances)
 
-ModifierDefinition (global pool, not per-player)
+ModifierDefinition (global pool, not per-player — 336 total: 96 universal + 240 faction)
   → Referenced by ModifierInstance.definition_id
 
+RuinTemplate  1 ←──→ * RuinEffect     (neutral + all faction evolved effects)
+RuinTemplate  1 ←──→ * RuinEvolutionOption (5 factions × up to 4 options = up to 20 per template)
+RuinTemplate  1 ←──→ * PlayerRuin      (player collection)
+RuinEvolutionOption → 2 RuinEffects   (evolved passive + evolved penalty)
+RuinEvolutionOption → 1 Faction        (faction lock)
+PlayerRuin    → RuinTemplate           (base template)
+PlayerRuin    → RuinEvolutionOption?    (chosen evolution, nullable)
+PlayerRuin    → Faction?               (faction lock after evolution, nullable)
+
 GameState (runtime only, not persisted)
-  → References Player, CardInstance, Avatar
+  → References Player, CardInstance, PlayerRuin, Avatar
+  → Board slots contain BattleCreature | BattleRuin | null
   → Produces MatchRecord on completion
 ```
 
@@ -1081,6 +1197,11 @@ These are the most frequent queries the system will make. Database indexes shoul
 | Get all cards for a player in a faction | CardInstance | (owner_id, template.faction_id) |
 | Get all evolution-ready cards for a player | CardInstance | (owner_id, tier, chaos_energy) |
 | Get cards in a specific deck | Deck → DeckEntry → CardInstance | (deck_id) → (card_instance_id) |
+| Get ruins in a specific deck | Deck → deck_ruins → PlayerRuin | (deck_id) → (player_ruin_id) |
+| Get all ruins for a player | PlayerRuin | (owner_id) |
+| Get evolution-ready ruins for a player | PlayerRuin | (owner_id, evolution_state, battles_played) |
+| Get ruin evolution options for a faction | RuinEvolutionOption | (ruin_template_id, faction_id) |
+| Get ruin effects for a template | RuinEffect | (ruin_template_id) |
 | Find opponent for matchmaking | Player | (season_rank, is_in_queue) |
 | Get modifier definitions for a tier | ModifierDefinition | (tier) |
 | Get player's match history | MatchRecord | (player_1_id OR player_2_id, started_at DESC) |
@@ -1154,9 +1275,352 @@ For each BattleCreature on active player's board:
 
 Recompute player instability:
   1. Sum creature.instability_value for all living creatures on board
-  2. Add avatar.instability_modifier
-  3. Clamp result to 1–20 (D20 range)
+  2. Sum ruin.instability_value for all living ruins on board (0-2 per ruin)
+  3. Add avatar.instability_modifier
+  4. Clamp result to 1–20 (D20 range)
 ```
+
+---
+
+## 21. Planar Ruins Data Model
+
+Planar Ruins are a new card type (`PLANAR_RUIN`) representing ancient structures from the Plane of Chaos. They occupy creature slots, provide passive benefits, and can be attacked and destroyed. Full gameplay design is in `PHASE1C-planar-ruins.md`.
+
+### 21a. New Enums
+
+```
+CardType (extended):        CREATURE | SPELL | STABILIZER | PLANAR_RUIN
+RuinEvolutionState:         NEUTRAL | EVOLVED
+RuinEffectContext:          PASSIVE | DESTRUCTION_PENALTY
+RuinTriggerPhase:           PASSIVE | START_OF_TURN | END_OF_TURN | ON_EVENT
+                          | ON_CREATURE_DEATH | ON_CREATURE_PLAY | ON_OPPONENT_TURN_START
+                          | IMMEDIATE
+TargetType (extended):      ... | FRIENDLY_RUIN | ENEMY_RUIN | ANY_RUIN
+```
+
+### 21b. RuinTemplate
+
+Base ruin definitions — game content, not player data. Defines the 8 neutral ruin archetypes.
+
+```typescript
+RuinTemplate {
+  id:                        string           // UUID — unique ruin template ID
+  name:                      string           // "The Resonance Spire", "The Anchor Plinth", etc.
+  card_type:                 'PLANAR_RUIN'    // Always PLANAR_RUIN
+
+  // --- Base stats ---
+  base_health:               int              // HP at neutral state. Formula: CM x 3 + 1.
+  mana_cost:                 int              // Chaos mote cost to play (2-6). Fixed forever.
+  base_instability:          int              // 0-2. Contributes to player instability while on field.
+
+  // --- Neutral effect ---
+  neutral_effect_id:         string           // FK → RuinEffect (the neutral passive effect)
+  neutral_penalty_id:        string           // FK → RuinEffect (the neutral destruction penalty)
+
+  // --- AI generation metadata ---
+  art_prompt:                string           // Full prompt used to generate neutral art
+  art_url:                   string           // CDN URL for neutral ruin art
+  flavor_text:               string           // Neutral discovery lore
+  visual_description:        string           // Detailed visual description for art generation
+
+  // --- Pipeline metadata ---
+  batch_id:                  string           // Which generation batch produced this
+  approved_at:               timestamp        // When QA approved
+  approved_by:               string           // QA approver ID
+
+  // --- Familiarity threshold ---
+  evolution_battles_required: int             // 10 (battles with ruin in deck before evolution eligible)
+
+  created_at:                timestamp
+}
+```
+
+**The 8 neutral ruin archetypes:**
+
+| # | Name | CM | HP | Inst | Neutral Effect | Destruction Penalty |
+|---|---|---|---|---|---|---|
+| 1 | The Resonance Spire | 2 | 7 | 0 | Heal 1 to most damaged creature at start of turn | All creatures take 1 damage |
+| 2 | The Anchor Plinth | 3 | 10 | 0 | All creatures gain +1 HP | All creatures lose 1 max HP and 1 current HP |
+| 3 | The Mote Well | 3 | 10 | 1 | Gain +1 chaos mote at start of turn | Lose 2 chaos motes |
+| 4 | The Sight Glass | 4 | 13 | 1 | Scry top card on draw; once per turn may bottom it | Skip next card draw |
+| 5 | The War Cairn | 4 | 13 | 2 | All creatures gain +1 ATK | All creatures -1 ATK for 1 turn |
+| 6 | The Threshold Gate | 5 | 16 | 1 | Creatures gain +1 evolution energy per event | Instability set to 10 for 1 turn |
+| 7 | The Communion Altar | 5 | 16 | 1 | Heal all creatures for 1 HP at end of turn if 3+ creatures | All temporary buffs stripped |
+| 8 | The Oblivion Obelisk | 6 | 19 | 2 | Deal 1 damage to random enemy creature at start of opponent's turn | Deal 3 damage to your avatar |
+
+### 21c. RuinEffect
+
+Defines both neutral effects and faction-evolved effects. Used for passive benefits and destruction penalties.
+
+```typescript
+RuinEffect {
+  id:                        string           // UUID
+  ruin_template_id:          string           // FK → RuinTemplate
+
+  // --- Context ---
+  effect_context:            RuinEffectContext // PASSIVE | DESTRUCTION_PENALTY
+  faction_id?:               string           // FK → Faction. NULL for neutral effects.
+  evolution_state:           RuinEvolutionState // NEUTRAL | EVOLVED
+
+  // --- Effect definition ---
+  name:                      string           // "Harmonic Pulse", "Feedback Surge", etc.
+  description:               string           // Human-readable effect text
+  effect:                    Effect           // Uses the same Effect schema (Section 7)
+
+  // --- Timing ---
+  trigger_phase:             RuinTriggerPhase // PASSIVE | START_OF_TURN | END_OF_TURN | ON_EVENT | etc.
+  duration:                  Duration         // WHILE_ON_FIELD (passives) | THIS_TURN (penalties) | PERMANENT
+
+  // --- Conditions ---
+  condition?:                Condition         // Optional (e.g., CREATURE_COUNT_GTE(3) for Communion Altar)
+  faction_mechanic?:         FactionMechanic  // AUGMENT | BOND | CORRUPTION | EXALT | PERSIST
+
+  // --- Visual ---
+  vfx_id?:                   string           // Visual effect to play when this effect triggers
+}
+```
+
+### 21d. RuinEvolutionOption
+
+Defines the 2/3/4 options presented during ruin evolution. Each option is a pair: (evolved passive effect, evolved destruction penalty). Each of the 8 neutral ruins evolves into a faction-specific variant for each of the 5 factions = 40 total evolved variants. Full details in `PHASE1C-planar-ruins.md`.
+
+```typescript
+RuinEvolutionOption {
+  id:                        string           // UUID
+  ruin_template_id:          string           // FK → RuinTemplate
+  faction_id:                string           // FK → Faction — which faction this option belongs to
+
+  // --- Option metadata ---
+  option_index:              int              // 1-4 (which option in the pool)
+  // Option 1-2: shown to Free tier. Option 1-3: shown to Mid tier. Option 1-4: shown to Top tier.
+
+  // --- Evolved effect ---
+  evolved_name:              string           // "Repair Pylon", "Heartwood Spire", etc.
+  evolved_effect_id:         string           // FK → RuinEffect (passive effect)
+  evolved_penalty_id:        string           // FK → RuinEffect (destruction penalty)
+
+  // --- Art ---
+  evolved_art_prompt:        string           // Prompt for generating evolved art
+  evolved_art_url:           string           // CDN URL for evolved ruin art
+  evolved_flavor_text:       string           // Evolution flavor text
+
+  // --- Visual transformation description ---
+  visual_transformation:     string           // Detailed description of appearance change
+}
+```
+
+### 21e. PlayerRuin
+
+Player-owned ruin instances. Tracks ownership, evolution state, and familiarity.
+
+```typescript
+PlayerRuin {
+  id:                        string           // UUID — unique player ruin instance ID
+  owner_id:                  string           // FK → Player
+  ruin_template_id:          string           // FK → RuinTemplate
+
+  // --- Evolution state ---
+  evolution_state:           RuinEvolutionState // NEUTRAL | EVOLVED
+  faction_id?:               string           // FK → Faction. NULL if neutral. Set when evolved.
+  chosen_option_id?:         string           // FK → RuinEvolutionOption. NULL if neutral.
+
+  // --- Current display data ---
+  current_name:              string           // Template name if neutral; evolved name if evolved
+  current_art_url:           string           // Neutral art if neutral; evolved art if evolved
+  current_flavor_text:       string           // Neutral lore if neutral; evolved flavor text if evolved
+
+  // --- Familiarity ---
+  battles_played:            int              // Number of battles this ruin has been in the player's deck
+  evolution_ready:           bool             // Computed: battles_played >= template.evolution_battles_required AND evolution_state == NEUTRAL
+
+  // --- Metadata ---
+  created_at:                timestamp
+  evolved_at?:               timestamp        // When evolution occurred
+  is_favorite:               bool             // Player-set flag, prevents accidental dismantle
+
+  // --- Deck membership ---
+  in_deck_ids:               string[]         // List of Deck IDs this ruin is currently in (via deck_ruins junction)
+}
+```
+
+### 21f. Deck-Ruin Junction Table
+
+```typescript
+DeckRuin {
+  id:                        string           // UUID
+  deck_id:                   string           // FK → Deck
+  player_ruin_id:            string           // FK → PlayerRuin
+  // UNIQUE constraint on (deck_id, player_ruin_id)
+}
+```
+
+### 21g. SQL Schema
+
+```sql
+-- Ruin templates (game content)
+CREATE TABLE ruin_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  base_health INT NOT NULL CHECK (base_health > 0),
+  mana_cost INT NOT NULL CHECK (mana_cost BETWEEN 1 AND 10),
+  base_instability INT NOT NULL DEFAULT 0 CHECK (base_instability BETWEEN 0 AND 5),
+  neutral_effect_id UUID NOT NULL REFERENCES ruin_effects(id),
+  neutral_penalty_id UUID NOT NULL REFERENCES ruin_effects(id),
+  art_prompt TEXT NOT NULL,
+  art_url TEXT NOT NULL,
+  flavor_text TEXT NOT NULL,
+  visual_description TEXT NOT NULL,
+  evolution_battles_required INT NOT NULL DEFAULT 10,
+  batch_id UUID,
+  approved_at TIMESTAMPTZ,
+  approved_by UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Ruin effects (both neutral and evolved)
+CREATE TABLE ruin_effects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ruin_template_id UUID NOT NULL REFERENCES ruin_templates(id) ON DELETE CASCADE,
+  effect_context TEXT NOT NULL CHECK (effect_context IN ('PASSIVE', 'DESTRUCTION_PENALTY')),
+  faction_id UUID REFERENCES factions(id),
+  evolution_state TEXT NOT NULL CHECK (evolution_state IN ('NEUTRAL', 'EVOLVED')),
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  effect JSONB NOT NULL,
+  trigger_phase TEXT NOT NULL CHECK (trigger_phase IN (
+    'PASSIVE', 'START_OF_TURN', 'END_OF_TURN', 'ON_EVENT',
+    'ON_CREATURE_DEATH', 'ON_CREATURE_PLAY', 'ON_OPPONENT_TURN_START', 'IMMEDIATE'
+  )),
+  duration TEXT NOT NULL CHECK (duration IN ('WHILE_ON_FIELD', 'THIS_TURN', 'PERMANENT', 'UNTIL_NEXT_TURN')),
+  condition JSONB,
+  faction_mechanic TEXT CHECK (faction_mechanic IN ('AUGMENT', 'BOND', 'CORRUPTION', 'EXALT', 'PERSIST')),
+  vfx_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Ruin evolution options (faction-specific evolution paths)
+CREATE TABLE ruin_evolution_options (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ruin_template_id UUID NOT NULL REFERENCES ruin_templates(id) ON DELETE CASCADE,
+  faction_id UUID NOT NULL REFERENCES factions(id),
+  option_index INT NOT NULL CHECK (option_index BETWEEN 1 AND 4),
+  evolved_name TEXT NOT NULL,
+  evolved_effect_id UUID NOT NULL REFERENCES ruin_effects(id),
+  evolved_penalty_id UUID NOT NULL REFERENCES ruin_effects(id),
+  evolved_art_prompt TEXT NOT NULL,
+  evolved_art_url TEXT,
+  evolved_flavor_text TEXT NOT NULL,
+  visual_transformation TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(ruin_template_id, faction_id, option_index)
+);
+
+-- Player ruin collection
+CREATE TABLE player_ruins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  ruin_template_id UUID NOT NULL REFERENCES ruin_templates(id),
+  evolution_state TEXT NOT NULL DEFAULT 'NEUTRAL' CHECK (evolution_state IN ('NEUTRAL', 'EVOLVED')),
+  faction_id UUID REFERENCES factions(id),
+  chosen_option_id UUID REFERENCES ruin_evolution_options(id),
+  current_name TEXT NOT NULL,
+  current_art_url TEXT NOT NULL,
+  current_flavor_text TEXT NOT NULL,
+  battles_played INT NOT NULL DEFAULT 0,
+  is_favorite BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  evolved_at TIMESTAMPTZ
+);
+
+-- Deck-ruin junction table
+CREATE TABLE deck_ruins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deck_id UUID NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
+  player_ruin_id UUID NOT NULL REFERENCES player_ruins(id) ON DELETE CASCADE,
+  UNIQUE(deck_id, player_ruin_id)
+);
+
+-- Indexes
+CREATE INDEX idx_player_ruins_owner ON player_ruins(owner_id);
+CREATE INDEX idx_player_ruins_template ON player_ruins(ruin_template_id);
+CREATE INDEX idx_deck_ruins_deck ON deck_ruins(deck_id);
+CREATE INDEX idx_deck_ruins_ruin ON deck_ruins(player_ruin_id);
+CREATE INDEX idx_ruin_effects_template ON ruin_effects(ruin_template_id);
+CREATE INDEX idx_ruin_evolution_options_template ON ruin_evolution_options(ruin_template_id);
+CREATE INDEX idx_ruin_evolution_options_faction ON ruin_evolution_options(faction_id);
+```
+
+### 21h. RLS Policies
+
+```sql
+-- ruin_templates: public read, no player writes
+ALTER TABLE ruin_templates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ruin_templates_read" ON ruin_templates FOR SELECT USING (true);
+
+-- ruin_effects: public read, no player writes
+ALTER TABLE ruin_effects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ruin_effects_read" ON ruin_effects FOR SELECT USING (true);
+
+-- ruin_evolution_options: public read, no player writes
+ALTER TABLE ruin_evolution_options ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ruin_evolution_options_read" ON ruin_evolution_options FOR SELECT USING (true);
+
+-- player_ruins: owner read/write
+ALTER TABLE player_ruins ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "player_ruins_read" ON player_ruins FOR SELECT USING (owner_id = auth.uid());
+CREATE POLICY "player_ruins_insert" ON player_ruins FOR INSERT WITH CHECK (owner_id = auth.uid());
+CREATE POLICY "player_ruins_update" ON player_ruins FOR UPDATE USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
+CREATE POLICY "player_ruins_delete" ON player_ruins FOR DELETE USING (owner_id = auth.uid());
+
+-- deck_ruins: owner access via deck ownership
+ALTER TABLE deck_ruins ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "deck_ruins_read" ON deck_ruins FOR SELECT
+  USING (EXISTS (SELECT 1 FROM decks WHERE decks.id = deck_ruins.deck_id AND decks.owner_id = auth.uid()));
+CREATE POLICY "deck_ruins_insert" ON deck_ruins FOR INSERT
+  WITH CHECK (EXISTS (SELECT 1 FROM decks WHERE decks.id = deck_ruins.deck_id AND decks.owner_id = auth.uid()));
+CREATE POLICY "deck_ruins_delete" ON deck_ruins FOR DELETE
+  USING (EXISTS (SELECT 1 FROM decks WHERE decks.id = deck_ruins.deck_id AND decks.owner_id = auth.uid()));
+```
+
+### 21i. Ruin Evolution Flow
+
+```
+1. Client: Player taps "Evolve" on a PlayerRuin
+2. Server: Validate battles_played >= evolution_battles_required AND evolution_state == NEUTRAL
+3. Server: Determine subscription tier → how many options to present (2/3/4)
+4. Server: Fetch RuinEvolutionOptions for (ruin_template_id, chosen faction_id), up to option limit
+5. Client: Display evolution options with evolved names, effects, penalties, and art previews
+6. Client: Player selects one option
+7. Server: Update PlayerRuin (evolution_state → EVOLVED, faction_id, chosen_option_id, current_name, current_art_url, current_flavor_text, evolved_at)
+8. Server: Return updated PlayerRuin to client
+```
+
+### 21j. Ruin Destruction Flow
+
+```
+1. During combat: opponent declares attackers targeting a ruin
+2. Server: Resolve combat damage — reduce ruin.health
+3. If ruin.health <= 0:
+   a. Server: Mark ruin is_alive = false
+   b. Server: Fire ruin.destruction_penalty effect on controlling player's side
+   c. Server: Remove ruin from board slot
+   d. Server: Move ruin to graveyard
+   e. Server: Recalculate player instability (ruin no longer contributes)
+   f. Server: Log RUIN_DESTROYED to GameState.log
+4. Broadcast ruin destruction, penalty effect, and stat changes to both clients
+```
+
+---
+
+## 22. Starter Deck Card Templates
+
+Celestial Crusade and Endless starter deck card templates are fully defined in `PHASE1B-mechanics.md` (Sections 9 and 10). Each starter deck contains exactly 20 cards following the standard deck construction rules.
+
+**Celestial starter deck summary** (from PHASE1B Section 9): 20 cards across CM 1-6, emphasizing go-wide Exalt strategy with Shield/Ward/Taunt keyword affinity. Includes creatures with Exalt-ready stat lines (slightly below curve individually, strong with board presence), spells that protect and heal the formation, and stabilizers that complement the Exalt aura strategy.
+
+**Endless starter deck summary** (from PHASE1B Section 10): 20 cards across CM 1-6, emphasizing Persist death-trigger attrition with Lifesteal/Deathtouch/Haste keyword affinity. Includes creatures with death-trigger abilities, spells that force trades or sacrifice for value, and stabilizers that benefit from creatures dying.
+
+Both starter deck definitions include full card names, CM costs, ATK/HP values, keywords, spell effects, and faction-specific flavor text. See PHASE1B-mechanics.md for the complete card-by-card specifications.
 
 ---
 
@@ -1164,4 +1628,5 @@ Recompute player instability:
 
 | Date | Change | Section(s) |
 |---|---|---|
+| 2026-02-19 | v4.0 — Faction expansion: Added CELESTIAL/ENDLESS to FactionShortName enum. Added EXALT/PERSIST to FactionMechanic enum. Added HASTE/WARD to Keyword enum (7→9 keywords). Added PLANAR_RUIN to CardType enum. Added full Planar Ruins data model: RuinTemplate, RuinEffect, RuinEvolutionOption, PlayerRuin, DeckRuin tables with SQL schema and RLS policies. Updated BattlePlayer.board to support BattleRuin alongside BattleCreature. Added BattleRuin type. Updated Avatar section to 10 avatars (2 per faction). Updated Faction section to 5 factions with color palettes, sub-factions, mechanic descriptions. Updated modifier pool totals from 240→336. Added ruin-related TargetType values (FRIENDLY_RUIN, ENEMY_RUIN, ANY_RUIN). Updated Deck validation for ruins (max 2 ruins, 20-card total includes ruins). Updated Entity Relationship Summary and Key Indexes for ruins. Added Sections 21 (Planar Ruins Data Model) and 22 (Starter Deck Card Templates). | 1, 4, 6, 7, 9, 10, 11, 13, 14, 18, 19, 21 (new), 22 (new) |
 | 2026-02-16 | Platform-alignment pass: updated Avatar entity `frame_style` field comment from "CSS/asset reference" to "Asset reference" (removed CSS reference since client is now native iOS, not web). No game mechanics, numbers, or data structures were changed. | 9 (Avatar) |

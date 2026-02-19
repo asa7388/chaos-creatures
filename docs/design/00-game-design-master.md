@@ -7,7 +7,7 @@ Chaos Creatures is an AI-generated collectible card game for iOS where every car
 ### Core Differentiators
 
 - **Every card is unique.** AI generates art, flavor text, and effect variations so no two collections look the same.
-- **Faction system with exclusive mechanics.** Three launch factions (Steampunk, Fey, Demonic) each have a unique gameplay mechanic (Augment, Bond, Corruption) available only through faction-specific modifiers. Decks must use cards from a single faction.
+- **Faction system with exclusive mechanics.** Five launch factions (Ironwright, Fey, Demonic, Celestial, Endless) each have a unique gameplay mechanic (Augment, Bond, Corruption, Exalt, Persist) available only through faction-specific modifiers. Decks must use cards from a single faction.
 - **No real money on individual cards.** Cards are earned through gameplay and Chaos Dust (in-game currency). Subscriptions enhance evolution depth, art quality, and collection growth — never raw power.
 - **Prompt template engine.** A layered prompt system constrains AI generation to keep cards mechanically balanced and visually cohesive while allowing massive variety.
 - **Order vs. Chaos as the central strategic axis.** A D20 chaos roll every turn creates dynamic events. Players build decks that lean into Order (consistency), Chaos (volatility), or a hybrid of both.
@@ -22,7 +22,7 @@ Chaos Creatures is an AI-generated collectible card game for iOS where every car
 
 ### Lore
 
-The world of Chaos Creatures was once a thriving land of sci-fi and fantasy civilizations. War erupted between the many races, creatures, and factions, and the overwhelming power and destruction unleashed tore open rents to the Plane of Chaos. Chaos motes from the Plane of Chaos now transform the creatures and machines of this world. Players are key figures from the lore — leaders, warlords, mages, and champions — themselves transformed by chaos.
+The galaxy of Chaos Creatures was once home to five great civilizations spanning multiple planes and star systems. War erupted between the factions — each holding an incompatible vision for reality — and the overwhelming power and destruction unleashed tore open rifts to the Plane of Chaos. Chaos motes from the Plane of Chaos now transform the creatures and machines of this world. Players are key figures from the lore — leaders, warlords, mages, and champions — themselves transformed by chaos. Ancient structures called Planar Ruins, built by a vanished civilization, stabilize chaotic energy and serve as contested strategic assets.
 
 Planar Shards are fragments that fell when the rents to the Plane of Chaos first opened. Made of both Order and Chaos, they are the catalyst for evolution — channeling accumulated chaos energy through a shard triggers transformation. Their dual nature is what gives evolution its unpredictability.
 
@@ -32,7 +32,7 @@ Planar Shards are fragments that fell when the rents to the Plane of Chaos first
 
 A faction is the core unit of player identity and deck construction. Each faction has a distinct art style, creature thematic identity, exclusive mechanic, and AI generation voice.
 
-**What a Faction Contains:** Image prompt prefix (art direction), flavor text voice/tone, card frame design & color palette, UI battle theme (accents, particles, ambient visuals), an exclusive mechanic (Augment/Bond/Corruption), and optionally unique soundtrack/ambient audio.
+**What a Faction Contains:** Image prompt prefix (art direction), flavor text voice/tone, card frame design & color palette, UI battle theme (accents, particles, ambient visuals), an exclusive mechanic (Augment/Bond/Corruption/Exalt/Persist), and optionally unique soundtrack/ambient audio.
 
 **Deckbuilding Rule:** A deck may only contain cards from a single faction. Decks of any faction may battle any other faction. Every card is immutably tagged with its faction.
 
@@ -46,17 +46,40 @@ A faction is the core unit of player identity and deck construction. Each factio
 
 Higher tiers generate more AI art through frequent evolutions and need more cloud storage. Card limits scale with the subscription revenue that covers those costs. Free players still have a complete gameplay experience — 50 cards per faction is more than enough to build strong decks, but they need to be selective about what they keep and evolve.
 
-**Launch Factions (3):**
+**Launch Factions (5):**
 
-- **The Ironwright Collective (Steampunk)** — Brass, gears, steam, clockwork creatures. Exclusive mechanic: **Augment** — modifiers that compound as you stack more Augments on a single creature. Play identity: midrange/value, fewer creatures each heavily invested.
+- **The Ironwright Collective (Brutalist Space-Industrial)** — Concrete, iron, hydraulics, rebar, void industry, star conquest, orbital machinery. A machine empire conquering the stars through brutal industrial efficiency. Walking siege engines, orbital automatons, rebar golems, concrete leviathans, void-forge dreadnoughts. Exclusive mechanic: **Augment** — modifiers that compound as you stack more Augments on a single creature. Play identity: midrange/value, fewer creatures each heavily invested.
+  - *Sub-factions:* **The Foundry Directorate** (centralized command, purpose-built, geometric, Order-aligned) + **The Scrap Legions** (self-assembled from battlefield wreckage, patchwork, jury-rigged, Chaos-aligned).
+  - *Color palette:* Steel blue-gray (#6B7B8D), cold iron (#4A5568), warning orange (#E07020), reactor blue (#3B82C4), background (#1A1D23).
+  - *Art references:* Piranesi "Carceri d'invenzione" (died 1778 — PD) + John Martin (died 1854 — PD).
+
 - **The Fey Courts (Fey & Druidic)** — Ancient forests, bioluminescent flora, antlered fey lords, mycelial networks. Exclusive mechanic: **Bond** — modifiers that create synergies between creatures on the board. Play identity: board-centric midrange, power in the network.
-- **The Demonic Kingdoms** — Hellfire, obsidian fortresses, blood rituals, corrupted flesh. Exclusive mechanic: **Corruption** — modifiers that trade self-damage for outsized power. Play identity: aggro/burn, explosive but on a clock.
+  - *Sub-factions:* **The Verdant Throne** (bright, growth, Spring/Summer, Order-aligned) + **The Hollow Court** (dark, frost, Autumn/Winter, Chaos-aligned).
+  - *Color palette:* Emerald green (#2D8F4E), golden amber (#C4A035), bioluminescent teal (#4ECDC4), deep bark brown (#3E2723), background (#0D1A0D).
+  - *Art references:* Arthur Rackham (died 1939 — PD) + Edmund Dulac (died 1953 — PD).
 
-*(Full faction details, example modifiers, and faction triangle in `01-battle-mechanics.md` Section 6.)*
+- **The Demonic Kingdoms** — Hellfire, obsidian fortresses, blood rituals, corrupted flesh. Exclusive mechanic: **Corruption** — modifiers that trade self-damage for outsized power. Play identity: aggro/burn, explosive but on a clock.
+  - *Sub-factions:* **The Furnace Lords** (wrath, volcanic, military aristocracy, Chaos-aligned) + **The Obsidian Bureaucracy** (schemes, contracts, infernal lawyers, Order-aligned).
+  - *Color palette:* Hellfire red (#C41E3A), obsidian black (#1A1A2E), molten gold (#DAA520), sulfur yellow (#B8860B), background (#1A0A0A).
+  - *Art references:* Hieronymus Bosch (died 1516 — PD).
+
+- **The Celestial Crusade** — Self-righteous divine crusaders, angelic hosts, divine radiance, holy war for dominion over all reality. Exclusive mechanic: **Exalt** — aura effects that benefit all friendly creatures when board conditions are met. Play identity: go-wide formation play, powerful when the board is full, fragile to board wipes and targeted removal.
+  - *Sub-factions:* **Knights of Deliverance** (stoic paladins, divine armor, formation discipline — the military arm, Order-aligned) + **Heaven's Chosen** (biblically-accurate multi-winged, multi-eyed celestials — the divine arm, Chaos-aligned).
+  - *Color palette:* Holy gold (#DAA520), divine ivory (#F5F0E1), righteous blue (#3B5998), celestial rose (#C47A8E), background (#1A1520).
+  - *Art references:* Gustave Dore biblical illustrations (died 1883 — PD) + William Blake visionary paintings (died 1827 — PD).
+  - *Weakness:* Board wipes collapse Exalt auras simultaneously. Targeted removal of high-value Exalt sources weakens the entire board. Slow startup — needs 2-3 creatures before any aura activates.
+
+- **The Endless** — The undead — raised, summoned, abandoned. Unnatural, relentless. Necromancers, liches, spectres, and reanimated constructs. Exclusive mechanic: **Persist** — death triggers and lingering effects that fire when creatures die. Every kill is pyrrhic. Play identity: attrition/grind, value from death, inevitable long-game dominance.
+  - *Sub-factions:* **Necromantic Cabals** (liches raising armies, bone constructs, phylacteries — the power brokers, Order-aligned) + **The Lost Spectres** (ghosts and spectres abandoned by liches, ethereal, tragic, Chaos-aligned).
+  - *Color palette:* Necrotic purple (#6B3FA0), bone white (#E8DCC8), ghostly teal (#5F9EA0), sickly green (#7B9E5F), background (#0D0D1A).
+  - *Art references:* Gustave Dore Inferno etchings (died 1883 — PD) + Francisco Goya "Black Paintings" (died 1828 — PD).
+  - *Weakness:* No grand vision — reactive rather than proactive. Fast aggro can overwhelm before death triggers accumulate value. Effects preventing death triggers counter the mechanic.
+
+*(Full faction details, example modifiers, Exalt/Persist rules, and all matchup dynamics in `01-battle-mechanics.md` Section 6. Full lore, sub-faction profiles, and avatar backstories in `11-lore-bible.md`. Art direction details in `12-art-direction.md`.)*
 
 **Cross-Faction Unlocking:** Players start with one faction at onboarding. Additional factions are unlocked by purchasing a card pack from that faction using Chaos Dust (150 Dust). Once unlocked, the player can build decks, earn cards, and access faction modifiers for that faction. No real money required.
 
-**Future Factions:** New factions are the primary content release mechanism — a new art style, exclusive mechanic, modifier pool, and card set. The data model supports unlimited factions.
+**Future Factions:** New factions are a future content release mechanism — a new art style, exclusive mechanic, modifier pool, and card set. The data model supports unlimited factions.
 
 ---
 
@@ -71,7 +94,7 @@ This means every legendary in a player's collection has a personal history. No l
 ### Onboarding Flow
 
 1. Player creates account, picks a username.
-2. **Trial phase:** player receives a premade 20-card Commons deck for each of the 3 factions (loaner decks — fixed lists, cannot be evolved).
+2. **Trial phase:** player receives a premade 20-card Commons deck for each of the 5 factions (loaner decks — fixed lists, cannot be evolved).
 3. Player plays 1–3 matches with each trial deck (vs. AI or new players).
 4. **Faction commitment:** player picks one faction. That trial deck becomes their real collection — those 20 Commons are now owned CardInstances, fully evolvable. Other trial decks are returned.
 5. Player starts with: 20 Commons in one faction, a starter avatar, enough shards to evolve 2–3 cards, and a small amount of Chaos Dust.
@@ -104,7 +127,9 @@ Card templates are batch-generated before launch as Commons. Each faction needs 
 | Base spells | ~20–30 |
 | Stabilizer/manipulation cards | ~10–15 |
 | **Total per faction** | **~90–125** |
-| **Total across 3 factions** | **~270–375** |
+| **Total across 5 factions** | **~450–625** |
+| **Planar Ruins (neutral archetypes)** | **8** |
+| **Planar Ruins (faction-evolved variants)** | **40** |
 
 ### Batch Pipeline
 
@@ -234,9 +259,9 @@ Modifiers are organized into pools by three dimensions: **PP budget** (1, 2, or 
 
 Each pool has two sub-pools:
 - **Universal modifiers:** 8 per pool. Available to all factions. Simple stat/keyword effects.
-- **Faction modifiers:** 4 per pool per faction. Must reference the faction's exclusive mechanic (Augment/Bond/Corruption). This is how factions feel mechanically distinct.
+- **Faction modifiers:** 4 per pool per faction. Must reference the faction's exclusive mechanic (Augment/Bond/Corruption/Exalt/Persist). This is how factions feel mechanically distinct.
 
-Total: 96 universal + 48 per faction × 3 factions = **240 modifier definitions at launch.**
+Total: 96 universal + 48 per faction x 5 factions = **336 modifier definitions at launch.**
 
 ### Modifier Selection — Monetization Core
 
@@ -299,6 +324,8 @@ Each faction's modifier pool contains modifiers that reference the faction's exc
 - **Ironwright (Augment):** Effects scale with Augment count on the creature. "+1 ATK per Augment modifier on this creature."
 - **Fey Courts (Bond):** Effects reference other creatures. "+1 HP for each other friendly creature with a Bond modifier."
 - **Demonic Kingdoms (Corruption):** Effects trade self-damage for power. "This creature takes 1 damage at start of turn. Chaos Attuned: +3 ATK."
+- **Celestial Crusade (Exalt):** Conditional aura effects benefiting all friendly creatures when board conditions are met. "While you control 3+ creatures, all friendly creatures get +1 ATK." Exalt thresholds are creature-count based (2+, 3+, 4+, full board). Auras stack from different sources but a single source applies once.
+- **The Endless (Persist):** Death triggers and lingering effects that fire when the creature dies. "When this creature dies, deal 2 damage to a random enemy creature." Persist effects can chain, linger, and escalate — every kill against the Endless is pyrrhic.
 
 ### How Attunement Shapes Deckbuilding
 
@@ -392,13 +419,13 @@ Turn-based combat inspired by Magic: The Gathering, focused on creatures. The ce
 - Auto-gain 1 chaos mote per turn.
 - Cap at 10.
 - Every card has a chaos mote cost to play.
-- No land/resource cards. Your entire deck is creatures, spells, and stabilizer/manipulation cards.
+- No land/resource cards. Your entire deck is creatures, spells, stabilizer/manipulation cards, and Planar Ruins.
 
 ### Board
 
 - 5 creature slots per side.
 - Forces meaningful decisions about what to play and when.
-- Stabilizer cards that sit on the board occupy creature slots — powerful stability effects cost board presence.
+- Stabilizer cards and Planar Ruins that sit on the board occupy creature slots — powerful stability effects and passive benefits cost board presence.
 
 ### Life Total
 
@@ -412,18 +439,18 @@ Turn-based combat inspired by Magic: The Gathering, focused on creatures. The ce
 
 ### No Summoning Sickness
 
-Creatures can attack the turn they are played. Games move fast, every creature matters immediately.
+Creatures can attack the turn they are played. Games move fast, every creature matters immediately. (Note: the Haste keyword is still meaningful — it interacts with specific game effects that would otherwise delay a creature's first attack, such as certain Chaos events or Planar Ruin penalties.)
 
 ### Turn Structure
 
-1. **Start of Turn** — Start-of-turn effects fire (Corruption self-damage, stabilizer auras, modifier triggers).
+1. **Start of Turn** — Start-of-turn effects fire (Corruption self-damage, Exalt aura checks, Planar Ruin passive effects, stabilizer auras, modifier triggers).
 2. **Chaos Roll** — D20 rolls visually on screen. Compare to current instability. Update attunement state on all creatures.
 3. **Resolve Event** — Apply the Order or Chaos event. Fire triggered abilities.
 4. **Draw & Gain Mana** — Draw 1 card. Gain 1 chaos mote (up to cap of 10).
-5. **Main Phase** — Play creatures, spells, or stabilizer cards from hand. Any order, any number (mana permitting). All spells resolve immediately — no response window for the opponent.
+5. **Main Phase** — Play creatures, spells, stabilizer cards, or Planar Ruins from hand. Any order, any number (mana permitting). All spells resolve immediately — no response window for the opponent.
 6. **Declare Attackers** — Active player selects which creatures attack. Taunt on the opposing side forces minimum attackers. *(P1 skips this on turn 1.)*
 7. **Assign Blockers** — Defending player assigns their creatures to block attackers (1-to-1). Taunt creatures MUST block if able. Defending player's 60-second timer starts here.
-8. **Combat Resolution** — All damage is simultaneous. Unblocked attackers hit face. Shield → Damage → Deathtouch → Piercing → Lifesteal resolution. Dead creatures removed, on-death effects fire.
+8. **Combat Resolution** — All damage is simultaneous. Unblocked attackers hit face. Shield → Damage → Deathtouch → Piercing → Lifesteal resolution. Dead creatures removed, on-death effects fire (including Persist triggers for Endless creatures). Planar Ruin destruction penalties fire if a ruin is destroyed.
 9. **End Turn** — Temporary buffs expire. Turn passes.
 
 *(Full phase-by-phase specification with blocking rules, keyword interactions, timer rules, and worked example in `01-battle-mechanics.md` Section 3.)*
@@ -473,7 +500,8 @@ No counterspells. No combat tricks (no spells during combat). Keeps the game flo
 - **Deck size:** 20 cards.
 - **Max 2 copies** of any card.
 - **Legendaries:** Max 2 per deck, limited to 1 copy each.
-- Cards from a single faction only.
+- **Planar Ruins:** Max 2 per deck. Max 1 on the field at a time (occupies a creature slot).
+- Cards from a single faction only. Neutral (un-evolved) Planar Ruins may be included in any faction's deck; faction-evolved ruins only in the matching faction's deck.
 
 ---
 
@@ -558,20 +586,27 @@ Avatars have **no other gameplay effects** — no active abilities, no ultimates
 
 ### Avatars Per Faction
 
-2 per faction at launch (one leaning Order, one leaning Chaos). 6 total at launch. Additional avatars unlock through faction mastery and seasonal content.
+2 per faction at launch (one per sub-faction, one leaning Order and one leaning Chaos). 10 total at launch. Additional avatars unlock through faction mastery and seasonal content.
 
-| Faction | Avatar | Leaning | Instability Modifier | Design Intent |
-|---|---|---|---|---|
-| **Ironwright Collective** | Aldric, the Forgemaster | Order | **-5** | Steady Augment builds. Low chaos risk. Shield and sustain strategy. |
-| **Ironwright Collective** | Vex, the Entropy Smith | Chaos | **-2** | Aggressive Augment builds. Augment creatures get burst from Chaos events. Risky but explosive. |
-| **The Fey Courts** | Sylara, the Verdant Warden | Order | **-5** | Bond networks protected by Order events. Grow wide, heal often, compound. |
-| **The Fey Courts** | Morrigan, the Wild Huntress | Chaos | **-1** | Fastest Chaos buildup. Bond creatures get ATK spikes from Chaos events. Glass cannon strategy. |
-| **The Demonic Kingdoms** | Kael, the Bound Tyrant | Order | **-4** | Corruption creatures with Order safety net. Self-damage is manageable because Order events heal you back. Balanced risk. |
-| **The Demonic Kingdoms** | Lilith, the Unbound | Chaos | **-2** | Full Corruption + Chaos. Self-damage is the point — high instability triggers massive Chaos events. Race to kill before you kill yourself. |
+| Faction | Sub-Faction | Avatar | Leaning | Instability Modifier | Design Intent |
+|---|---|---|---|---|---|
+| **Ironwright Collective** | Foundry Directorate | Korvax, Warden of the Star-Forge | Order | **-5** | Steady Augment builds. Stacking modifications on heavy units. Low chaos risk. Grinds opponents down through superior hardware. |
+| **Ironwright Collective** | Scrap Legions | Vex, the Entropy Smith | Balanced | **-3** | Aggressive Augment builds that stack fast and volatile. Moderate chaos risk. Augmented creatures gain burst power from Chaos events. |
+| **The Fey Courts** | Verdant Throne | Sylara, the Verdant Warden | Order | **-5** | Bond networks protected by Order events. Grow wide, heal often, compound defensive value. |
+| **The Fey Courts** | Hollow Court | Morrigan, the Wild Huntress | Chaos | **-1** | Fastest Chaos buildup in the game. Bond creatures get ATK spikes from Chaos events. Glass cannon strategy. |
+| **The Demonic Kingdoms** | Obsidian Bureaucracy | Kael, the Bound Tyrant | Order | **-4** | Corruption creatures with Order safety net. Self-damage is manageable because Order events heal you back. Calculated risk, long-game Corruption value. |
+| **The Demonic Kingdoms** | Furnace Lords | Lilith, the Unbound | Chaos | **-2** | Full Corruption + Chaos. Self-damage is the point — high instability triggers massive Chaos events. Race to kill before you kill yourself. |
+| **The Celestial Crusade** | Knights of Deliverance | Serevain, the Radiant Marshal | Order | **-6** | Maximum Order stability. Exalt auras at full strength nearly every turn. Formation-based, go-wide strategy. Predictable and powerful. |
+| **The Celestial Crusade** | Heaven's Chosen | Ophaniel, Voice of the Burning Wheels | Chaos | **-1** | Divine chaos — overwhelming Exalt effects that spike unpredictably. Heaven's Chosen creatures are few but each warps the board. High-risk divine intervention. |
+| **The Endless** | Necromantic Cabals | Vothrak, Architect of the Ossuary | Balanced | **-3** | Methodical Persist strategy. Death triggers calculated and deliberate. Constructs bone armies, grinds opponents through inevitable attrition. |
+| **The Endless** | Lost Spectres | Thessaly, the Unforgotten | Chaos | **-2** | Wild Persist effects that chain and escalate. Spectral creatures are ethereal and hard to pin down. Death triggers spiral beyond control. |
 
-**Why no balanced (-3 to -4) avatars at launch:** Two extreme leanings per faction creates clearer deckbuilding identity. A balanced option muddies the choice. Future balanced avatars (seasonal rewards, faction mastery unlocks) will expand options after players understand the system.
+**Design notes on instability modifiers:**
+- **Serevain at -6** is the most Order-leaning avatar in the game — intentional because the Celestial Crusade's Exalt mechanic rewards stable, wide boards. Maximum Order stability keeps aura conditions met consistently.
+- **Kael at -4** is the closest to "balanced" on the Order side — intentional because Demonic Kingdoms' Corruption mechanic already pushes toward Chaos through self-damage instability. A -4 modifier gives Demonic players a viable Order-Corruption hybrid.
+- **Korvax at -5 and Vex at -3** replace the original Ironwright avatars (Aldric was retired during the faction retheme from Victorian steampunk to brutalist space-industrial). Vex is more balanced than before to match the Scrap Legions' improvisational identity.
 
-**Exception: Kael at -4** is the closest to "balanced" — intentional because Demonic Kingdoms' Corruption mechanic already pushes toward Chaos through self-damage instability. A -4 modifier gives Demonic players a viable Order-Corruption hybrid that isn't available to other factions.
+*(Full avatar backstories, personality profiles, and art prompts in `11-lore-bible.md` Section 5.)*
 
 ### Avatar and Deck Pairing
 
@@ -585,7 +620,7 @@ The player's avatar appears on their side of the battlefield and visually repres
 
 ## 11. Stabilizer & Manipulation Cards
 
-A card type alongside creatures and spells. Stabilizers sit on the board, occupy creature slots, have HP (can be destroyed), but have no ATK and cannot attack or block. They manipulate the instability/chaos roll system.
+A card type alongside creatures, spells, and Planar Ruins. Stabilizers sit on the board, occupy creature slots, have HP (can be destroyed), but have no ATK and cannot attack or block. They manipulate the instability/chaos roll system. Unlike Planar Ruins, stabilizers cannot be targeted by creature attacks (only damaged by spells/events), do not evolve, and have no destruction penalties.
 
 ### Board Stabilizers (Occupy Creature Slots)
 
@@ -604,7 +639,7 @@ A card type alongside creatures and spells. Stabilizers sit on the board, occupy
 | Binding Ward | 2 | Set your instability to 5 for this turn only. |
 | Entropy Spike | 2 | Set your instability to 15 for this turn only. |
 
-All 7 cards are **universal** (available to all factions). Faction-specific stabilizers reserved for future expansions.
+All 7 stabilizer cards are **universal** (available to all factions). Faction-specific stabilizers reserved for future expansions. For faction-specific battlefield structures, see **Planar Ruins** (Section 11a) — a distinct card type with different gameplay characteristics.
 
 ### Strategic Role
 
@@ -614,9 +649,51 @@ Running a board stabilizer costs a creature slot — powerful instability manipu
 
 ---
 
+## 11a. Planar Ruins (Card Type)
+
+Planar Ruins are a new card type — ancient structures found in the Plane of Chaos by explorers who ventured through the rifts when the planes fractured. Built by a vanished civilization known as the Ancient Builders, the ruins stabilize chaotic energy, creating pockets where beings of both Order and Chaos can survive. They are prized strategic assets in battle.
+
+### Battlefield Role
+
+- **Takes a creature slot** on the battlefield (5-slot board). Reduces creature board presence in exchange for a passive benefit — a meaningful strategic tradeoff.
+- **High HP, zero ATK.** Ruins are structures, not combatants. HP scales with CM cost: HP = (CM cost x 3) + 1.
+- **Provides a passive benefit** to the controlling player's creatures while on the field.
+- **Can be attacked and destroyed** by opponent's creatures during combat (opponent assigns attackers to ruins). This is distinct from stabilizers, which cannot be targeted by creature attacks.
+- **Destruction penalty:** When a ruin is destroyed, a negative effect fires on the controlling player's side for 1 turn.
+- **Max 1 on field** at a time. **Max 2 in deck** (to preserve creature-heavy deckbuilding as the norm).
+- **Cannot attack or block.**
+
+### Evolution: Neutral to Faction-Specific
+
+Ruins start as **neutral** — ancient, unclaimed structures usable in any faction's deck. After accumulating enough familiarity (10 battles with the ruin in the deck), a neutral ruin can be evolved **once** into a **faction-specific** ruin. The evolution uses the same subscription tier system for choice breadth (Free: pick 1 of 2, Mid: pick 1 of 3, Top: pick 1 of 4). Once evolved, the ruin is **faction-locked** — it can only be played in that faction's deck. Evolved ruins have stronger, faction-complementary effects and faction-themed destruction penalties.
+
+### Neutral Ruin Archetypes (8 at launch)
+
+The Resonance Spire (CM 2), The Anchor Plinth (CM 3), The Mote Well (CM 3), The Sight Glass (CM 4), The War Cairn (CM 4), The Threshold Gate (CM 5), The Communion Altar (CM 5), The Oblivion Obelisk (CM 6). Each provides a distinct neutral passive benefit (healing, HP buff, mana generation, card selection, ATK buff, evolution energy bonus, group healing, creature weakening).
+
+### Faction-Evolved Ruin Effects
+
+Each neutral ruin can evolve into any of the 5 faction variants (40 total evolved variants). Evolved effects are stronger and synergize with the faction's exclusive mechanic:
+
+| Faction | Mechanic Synergy |
+|---|---|
+| Ironwright (Augment) | Augment stacks provide additional value near ruins |
+| Fey Courts (Bond) | Bond effects trigger additional times near ruins |
+| Demonic (Corruption) | Corruption costs reduced near ruins |
+| Celestial (Exalt) | Exalt thresholds require fewer creatures near ruins |
+| Endless (Persist) | Persist death triggers activate with enhanced effects near ruins |
+
+### Acquisition
+
+Planar Ruins are acquired through **gameplay drops** — earned from match rewards, quest completions, and season milestones. They follow the same evolution energy system as creatures (energy accumulates through battles, spent via Planar Shards to evolve). Ruins cannot be purchased directly with Chaos Dust — they must be earned.
+
+*(Full Planar Ruins system design — all 8 neutral archetypes, 40 faction evolutions, balance design, turn integration, art prompts, effect pools, and data model — in `PHASE1C-planar-ruins.md`.)*
+
+---
+
 ## 12. Keywords
 
-A tight set of 7 creature keywords. Kept small so that modifier-granted keywords feel impactful.
+A tight set of 9 creature keywords. Kept small so that modifier-granted keywords feel impactful.
 
 - **Shield** — Absorbs the first instance of damage, then is consumed.
 - **Lifesteal** — Damage dealt by this creature also heals your HP.
@@ -625,8 +702,14 @@ A tight set of 7 creature keywords. Kept small so that modifier-granted keywords
 - **Deathtouch** — Any damage this creature deals to another creature destroys it.
 - **Taunt** — Two-part rule: while you control a Taunt creature, the opponent must declare at least 1 attacker per Taunt you control. Your Taunt creatures must be assigned as blockers if able. Forces engagement; denies turtling.
 - **Piercing** — Excess damage (beyond what's needed to kill a blocker) carries through to the opponent's HP.
+- **Haste** — This creature can attack the turn it is played. Enables tempo and aggression. Countered by: Shield (absorbs the first hit), Taunt (forces the Haste creature into unfavorable attacks).
+- **Ward** — This creature cannot be targeted by the opponent's modifier effects for 1 turn after deployment. Protects high-value creatures during their most vulnerable moment. Countered by: combat damage (Ward does not prevent damage, only targeting), AoE effects (Ward prevents targeting, not untargeted effects).
 
-*(Full keyword interaction matrix in `01-battle-mechanics.md` Section 3.)*
+**Faction keyword affinities:**
+- Celestial Crusade: Shield, Ward, Taunt (protective formation play)
+- The Endless: Lifesteal, Deathtouch, Haste (aggressive attrition)
+
+*(Full 9x9 keyword interaction matrix in `01-battle-mechanics.md` Section 3 and `PHASE1B-mechanics.md` Section 8.)*
 
 ---
 
@@ -778,7 +861,7 @@ Base card templates are generated in batches before launch. Each batch:
 5. Approved cards become CardTemplates with `approved_at` and `approved_by` stamps.
 6. Composite final card image (art + frame + stats overlay).
 
-Estimated batch cost for 3 factions (~300-375 cards): ~$10 in image generation + ~$0.04 in text generation = **~$10 total.**
+Estimated batch cost for 5 factions (~450-625 cards) + 48 Planar Ruins images: ~$18 in image generation + ~$0.07 in text generation = **~$18 total.**
 
 ### AI Generation Queue & Status
 
@@ -1022,7 +1105,7 @@ Achievements provide long-term goals and collection milestones. They award XP, c
 
 - **Evolution** — "Evolve your first card to Uncommon," "Evolve a card to Legendary," "Evolve 10 cards to Rare," "Evolve a card with 4 Chaos evolutions," "Evolve a card with 4 Order evolutions," "Evolve a card with a 2/2 split."
 - **Battle** — "Win your first game," "Win 100 games," "Win 10 games in a row," "Win a game at 1 HP," "Win a game without playing a spell."
-- **Collection** — "Own 50 cards," "Own cards in 3 factions," "Own a card with 4 modifiers that are all the same attunement."
+- **Collection** — "Own 50 cards," "Own cards in all 5 factions," "Own a card with 4 modifiers that are all the same attunement."
 - **Chaos Roll** — "Roll a natural 1," "Roll a natural 20," "Trigger 5 Chaos Events in a single game," "Have a card with 3 attuned bonuses all active at once."
 - **Social** — "Add a friend," "Win a friendly match," "View another player's profile."
 
@@ -1061,7 +1144,7 @@ The deck builder is where strategy crystallizes. It must make it easy to underst
 - All cards in your collection for the selected faction that are NOT in the deck.
 - Same compact card display as the deck panel.
 - **Filter bar** with:
-  - Card type (Creature / Spell / Stabilizer)
+  - Card type (Creature / Spell / Stabilizer / Planar Ruin)
   - Evolution tier (Common through Legendary)
   - Mana cost range
   - Attunement leaning (mostly Order / mostly Chaos / balanced / any)
@@ -1084,7 +1167,7 @@ A persistent bar (or expandable panel) that updates live as you add/remove cards
 - **Trigger breakdown** — Total Order triggers across all cards vs. total Chaos triggers. Shows how much the deck benefits from each event type.
 - **Modifier attunement breakdown** — Count of Order-attuned vs. Chaos-attuned modifiers across the deck.
 - **Keyword distribution** — How many creatures have Shield, Lifesteal, Flying, etc.
-- **Type distribution** — Creatures vs. Spells vs. Stabilizers.
+- **Type distribution** — Creatures vs. Spells vs. Stabilizers vs. Planar Ruins.
 - **Estimated instability range** — Low (1-2 creatures out) through high (4-5 creatures out) instability estimate based on deck composition and avatar modifier.
 
 ### Deck Slots
@@ -1234,7 +1317,7 @@ These are post-launch features but the architecture should account for them (gam
 ### First Launch Flow
 
 1. **Intro cinematic** — Short (30-60 second) motion graphic / illustrated sequence establishing the lore. The world, the chaos rifts, the transformation. Skippable.
-2. **Choose your starter faction** — The three factions are presented with sample cards and a brief personality description. This is the player's first meaningful choice. The player gets a starter deck in their chosen faction.
+2. **Choose your starter faction** — The five factions are presented with sample cards and a brief personality description. This is the player's first meaningful choice. The player gets a starter deck in their chosen faction.
 3. **Tutorial match** — A guided game against AI that teaches:
    - Playing creatures and spells
    - The chaos roll and how instability works
@@ -1249,13 +1332,16 @@ These are post-launch features but the architecture should account for them (gam
 
 Each faction's starter deck is a pre-built 20-card deck with:
 
-- 14 Common creatures (variety of mana costs)
+- 13 Common creatures (variety of mana costs)
 - 4 Common spells (1 removal, 1 buff, 1 heal, 1 draw)
 - 2 Common stabilizer/manipulation cards (1 Order-leaning, 1 Chaos-leaning)
+- 1 Neutral Planar Ruin (introduces the ruin mechanic during trial games)
 
 Plus a handful of additional cards not in the deck (so the player has something to swap in from the collection immediately).
 
 The starter deck is deliberately imperfect — good enough to play, obviously improvable. This teaches the player that deckbuilding matters.
+
+*(Celestial and Endless starter deck card lists in `PHASE1B-mechanics.md` Sections 9-10.)*
 
 ---
 
@@ -1268,7 +1354,7 @@ The starter deck is deliberately imperfect — good enough to play, obviously im
 - **Battle** — Dynamic intensity. Builds as the game progresses. Shifts tone on Chaos vs. Order event triggers (brief musical stings: dissonant for Chaos, harmonic for Order).
 - **Evolution** — Ritual atmosphere. Building tension during the channel, climactic swell on the reveal.
 
-Each faction optionally overrides the battle music with its own theme. The Demonic Kingdoms gets ominous orchestral. The Ironwright Collective gets driving industrial. The Fey Courts gets ethereal woodwind and strings.
+Each faction overrides the battle music with its own theme. The Ironwright Collective gets driving industrial percussion and hydraulic rhythms. The Fey Courts gets ethereal woodwind and strings. The Demonic Kingdoms gets ominous orchestral with volcanic percussion. The Celestial Crusade gets choral hymns and divine brass. The Endless gets mournful strings and spectral ambience.
 
 ### Sound Effects (Priority Asset Purchases)
 
@@ -1319,11 +1405,11 @@ Accessible from the Profile tab or a gear icon in the header.
 ## 25. Open Design Questions
 
 - [x] ~~Full Order and Chaos event lists~~ — 8 Order + 8 Chaos events fully designed with effects, targeting, and design notes (see `01-battle-mechanics.md` Sections 8-9).
-- [x] ~~Complete keyword list and interaction rules~~ — 7 keywords with full interaction matrix (see `01-battle-mechanics.md` Section 3)
+- [x] ~~Complete keyword list and interaction rules~~ — 9 keywords (Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward) with full 9x9 interaction matrix (see `01-battle-mechanics.md` Section 3 and `PHASE1B-mechanics.md` Section 8)
 - [x] ~~Exact stat ranges by evolution tier~~ — Proportional PP scaling defined (see `01-battle-mechanics.md` Section 1)
-- [x] ~~Full modifier pool structure~~ — 240 modifiers across 12 pools × (universal + 3 factions). Individual definitions pending.
-- [x] ~~Avatar instability values~~ — 6 avatars defined with exact instability modifiers (see Section 10 above).
-- [x] ~~Avatar names and instability values~~ — names and gameplay values locked. Visual designs are parallel content work.
+- [x] ~~Full modifier pool structure~~ — 336 modifiers across 12 pools x (universal + 5 factions). Celestial (CF01-CF48), Endless (EF01-EF48), rethemed Ironwright (IF01-IF48) defined in `PHASE1B-mechanics.md`.
+- [x] ~~Avatar instability values~~ — 10 avatars defined with exact instability modifiers (1 per sub-faction, see Section 10 above and `11-lore-bible.md` Section 5).
+- [x] ~~Avatar names and instability values~~ — names, backstories, and gameplay values locked. Visual designs are parallel content work. Full profiles in `11-lore-bible.md`.
 - [x] ~~Evolution chaos energy thresholds~~ — Exact values: 15/30/50/75 energy. 2 per win, 1 per loss. ~113 games to Legendary (see Section 4).
 - [x] ~~Stabilizer/manipulation card designs~~ — 5 board stabilizers + 2 manipulation spells defined with costs, HP, and effects (see `01-battle-mechanics.md` Section 11).
 - [x] ~~Spell framework~~ — 5 spell categories defined, design constraints locked, Chaos Spark ruling confirmed (see `01-battle-mechanics.md` Section 10).
@@ -1331,7 +1417,7 @@ Accessible from the Profile tab or a gear icon in the header.
 - [x] ~~Card data model and schema~~ — Complete with faction support (see `02-card-data-model.md`)
 - [x] ~~Card trading~~ — No trading. Self-contained collections. No real money on individual cards.
 - [x] ~~Modifier pool and selection system~~ — PP-based pools with subscription-tiered selection depth.
-- [x] ~~Faction system~~ — 3 launch factions with exclusive mechanics (Augment/Bond/Corruption).
+- [x] ~~Faction system~~ — 5 launch factions with exclusive mechanics (Augment/Bond/Corruption/Exalt/Persist). 2 sub-factions each, 10 total.
 - [x] ~~Card acquisition economy~~ — Chaos Dust currency, card packs, onboarding flow (see `01-battle-mechanics.md` Section 12).
 - [ ] Draft/sealed format design
 - [ ] Anti-cheat and generation abuse prevention
@@ -1346,8 +1432,8 @@ Accessible from the Profile tab or a gear icon in the header.
 - [ ] AI generation fallback and error handling edge cases
 - [ ] FLUX Kontext denoising strength values for Order vs. Chaos evolutions
 - [x] ~~Turn structure~~ — Full phase-by-phase specification with blocking rules, timer rules, keyword interactions, and worked example (see `01-battle-mechanics.md` Section 3).
-- [ ] Trial deck card lists (20 Commons × 3 factions)
-- [ ] Full modifier content authoring (240 individual definitions)
+- [ ] Trial deck card lists (20 Commons x 5 factions). Celestial and Endless starter decks designed in `PHASE1B-mechanics.md` Sections 9-10.
+- [ ] Full modifier content authoring (336 individual definitions). Celestial (CF01-CF48), Endless (EF01-EF48), rethemed Ironwright (IF01-IF48) complete in `PHASE1B-mechanics.md`. Fey and Demonic modifiers pending retheme review.
 - [x] ~~Triggered ability framework~~ — 7 trigger types, 8 effect types, 11 targeting rules, 4 duration types, power scaling by tier, resolution order (see `01-battle-mechanics.md` Section 7).
 
 ---
@@ -1366,12 +1452,12 @@ Tracking confirmed design decisions and when they were made, for reference.
 | Modifiers CAN adjust instability | Modifiers can include +/- instability adjustments, costing PP from the modifier budget. | ✅ Confirmed |
 | Chaos mote cost is fixed | CM cost never changes through evolution. Only stats and modifiers increase. | ✅ Confirmed |
 | Proportional PP scaling | PP_at_tier = base_PP × tier_multiplier. 1.0× at Common → 3.0× at Legendary. | ✅ Confirmed |
-| Three launch factions | Ironwright Collective (Augment), The Fey Courts (Bond), The Demonic Kingdoms (Corruption) | ✅ Confirmed |
-| Faction-exclusive modifiers | Each faction has 48 modifiers (4 per pool × 12 pools) that reference the faction's exclusive mechanic | ✅ Confirmed |
+| Five launch factions | Ironwright Collective (Augment), The Fey Courts (Bond), The Demonic Kingdoms (Corruption), The Celestial Crusade (Exalt), The Endless (Persist). 2 sub-factions each, 10 total. | ✅ Confirmed |
+| Faction-exclusive modifiers | Each faction has 48 modifiers (4 per pool x 12 pools) that reference the faction's exclusive mechanic. 5 factions x 48 = 240 faction modifiers + 96 universal = 336 total. | ✅ Confirmed |
 | No real money on individual cards | Subscriptions only. Cards earned via Chaos Dust (gameplay currency). | ✅ Confirmed |
 | Chaos Dust economy | Single in-game currency for cards, shards, avatars. Earned from games, quests, milestones. | ✅ Confirmed |
 | Cross-faction unlocking | Buy a 150-Dust card pack from another faction to unlock it permanently. | ✅ Confirmed |
-| Onboarding: trial decks | Player tries 3 faction trial decks (20 Commons each), commits to one. | ✅ Confirmed |
+| Onboarding: trial decks | Player tries 5 faction trial decks (20 Commons each), commits to one. | ✅ Confirmed |
 | Paid asset budget | Under $100 total for particles, SFX, and similar polish assets | ✅ Confirmed |
 | Visual philosophy | Clean and stylish, Balatro/Slay the Spire tier, not Hearthstone AAA | ✅ Confirmed |
 | MVP approach | iOS only via Xcode Cloud | ✅ Confirmed |
@@ -1396,7 +1482,7 @@ Tracking confirmed design decisions and when they were made, for reference.
 | No freeform prompt control | All tiers pick from curated visual prompt modifier lists. No typing. Prevents abuse, ensures quality. | ✅ Confirmed |
 | Planar Shard quality tiers | Planar (free), Refined (mid), Prismatic (high). Determines resolution, model variant, visual modifier pool size, and generation passes. | ✅ Confirmed |
 | No AI calls during battle | Event text prewritten. Zero API latency risk in gameplay. | ✅ Confirmed |
-| 7 keywords | Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing | ✅ Confirmed |
+| 9 keywords | Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward | ✅ Confirmed |
 | Combat model | MTG-style: declare attackers → defender assigns blockers → simultaneous damage. 1-to-1 blocking (no gang blocking). | ✅ Confirmed |
 | Spell timing | Main phase only (Hearthstone model). No response windows during combat. Fast, clean, iOS-friendly. | ✅ Confirmed |
 | P1 skips attack turn 1 | Player 1 cannot attack on their first turn. Standard first-player balance tool. | ✅ Confirmed |
@@ -1407,13 +1493,19 @@ Tracking confirmed design decisions and when they were made, for reference.
 | Mutual kill = active player loses | If both players reach 0 HP simultaneously, the active player (attacker) loses. | ✅ Confirmed |
 | 8 Order events | Mending Light, Planar Ward, Steady Growth, Clarity, Fortify, Sanctuary, Bulwark, Harmonize. Predictable targeting, modest power, compounding. | ✅ Confirmed |
 | 8 Chaos events | Surge, Wildfire, Upheaval, Frenzy, Rift Bolt, Chaos Siphon, Maelstrom, Overcharge. Random targeting, high power, 3/8 can backfire. | ✅ Confirmed |
-| 7 trigger types | ON_ORDER, ON_CHAOS, ON_PLAY, ON_DEATH, ON_DAMAGE_TAKEN, ON_ATTACK, ON_BLOCK. | ✅ Confirmed |
+| 7 trigger types | ON_ORDER, ON_CHAOS, ON_PLAY, ON_DEATH, ON_DAMAGE_TAKEN, ON_ATTACK, ON_BLOCK. ON_DEATH is particularly important for Persist (Endless) mechanic. | ✅ Confirmed |
 | Triggered ability resolution: left-to-right | Multiple abilities fire slot 1→5. Dead creatures don't fire. | ✅ Confirmed |
 | Spells: main phase only, no evolution | Spells are static cards. 5 categories: Buff, Damage, Face Damage, Heal, Utility. ~15-20 per faction. | ✅ Confirmed |
 | Chaos Spark = spell | Costs 0, grants +1 mana, counts as spell cast. Cannot be mulliganed. | ✅ Confirmed |
 | Stabilizers: have HP, no ATK, can't attack/block | Occupy creature slots. Continuous aura effects. Can be destroyed. 0 base instability. Don't evolve. | ✅ Confirmed |
 | 5 stabilizers + 2 manipulation spells at launch | Chaos Anchor, Warding Pillar, Chaos Rift, Entropy Engine, Void Lens (board) + Binding Ward, Entropy Spike (spells). All universal. | ✅ Confirmed |
-| 6 launch avatars | Aldric (-5), Vex (-2), Sylara (-5), Morrigan (-1), Kael (-4), Lilith (-2). 2 per faction. No balanced option at launch. | ✅ Confirmed |
+| 10 launch avatars | Korvax (-5), Vex (-3), Sylara (-5), Morrigan (-1), Kael (-4), Lilith (-2), Serevain (-6), Ophaniel (-1), Vothrak (-3), Thessaly (-2). 1 per sub-faction (2 per faction). | ✅ Confirmed |
+| Ironwright retheme | Victorian steampunk replaced with brutalist space-industrial empire. Concrete, iron, hydraulics, rebar, void industry. NOT brass/gears/steam/clockwork/Victorian. | ✅ Confirmed |
+| Planar Ruins card type | Ancient structures, high HP/0 ATK, passive benefits, destruction penalties, neutral-to-faction evolution. Max 2 in deck, max 1 on field. 8 neutral archetypes, 40 faction variants. | ✅ Confirmed |
+| Exalt mechanic (Celestial) | Conditional aura effects benefiting all friendly creatures when board conditions met (creature count thresholds). Go-wide formation play. Collapses to board wipes. | ✅ Confirmed |
+| Persist mechanic (Endless) | Death triggers and lingering effects. Every kill against Endless is pyrrhic. Countered by fast aggro and effects preventing death triggers. | ✅ Confirmed |
+| Haste keyword | Creature can attack the turn it is played. Enables tempo and aggression. | ✅ Confirmed |
+| Ward keyword | Cannot be targeted by opponent modifier effects for 1 turn after deployment. Protects high-value creatures. | ✅ Confirmed |
 | Evolution energy: exact values | 15/30/50/75 energy per tier. 2 per win, 1 per loss. All 20 deck cards earn simultaneously. ~113 games to Legendary. | ✅ Confirmed |
 | Energy for all deck cards | All 20 cards in deck earn energy per game, whether drawn or not. Avoids optimization of only playing unique cards. | ✅ Confirmed |
 
@@ -1424,17 +1516,21 @@ Tracking confirmed design decisions and when they were made, for reference.
 | File | Contents | Status |
 |---|---|---|
 | `00-game-design-master.md` | This document — all systems, UI, and design decisions | ✅ Active |
-| `01-battle-mechanics.md` | PP scaling, instability, turn structure & combat (full spec), keywords (MTG-style + Taunt), factions (Augment/Bond/Corruption), modifier pools, triggered abilities (7 trigger types, full framework), Order events (8, fully designed), Chaos events (8, fully designed), spell framework, stabilizer framework (5 board + 2 spells), stat ranges, card acquisition, balance rules | ✅ Complete |
-| `02-card-data-model.md` | Card schema, modifier schema (with faction/PP pool fields), evolution tracking, attunement data, faction entity, game state, player model (with Chaos Dust + faction fields), match records, data flow operations | ✅ Complete |
-| `03-prompt-templates.md` | Prompt architecture, FLUX Kontext prompt construction, GPT-4o Mini faction voice prompts, evolution art prompts, subscriber visual modifier lists by tier | 🔲 Not started |
-| `04-progression-economy.md` | XP curves, drop rates, Chaos Dust economy math, quest design | 🔲 Not started |
-| `05-content-pipeline.md` | Batch generation tooling, QA, seasonal releases | 🔲 Not started |
-| `06-technical-architecture.md` | System design, APIs, data flow, infra | 🔲 Not started |
-| `07-ui-ux-specs.md` | Wireframes and interaction specs (detailed from Section 14 of this doc) | 🔲 Not started |
-| `08-audio-design.md` | Music, SFX, per-faction audio themes | 🔲 Not started |
-| `09-monetization-details.md` | Subscription tiers, pricing, Chaos Dust economy, conversion funnels | 🔲 Not started |
+| `01-battle-mechanics.md` | PP scaling, instability, turn structure & combat (full spec), keywords (MTG-style + Taunt + Haste + Ward), factions (Augment/Bond/Corruption/Exalt/Persist), modifier pools, triggered abilities (7 trigger types, full framework), Order events (8, fully designed), Chaos events (8, fully designed), spell framework, stabilizer framework (5 board + 2 spells), Planar Ruins battlefield rules, stat ranges, card acquisition, balance rules | ✅ Complete (pending expansion update) |
+| `02-card-data-model.md` | Card schema, modifier schema (with faction/PP pool fields), evolution tracking, attunement data, faction entity (5 factions), game state, player model (with Chaos Dust + faction fields), match records, Planar Ruins data model, data flow operations | ✅ Complete (pending expansion update) |
+| `03-prompt-templates.md` | Prompt architecture, FLUX Kontext prompt construction, GPT-4o Mini faction voice prompts (5 factions), evolution art prompts, Planar Ruins art prompts, subscriber visual modifier lists by tier | 🔲 Not started |
+| `04-progression-economy.md` | XP curves, drop rates, Chaos Dust economy math, quest design, Planar Ruins acquisition | 🔲 Not started |
+| `05-content-pipeline.md` | Batch generation tooling, QA, seasonal releases, 5-faction content pipeline, ruin generation pipeline | 🔲 Not started |
+| `06-technical-architecture.md` | System design, APIs, data flow, infra, ruin battlefield mechanics | 🔲 Not started |
+| `07-ui-ux-specs.md` | Wireframes and interaction specs (detailed from Section 14 of this doc), 5-faction picker, ruin UI | 🔲 Not started |
+| `08-audio-design.md` | Music, SFX, per-faction audio themes (5 factions), ruin SFX | 🔲 Not started |
+| `09-monetization-details.md` | Subscription tiers, pricing, Chaos Dust economy, conversion funnels, ruin cosmetics | 🔲 Not started |
 | `10-prd.md` | Formal PRD for engineering handoff | 🔲 Not started |
-| `11-claude-code-agents.md` | Sub-agent task breakdown for Claude Code | 🔲 Not started |
+| `11-lore-bible.md` | Universe history (Great Fracture timeline), Ancient Builders, 5 faction histories, 10 sub-faction profiles, 10 avatar profiles (backstories, personalities, art prompts), inter-faction dynamics (5x5 matrix), flavor text voice guide (per faction), prompt templates (names, flavor text, evolution narratives, lore snippets, ruin discovery stories) | ✅ Complete (v1.0) |
+| `12-art-direction.md` | Complete art inventory (304-309 pre-launch assets), AI-generated vs purchased decision matrix, app background art prompts, Planar Ruins art direction, Season 1 visual identity, asset purchase research, faction art bible sections (Celestial, Endless, rethemed Ironwright) | ✅ Complete (v1.0) |
+| `PHASE1B-mechanics.md` | Exalt mechanic rules, Persist mechanic rules, Haste/Ward keyword rules, 9x9 keyword interaction matrix, 144 faction modifiers (CF01-CF48 Celestial, EF01-EF48 Endless, IF01-IF48 rethemed Ironwright), Celestial/Endless starter decks, balance analysis (5 mechanics x 9 keywords) | ✅ Complete |
+| `PHASE1C-planar-ruins.md` | Full Planar Ruins system: 8 neutral archetypes, 40 faction evolutions, balance design, turn structure integration, effect pool design, art prompt templates, data model specification | ✅ Complete |
+| `PLAN-faction-expansion.md` | Master plan for faction expansion: 3-to-5 factions, Ironwright retheme, new keywords, Planar Ruins, avatars, color palettes, phased implementation plan, agent assignments | ✅ Active |
 
 ---
 
@@ -1442,4 +1538,5 @@ Tracking confirmed design decisions and when they were made, for reference.
 
 | Date | Change | Section(s) |
 |---|---|---|
+| 2026-02-19 | v4.0 — Faction expansion: 3 to 5 factions (added The Celestial Crusade with Exalt mechanic and The Endless with Persist mechanic). Ironwright Collective rethemed from Victorian steampunk to brutalist space-industrial empire. All factions trimmed to 2 sub-factions each (10 total). Keywords expanded 7 to 9 (added Haste, Ward). Planar Ruins added as new card type (8 neutral archetypes, 40 faction-evolved variants). Avatars expanded 6 to 10 (1 per sub-faction; Aldric retired, Korvax added; 4 new avatars for Celestial/Endless). Color palettes added for all 5 factions. Art references expanded: William Blake (Celestial), Francisco Goya (Endless), Piranesi (Ironwright retheme). Modifier count updated 240 to 336. Document index updated with 11-lore-bible.md, 12-art-direction.md, PHASE1B-mechanics.md, PHASE1C-planar-ruins.md, PLAN-faction-expansion.md. All "3 factions" references updated to "5 factions" throughout. | 1, 2, 3, 5, 8, 10, 11, 11a (new), 12, 13a, 14, 15, 16, 21, 22, 25, 26, 27 |
 | 2026-02-16 | Platform-alignment pass: updated Section 13 infrastructure table from "React Native / Flutter / PWA with Phaser.js" to "Native iOS app (Swift + SwiftUI + SpriteKit)"; changed image gen provider from "Replicate or Fal.ai" to "fal.ai"; updated platform from "iOS primary, web prototype first" to "iOS only (Swift/SwiftUI/SpriteKit) via Xcode Cloud"; replaced "React Native / Flutter UI" with "Swift + SwiftUI"; replaced "Phaser.js, PixiJS, or CSS" particle references with "SpriteKit"; updated animation references from "CSS transforms, Lottie" to "SpriteKit actions"; changed Decisions Log entries: MVP approach to "iOS only via Xcode Cloud", AI image model provider to "fal.ai", spell timing to "iOS-friendly"; updated generic "mobile" references to "iOS" or "iOS mobile" throughout Sections 8, 14, 16, and 26. No game mechanics, numbers, or design decisions were changed. | 13, 13a (MVP Visual Approach), 8, 14, 16, 26 |
