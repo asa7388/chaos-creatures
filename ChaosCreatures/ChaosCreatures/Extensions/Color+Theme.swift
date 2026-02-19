@@ -9,7 +9,7 @@ import UIKit
 // MARK: - Faction Colors
 
 extension Color {
-    // Ironwright Collective -- steampunk brass/industrial
+    // Ironwright Collective -- brutalist space-industrial
     static let ironwright = Color(hex: "#C9A84C")
     static let ironwrightDark = Color(hex: "#8B6914")
     static let ironwrightAccent = Color(hex: "#D4AF37")

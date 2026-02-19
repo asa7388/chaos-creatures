@@ -19,7 +19,7 @@ App Store Connect requires screenshots at specific display sizes. At minimum, on
 - Use a player account with a chosen faction (not the onboarding state)
 - Ensure the player has a realistic username (not "Player 1" or "Test User")
 - Have some Chaos Dust and shards visible in the header
-- Show the faction's visual theme (Ironwright Collective recommended for first screenshot — brass/steampunk aesthetic stands out)
+- Show the faction's visual theme (Ironwright Collective recommended for first screenshot — brutalist space-industrial aesthetic stands out)
 
 **Overlay text suggestion**: "Roll the Chaos Die. Shape Your Fate."
 

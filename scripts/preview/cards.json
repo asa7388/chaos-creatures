@@ -527,12 +527,12 @@
     "sizeKB": 1530
   },
   {
-    "name": "Steam Phantom",
+    "name": "Reactor Phantom",
     "faction": "IRONWRIGHT",
     "factionShort": "Iron",
     "rarity": "common",
     "cardType": "Creature",
-    "typeLine": "Steam Phantom",
+    "typeLine": "Reactor Phantom",
     "manaCost": 2,
     "attack": null,
     "health": null,
@@ -542,7 +542,7 @@
     "flavorText": "",
     "artFile": "pool/ironwright/BASE-ironwright-pool-14.png",
     "type": "base",
-    "label": "Steam Phantom [CM2] NARRATIVE_AFTERMATH",
+    "label": "Reactor Phantom [CM2] NARRATIVE_AFTERMATH",
     "sortKey": "IRONWRIGHT-02-14",
     "composition": "NARRATIVE_AFTERMATH",
     "sizeKB": 1077
@@ -569,12 +569,12 @@
     "sizeKB": 0
   },
   {
-    "name": "Clockwork Surgeon",
+    "name": "Void-Dock Surgeon",
     "faction": "IRONWRIGHT",
     "factionShort": "Iron",
     "rarity": "common",
     "cardType": "Creature",
-    "typeLine": "Clockwork Surgeon",
+    "typeLine": "Void-Dock Surgeon",
     "manaCost": 3,
     "attack": null,
     "health": null,
@@ -584,7 +584,7 @@
     "flavorText": "",
     "artFile": "pool/ironwright/BASE-ironwright-pool-04.png",
     "type": "base",
-    "label": "Clockwork Surgeon [CM3] ACTION_LEAP",
+    "label": "Void-Dock Surgeon [CM3] ACTION_LEAP",
     "sortKey": "IRONWRIGHT-03-04",
     "composition": "ACTION_LEAP",
     "sizeKB": 1382
@@ -632,12 +632,12 @@
     "sizeKB": 1493
   },
   {
-    "name": "Boiler Knight",
+    "name": "Reactor Knight",
     "faction": "IRONWRIGHT",
     "factionShort": "Iron",
     "rarity": "common",
     "cardType": "Creature",
-    "typeLine": "Boiler Knight",
+    "typeLine": "Reactor Knight",
     "manaCost": 4,
     "attack": null,
     "health": null,
@@ -648,7 +648,7 @@
     "flavorText": "",
     "artFile": "pool/ironwright/BASE-ironwright-pool-10.png",
     "type": "base",
-    "label": "Boiler Knight [CM4] ACTION_COMMAND",
+    "label": "Reactor Knight [CM4] ACTION_COMMAND",
     "sortKey": "IRONWRIGHT-04-10",
     "composition": "ACTION_COMMAND",
     "sizeKB": 1260
@@ -675,12 +675,12 @@
     "sizeKB": 1380
   },
   {
-    "name": "Cogwheel Prophet",
+    "name": "Reactor Prophet",
     "faction": "IRONWRIGHT",
     "factionShort": "Iron",
     "rarity": "common",
     "cardType": "Creature",
-    "typeLine": "Cogwheel Prophet",
+    "typeLine": "Reactor Prophet",
     "manaCost": 5,
     "attack": null,
     "health": null,
@@ -690,7 +690,7 @@
     "flavorText": "",
     "artFile": "pool/ironwright/BASE-ironwright-pool-11.png",
     "type": "base",
-    "label": "Cogwheel Prophet [CM5] PORTRAIT_PROFILE",
+    "label": "Reactor Prophet [CM5] PORTRAIT_PROFILE",
     "sortKey": "IRONWRIGHT-05-11",
     "composition": "PORTRAIT_PROFILE",
     "sizeKB": 1373

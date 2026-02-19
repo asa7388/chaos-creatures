@@ -92,7 +92,7 @@ Total: 12 music stems (3 factions x 4 stems).
 
 **Option 1: Suno.ai (Recommended, Free Tier)**
 - Generate faction-themed battle loops using Suno.ai's free tier
-- Ironwright: Industrial/steampunk orchestral, heavy brass, clanking gears
+- Ironwright: Industrial/space-industrial orchestral, deep drones, hydraulic rhythms, reactor hums
 - Fey Courts: Ethereal/Celtic, woodwinds, harps, nature sounds
 - Demonic Kingdoms: Dark orchestral, heavy drums, distorted strings, choral
 - Export each as WAV, then convert to CAF: `afconvert input.wav output.caf -d LEI16 -f caff`

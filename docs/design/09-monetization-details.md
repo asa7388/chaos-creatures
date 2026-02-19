@@ -1112,7 +1112,7 @@ The battlefield is the visual environment where battle takes place (background, 
 - 3 premium boards per faction (15 total): purchasable
 
 **Premium board themes:**
-- Ironwright: Clockwork Foundry (rotating gears, steam vents), Crystal Manufactory (prismatic light), Warforge Arena (battle-scarred metal)
+- Ironwright: Orbital Shipyard (void-dock scaffolding, reactor glow), Star-Forge Interior (molten iron cascades), Gravity-Well Factory (industrial pressure, rebar pillars)
 - Fey: Moonlit Glade (bioluminescent flora), Thornwood Court (dark twisted trees), Enchanted Hollow (drifting petals)
 - Demonic: Obsidian Throne Room (hellfire braziers), Blood Ritual Chamber (pulsing runes), Abyssal Rift (void energy)
 - Celestial: Radiant Sanctum (golden light columns), Hall of Judgment (marble and stained glass), Astral Observatory (rotating celestial spheres)

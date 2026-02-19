@@ -11,7 +11,7 @@ You are a game audio designer. Produce `docs/design/08-audio-design.md`.
 
 Read CLAUDE.md first for client technology, budget constraint, and build context.
 
-Read `docs/design/00-game-design-master.md` Section 15 (Audio — if present) and Section 14 (UI — for screen context). Read Section 2 (Faction System) for faction identities: Ironwright (steampunk), Fey Courts (ethereal/nature), Demonic Kingdoms (dark/visceral).
+Read `docs/design/00-game-design-master.md` Section 15 (Audio — if present) and Section 14 (UI — for screen context). Read Section 2 (Faction System) for faction identities: Ironwright (brutalist space-industrial), Fey Courts (ethereal/nature), Demonic Kingdoms (dark/visceral), Celestial Crusade (divine/righteous), The Endless (undead/spectral).
 
 ## Technology Stack (Decided)
 
@@ -25,9 +25,11 @@ Read `docs/design/00-game-design-master.md` Section 15 (Audio — if present) an
 ## What You Must Produce
 
 ### 1. Audio Identity Per Faction
-- Ironwright: brass instruments, mechanical rhythms, steam hisses, anvil strikes, clockwork
+- Ironwright: deep industrial drones, hydraulic pistons, void-forge hums, massive iron impacts, reactor pulses
 - Fey Courts: woodwinds, harps, nature ambience, crystal chimes, whispered vocals
 - Demonic Kingdoms: deep brass, war drums, guttural chants, crackling fire, bone percussion
+- Celestial Crusade: cathedral organs, angelic choirs, divine bells, radiant brass fanfares, holy strings
+- The Endless: ghostly whispers, bone rattles, spectral wails, echoing voids, necrotic drones
 
 ### 2. Music Design
 - Main menu theme, battle music per faction, evolution ceremony music, shop/collection ambient

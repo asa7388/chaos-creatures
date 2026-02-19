@@ -15,28 +15,37 @@ import { describe, it, expect } from 'vitest';
 // (In production, these would be imported from the shared module)
 
 const STYLE_ANCHOR =
-  'fantasy card game art, painterly digital illustration, semi-realistic style, ' +
-  'rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, ' +
-  'sharp focus on subject, subject centered and filling frame, card-portrait composition ' +
-  '3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality';
+  'fantasy creature illustration in the style of Gustave Dore engravings and N.C. Wyeth oil paintings, ' +
+  'traditional media on illustration board, thick acrylic and ink on textured watercolor paper, ' +
+  'heavy visible impasto brushstrokes, dry brush ink linework, crosshatching in shadow areas, ' +
+  'rough sketchy rendering with areas left intentionally unfinished and raw, ' +
+  'dramatic chiaroscuro lighting with a single harsh directional light source, deep blacks, ' +
+  'muted earth tones, raw umber and burnt sienna, desaturated and muddy palette, ' +
+  'visible paper grain and canvas texture throughout, paint cracking at edges, ' +
+  'dark moody atmospheric illustration, raw unpolished asymmetric anatomy, ' +
+  '3:4 portrait ratio, no text no borders no UI no watermarks, ' +
+  'NOT digital art, NOT 3D render, NOT smooth, NOT airbrushed, NOT photorealistic, NOT CGI, NOT clean lines';
 
 const FACTION_PREFIXES: Record<string, string> = {
   IRONWRIGHT:
-    'steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, ' +
-    'riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, ' +
-    'warm metallic tones with amber and rust highlights, glowing amber lenses',
+    'brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar, ' +
+    'hydraulic pistons, orbital shipyard machinery, reactor glow, void-forge exhaust, ' +
+    'in the style of Piranesi impossible architecture and John Martin apocalyptic industrial scale',
   FEY_COURTS:
-    'ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and glowing fungi, ' +
-    'living wood and vine armor, mystical natural magic, soft moonlight and starlight illumination, ' +
-    'organic flowing forms, moss and crystal accents, cool nature palette with silver and violet highlights',
+    'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
+    'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
+    'overgrown with moss and lichen, more Brothers Grimm than Disney, ' +
+    'in the style of Arthur Rackham twisted ink drawings and Edmund Dulac muted watercolors',
   DEMONIC:
-    'demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, ' +
-    'infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, ' +
-    'blood-red and deep purple-black tones, visceral menacing presence',
+    'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
+    'lit from below by hellfire glow, deep shadow obscuring details, ' +
+    'burnt crimson and charcoal black palette, oppressive and heavy, ' +
+    'in the style of Gustave Dore Dante Inferno engravings and Hieronymus Bosch hellscape paintings',
   DEMONIC_KINGDOMS:
-    'demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, ' +
-    'infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, ' +
-    'blood-red and deep purple-black tones, visceral menacing presence',
+    'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
+    'lit from below by hellfire glow, deep shadow obscuring details, ' +
+    'burnt crimson and charcoal black palette, oppressive and heavy, ' +
+    'in the style of Gustave Dore Dante Inferno engravings and Hieronymus Bosch hellscape paintings',
 };
 
 const NEGATIVE_PROMPT_BASE =
@@ -57,17 +66,17 @@ const CHAOS_INSTRUCTION =
   'Dramatic transformation \u2014 retain core identity but push toward the extreme.';
 
 const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
-  IRONWRIGHT: 'steampunk industrial brass-and-gears',
-  FEY_COURTS: 'ethereal fey nature bioluminescent',
-  DEMONIC: 'dark infernal demonic hellfire',
-  DEMONIC_KINGDOMS: 'dark infernal demonic hellfire',
+  IRONWRIGHT: 'brutalist space-industrial construct, poured concrete and cold-rolled iron, in the style of Piranesi and John Martin',
+  FEY_COURTS: 'dark fey forest creature, twisted ancient wood, in the style of Arthur Rackham and Edmund Dulac',
+  DEMONIC: 'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
+  DEMONIC_KINGDOMS: 'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
 };
 
 const MODIFIER_PROMPT_DESCRIPTIONS: Record<string, string> = {
   U01: 'eyes now glow with intense ethereal light in a contrasting color to the faction palette',
   U02: 'visible battle damage across the surface \u2014 dents, cracks, scorch marks, scratches earned through combat',
-  IF01: 'additional reinforced gear clusters installed at key joints, oversized and heavy-duty',
-  IF02: 'multiple high-pressure steam vents erupting from the chassis in dramatic plumes',
+  IF01: 'additional reinforced rebar-and-iron bracing installed at key joints, oversized and heavy-duty',
+  IF02: 'multiple high-pressure reactor exhaust vents erupting from the chassis in dramatic plumes',
   FF01: 'small flowers blooming across the vine and bark armor in symmetrical natural patterns',
   DF01: 'the creature engulfed in a hellfire corona, active flames licking across corrupted flesh and armor',
 };
@@ -109,26 +118,25 @@ function getHistoryContext(history: EvolutionRecord[]): string {
 describe('Prompt Builder', () => {
   describe('Style Anchor', () => {
     it('should start with the correct style keywords', () => {
-      expect(STYLE_ANCHOR).toContain('fantasy card game art');
-      expect(STYLE_ANCHOR).toContain('painterly digital illustration');
-      expect(STYLE_ANCHOR).toContain('semi-realistic style');
+      expect(STYLE_ANCHOR).toContain('fantasy creature illustration');
+      expect(STYLE_ANCHOR).toContain('Gustave Dore');
+      expect(STYLE_ANCHOR).toContain('N.C. Wyeth');
     });
 
     it('should include no-text and no-border instructions', () => {
       expect(STYLE_ANCHOR).toContain('no text');
       expect(STYLE_ANCHOR).toContain('no borders');
-      expect(STYLE_ANCHOR).toContain('no frames');
-      expect(STYLE_ANCHOR).toContain('no UI elements');
+      expect(STYLE_ANCHOR).toContain('no UI');
       expect(STYLE_ANCHOR).toContain('no watermarks');
     });
 
     it('should specify 3:4 aspect ratio', () => {
-      expect(STYLE_ANCHOR).toContain('3:4 aspect ratio');
+      expect(STYLE_ANCHOR).toContain('3:4 portrait ratio');
     });
   });
 
   describe('Faction Prefixes', () => {
-    it('should have a prefix for all 3 factions plus DEMONIC_KINGDOMS alias', () => {
+    it('should have a prefix for all factions plus DEMONIC_KINGDOMS alias', () => {
       expect(FACTION_PREFIXES.IRONWRIGHT).toBeDefined();
       expect(FACTION_PREFIXES.FEY_COURTS).toBeDefined();
       expect(FACTION_PREFIXES.DEMONIC).toBeDefined();
@@ -139,28 +147,28 @@ describe('Prompt Builder', () => {
       expect(FACTION_PREFIXES.DEMONIC).toBe(FACTION_PREFIXES.DEMONIC_KINGDOMS);
     });
 
-    it('Ironwright prefix should contain steampunk keywords', () => {
+    it('Ironwright prefix should contain brutalist space-industrial keywords', () => {
       const prefix = FACTION_PREFIXES.IRONWRIGHT;
-      expect(prefix).toContain('steampunk');
-      expect(prefix).toContain('brass');
-      expect(prefix).toContain('gears');
-      expect(prefix).toContain('clockwork');
+      expect(prefix).toContain('brutalist');
+      expect(prefix).toContain('concrete');
+      expect(prefix).toContain('rebar');
+      expect(prefix).toContain('hydraulic');
     });
 
     it('Fey Courts prefix should contain nature keywords', () => {
       const prefix = FACTION_PREFIXES.FEY_COURTS;
       expect(prefix).toContain('fey');
-      expect(prefix).toContain('bioluminescent');
       expect(prefix).toContain('forest');
-      expect(prefix).toContain('moonlight');
+      expect(prefix).toContain('moss');
+      expect(prefix).toContain('Arthur Rackham');
     });
 
     it('Demonic prefix should contain infernal keywords', () => {
       const prefix = FACTION_PREFIXES.DEMONIC;
-      expect(prefix).toContain('demonic');
-      expect(prefix).toContain('hellfire');
-      expect(prefix).toContain('obsidian');
       expect(prefix).toContain('infernal');
+      expect(prefix).toContain('hellfire');
+      expect(prefix).toContain('bone');
+      expect(prefix).toContain('Hieronymus Bosch');
     });
   });
 
@@ -169,7 +177,7 @@ describe('Prompt Builder', () => {
       const prompt = [
         STYLE_ANCHOR,
         FACTION_PREFIXES.IRONWRIGHT,
-        'clockwork wolf, sleek predatory design',
+        'iron automaton wolf, sleek predatory design',
         'portrait orientation, centered creature',
       ].join(', ');
 
@@ -191,7 +199,7 @@ describe('Prompt Builder', () => {
 
     it('should produce correct request structure', () => {
       const request = {
-        prompt: [STYLE_ANCHOR, FACTION_PREFIXES.IRONWRIGHT, 'clockwork wolf'].join(', '),
+        prompt: [STYLE_ANCHOR, FACTION_PREFIXES.IRONWRIGHT, 'iron automaton wolf'].join(', '),
         negative_prompt: NEGATIVE_PROMPT_BASE,
         image_size: 'portrait_4_3',
         num_inference_steps: 35,
@@ -249,8 +257,8 @@ describe('Prompt Builder', () => {
         `Maintain the ${FACTION_SHORT_DESCRIPTIONS.IRONWRIGHT} aesthetic throughout.`,
       ].join(' ');
 
-      expect(prompt).toContain('steam vents');
-      expect(prompt).toContain('steampunk industrial brass-and-gears');
+      expect(prompt).toContain('reactor exhaust vents');
+      expect(prompt).toContain('brutalist space-industrial construct');
     });
 
     it('should filter out empty history context', () => {

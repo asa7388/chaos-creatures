@@ -73,14 +73,14 @@ const STYLE_ANCHOR = loraFlag === 'classipeint'
 // Source: docs/design/faction-art-bible.md
 const FACTION_SUB_FLAVORS = {
   IRONWRIGHT: [
-    'grimy steampunk foundry, corroded brass and blackened iron, rivers of molten metal, chain-driven machinery, amber and brass gold palette with molten orange glow',
-    'Coalvein mining operation, steam-drill tunneling, pneumatic pick-axes, headlamps in darkness, soot-blackened iron, ash gray and dull orange embers palette',
-    'Gearwright Academy clockwork workshop, articulated brass mannequins, chalkboard schematics, working orreries, warm cream and mahogany and copper palette',
-    'Tideforge Foundry naval engineering, riveted iron hulls, steam-powered diving suits, barnacle-crusted pressure gauges, gunmetal blue and verdigris and rust orange palette',
-    'Skywarden airship fleet, rigid aluminium and canvas airship skeletons, propeller arrays, altitude gauges, high-altitude cold thin blue light, ice-steel blue and leather brown palette',
-    'Rivet Saints industrial cathedral, girders and steam pipes, stained glass depicting gears, pipe organs, gold leaf and deep burgundy and polished bronze palette',
-    'Emberwright demolition zone, pressure-triggered detonators, reinforced brass goggles, rubble fields, alarm red and steam white and charcoal palette',
-    'Cogwright Artificers automaton assembly line, articulated brass humanoids, exposed gear-trains, wind-up keys, burnished brass and oxblood leather and ivory palette',
+    'orbital shipyard assembly bay, skeletal warship hulls, welding arcs in vacuum, gantry cranes swinging reactor cores, reactor orange and cold iron gray palette',
+    'planetary strip-mine operation, terraced excavation into darkness, bucket-wheel excavators, exposed geological strata, ash gray and dull orange embers palette',
+    'void-dock hangar, pressurized atmosphere behind mag-sealed bay doors, half-assembled fighters on hydraulic arms, cold steel blue and warning amber palette',
+    'star-forge control room, analog instrument banks, reactor readouts redlining, reinforced concrete blast walls, gunmetal and reactor orange palette',
+    'dreadnought construction exterior, workers in pressure suits welding rebar-reinforced plating, stars behind, ice-steel blue and void black palette',
+    'foundry command center, poured concrete walls lined with pipe conduits, iron blast doors, reactor amber and deep gunmetal and burnished iron palette',
+    'collapsing reactor chamber, emergency lighting, containment field failing, superheated coolant venting, alarm red and exhaust white and charcoal palette',
+    'slag-field battlefield, twisted rebar and shattered concrete, wrecked war machines half-buried in industrial waste, concrete gray and molten orange palette',
   ],
   FEY_COURTS: [
     'Verdant Throne spring court, exploding flowers, pollen storms, vines cracking stone, overwhelming greenery, emerald and gold and warm amber palette',
@@ -152,22 +152,19 @@ const COMPOSITION_POOL = {
 // Faction environments — from faction art bible, richer and more specific
 const FACTION_ENVIRONMENTS = {
   ironwright: [
-    'inside the Great Foundry, cathedral-scale with multiple levels of catwalks connected by steam-powered lifts, rivers of molten metal below, massive chains and drive-belts hanging from above, flywheel generators the size of houses',
-    'in a Canal Lock District, industrial waterways with brick walls, enormous gear mechanisms and hydraulic pistons controlling iron gates, steam-barges loaded with ore, foggy morning light',
-    'in the Patent Library, vast archive of mechanical drawings, brass pneumatic tube mail systems whooshing overhead, gas lamp reading rooms, rotating blueprint displays on clockwork carousels',
-    'in an open-pit mine, terraced earth with steam-powered bucket-wheel excavators, tiny figures on switchback roads, ore carts on rail tracks, exposed geological strata',
-    'in a railway frontier town, half-built station with decorative ironwork, workers tent camps, tracks stretching into wilderness, locomotive idling with steam billowing',
-    'in the Pressure Depths, underwater glass-domed workshop connected by pressurized tunnels, air bubble columns from steam recyclers, bioluminescent and gas lamp lighting',
-    'in a scrapyard bazaar, mountains of discarded gears and pistons and boiler parts, haggling merchants, makeshift stalls roofed with sheet metal, sparks from improvised repairs',
-    'on the Proving Grounds, open field of prototype machines being tested, steam walkers taking first steps, experimental cannons firing, observation towers, explosion craters',
-    'on a textile mill floor, rows of thundering steam-driven looms, cotton dust in shafts of light from high clerestory windows, belt-drives connecting machines to central steam shaft',
-    'in the Ironwright Cemetery, cast iron headstones engraved with craft specialties, tools left as grave offerings, steam-powered eternal flames, rust patina on older graves',
-    'inside a zeppelin hangar, enormous airship skeleton being assembled, scaffolding and steam-cranes, gas bladders being inflated, workers on rope swings at dizzying height',
-    'inside a steam-pipe cathedral, every surface is functional infrastructure, pews heated by under-floor steam, altar doubling as pressure regulator, hymns from steam-organ pipes',
-    'in the Difference Engine Hall, rows of city-block-sized mechanical computers, operators feeding punch cards, output tape spooling onto floor, deafening clatter of thousands of brass drums',
-    'in an airship drydock, airship suspended in scaffolding high above a valley, workers rappelling along the hull, replacement propeller hoisted by steam-crane, mountain backdrop',
-    'in the Clockwork Menagerie, vast hall of mechanical animals, brass songbirds, iron horses, copper serpents, some functional some half-built, engineers tinkering',
-    'in the Assay Office, precise room with mechanical scales, acid-test rigs, ore samples, a single evaluator under bright gas light, pressure-sealed vault behind them',
+    'inside a vast orbital shipyard, skeletal warship hulls under construction, welding arcs in vacuum, gantry cranes swinging reactor cores',
+    'on a planetary strip-mine surface, terraced excavation descending into darkness, massive bucket-wheel excavators, exposed geological strata',
+    'in a void-dock hangar, pressurized atmosphere behind mag-sealed bay doors, half-assembled fighters suspended on hydraulic arms',
+    'inside a star-forge control room, banks of analog instruments, reactor readouts redlining, reinforced concrete blast walls',
+    'on the exterior hull of a dreadnought under construction, workers in pressure suits welding rebar-reinforced plating, stars behind',
+    'in a foundry command center, poured concrete walls lined with pipe conduits, holographic production manifests, iron blast doors',
+    'inside a collapsing reactor chamber, emergency lighting, containment field failing, superheated coolant venting through ruptured pipes',
+    'on a slag-field battlefield, twisted rebar and shattered concrete, wrecked war machines half-buried in industrial waste',
+    'in a subterranean ore processing facility, conveyor belts carrying raw material through crushing and smelting stages, brutal scale',
+    'atop a void-dock observation tower overlooking an armada of iron warships, engine exhaust trails visible against deep space',
+    'inside an abandoned automaton graveyard, defunct mechanical bodies piled high in concrete silos, one sensor still flickering',
+    'in a pressurized reactor hall, containment cylinders humming with barely-controlled energy, cold-rolled iron walkways, warning strobes',
+    'on an elevated transit bridge spanning a canyon-scale factory complex, freight haulers rumbling past, industrial exhaust rising',
   ],
   fey: [
     'in the Endless Feast Hall, table stretching to horizon, food centuries old (some fresh some skeletal), dancing guests who cannot stop, candelabras of living flame',
@@ -251,13 +248,13 @@ function selectTimeOfDay() {
 // Source: faction art bible mood tables
 const FACTION_MOODS = {
   IRONWRIGHT: [
-    'industrial pride lighting, golden hour through factory windows, lens flare off polished brass',
-    'grim labor atmosphere, dim harsh single-source furnace light, deep shadows',
-    'discovery eureka moment, bright flash radiating outward, arc-light intensity, electric blue arcs',
-    'quiet precision mood, focused desk lamp, gas-light warmth, deep shadows',
-    'catastrophic failure, red emergency glow, sparks and billowing steam, boiler rupture chaos',
-    'sacred industry atmosphere, cathedral light shafts through steam clouds, gas-lamp halos',
-    'steampunk grandeur, warm amber interior, firelight reflecting on polished brass, everything gleaming',
+    'industrial pride lighting, reactor glow through reinforced viewports, lens flare off cold-rolled iron',
+    'grim labor atmosphere, dim harsh overhead strip lighting, deep shadows',
+    'discovery eureka moment, bright arc-flash radiating outward, electric blue arcs',
+    'quiet precision mood, focused task lamp, void shadows, deep contrast',
+    'catastrophic failure, red emergency strobes, sparks and venting atmosphere, reactor breach chaos',
+    'sacred industry atmosphere, reactor light through concrete cathedral, harsh angular lighting',
+    'brutalist grandeur, harsh angular lighting on raw concrete, cold-rolled iron and molten orange accents',
   ],
   FEY_COURTS: [
     'enchanted allure, soft dappled light, golden hour filtering through leaves',
@@ -289,11 +286,11 @@ function selectMood(factionKey) {
 // Texture accent pools per faction — applied ~40% of the time for material detail
 const FACTION_TEXTURES = {
   IRONWRIGHT: [
-    'key textures: hammered iron, riveted plate, piston rods with oil sheen, brass gear teeth',
-    'key textures: tarnished copper patina, vulcanized rubber, oiled leather toolbelts, coal dust on skin',
-    'key textures: polished brass, ground glass gauge lenses, wax-sealed parchment, graphite smudges',
-    'key textures: pitted cast iron, canvas airship skin weathered and taut, welding spark trails, exhaust soot',
-    'key textures: boiler plate with blue heat-temper lines, chain mail links, pressed tin ceiling tiles, engine grease',
+    'key textures: poured concrete rough and aggregate-flecked, cold-rolled iron plate, hydraulic piston rods with oil sheen',
+    'key textures: exposed rebar rusted and bent, riveted hull plating, welded seam lines rough and raised',
+    'key textures: corrugated iron sheeting, reinforced blast glass cracked at edges, industrial rubber gaskets',
+    'key textures: carbon-scored exhaust nozzles, reactor shielding lead-lined, conduit pipe bundles clamped to walls',
+    'key textures: slag-cooled iron pitted and rough, diamond-plate floor grating, warning paint stripes yellow and black',
   ],
   FEY_COURTS: [
     'key textures: iridescent beetle shells, spider silk wet with dew, bark in all stages of decay',
@@ -320,12 +317,12 @@ function selectTexture(factionKey) {
 // Faction-specific weapons/armor — applied ~50% of the time for creature variety
 const FACTION_GEAR = {
   IRONWRIGHT: [
-    'wielding a massive wrench-mace hybrid, bolts as rivets',
-    'carrying a pneumatic piston-hammer, steam venting from joints',
-    'dragging a chain-linked anchor weapon, rust flaking off',
-    'armored in overlapping boiler plates with pressure gauge shoulder pads',
-    'equipped with a rotating sawblade arm, sparks flying',
-    'wearing a riveted helm with a cracked observation visor',
+    'wielding a massive demolition hammer trailing ionized exhaust from pipe vents',
+    'carrying a hydraulic piston-driver, reactor exhaust venting from joints',
+    'dragging a chain-linked anchor weapon, rust and slag flaking off',
+    'armored in overlapping concrete-and-iron blast plates with reactor core shoulder mounts',
+    'equipped with a rotating sawblade arm fused to rebar struts, sparks flying',
+    'wearing a reactor containment helm with a cracked sensor visor',
   ],
   FEY_COURTS: [
     'clutching a staff of living wood, budding with impossible flowers',
@@ -608,7 +605,7 @@ const NEGATIVE_PROMPT =
 
 const FACTION_NAME_VOICES = {
   IRONWRIGHT:
-    'Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred.',
+    'Industrial and precise. Use engineering terminology: Rebar, Piston, Reactor, Forged, Tempered, Wrought, Void-forged. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Foundry, Crucible, Orbital, Shipyard. Compound nouns preferred.',
   FEY_COURTS:
     'Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, Moss. Use fey titles: Lord, Lady, Warden, Huntress, Speaker, Court. Use seasons and celestial: Spring, Autumn, Moon, Star, Dawn. Use mythic descriptors: Verdant, Eternal, Wild, Ancient. Poetic structures preferred.',
   DEMONIC:
@@ -617,7 +614,7 @@ const FACTION_NAME_VOICES = {
 
 const FACTION_FLAVOR_TONES = {
   IRONWRIGHT:
-    "Technical reverence for craftsmanship. Emphasizes function, precision, and engineering. Order = perfected systems, harmonious mechanisms. Chaos = overloaded, screaming gears, design pushed beyond limits. Tone is clipped and declarative — short sentences that sound like engineer's notes.",
+    "Industrial pragmatism. Emphasizes function, precision, and void-conquest engineering. Order = perfected systems, reactors humming in harmony. Chaos = overloaded, reactor breach, design pushed beyond limits. Tone is clipped and declarative — short sentences that sound like engineer's notes.",
   FEY_COURTS:
     'Ancient and lyrical. Emphasizes cycles, memory, wildness, and time. Order = harmony with nature, patient growth, eternal memory. Chaos = the wild hunt, primal fury, untamed power that predates civilization. Tone is poetic but not flowery — spare and weighted with age.',
   DEMONIC:
@@ -663,8 +660,8 @@ const CARD_SPECS = [
     faction_key: 'IRONWRIGHT',
     faction_id: FACTION_IDS.IRONWRIGHT,
     creature_archetype: 'Siege Colossus',
-    creature_description: 'A towering bipedal war machine three stories tall built from riveted boiler plates and locomotive parts, its torso is a converted steam engine with exhaust stacks belching black smoke, massive piston-driven legs each ending in iron-shod crushing feet, a battering ram jaw mounted where a head should be, chains and grappling hooks dangle from its arms, rust and battle damage everywhere',
-    visual_description: 'Towering steam-engine war machine with piston legs and battering ram jaw',
+    creature_description: 'A towering bipedal war machine three stories tall built from riveted hull plates and reactor segments, its torso is a converted reactor core with exhaust stacks belching black industrial waste, massive hydraulic-driven legs each ending in iron-shod crushing feet, a battering ram jaw mounted where a head should be, chains and grappling hooks dangle from its arms, rust and battle damage everywhere',
+    visual_description: 'Towering reactor-core war machine with hydraulic legs and battering ram jaw',
     card_type: 'CREATURE',
     cm_cost: 7,
     base_attack: 6,
@@ -743,8 +740,8 @@ const CARD_SPECS = [
     faction_key: 'IRONWRIGHT',
     faction_id: FACTION_IDS.IRONWRIGHT,
     creature_archetype: 'Forgemaster Titan',
-    creature_description: 'An ancient colossal automaton built from the hulls of decommissioned warships, its torso is a blast furnace with the door welded shut and fire leaking from every seam, one arm ends in a massive anvil-fist and the other in a cluster of welding torches and articulated clamps, its legs are railway bridge trusses repurposed as limbs, a smokestack crown belches black industrial smog, every surface covered in decades of weld repairs and patch plates',
-    visual_description: 'Warship-hull titan with blast furnace torso, anvil-fist, smokestack crown',
+    creature_description: 'An ancient colossal automaton built from the hulls of decommissioned warships, its torso is a reactor core with the containment door welded shut and fire leaking from every seam, one arm ends in a massive anvil-fist and the other in a cluster of welding torches and articulated clamps, its legs are structural I-beam trusses repurposed as limbs, exhaust stacks belch black industrial waste, every surface covered in decades of weld repairs and patch plates',
+    visual_description: 'Warship-hull titan with reactor core torso, anvil-fist, exhaust stack crown',
     card_type: 'CREATURE',
     cm_cost: 9,
     base_attack: 8,
@@ -754,14 +751,14 @@ const CARD_SPECS = [
     rarity: 'LEGENDARY',
   },
   // ---- Bible archetype cards for variety testing ----
-  // Ironwright — non-combat, intimate moment (Clockwork Surgeon)
+  // Ironwright — non-combat, intimate moment (Void-Dock Surgeon)
   {
     spec_id: 'iron-v4-04',
     faction_key: 'IRONWRIGHT',
     faction_id: FACTION_IDS.IRONWRIGHT,
-    creature_archetype: 'Clockwork Surgeon',
-    creature_description: 'A gaunt woman with a magnifying monocle on an articulated brass arm swung over her left eye, oil-stained surgical gloves, a leather apron covered in tiny gear-tools and watchmaker implements, her right hand holds a pair of needle-nose pliers adjusting a miniature piston inside an open mechanical forearm, her patient is a brass automaton lying on a steel operating table, tubes of lubricant feeding into the joint',
-    visual_description: 'Gaunt surgeon with brass monocle arm, adjusting pistons inside an automaton patient',
+    creature_archetype: 'Void-Dock Surgeon',
+    creature_description: 'A gaunt woman with a magnifying monocle on an articulated iron arm swung over her left eye, oil-stained surgical gloves, a leather apron covered in tiny hydraulic tools and precision instruments, her right hand holds a pair of needle-nose pliers adjusting a miniature piston inside an open mechanical forearm, her patient is an iron automaton lying on a steel operating table, tubes of coolant feeding into the joint',
+    visual_description: 'Gaunt surgeon with iron monocle arm, adjusting pistons inside an automaton patient',
     card_type: 'CREATURE',
     cm_cost: 3,
     base_attack: 1,
@@ -776,8 +773,8 @@ const CARD_SPECS = [
     faction_key: 'IRONWRIGHT',
     faction_id: FACTION_IDS.IRONWRIGHT,
     creature_archetype: 'Canary Keeper',
-    creature_description: 'A small wiry figure in a heavy leather coat with a caged canary strapped to their chest, a headlamp casting a cone of yellowish gaslight, soot streaks across their face, a gas-detection bellows in one hand, descending alone into a dark mine shaft on a chain-driven elevator platform, rope coiled over one shoulder, pickaxe strapped to their back',
-    visual_description: 'Small miner with chest-mounted canary cage and headlamp, descending into darkness',
+    creature_description: 'A small wiry figure in a heavy pressure suit with a sensor array strapped to their chest, a headlamp casting a cone of harsh light, soot streaks across their face, a radiation-detection scanner in one hand, descending alone into a dark ore shaft on a hydraulic elevator platform, cable coiled over one shoulder, mining drill strapped to their back',
+    visual_description: 'Small ore miner in pressure suit with sensor array and headlamp, descending into darkness',
     card_type: 'CREATURE',
     cm_cost: 1,
     base_attack: 0,

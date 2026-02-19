@@ -19,11 +19,13 @@ ROLL THE D20. EMBRACE THE CHAOS.
 
 At the start of every turn, roll a D20 Chaos Roll. The result triggers Order events, Chaos events, or something in between — depending on your deck's instability rating. Build toward Order for consistency, lean into Chaos for explosive upside, or ride the edge between both.
 
-THREE FACTIONS. THREE PHILOSOPHIES.
+FIVE FACTIONS. FIVE PHILOSOPHIES.
 
-- The Ironwright Collective: Brass gears and steam-powered constructs. Stack Augments on a single creature to create an unstoppable machine.
+- The Ironwright Collective: Brutalist war machines forged in orbital shipyards. Stack Augments on a single creature to create an unstoppable siege engine.
 - The Fey Courts: Ancient forests and bioluminescent fey lords. Bond your creatures together so the whole board fights as one.
 - The Demonic Kingdoms: Hellfire and blood rituals. Corrupt your own creatures, trading health for devastating power.
+- The Celestial Crusade: Divine crusaders and multi-winged celestials. Exalt your formation to empower every creature on the field.
+- The Endless: Liches, spectres, and the relentless undead. Every creature you kill triggers Persist effects that haunt you.
 
 STRATEGIC COMBAT
 
@@ -51,7 +53,7 @@ FEATURES
 
 - AI-generated card art that evolves through image-to-image transformation
 - D20 Chaos Roll with Order and Chaos events every turn
-- 3 factions with exclusive mechanics (Augment, Bond, Corruption)
+- 5 factions with exclusive mechanics (Augment, Bond, Corruption, Exalt, Persist)
 - MTG-style tactical combat with attackers and blockers
 - 5-tier card evolution from Common to Legendary
 - 7 keywords for deep strategic deckbuilding

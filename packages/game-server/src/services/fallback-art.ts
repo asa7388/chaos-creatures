@@ -3,7 +3,7 @@
 // Source: .claude/agents/ai-pipeline.md Section 3
 //
 // When art generation fails twice:
-//   1. Select faction-colored silhouette from assets/fallback/ (3 images, one per faction)
+//   1. Select faction-colored silhouette from assets/fallback/ (5 images, one per faction)
 //   2. Apply rarity border overlay (Common=gray, Uncommon=green, Rare=blue, Epic=purple, Legendary=gold)
 //   3. Store in R2 with _fallback suffix
 //   4. Flag card for regeneration in generation_jobs table
@@ -17,8 +17,8 @@
 
 const FACTION_COLORS: Record<string, { primary: string; secondary: string; name: string }> = {
   IRONWRIGHT: {
-    primary: '#B87333', // Copper
-    secondary: '#D4A957', // Brass/Gold
+    primary: '#6B7B8D', // Industrial steel blue-gray
+    secondary: '#E07020', // Reactor warning orange
     name: 'Ironwright Collective',
   },
   FEY_COURTS: {
@@ -26,10 +26,20 @@ const FACTION_COLORS: Record<string, { primary: string; secondary: string; name:
     secondary: '#7B68EE', // Violet/Silver
     name: 'Fey Courts',
   },
-  DEMONIC: {
+  DEMONIC_KINGDOMS: {
     primary: '#8B0000', // Dark red
     secondary: '#4A0033', // Deep purple-black
     name: 'Demonic Kingdoms',
+  },
+  CELESTIAL_CRUSADE: {
+    primary: '#DAA520', // Holy gold
+    secondary: '#F5F0E1', // Divine ivory
+    name: 'Celestial Crusade',
+  },
+  THE_ENDLESS: {
+    primary: '#6B3FA0', // Necrotic purple
+    secondary: '#E8DCC8', // Bone white
+    name: 'The Endless',
   },
 };
 
@@ -50,13 +60,14 @@ const RARITY_COLORS: Record<string, string> = {
 // =============================================================================
 
 const FACTION_SILHOUETTES: Record<string, string> = {
-  // Gear/cog silhouette for Ironwright
+  // Piston/reactor-core silhouette for Ironwright
   IRONWRIGHT: `
-    <circle cx="384" cy="450" r="120" fill="{secondary}" opacity="0.3"/>
-    <path d="M384 330 L400 350 L420 340 L410 370 L440 380 L420 400 L430 420 L400 410 L384 440
-             L368 410 L338 420 L348 400 L328 380 L358 370 L348 340 L368 350 Z"
-          fill="{secondary}" opacity="0.6"/>
-    <circle cx="384" cy="450" r="50" fill="{primary}" opacity="0.4"/>
+    <rect x="354" y="330" width="60" height="200" rx="4" fill="{secondary}" opacity="0.3"/>
+    <rect x="364" y="350" width="40" height="80" rx="2" fill="{secondary}" opacity="0.5"/>
+    <circle cx="384" cy="480" r="50" fill="{primary}" opacity="0.4"/>
+    <circle cx="384" cy="480" r="30" fill="{secondary}" opacity="0.3"/>
+    <rect x="340" y="420" width="88" height="8" fill="{secondary}" opacity="0.6"/>
+    <rect x="340" y="440" width="88" height="8" fill="{secondary}" opacity="0.6"/>
     <text x="384" y="620" text-anchor="middle" font-family="serif" font-size="48"
           fill="{secondary}" opacity="0.5">IRONWRIGHT</text>
   `,
@@ -70,8 +81,8 @@ const FACTION_SILHOUETTES: Record<string, string> = {
     <text x="384" y="650" text-anchor="middle" font-family="serif" font-size="48"
           fill="{secondary}" opacity="0.5">FEY COURTS</text>
   `,
-  // Horned skull silhouette for Demonic
-  DEMONIC: `
+  // Horned skull silhouette for Demonic Kingdoms
+  DEMONIC_KINGDOMS: `
     <ellipse cx="384" cy="430" rx="90" ry="110" fill="{secondary}" opacity="0.2"/>
     <path d="M330 400 Q330 350 360 340 L340 280 L370 340 Q384 330 398 340 L428 280 L408 340
              Q438 350 438 400 Q438 460 384 480 Q330 460 330 400 Z"
@@ -80,6 +91,27 @@ const FACTION_SILHOUETTES: Record<string, string> = {
     <circle cx="408" cy="400" r="15" fill="{primary}" opacity="0.6"/>
     <text x="384" y="600" text-anchor="middle" font-family="serif" font-size="48"
           fill="{secondary}" opacity="0.5">DEMONIC</text>
+  `,
+  // Radiant star/cross silhouette for Celestial Crusade
+  CELESTIAL_CRUSADE: `
+    <circle cx="384" cy="430" r="100" fill="{secondary}" opacity="0.15"/>
+    <path d="M384 330 L394 410 L474 430 L394 450 L384 530 L374 450 L294 430 L374 410 Z"
+          fill="{secondary}" opacity="0.5"/>
+    <circle cx="384" cy="430" r="35" fill="{primary}" opacity="0.4"/>
+    <text x="384" y="620" text-anchor="middle" font-family="serif" font-size="48"
+          fill="{secondary}" opacity="0.5">CELESTIAL CRUSADE</text>
+  `,
+  // Skull/spectral silhouette for The Endless
+  THE_ENDLESS: `
+    <ellipse cx="384" cy="420" rx="80" ry="100" fill="{secondary}" opacity="0.2"/>
+    <path d="M340 400 Q340 350 384 340 Q428 350 428 400 Q428 460 384 470 Q340 460 340 400 Z"
+          fill="{secondary}" opacity="0.35"/>
+    <circle cx="362" cy="400" r="12" fill="{primary}" opacity="0.6"/>
+    <circle cx="406" cy="400" r="12" fill="{primary}" opacity="0.6"/>
+    <path d="M360 440 L370 430 L380 440 L390 430 L400 440" stroke="{primary}" stroke-width="3"
+          fill="none" opacity="0.5"/>
+    <text x="384" y="600" text-anchor="middle" font-family="serif" font-size="48"
+          fill="{secondary}" opacity="0.5">THE ENDLESS</text>
   `,
 };
 
@@ -91,7 +123,7 @@ const FACTION_SILHOUETTES: Record<string, string> = {
  * Generate a fallback art SVG for a card whose art generation failed.
  * Returns SVG string that can be converted to WebP or used directly.
  *
- * @param factionId - IRONWRIGHT, FEY_COURTS, or DEMONIC
+ * @param factionId - IRONWRIGHT, FEY_COURTS, DEMONIC_KINGDOMS, CELESTIAL_CRUSADE, or THE_ENDLESS
  * @param rarity - COMMON, UNCOMMON, RARE, EPIC, or LEGENDARY
  * @param cardName - Optional card name to display
  * @returns SVG string (768x1024 portrait)

@@ -55,10 +55,9 @@ const STYLE_ANCHOR =
 // v5 faction prefixes with public domain artist references
 const FACTION_PREFIXES = {
   IRONWRIGHT:
-    'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
-    'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
-    'warm ochre and raw umber palette, smoky atmospheric background, ' +
-    'in the style of John Martin apocalyptic industrial landscapes and Gustave Dore dramatic engravings',
+    'brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar, ' +
+    'hydraulic pistons, orbital shipyard machinery, reactor glow, void-forge exhaust, ' +
+    'in the style of Piranesi impossible architecture and John Martin apocalyptic industrial scale',
   FEY_COURTS:
     'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
     'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
@@ -105,19 +104,19 @@ const COMPOSITION_POOL = {
 // v4: 13 environments per faction (mirrors prompts.ts)
 const FACTION_ENVIRONMENTS = {
   ironwright: [
-    'inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery',
-    'atop a massive clockwork bridge spanning a canyon of interlocking gears',
-    'in a brass and copper workshop littered with half-finished automata and blueprints',
-    'on the observation deck of a towering industrial spire belching steam into orange skies',
-    'inside a walking factory, mechanical legs visible through floor grates, landscape moving outside windows',
-    'inside a collapsed mine shaft, sparking electrical cables and leaking hydraulic fluid, emergency red lighting',
-    'on the deck of a massive iron warship, smokestacks belching, ocean of molten slag',
-    'in a subterranean geothermal plant where pipes carry magma through brass conduits',
-    'atop a rusted water tower overlooking an endless industrial sprawl of chimneys and rail yards',
-    'inside an abandoned automaton graveyard, defunct mechanical bodies piled high, one eye still flickering',
-    'in a pressurized boiler room, gauges redlining, steam jetting from failed seals',
-    'on an elevated rail bridge during a thunderstorm, lightning striking copper rod arrays',
-    'inside a crystal-powered computation engine room, spinning relay drums and clicking gears processing data',
+    'inside a vast orbital shipyard, skeletal warship hulls under construction, welding arcs in vacuum, gantry cranes swinging reactor cores',
+    'on a planetary strip-mine surface, terraced excavation descending into darkness, massive bucket-wheel excavators, exposed geological strata',
+    'in a void-dock hangar, pressurized atmosphere behind mag-sealed bay doors, half-assembled fighters suspended on hydraulic arms',
+    'inside a star-forge control room, banks of analog instruments, reactor readouts redlining, reinforced concrete blast walls',
+    'on the exterior hull of a dreadnought under construction, workers in pressure suits welding rebar-reinforced plating, stars behind',
+    'in a foundry command center, poured concrete walls lined with pipe conduits, holographic production manifests, iron blast doors',
+    'inside a collapsing reactor chamber, emergency lighting, containment field failing, superheated coolant venting through ruptured pipes',
+    'on a slag-field battlefield, twisted rebar and shattered concrete, wrecked war machines half-buried in industrial waste',
+    'in a subterranean ore processing facility, conveyor belts carrying raw material through crushing and smelting stages, brutal scale',
+    'atop a void-dock observation tower overlooking an armada of iron warships, engine exhaust trails visible against deep space',
+    'inside an abandoned automaton graveyard, defunct mechanical bodies piled high in concrete silos, one sensor still flickering',
+    'in a pressurized reactor hall, containment cylinders humming with barely-controlled energy, cold-rolled iron walkways, warning strobes',
+    'on an elevated transit bridge spanning a canyon-scale factory complex, freight haulers rumbling past, industrial exhaust rising',
   ],
   fey: [
     'in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on ancient stones',
@@ -221,13 +220,13 @@ function selectEnvironment(factionKey) {
 const VALIDATION_CARDS = [
   {
     index: 1,
-    name: 'Brass Sentinel',
+    name: 'Iron Sentinel',
     faction: 'IRONWRIGHT',
     keywords: ['SHIELD'],
     manaCost: 2,
     tier: 'COMMON',
     cardType: 'CREATURE',
-    description: 'A small brass automaton with shield plating and glowing eyes, squat and sturdy with dented armor plates and a single cracked lens visor',
+    description: 'A small iron automaton with concrete-reinforced shield plating and glowing sensor eyes, squat and sturdy with dented hull plates and a single cracked sensor visor',
     expectedComposition: 'PORTRAIT_CLOSE (manaCost <= 2)',
   },
   {

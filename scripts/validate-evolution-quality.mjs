@@ -61,11 +61,11 @@ const NEGATIVE_PROMPT =
 
 const FACTION_ENVIRONMENTS = {
   ironwright: [
-    'inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery',
-    'atop a massive clockwork bridge spanning a canyon of interlocking gears',
-    'in a brass and copper workshop littered with half-finished automata and blueprints',
-    'on the observation deck of a towering industrial spire belching steam into orange skies',
-    'inside a walking factory, mechanical legs visible through floor grates, landscape moving outside windows',
+    'inside a vast orbital shipyard, skeletal warship hulls under construction, welding arcs in vacuum, gantry cranes swinging reactor cores',
+    'on a planetary strip-mine surface, terraced excavation descending into darkness, massive bucket-wheel excavators, exposed geological strata',
+    'in a void-dock hangar, pressurized atmosphere behind mag-sealed bay doors, half-assembled fighters suspended on hydraulic arms',
+    'inside a star-forge control room, banks of analog instruments, reactor readouts redlining, reinforced concrete blast walls',
+    'on the exterior hull of a dreadnought under construction, workers in pressure suits welding rebar-reinforced plating, stars behind',
   ],
   fey: [
     'in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on ancient stones',
@@ -97,11 +97,11 @@ const EVOLUTION_TESTS = [
     direction: 'ORDER',
     strength: 0.40,
     faction_style:
-      'grimy industrial steampunk, corroded brass and blackened iron, in the style of John Martin and Gustave Dore',
+      'brutalist space-industrial construct, poured concrete and cold-rolled iron, in the style of Piranesi and John Martin',
     transform_instruction:
       'Refine and upgrade this mechanical creature with Order energy. ' +
       'Add reinforced hydraulic pistons along its arms and legs. Polish key armor plates to a cleaner finish while keeping the weathered base. ' +
-      'Add a faint amber crystalline glow emanating from its furnace core, more controlled and structured. ' +
+      'Add a faint amber crystalline glow emanating from its reactor core, more controlled and structured. ' +
       'The creature should look upgraded and fortified but still recognizable as the same golem.',
     expected_changes: 'Polished armor plates, hydraulic additions, amber core glow, same pose/silhouette',
   },

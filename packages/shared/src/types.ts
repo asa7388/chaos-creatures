@@ -11,6 +11,9 @@ export type CardType = 'CREATURE' | 'SPELL' | 'STABILIZER' | 'PLANAR_RUIN';
 /** Keyword identifiers */
 export type Keyword = 'SHIELD' | 'LIFESTEAL' | 'FLYING' | 'REACH' | 'DEATHTOUCH' | 'TAUNT' | 'PIERCING' | 'HASTE' | 'WARD';
 
+/** Faction mechanic */
+export type FactionMechanic = 'AUGMENT' | 'BOND' | 'CORRUPTION' | 'EXALT' | 'PERSIST';
+
 /** Evolution tier (replaces "Rarity" — cards evolve, not drop at rarity) */
 export type EvolutionTier = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 

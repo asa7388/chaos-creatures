@@ -24,7 +24,7 @@ CardTemplate {
   id:                string        // UUID — unique template ID
   name:              string        // "Ashscale Wyvern", "Binding Ward", etc.
   card_type:         CardType      // CREATURE | SPELL | STABILIZER (Note: PLANAR_RUIN uses RuinTemplate, not CardTemplate — see Section 21)
-  faction_id:        string        // FK → Faction — immutable. One of: IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS | CELESTIAL | ENDLESS
+  faction_id:        string        // FK → Faction — immutable. One of: IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS | CELESTIAL_CRUSADE | THE_ENDLESS
   
   // --- Base stats (Common tier values) ---
   base_attack:       int?          // Creatures only. null for spells/stabilizers
@@ -542,7 +542,7 @@ Factions define card art style, creature thematic identity, and an exclusive mec
 Faction {
   id:                  string           // UUID
   name:                string           // "The Ironwright Collective", "The Fey Courts", "The Demonic Kingdoms", "The Celestial Crusade", "The Endless"
-  short_name:          string           // "IRONWRIGHT" | "FEY_COURTS" | "DEMONIC_KINGDOMS" | "CELESTIAL" | "ENDLESS"
+  short_name:          string           // "IRONWRIGHT" | "FEY_COURTS" | "DEMONIC_KINGDOMS" | "CELESTIAL_CRUSADE" | "THE_ENDLESS"
   
   // --- Faction mechanic ---
   exclusive_mechanic:  FactionMechanic  // AUGMENT | BOND | CORRUPTION | EXALT | PERSIST
@@ -575,7 +575,7 @@ Faction {
 **Enums:**
 ```
 FactionMechanic:   AUGMENT | BOND | CORRUPTION | EXALT | PERSIST
-FactionShortName:  IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS | CELESTIAL | ENDLESS
+FactionShortName:  IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS | CELESTIAL_CRUSADE | THE_ENDLESS
 ```
 
 **Launch factions (5 total):**
@@ -585,8 +585,8 @@ FactionShortName:  IRONWRIGHT | FEY_COURTS | DEMONIC_KINGDOMS | CELESTIAL | ENDL
 | IRONWRIGHT | The Ironwright Collective | AUGMENT | Foundry Directorate, Scrap Legions | Brutalist space-industrial empire. Concrete, iron, hydraulics, void industry. |
 | FEY_COURTS | The Fey Courts | BOND | Verdant Throne, Hollow Court | Living forests, symbiotic networks. Growth and decay cycles. |
 | DEMONIC_KINGDOMS | The Demonic Kingdoms | CORRUPTION | Furnace Lords, Obsidian Bureaucracy | Volcanic badlands, infernal contracts, self-destructive power. |
-| CELESTIAL | The Celestial Crusade | EXALT | Knights of Deliverance, Heaven's Chosen | Divine crusaders, angelic hosts, formation-based aura warfare. |
-| ENDLESS | The Endless | PERSIST | Necromantic Cabals, Lost Spectres | The undead. Liches, spectres, death triggers, relentless attrition. |
+| CELESTIAL_CRUSADE | The Celestial Crusade | EXALT | Knights of Deliverance, Heaven's Chosen | Divine crusaders, angelic hosts, formation-based aura warfare. |
+| THE_ENDLESS | The Endless | PERSIST | Necromantic Cabals, Lost Spectres | The undead. Liches, spectres, death triggers, relentless attrition. |
 
 **Color palettes:**
 
