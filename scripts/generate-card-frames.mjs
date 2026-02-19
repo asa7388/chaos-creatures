@@ -63,21 +63,21 @@ const NEGATIVE_PROMPT =
 // ==========================================================================
 
 const FRAMES = [
-  // --- Ironwright Creature Frames ---
+  // --- Ironwright Creature Frames (brutalist space-industrial) ---
   {
     name: 'ironwright-common',
     category: 'frames',
-    prompt: `${FRAME_STYLE_BASE}, industrial steampunk decorative border, riveted brass plates with patina and tarnish, interlocking gear motifs in corners, copper filigree scrollwork along edges, iron bolts and weld seams visible, warm brass and copper tones, matte weathered finish, Art Nouveau industrial aesthetic, rectangular card frame with large transparent center window for artwork`,
+    prompt: `${FRAME_STYLE_BASE}, brutalist industrial decorative border, riveted cold-rolled iron plates with exposed rebar reinforcement, concrete aggregate corners, conduit pipe runs along edges, iron bolts and weld seams visible, cold steel and gunmetal tones, matte weathered finish, brutalist industrial architecture aesthetic, rectangular card frame with large transparent center window for artwork`,
   },
   {
     name: 'ironwright-rare',
     category: 'frames',
-    prompt: `${FRAME_STYLE_BASE}, industrial steampunk decorative border, riveted brass plates polished to a sheen, interlocking gear motifs in corners, copper filigree scrollwork along edges, blue arcane energy crackling along frame edges and through gear teeth, metallic sheen on brass surfaces, ethereal blue light emanating from rivets, Art Nouveau industrial aesthetic, rectangular card frame with large transparent center window for artwork`,
+    prompt: `${FRAME_STYLE_BASE}, brutalist industrial decorative border, riveted hull plates polished to a sheen, reinforced concrete corners with rebar detail, conduit pipe bundles along edges, reactor-blue energy crackling along frame edges and through pipe joints, metallic sheen on iron surfaces, ethereal blue-orange light emanating from bolts, brutalist industrial aesthetic, rectangular card frame with large transparent center window for artwork`,
   },
   {
     name: 'ironwright-legendary',
     category: 'frames',
-    prompt: `${FRAME_STYLE_BASE}, the most ornate industrial steampunk decorative border, highly detailed riveted brass with gold leaf inlays, intricate clockwork mechanisms visible in frame corners, prismatic golden highlights across polished surfaces, glowing amber energy nodes at cardinal points, crystal-capped gear finials, every surface covered in master-crafted filigree, Art Nouveau industrial aesthetic at peak opulence, rectangular card frame with large transparent center window for artwork`,
+    prompt: `${FRAME_STYLE_BASE}, the most ornate brutalist industrial decorative border, heavily reinforced hull plates with reactor-orange energy inlays, intricate pipe and conduit mechanisms visible in frame corners, prismatic reactor highlights across polished iron surfaces, glowing amber reactor nodes at cardinal points, crystal-capped pressure valve finials, every surface covered in master-crafted industrial detailing, brutalist space-industrial aesthetic at peak power, rectangular card frame with large transparent center window for artwork`,
   },
 
   // --- Fey Courts Creature Frames ---
@@ -114,11 +114,45 @@ const FRAMES = [
     prompt: `${FRAME_STYLE_BASE}, the most ornate infernal hellish decorative border, masterwork skull and bone architecture forming elaborate frame, gold and hellfire prismatic accents along every edge, obsidian surfaces polished to mirror finish reflecting flames, molten lava veins pulsing through the entire frame, particle-like embers drifting from frame edges, demonic faces carved into corner finials, peak dark fantasy opulence, rectangular card frame with large transparent center window for artwork`,
   },
 
-  // --- Spell Frames (3) ---
+  // --- Celestial Crusade Creature Frames ---
+  {
+    name: 'celestial-common',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, divine celestial decorative border, hammered gold and white marble forming the frame, sacred geometry patterns in corners, crystal inlays along edges catching divine light, gold leaf details on marble surfaces, warm gold and ivory tones, matte sacred finish, divine crusader aesthetic, rectangular card frame with large transparent center window for artwork`,
+  },
+  {
+    name: 'celestial-rare',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, divine celestial decorative border, hammered gold and polished white marble with golden radiance emanating from joints and seams, sacred geometry patterns in corners glowing with inner light, crystal prism inlays refracting divine energy along edges, burnished gold sheen on every surface, ethereal warm glow, divine crusader aesthetic, rectangular card frame with large transparent center window for artwork`,
+  },
+  {
+    name: 'celestial-legendary',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, the most ornate divine celestial decorative border, masterwork hammered gold and flawless white marble forming elaborate frame, sacred geometry at peak complexity in every corner, prismatic golden highlights cascading across every surface, crystal and gemstone cabochons at cardinal points, halo ring motifs integrated into the frame structure, divine radiance emanating outward, angelic wing reliefs at top corners, peak divine opulence and sacred grandeur, rectangular card frame with large transparent center window for artwork`,
+  },
+
+  // --- The Endless Creature Frames ---
+  {
+    name: 'endless-common',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, necromantic spectral decorative border, ancient bone and dark stone forming the frame, faint spectral glow in cracks between segments, death runes etched into bone surfaces, corroded iron clasps holding bone plates together, muted purple and bone-white palette, matte ancient finish, dark undead gothic aesthetic, rectangular card frame with large transparent center window for artwork`,
+  },
+  {
+    name: 'endless-rare',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, necromantic spectral decorative border, ancient polished bone and dark crystal forming the frame, pulsing spectral purple energy visible in cracks and fissures, ghostly luminescence emanating from between bone segments, death runes glowing with necrotic light, dark crystal edges catching phantom light, dark undead gothic aesthetic, rectangular card frame with large transparent center window for artwork`,
+  },
+  {
+    name: 'endless-legendary',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, the most ornate necromantic spectral decorative border, masterwork bone and dark crystal architecture forming elaborate frame, corroded gold and spectral purple prismatic accents along every edge, phylactery crystals set at cardinal points pulsing with trapped soul energy, bone surfaces polished to ivory sheen, spectral mist drifting from frame edges, skull reliefs at corner finials, peak necromantic opulence and death-magic grandeur, rectangular card frame with large transparent center window for artwork`,
+  },
+
+  // --- Spell Frames (5) ---
   {
     name: 'ironwright-spell',
     category: 'frames',
-    prompt: `${FRAME_STYLE_BASE}, industrial steampunk spell card border, brass frame with gear-shaped corner ornaments, arcane engineering symbols etched along edges, conduit pipes running along frame sides, pressure gauge motifs, energy coils at top and bottom, warm brass and electric blue accents, the frame suggests channeled mechanical energy, rectangular card frame with large transparent center window for artwork`,
+    prompt: `${FRAME_STYLE_BASE}, brutalist industrial spell card border, cold-rolled iron frame with reactor-core corner ornaments, engineering schematics etched along edges, conduit pipes running along frame sides, pressure gauge motifs, energy capacitors at top and bottom, gunmetal and reactor-orange accents, the frame suggests channeled industrial energy, rectangular card frame with large transparent center window for artwork`,
   },
   {
     name: 'fey-spell',
@@ -130,12 +164,22 @@ const FRAMES = [
     category: 'frames',
     prompt: `${FRAME_STYLE_BASE}, infernal hellish spell card border, bone and flame border with ritual circle motifs, sacrificial rune carvings along the edges, dark energy swirling at corners, blood-red crystal shards embedded in obsidian frame, the frame suggests dark ritual magic being invoked, rectangular card frame with large transparent center window for artwork`,
   },
+  {
+    name: 'celestial-spell',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, divine celestial spell card border, hammered gold frame with sacred geometry corner ornaments, prayer script etched along edges, crystallized light conduits running along frame sides, halo ring motifs, divine radiance at top and bottom, burnished gold and white marble accents, the frame suggests channeled holy energy being invoked, rectangular card frame with large transparent center window for artwork`,
+  },
+  {
+    name: 'endless-spell',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, necromantic spectral spell card border, ancient bone and dark crystal frame with death-rune corner ornaments, necromantic symbols etched along edges, spectral energy conduits running along frame sides, phylactery orb motifs, ghostly purple luminescence at top and bottom, corroded gold and bone white accents, the frame suggests death magic being channeled, rectangular card frame with large transparent center window for artwork`,
+  },
 
-  // --- Stabilizer Frames (3) ---
+  // --- Stabilizer Frames (5) ---
   {
     name: 'ironwright-stabilizer',
     category: 'frames',
-    prompt: `${FRAME_STYLE_BASE}, industrial steampunk stabilizer card border, heavy brass shield-shaped outer frame, thick reinforced plating with extra rivets, stability regulators and dampener coils at corners, grounding chains along bottom edge, the frame conveys mechanical stability and protection, warm brass and gunmetal tones, rectangular card frame with large transparent center window for artwork`,
+    prompt: `${FRAME_STYLE_BASE}, brutalist industrial stabilizer card border, heavy cold-rolled iron shield-shaped outer frame, thick reinforced concrete plating with extra bolts, reactor dampener coils and containment regulators at corners, grounding conduits along bottom edge, the frame conveys industrial stability and containment, gunmetal and concrete tones, rectangular card frame with large transparent center window for artwork`,
   },
   {
     name: 'fey-stabilizer',
@@ -146,6 +190,23 @@ const FRAMES = [
     name: 'demonic-stabilizer',
     category: 'frames',
     prompt: `${FRAME_STYLE_BASE}, infernal hellish stabilizer card border, heavy bone and obsidian ward frame, thick skull-reinforced corners, warding runes carved deep into bone to contain chaos, iron chains woven through the frame structure, banishment sigils at cardinal points, the frame conveys forceful containment of dark energy, rectangular card frame with large transparent center window for artwork`,
+  },
+  {
+    name: 'celestial-stabilizer',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, divine celestial stabilizer card border, heavy hammered gold and white marble ward frame, thick prayer-inscribed corners with crystal finials, sacred geometry wards inlaid in gold to impose divine order, radiant energy barriers along frame edges, blessing sigils at cardinal points, the frame conveys absolute divine protection and stability, rectangular card frame with large transparent center window for artwork`,
+  },
+  {
+    name: 'endless-stabilizer',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, necromantic spectral stabilizer card border, heavy ancient bone and dark stone ward frame, thick death-seal corners with phylactery crystal settings, entropy-binding runes carved deep into bone to anchor reality, spectral chains woven through the frame structure, preservation sigils at cardinal points, the frame conveys death-magic containment holding entropy at bay, rectangular card frame with large transparent center window for artwork`,
+  },
+
+  // --- Planar Ruin Frames (1 universal) ---
+  {
+    name: 'planar-ruin',
+    category: 'frames',
+    prompt: `${FRAME_STYLE_BASE}, ancient ruined architectural card border, crumbling stone and cracked marble frame with weathered edges, faint residual magical energy glowing in the cracks, moss and age covering portions of the frame, mixed materials suggesting multiple civilizations, neutral earth tones with subtle magical glow, the frame conveys ancient power slowly fading, rectangular card frame with large transparent center window for artwork`,
   },
 ];
 
@@ -162,7 +223,7 @@ const CARD_BACKS = [
   {
     name: 'card-back-ironwright',
     category: 'backs',
-    prompt: 'Fantasy card game card back design, centered brass and iron faction emblem of interlocking gears forming a flower pattern, industrial steampunk background with riveted metal plates and steam, warm brass copper and iron tones, ornate mechanical border, hand-painted oil painting style, visible brushwork, classical fantasy illustration, symmetric design, no text no words no letters',
+    prompt: 'Fantasy card game card back design, centered cold iron and concrete faction emblem of interlocking industrial conduits forming a reactor-core pattern, brutalist space-industrial background with riveted hull plates and reactor exhaust, cold steel gunmetal and reactor-orange tones, brutalist industrial border with exposed rebar details, hand-painted oil painting style, visible brushwork, classical fantasy illustration, symmetric design, no text no words no letters',
   },
   {
     name: 'card-back-fey',
@@ -173,6 +234,16 @@ const CARD_BACKS = [
     name: 'card-back-demonic',
     category: 'backs',
     prompt: 'Fantasy card game card back design, centered infernal faction emblem of a horned skull wreathed in hellfire, volcanic hellscape background with lava cracks and ash, deep crimson black and ember orange color scheme, bone and obsidian border, hand-painted oil painting style, visible brushwork, classical fantasy illustration, symmetric design, no text no words no letters',
+  },
+  {
+    name: 'card-back-celestial',
+    category: 'backs',
+    prompt: 'Fantasy card game card back design, centered divine faction emblem of a golden sun with radiant wings spreading outward, celestial background of clouds and divine light with golden dust motes, burnished gold and white marble and rose color scheme, sacred geometry border with crystal inlays, hand-painted oil painting style, visible brushwork, classical fantasy illustration, symmetric design, no text no words no letters',
+  },
+  {
+    name: 'card-back-endless',
+    category: 'backs',
+    prompt: 'Fantasy card game card back design, centered undead faction emblem of a spectral skull wreathed in purple mist with hollow glowing eyes, necropolis background with crumbling mausoleums and ghostly luminescence, deep purple and bone white and spectral teal color scheme, ancient bone and dark crystal border, hand-painted oil painting style, visible brushwork, classical fantasy illustration, symmetric design, no text no words no letters',
   },
 ];
 

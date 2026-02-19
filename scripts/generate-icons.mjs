@@ -44,7 +44,7 @@ const NEGATIVE_PROMPT =
   'white background, collage, grid layout, concept art sheet, UI mockup, wireframe';
 
 const ICONS = [
-  // --- Keyword Icons (7) — 256x256, transparent bg ---
+  // --- Keyword Icons (9) — 256x256, transparent bg ---
   {
     name: 'shield',
     category: 'KeywordIcons',
@@ -87,13 +87,25 @@ const ICONS = [
     size: 256,
     prompt: `${ICON_STYLE}, an arrow or blade piercing straight through a metal shield, penetrating force, sharp edges and shattered armor fragments, the blade glowing with piercing energy, dynamic impact, fantasy armor-piercing icon`,
   },
+  {
+    name: 'haste',
+    category: 'KeywordIcons',
+    size: 256,
+    prompt: `${ICON_STYLE}, a lightning bolt crackling with speed lines and motion blur, electric energy surging forward, streaks of golden-white light trailing behind, dynamic forward momentum, the bolt leaving afterimages, fantasy haste speed icon`,
+  },
+  {
+    name: 'ward',
+    category: 'KeywordIcons',
+    size: 256,
+    prompt: `${ICON_STYLE}, a translucent magical shield barrier with glowing arcane runes floating on its surface, hexagonal energy patterns, pale blue and silver protective light, runes orbiting the barrier, impenetrable magical ward, fantasy ward protection icon`,
+  },
 
-  // --- Faction Emblems (3) — 512x512 ---
+  // --- Faction Emblems (5) — 512x512 ---
   {
     name: 'ironwright-emblem',
     category: 'FactionEmblems',
     size: 512,
-    prompt: `${EMBLEM_STYLE}, interlocking brass and copper gears forming an intricate flower mandala pattern, industrial Art Nouveau steampunk guild crest, warm ochre and burnished metal tones, mechanical precision meets organic beauty, steam and soot atmosphere, Ironwright Collective guild seal`,
+    prompt: `${EMBLEM_STYLE}, interlocking cold-rolled iron conduits and reactor core forming an industrial mandala pattern, brutalist space-industrial guild crest, cold gunmetal and reactor-orange tones, industrial precision meets brutal scale, reactor exhaust and concrete atmosphere, Ironwright Collective guild seal`,
   },
   {
     name: 'fey-emblem',
@@ -106,6 +118,18 @@ const ICONS = [
     category: 'FactionEmblems',
     size: 512,
     prompt: `${EMBLEM_STYLE}, a horned skull wearing an infernal crown, hellfire burning in the eye sockets, bone and obsidian materials, demonic kingdom sigil, deep crimson and charcoal black, menacing and powerful, Demonic Kingdoms infernal seal`,
+  },
+  {
+    name: 'celestial-emblem',
+    category: 'FactionEmblems',
+    size: 512,
+    prompt: `${EMBLEM_STYLE}, a golden sun with radiant wings spreading outward, divine light emanating from the center, sacred geometry halo ring behind, hammered gold and white marble materials, burnished gold and pale rose tones, righteous and commanding, Celestial Crusade divine seal`,
+  },
+  {
+    name: 'endless-emblem',
+    category: 'FactionEmblems',
+    size: 512,
+    prompt: `${EMBLEM_STYLE}, a spectral skull wreathed in swirling purple mist, hollow glowing eye sockets with ghostly teal light, bone and dark crystal materials, necromantic death motif, deep purple and bone white and spectral teal tones, melancholic and inevitable, The Endless death seal`,
   },
 
   // --- Currency/Shard Icons (4) — 256x256 ---
