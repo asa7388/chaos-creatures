@@ -59,6 +59,24 @@ enum ParticleEffects {
             emitter.particleSize = CGSize(width: 5, height: 5)
             emitter.particleSpeed = 100
             emitter.yAcceleration = 30 // Embers rise
+
+        case .celestialCrusade:
+            // Divine radiance — golden light
+            emitter.particleColor = UIColor(hex: "#DAA520")
+            emitter.particleColorBlendFactor = 1.0
+            emitter.particleSize = CGSize(width: 6, height: 6)
+            emitter.particleSpeed = 120
+            emitter.yAcceleration = 40 // Light rises
+
+        case .theEndless:
+            // Spectral mist — purple wisps
+            emitter.particleColor = UIColor(hex: "#6B3FA0")
+            emitter.particleColorBlendFactor = 1.0
+            emitter.particleSize = CGSize(width: 7, height: 3)
+            emitter.particleSpeed = 60
+            emitter.particleRotationRange = .pi
+            emitter.particleRotationSpeed = 1.5
+            emitter.yAcceleration = 10 // Wisps drift upward slowly
         }
 
         emitter.particleBlendMode = .add

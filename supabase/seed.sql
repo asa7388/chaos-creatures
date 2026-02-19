@@ -10,7 +10,7 @@
 -- ============================================================================
 
 -- ============================================================================
--- 1. FACTIONS (3 factions from doc 01 Section 5 / doc 02 Section 10)
+-- 1. FACTIONS (5 factions: 3 original + 2 expansion)
 -- ============================================================================
 
 INSERT INTO factions (id, name, short_name, exclusive_mechanic, art_prompt_prefix, flavor_voice, name_voice, color_primary, color_secondary, color_background, particle_theme) VALUES
@@ -19,13 +19,13 @@ INSERT INTO factions (id, name, short_name, exclusive_mechanic, art_prompt_prefi
   'The Ironwright Collective',
   'IRONWRIGHT',
   'AUGMENT',
-  'steampunk fantasy art, brass and copper tones, gears and steam, riveted armor, clockwork mechanisms, industrial landscapes, warm metallic lighting, detailed mechanical components, fantasy engineering aesthetic',
-  'Industrial, pragmatic, references engineering and invention. Dry wit. Functional beauty. "Efficiency is its own elegance."',
-  'Mechanical, compound words, references metals/gears/steam. Examples: Brassforge, Steamvein, Cogwright, Ironclad.',
-  '#C87533',
-  '#D4A574',
-  '#2A1F14',
-  'steam_sparks'
+  'brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar, hydraulic pistons, orbital shipyard machinery, reactor glow, void-forge exhaust, painted like a Piranesi impossible architecture or John Martin apocalyptic industrial scale',
+  'Industrial, pragmatic, references engineering and void conquest. Dry wit. Functional brutality. "Efficiency is its own elegance."',
+  'Mechanical, compound words, references iron/void/industry. Examples: Rebargolem, Voidforge, Ironclad, Gravwell.',
+  '#6B7B8D',
+  '#E07020',
+  '#1A1D23',
+  'industrial_sparks'
 ),
 (
   'a0000000-0000-0000-0000-000000000002',
@@ -52,22 +52,48 @@ INSERT INTO factions (id, name, short_name, exclusive_mechanic, art_prompt_prefi
   '#FF4444',
   '#1A0A0A',
   'hellfire_embers'
+),
+(
+  'a0000000-0000-0000-0000-000000000004',
+  'The Celestial Crusade',
+  'CELESTIAL_CRUSADE',
+  'EXALT',
+  'divine crusader entity, hammered gold plate and white marble, radiant halo, wings of light, sacred geometry, celestial armor, burning righteous fury, painted like a Gustave Dore biblical illustration or William Blake visionary painting',
+  'Righteous, commanding, references divine mandate and celestial hierarchy. Superior and absolute. "The light does not ask permission to shine."',
+  'Divine, compound words, references light/heaven/judgment. Examples: Dawnblade, Sanctiveil, Gloryhammer, Radiantcrest.',
+  '#DAA520',
+  '#F5F0E1',
+  '#1A1520',
+  'divine_radiance'
+),
+(
+  'a0000000-0000-0000-0000-000000000005',
+  'The Endless',
+  'THE_ENDLESS',
+  'PERSIST',
+  'undead spectral entity, bone and tattered cloth, ghostly luminescence, necromantic symbols, phylacteries, spectral chains, painted like a Gustave Dore Inferno etching or Francisco Goya Black Painting',
+  'Hollow, patient, references inevitability and the passage beyond. Melancholic and inevitable. "We were here before you. We will remain after."',
+  'Death-themed, compound words, references bone/shadow/void. Examples: Graveweald, Hollowmere, Duskpyre, Spectraveil.',
+  '#6B3FA0',
+  '#E8DCC8',
+  '#0D0D1A',
+  'spectral_mist'
 )
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- 2. AVATARS (6 avatars, 2 per faction from doc 00 Section 10 / doc 01 Section 5)
+-- 2. AVATARS (10 avatars, 2 per faction)
 -- ============================================================================
 
 INSERT INTO avatars (id, name, faction_id, instability_modifier, title, lore_text, unlock_condition) VALUES
--- Ironwright Collective
+-- Ironwright Collective (rethemed: brutalist space-industrial)
 (
   'b0000000-0000-0000-0000-000000000001',
   'Aldric, the Forgemaster',
   'a0000000-0000-0000-0000-000000000001',
   -5,
   'The Forgemaster',
-  'Master of the Great Foundry, Aldric believes in precision and order. Every gear in its place, every piston firing on time. His creations are marvels of engineering — slow to build, impossible to break.',
+  'Master of the Orbital Foundry, Aldric believes in precision and order. Every piston firing on schedule, every reactor calibrated to the microgram. His constructs are marvels of void-engineering — slow to build, impossible to break.',
   '{"type": "FREE_STARTER"}'::jsonb
 ),
 (
@@ -76,7 +102,7 @@ INSERT INTO avatars (id, name, faction_id, instability_modifier, title, lore_tex
   'a0000000-0000-0000-0000-000000000001',
   -2,
   'The Entropy Smith',
-  'Where Aldric sees order, Vex sees opportunity in chaos. Her inventions push the boundaries of what brass and steam can endure — overclocked, overheated, and devastatingly effective. Until they explode.',
+  'Where Aldric sees order, Vex sees opportunity in entropy. Her inventions push the boundaries of what cold iron and reactor fuel can endure — overclocked, overheated, and devastatingly effective. Until they detonate.',
   '{"type": "FREE_STARTER"}'::jsonb
 ),
 -- Fey Courts
@@ -115,6 +141,44 @@ INSERT INTO avatars (id, name, faction_id, instability_modifier, title, lore_tex
   -2,
   'The Unbound',
   'Lilith rejected every pact, every chain, every throne. She burns with uncontrolled Corruption — a walking cataclysm who traded safety for raw, untethered power. She will consume everything, herself included.',
+  '{"type": "FREE_STARTER"}'::jsonb
+),
+-- Celestial Crusade
+(
+  'b0000000-0000-0000-0000-000000000007',
+  'Serevain, the Binding Light',
+  'a0000000-0000-0000-0000-000000000004',
+  -6,
+  'The Binding Light',
+  'Commander of the Knights of Deliverance, Serevain channels divine mandate through chains of radiant light. Every link is a prayer, every prayer a binding. The faithful kneel willingly; the heretics kneel regardless.',
+  '{"type": "FREE_STARTER"}'::jsonb
+),
+(
+  'b0000000-0000-0000-0000-000000000008',
+  'Ophaniel, the Thousand-Eyed',
+  'a0000000-0000-0000-0000-000000000004',
+  -1,
+  'The Thousand-Eyed',
+  'Ophaniel sees everything — past, present, and the fracturing possibilities of what might come. Among Heaven''s Chosen, prophecy is certainty. Ophaniel embraces the chaos of revelation, knowing that even divine plans must sometimes burn to be reborn.',
+  '{"type": "FREE_STARTER"}'::jsonb
+),
+-- The Endless
+(
+  'b0000000-0000-0000-0000-000000000009',
+  'Vothrak, the Stitched King',
+  'a0000000-0000-0000-0000-000000000005',
+  -3,
+  'The Stitched King',
+  'Ruler of the Necromantic Cabals, Vothrak has died seven times and been reassembled each time by his lieutenants. Every seam is a lesson, every scar a treaty. He rules the dead because he understands what they lost — and what they still crave.',
+  '{"type": "FREE_STARTER"}'::jsonb
+),
+(
+  'b0000000-0000-0000-0000-000000000010',
+  'Thessaly, the Fading Whisper',
+  'a0000000-0000-0000-0000-000000000005',
+  -2,
+  'The Fading Whisper',
+  'Thessaly is a Lost Spectre — she does not remember who she was, only what she has become. Her whispers erode reality itself, unraveling the boundaries between the living and the dead. She does not haunt. She reminds.',
   '{"type": "FREE_STARTER"}'::jsonb
 )
 ON CONFLICT (id) DO NOTHING;
@@ -363,6 +427,25 @@ INSERT INTO quest_templates (id, mission_type, difficulty, period, description, 
   ('W10', 'WIN_WITH_STYLE',         'HARD',   'WEEKLY', 'Win 5 games with 3+ Legendary cards on board', 5, 200, 'EPIC', 1, 1.00)
 ON CONFLICT (id) DO NOTHING;
 
+-- Expansion quests: daily (8) + weekly (4) for new factions/mechanics/ruins
+INSERT INTO quest_templates (id, mission_type, difficulty, period, description, target_value, base_dust, shard_reward_tier, shard_reward_count, shard_reward_chance) VALUES
+  ('D21', 'PLAY_CARDS',             'EASY',   'DAILY', 'Play 3 Planar Ruins',                         3,  20, NULL,       0, 0.00),
+  ('D22', 'WIN_GAMES',              'MEDIUM', 'DAILY', 'Win 2 games with a Celestial Crusade deck',   2,  30, 'UNCOMMON', 1, 0.20),
+  ('D23', 'WIN_GAMES',              'MEDIUM', 'DAILY', 'Win 2 games with an Endless deck',            2,  30, 'UNCOMMON', 1, 0.20),
+  ('D24', 'DEAL_DAMAGE',            'MEDIUM', 'DAILY', 'Trigger Exalt on 5 creatures',                5,  30, 'UNCOMMON', 1, 0.20),
+  ('D25', 'DEAL_DAMAGE',            'MEDIUM', 'DAILY', 'Trigger Persist on 5 creatures',              5,  30, 'UNCOMMON', 1, 0.20),
+  ('D26', 'PLAY_CREATURES',         'HARD',   'DAILY', 'Play 10 creatures with Haste',               10,  45, 'RARE',     1, 0.30),
+  ('D27', 'PLAY_CREATURES',         'HARD',   'DAILY', 'Play 10 creatures with Ward',                10,  45, 'RARE',     1, 0.30),
+  ('D28', 'WIN_WITH_STYLE',         'HARD',   'DAILY', 'Win a game with 2+ Planar Ruins on board',    1,  45, 'RARE',     1, 0.30)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO quest_templates (id, mission_type, difficulty, period, description, target_value, base_dust, shard_reward_tier, shard_reward_count, shard_reward_chance) VALUES
+  ('W11', 'WIN_GAMES',              'MEDIUM', 'WEEKLY', 'Win 5 games with Celestial or Endless decks', 5, 150, 'RARE',  1, 1.00),
+  ('W12', 'PLAY_CARDS',             'MEDIUM', 'WEEKLY', 'Play 15 Planar Ruins this week',             15, 150, 'RARE',  1, 1.00),
+  ('W13', 'DEAL_DAMAGE',            'HARD',   'WEEKLY', 'Trigger Exalt or Persist 25 times this week', 25, 200, 'EPIC', 1, 1.00),
+  ('W14', 'WIN_WITH_STYLE',         'HARD',   'WEEKLY', 'Win 3 games with all 5 factions this week',   3, 200, 'EPIC', 1, 1.00)
+ON CONFLICT (id) DO NOTHING;
+
 -- ============================================================================
 -- 6. ACHIEVEMENTS (20+ from doc 00 Section 15 / doc 02 Section 17)
 -- ============================================================================
@@ -388,8 +471,24 @@ INSERT INTO achievements (name, description, category, target_value, reward_type
 
 -- Collection achievements
 ('Hoarder',               'Own 50 cards',                                          'COLLECTION', 50, 'XP',    300, NULL),
-('Faction Explorer',      'Own cards in all 3 factions',                           'COLLECTION',  3, 'XP',    500, NULL),
+('Faction Explorer',      'Own cards in all 5 factions',                           'COLLECTION',  5, 'XP',    500, NULL),
 ('Pure Attunement',       'Own a card with 4 modifiers all of the same attunement', 'COLLECTION', 1, 'XP',   750, NULL),
+
+-- Celestial Crusade achievements
+('Crusader Initiate',     'Win 10 games with a Celestial Crusade deck',            'BATTLE',     10, 'XP',    500, NULL),
+('Radiant Champion',      'Win 50 games with a Celestial Crusade deck',            'BATTLE',     50, 'XP',   1500, 'Radiant Champion'),
+('Divine Mandate',        'Trigger Exalt 100 times',                               'BATTLE',    100, 'XP',   1000, 'Exalted'),
+('Heaven''s Chosen',      'Evolve 10 Celestial Crusade cards to Rare or higher',   'EVOLUTION',  10, 'XP',    750, NULL),
+
+-- The Endless achievements
+('Whisper in the Dark',   'Win 10 games with an Endless deck',                     'BATTLE',     10, 'XP',    500, NULL),
+('Inevitable',            'Win 50 games with an Endless deck',                     'BATTLE',     50, 'XP',   1500, 'The Inevitable'),
+('Undying Will',          'Trigger Persist 100 times',                             'BATTLE',    100, 'XP',   1000, 'Undying'),
+('Beyond the Veil',       'Evolve 10 Endless cards to Rare or higher',             'EVOLUTION',  10, 'XP',    750, NULL),
+
+-- Planar Ruins achievements
+('Ruin Architect',        'Play 50 Planar Ruins',                                  'COLLECTION', 50, 'XP',    500, NULL),
+('Five Factions',         'Own cards in all 5 factions',                            'COLLECTION',  5, 'XP',   1000, 'Planeswalker'),
 
 -- Chaos Roll achievements
 ('Natural One',           'Roll a natural 1 on the D20',                           'CHAOS_ROLL',  1, 'XP',    100, NULL),

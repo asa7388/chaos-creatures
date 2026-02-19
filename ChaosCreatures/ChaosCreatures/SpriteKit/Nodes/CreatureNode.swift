@@ -274,6 +274,8 @@ final class CreatureNode: SKSpriteNode {
         case .deathtouch: return UIColor(hex: "#E63946")
         case .taunt: return UIColor(hex: "#FFD700")
         case .piercing: return UIColor(hex: "#FFC107")
+        case .haste: return UIColor(hex: "#FF9800")
+        case .ward: return UIColor(hex: "#B39DDB")
         }
     }
 

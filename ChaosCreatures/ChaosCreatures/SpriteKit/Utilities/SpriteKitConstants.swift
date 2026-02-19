@@ -305,6 +305,8 @@ enum SK {
             case .ironwright: factionKey = "ironwright"
             case .feyCourts: factionKey = "fey"
             case .demonicKingdoms: factionKey = "demonic"
+            case .celestialCrusade: factionKey = "celestial"
+            case .theEndless: factionKey = "endless"
             }
             let tierKey: String
             switch tier {
@@ -336,6 +338,8 @@ enum SK {
             case .deathtouch: key = "deathtouch"
             case .taunt: key = "taunt"
             case .piercing: key = "piercing"
+            case .haste: key = "haste"
+            case .ward: key = "ward"
             }
             return "KeywordIcons/\(key)"
         }
@@ -350,6 +354,8 @@ enum SK {
             case .ironwright: key = "ironwright"
             case .feyCourts: key = "fey"
             case .demonicKingdoms: key = "demonic"
+            case .celestialCrusade: key = "celestial"
+            case .theEndless: key = "endless"
             }
             return "FactionEmblems/\(key)"
         }
@@ -366,6 +372,8 @@ enum SK {
             case .ironwright: key = "ironwright"
             case .feyCourts: key = "fey"
             case .demonicKingdoms: key = "demonic"
+            case .celestialCrusade: key = "celestial"
+            case .theEndless: key = "endless"
             }
             return "CardBacks/card-back-\(key)"
         }

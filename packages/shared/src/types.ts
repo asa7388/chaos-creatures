@@ -3,13 +3,13 @@
 // Must match: DB enums (00001_enums.sql), Swift enums (Enums.swift), Edge Function types.
 
 /** Faction identifiers */
-export type FactionId = 'IRONWRIGHT' | 'FEY_COURTS' | 'DEMONIC_KINGDOMS';
+export type FactionId = 'IRONWRIGHT' | 'FEY_COURTS' | 'DEMONIC_KINGDOMS' | 'CELESTIAL_CRUSADE' | 'THE_ENDLESS';
 
 /** Card type */
-export type CardType = 'CREATURE' | 'SPELL' | 'STABILIZER';
+export type CardType = 'CREATURE' | 'SPELL' | 'STABILIZER' | 'PLANAR_RUIN';
 
 /** Keyword identifiers */
-export type Keyword = 'SHIELD' | 'LIFESTEAL' | 'FLYING' | 'REACH' | 'DEATHTOUCH' | 'TAUNT' | 'PIERCING';
+export type Keyword = 'SHIELD' | 'LIFESTEAL' | 'FLYING' | 'REACH' | 'DEATHTOUCH' | 'TAUNT' | 'PIERCING' | 'HASTE' | 'WARD';
 
 /** Evolution tier (replaces "Rarity" — cards evolve, not drop at rarity) */
 export type EvolutionTier = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';

@@ -2,10 +2,10 @@
 // Source of truth: docs/design/02-card-data-model.md
 
 /** Card type */
-export type CardType = 'CREATURE' | 'SPELL' | 'STABILIZER';
+export type CardType = 'CREATURE' | 'SPELL' | 'STABILIZER' | 'PLANAR_RUIN';
 
-/** 7 creature keywords */
-export type Keyword = 'SHIELD' | 'LIFESTEAL' | 'FLYING' | 'REACH' | 'DEATHTOUCH' | 'TAUNT' | 'PIERCING';
+/** 9 creature keywords */
+export type Keyword = 'SHIELD' | 'LIFESTEAL' | 'FLYING' | 'REACH' | 'DEATHTOUCH' | 'TAUNT' | 'PIERCING' | 'HASTE' | 'WARD';
 
 /** Evolution tier */
 export type EvolutionTier = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
@@ -34,10 +34,10 @@ export type TurnPhase =
   | 'GAME_OVER';
 
 /** Faction short identifiers */
-export type FactionId = 'IRONWRIGHT' | 'FEY_COURTS' | 'DEMONIC_KINGDOMS';
+export type FactionId = 'IRONWRIGHT' | 'FEY_COURTS' | 'DEMONIC_KINGDOMS' | 'CELESTIAL_CRUSADE' | 'THE_ENDLESS';
 
 /** Faction exclusive mechanic */
-export type FactionMechanic = 'AUGMENT' | 'BOND' | 'CORRUPTION';
+export type FactionMechanic = 'AUGMENT' | 'BOND' | 'CORRUPTION' | 'EXALT' | 'PERSIST';
 
 /** Modifier pool type */
 export type ModifierPoolType = 'UNIVERSAL' | 'FACTION';

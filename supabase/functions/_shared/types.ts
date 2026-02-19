@@ -3,7 +3,7 @@
 
 // ─── Enums ───────────────────────────────────────────────
 
-export type CardType = "CREATURE" | "SPELL" | "STABILIZER";
+export type CardType = "CREATURE" | "SPELL" | "STABILIZER" | "PLANAR_RUIN";
 
 export type Keyword =
   | "SHIELD"
@@ -12,7 +12,9 @@ export type Keyword =
   | "REACH"
   | "DEATHTOUCH"
   | "TAUNT"
-  | "PIERCING";
+  | "PIERCING"
+  | "HASTE"
+  | "WARD";
 
 export type EvolutionTier = "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY";
 
@@ -20,7 +22,7 @@ export type ShardTier = "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY";
 
 export type SubscriptionTier = "FREE" | "MID" | "HIGH";
 
-export type FactionShortName = "IRONWRIGHT" | "FEY_COURTS" | "DEMONIC_KINGDOMS";
+export type FactionShortName = "IRONWRIGHT" | "FEY_COURTS" | "DEMONIC_KINGDOMS" | "CELESTIAL_CRUSADE" | "THE_ENDLESS";
 
 export type MissionType =
   | "WIN_GAMES"

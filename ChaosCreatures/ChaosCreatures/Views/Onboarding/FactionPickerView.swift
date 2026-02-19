@@ -124,6 +124,10 @@ struct FactionCardView: View {
             return "Weavers of natural bonds. Create powerful synergies between creatures that share the battlefield."
         case .demonicKingdoms:
             return "Wielders of dark corruption. Sacrifice resources for devastating power spikes that can swing entire games."
+        case .celestialCrusade:
+            return "Champions of divine exaltation. Empower your strongest creatures with celestial blessings that grow with righteous victory."
+        case .theEndless:
+            return "Masters of undying persistence. Your fallen creatures refuse to stay dead, returning weakened but relentless."
         }
     }
 
@@ -135,6 +139,10 @@ struct FactionCardView: View {
             return ["Bond", "Synergy", "Teamwork"]
         case .demonicKingdoms:
             return ["Corruption", "Sacrifice", "Power"]
+        case .celestialCrusade:
+            return ["Exalt", "Divine Buffs", "Judgment"]
+        case .theEndless:
+            return ["Persist", "Undying", "Inevitability"]
         }
     }
 }
@@ -147,6 +155,8 @@ extension FactionShortName {
         case .ironwright: return "gearshape.2.fill"
         case .feyCourts: return "leaf.fill"
         case .demonicKingdoms: return "flame.fill"
+        case .celestialCrusade: return "sun.max.fill"
+        case .theEndless: return "moon.fill"
         }
     }
 }

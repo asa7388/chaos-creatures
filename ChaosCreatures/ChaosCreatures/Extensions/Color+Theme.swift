@@ -102,6 +102,8 @@ extension Color {
         case .ironwright: return .ironwright
         case .feyCourts: return .feyCourts
         case .demonicKingdoms: return .demonic
+        case .celestialCrusade: return Color(hex: "#DAA520")
+        case .theEndless: return Color(hex: "#6B3FA0")
         }
     }
 
@@ -160,6 +162,8 @@ extension FactionShortName {
         case .ironwright: return UIColor(hex: "#C9A84C")
         case .feyCourts: return UIColor(hex: "#4CAF50")
         case .demonicKingdoms: return UIColor(hex: "#E63946")
+        case .celestialCrusade: return UIColor(hex: "#DAA520")
+        case .theEndless: return UIColor(hex: "#6B3FA0")
         }
     }
 
@@ -168,6 +172,8 @@ extension FactionShortName {
         case .ironwright: return UIColor(hex: "#D4AF37")
         case .feyCourts: return UIColor(hex: "#81C784")
         case .demonicKingdoms: return UIColor(hex: "#FF5252")
+        case .celestialCrusade: return UIColor(hex: "#F5F0E1")
+        case .theEndless: return UIColor(hex: "#E8DCC8")
         }
     }
 
@@ -176,6 +182,8 @@ extension FactionShortName {
         case .ironwright: return .ironwright
         case .feyCourts: return .feyCourts
         case .demonicKingdoms: return .demonic
+        case .celestialCrusade: return Color(hex: "#DAA520")
+        case .theEndless: return Color(hex: "#6B3FA0")
         }
     }
 }

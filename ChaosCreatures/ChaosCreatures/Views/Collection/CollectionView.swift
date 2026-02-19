@@ -32,6 +32,8 @@ enum FactionFilter: String, Hashable, CaseIterable {
     case ironwright = "IRONWRIGHT"
     case feyCourts = "FEY_COURTS"
     case demonic = "DEMONIC_KINGDOMS"
+    case celestial = "CELESTIAL_CRUSADE"
+    case endless = "THE_ENDLESS"
 
     var displayName: String {
         switch self {
@@ -39,6 +41,8 @@ enum FactionFilter: String, Hashable, CaseIterable {
         case .ironwright: return "Ironwright"
         case .feyCourts: return "Fey Courts"
         case .demonic: return "Demonic"
+        case .celestial: return "Celestial"
+        case .endless: return "Endless"
         }
     }
 
@@ -48,6 +52,8 @@ enum FactionFilter: String, Hashable, CaseIterable {
         case .ironwright: return .ironwright
         case .feyCourts: return .feyCourts
         case .demonic: return .demonic
+        case .celestial: return Color(hex: "#DAA520")
+        case .endless: return Color(hex: "#6B3FA0")
         }
     }
 }
@@ -266,6 +272,8 @@ struct CollectionView: View {
         case .ironwright: targetShortName = .ironwright
         case .feyCourts: targetShortName = .feyCourts
         case .demonic: targetShortName = .demonicKingdoms
+        case .celestial: targetShortName = .celestialCrusade
+        case .endless: targetShortName = .theEndless
         }
         return Set(appState.factions.filter { $0.shortName == targetShortName }.map(\.id))
     }

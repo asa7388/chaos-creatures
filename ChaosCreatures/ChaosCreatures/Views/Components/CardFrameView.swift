@@ -175,6 +175,8 @@ struct CardDisplayData {
         case .ironwright: return "FactionEmblems/ironwright"
         case .feyCourts: return "FactionEmblems/fey"
         case .demonicKingdoms: return "FactionEmblems/demonic"
+        case .celestialCrusade: return "FactionEmblems/celestial"
+        case .theEndless: return "FactionEmblems/endless"
         case nil: return nil
         }
     }
@@ -452,6 +454,8 @@ struct CardFrameView: View {
         case .ironwright: return Color(hex: "#e8c06a")
         case .feyCourts: return Color(hex: "#6edba0")
         case .demonicKingdoms: return Color(hex: "#e86a6a")
+        case .celestialCrusade: return Color(hex: "#DAA520")
+        case .theEndless: return Color(hex: "#9B72CF")
         }
     }
 
@@ -597,6 +601,8 @@ struct CardFrameView: View {
         case .deathtouch: return .chaosRed
         case .taunt: return .tauntGold
         case .piercing: return .warningYellow
+        case .haste: return .damageOrange
+        case .ward: return Color(hex: "#B39DDB")
         }
     }
 }
@@ -695,6 +701,8 @@ extension Keyword {
         case .deathtouch: return "KeywordIcons/deathtouch"
         case .taunt: return "KeywordIcons/taunt"
         case .piercing: return "KeywordIcons/piercing"
+        case .haste: return "KeywordIcons/haste"
+        case .ward: return "KeywordIcons/ward"
         }
     }
 }

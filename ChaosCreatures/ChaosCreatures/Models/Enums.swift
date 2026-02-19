@@ -10,6 +10,7 @@ enum CardType: String, Codable, CaseIterable, Identifiable {
     case creature = "CREATURE"
     case spell = "SPELL"
     case stabilizer = "STABILIZER"
+    case planarRuin = "PLANAR_RUIN"
 
     var id: String { rawValue }
 
@@ -18,6 +19,7 @@ enum CardType: String, Codable, CaseIterable, Identifiable {
         case .creature: return "Creature"
         case .spell: return "Spell"
         case .stabilizer: return "Stabilizer"
+        case .planarRuin: return "Planar Ruin"
         }
     }
 }
@@ -32,6 +34,8 @@ enum Keyword: String, Codable, CaseIterable, Identifiable {
     case deathtouch = "DEATHTOUCH"
     case taunt = "TAUNT"
     case piercing = "PIERCING"
+    case haste = "HASTE"
+    case ward = "WARD"
 
     var id: String { rawValue }
 
@@ -44,6 +48,8 @@ enum Keyword: String, Codable, CaseIterable, Identifiable {
         case .deathtouch: return "Deathtouch"
         case .taunt: return "Taunt"
         case .piercing: return "Piercing"
+        case .haste: return "Haste"
+        case .ward: return "Ward"
         }
     }
 
@@ -56,6 +62,8 @@ enum Keyword: String, Codable, CaseIterable, Identifiable {
         case .deathtouch: return "Any damage this deals to a creature destroys it."
         case .taunt: return "Must be attacked and must block if able."
         case .piercing: return "Excess combat damage is dealt to the defending player."
+        case .haste: return "Can attack the turn it is played, ignoring delay effects."
+        case .ward: return "Cannot be targeted by opponent modifier effects for 1 turn after deployment."
         }
     }
 
@@ -68,6 +76,8 @@ enum Keyword: String, Codable, CaseIterable, Identifiable {
         case .deathtouch: return "skull.fill"
         case .taunt: return "exclamationmark.shield.fill"
         case .piercing: return "arrow.right.to.line"
+        case .haste: return "hare.fill"
+        case .ward: return "sparkles"
         }
     }
 }
@@ -192,6 +202,8 @@ enum FactionMechanic: String, Codable, CaseIterable {
     case augment = "AUGMENT"
     case bond = "BOND"
     case corruption = "CORRUPTION"
+    case exalt = "EXALT"
+    case persist = "PERSIST"
 }
 
 // MARK: - Trigger Types (Section 5)
@@ -565,6 +577,8 @@ enum FactionShortName: String, Codable, CaseIterable, Identifiable {
     case ironwright = "IRONWRIGHT"
     case feyCourts = "FEY_COURTS"
     case demonicKingdoms = "DEMONIC_KINGDOMS"
+    case celestialCrusade = "CELESTIAL_CRUSADE"
+    case theEndless = "THE_ENDLESS"
 
     var id: String { rawValue }
 
@@ -573,6 +587,8 @@ enum FactionShortName: String, Codable, CaseIterable, Identifiable {
         case .ironwright: return "The Ironwright Collective"
         case .feyCourts: return "The Fey Courts"
         case .demonicKingdoms: return "The Demonic Kingdoms"
+        case .celestialCrusade: return "The Celestial Crusade"
+        case .theEndless: return "The Endless"
         }
     }
 
@@ -581,6 +597,8 @@ enum FactionShortName: String, Codable, CaseIterable, Identifiable {
         case .ironwright: return "Ironwright"
         case .feyCourts: return "Fey Courts"
         case .demonicKingdoms: return "Demonic"
+        case .celestialCrusade: return "Celestial"
+        case .theEndless: return "Endless"
         }
     }
 
@@ -589,6 +607,8 @@ enum FactionShortName: String, Codable, CaseIterable, Identifiable {
         case .ironwright: return .augment
         case .feyCourts: return .bond
         case .demonicKingdoms: return .corruption
+        case .celestialCrusade: return .exalt
+        case .theEndless: return .persist
         }
     }
 

@@ -40,12 +40,21 @@ const DEMONIC_PREFIX =
   'burnt crimson and charcoal black palette, oppressive and heavy, ' +
   'in the style of Gustave Dore Dante Inferno engravings and Hieronymus Bosch hellscape paintings';
 
+const CELESTIAL_PREFIX =
+  'divine crusader entity, hammered gold plate and white marble, radiant halo, wings of light, ' +
+  'sacred geometry, celestial armor, burning righteous fury, ' +
+  'in the style of Gustave Dore biblical illustrations and William Blake visionary paintings';
+
+const ENDLESS_PREFIX =
+  'undead spectral entity, bone and tattered cloth, ghostly luminescence, ' +
+  'necromantic symbols, phylacteries, spectral chains, ' +
+  'in the style of Gustave Dore Inferno etchings and Francisco Goya Black Paintings';
+
 export const FACTION_PREFIXES: Record<string, string> = {
   IRONWRIGHT:
-    'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
-    'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
-    'warm ochre and raw umber palette, smoky atmospheric background, ' +
-    'in the style of John Martin apocalyptic industrial landscapes and Gustave Dore dramatic engravings',
+    'brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar, ' +
+    'hydraulic pistons, orbital shipyard machinery, reactor glow, void-forge exhaust, ' +
+    'in the style of Piranesi impossible architecture and John Martin apocalyptic industrial scale',
   FEY_COURTS:
     'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
     'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
@@ -53,6 +62,8 @@ export const FACTION_PREFIXES: Record<string, string> = {
     'in the style of Arthur Rackham twisted ink drawings and Edmund Dulac muted watercolors',
   DEMONIC: DEMONIC_PREFIX,
   DEMONIC_KINGDOMS: DEMONIC_PREFIX, // DB alias
+  CELESTIAL_CRUSADE: CELESTIAL_PREFIX,
+  THE_ENDLESS: ENDLESS_PREFIX,
 };
 
 // =============================================================================
@@ -156,6 +167,36 @@ export const FACTION_ENVIRONMENTS: Record<string, string[]> = {
     'in a blood-rain storm, the sky cracked open like a wound, crimson precipitation pooling on basalt',
     'inside a demonic war forge where weapons are hammered from cursed iron and quenched in ichor',
   ],
+  celestial: [
+    'in a cathedral of pure light, stained glass windows depicting divine victories, golden dust motes',
+    'on the steps of a marble celestial citadel, clouds below, twin suns blazing above',
+    'atop a floating temple island connected by bridges of solidified light',
+    'in a garden of crystal flowers and golden trees, where gravity lifts petals skyward',
+    'inside a war sanctum of hammered gold, battle standards of divine crusades lining the walls',
+    'on a battlefield where holy fire has scorched the earth white, angelic silhouettes in the sky',
+    'at the gates of divine judgment, massive scales of gold and ivory, petitioners below',
+    'in a reliquary vault of sacred weapons and armor, each glowing with inner radiance',
+    'on a celestial bridge between realms, stars visible below and above, halo rings orbiting',
+    'inside a prayer hall where thousands of candles float in formation, hymns echoing',
+    'at the summit of a holy mountain, lightning-struck and wind-scoured, divine mandate in the air',
+    'in a scriptorium of prophecy, scrolls floating and writing themselves in golden ink',
+    'on the prow of a golden warship sailing through clouds, angelic warriors at stations',
+  ],
+  endless: [
+    'in a necropolis of crumbling mausoleums, spectral light seeping from cracks in sealed tombs',
+    'on a bridge of bones spanning an abyss of whispering souls, ghostly luminescence below',
+    'inside a lich-king throne room, phylacteries in alcoves, tattered banners of forgotten kingdoms',
+    'in a graveyard where tombstones grow like trees, roots of bone piercing the surface',
+    'at the shore of a dead sea, still black water reflecting no light, ghost ships anchored',
+    'inside a collapsed library of the dead, spectral librarians shelving books of memory',
+    'on a frozen battlefield where the fallen still stand, ice-locked in their final poses',
+    'in a crypt beneath the world where time does not pass, cobwebs of pure darkness',
+    'at the boundary between life and death, one side green and warm, the other grey and still',
+    'inside a spiraling tower of skulls, each eye socket glowing with a fading memory',
+    'in a fungal forest of pale mushrooms and phosphorescent mold, growing from ancient remains',
+    'on the deck of a ghost galleon, tattered sails moving without wind, crew of shadows',
+    'in a cathedral of silence where sound itself has died, only the whisper of entropy remains',
+  ],
 };
 
 // =============================================================================
@@ -251,10 +292,12 @@ export const CHAOS_INSTRUCTION =
 // =============================================================================
 
 export const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
-  IRONWRIGHT: 'grimy industrial steampunk, corroded brass and blackened iron, in the style of John Martin and Gustave Dore',
+  IRONWRIGHT: 'brutalist space-industrial construct, poured concrete and cold-rolled iron, in the style of Piranesi and John Martin',
   FEY_COURTS: 'dark fey forest creature, twisted ancient wood, in the style of Arthur Rackham and Edmund Dulac',
   DEMONIC: 'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
   DEMONIC_KINGDOMS: 'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
+  CELESTIAL_CRUSADE: 'divine crusader entity, hammered gold plate and white marble, in the style of Gustave Dore and William Blake',
+  THE_ENDLESS: 'undead spectral entity, bone and tattered cloth, ghostly luminescence, in the style of Gustave Dore and Francisco Goya',
 };
 
 // =============================================================================
@@ -558,8 +601,8 @@ export function selectComposition(card: CardPromptMetadata): string {
 
 /**
  * Select a random faction environment for atmospheric backgrounds.
- * Maps faction IDs (IRONWRIGHT, FEY_COURTS, DEMONIC, DEMONIC_KINGDOMS)
- * to lowercase lookup keys.
+ * Maps faction IDs (IRONWRIGHT, FEY_COURTS, DEMONIC, DEMONIC_KINGDOMS,
+ * CELESTIAL_CRUSADE, THE_ENDLESS) to lowercase lookup keys.
  */
 export function selectEnvironment(faction: string): string {
   const factionMap: Record<string, string> = {
@@ -568,6 +611,10 @@ export function selectEnvironment(faction: string): string {
     fey: 'fey',
     demonic: 'demonic',
     demonic_kingdoms: 'demonic',
+    celestial_crusade: 'celestial',
+    celestial: 'celestial',
+    the_endless: 'endless',
+    endless: 'endless',
   };
   const key = factionMap[faction.toLowerCase()] || 'ironwright';
   const envs = FACTION_ENVIRONMENTS[key];
@@ -591,7 +638,7 @@ export function buildArtPrompt(
 ): FalAiBaseCardRequest {
   const factionPrefix = FACTION_PREFIXES[factionId];
   if (!factionPrefix) {
-    throw new Error(`Unknown faction: ${factionId}. Expected IRONWRIGHT, FEY_COURTS, or DEMONIC.`);
+    throw new Error(`Unknown faction: ${factionId}. Expected IRONWRIGHT, FEY_COURTS, DEMONIC, CELESTIAL_CRUSADE, or THE_ENDLESS.`);
   }
 
   // Composition: explicit override > auto-select from metadata > default
@@ -741,24 +788,34 @@ export function buildPrismaticRefinementRequest(
 
 const DEMONIC_NAME_VOICE = 'Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Direct hard sounds preferred.';
 
+const CELESTIAL_NAME_VOICE = 'Divine and compound. Reference light/heaven/judgment: Dawnblade, Sanctiveil, Gloryhammer, Radiantcrest. Use sacred titles: Herald, Saint, Crusader, Exarch, Seraph. Use celestial materials: Marble, Gold, Ivory, Crystal. Absolute and commanding.';
+const ENDLESS_NAME_VOICE = 'Death-themed and compound. Reference bone/shadow/void: Graveweald, Hollowmere, Duskpyre, Spectraveil. Use undead titles: Lich, Wraith, Revenant, Shade, Haunt. Use decay materials: Bone, Dust, Ash, Tatter. Melancholic and inevitable.';
+
 export const FACTION_NAME_VOICES: Record<string, string> = {
   IRONWRIGHT:
-    'Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred.',
+    'Industrial and precise. Use engineering terminology: Rebar, Piston, Reactor, Forged, Tempered, Wrought, Void-forged. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Foundry, Crucible, Orbital, Shipyard. Compound nouns preferred.',
   FEY_COURTS:
     'Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, Moss. Use fey titles: Lord, Lady, Warden, Huntress, Speaker, Court. Use seasons and celestial: Spring, Autumn, Moon, Star, Dawn. Use mythic descriptors: Verdant, Eternal, Wild, Ancient. Poetic structures preferred.',
   DEMONIC: DEMONIC_NAME_VOICE,
   DEMONIC_KINGDOMS: DEMONIC_NAME_VOICE,
+  CELESTIAL_CRUSADE: CELESTIAL_NAME_VOICE,
+  THE_ENDLESS: ENDLESS_NAME_VOICE,
 };
 
 const DEMONIC_FLAVOR_TONE = 'Visceral and direct. Emphasizes power, sacrifice, consumption, and hunger. Order = controlled fury, pacts honored in blood, restrained corruption. Chaos = unbound carnage, self-immolation for power, apocalyptic hunger. Tone is declarative and ominous \u2014 short sentences like dark scripture.';
 
+const CELESTIAL_FLAVOR_TONE = 'Righteous and commanding. Emphasizes divine mandate, celestial hierarchy, judgment, and burning light. Order = divine perfection, the light made absolute. Chaos = righteous fury unleashed, heaven\'s wrath unbound. Tone is superior and absolute \u2014 declarations of divine truth.';
+const ENDLESS_FLAVOR_TONE = 'Hollow and patient. Emphasizes inevitability, the passage beyond, entropy, and memory. Order = the patient certainty of death, bones that endure. Chaos = unraveling reality, spectral fury, the void between. Tone is melancholic and inevitable \u2014 whispers from beyond.';
+
 export const FACTION_FLAVOR_TONES: Record<string, string> = {
   IRONWRIGHT:
-    'Technical reverence for craftsmanship. Emphasizes function, precision, and engineering. Order = perfected systems, harmonious mechanisms. Chaos = overloaded, screaming gears, design pushed beyond limits. Tone is clipped and declarative \u2014 short sentences that sound like engineer\'s notes.',
+    'Industrial pragmatism. Emphasizes function, precision, and void-conquest engineering. Order = perfected systems, reactors humming in harmony. Chaos = overloaded, reactor breach, design pushed beyond limits. Tone is clipped and declarative \u2014 short sentences that sound like engineer\'s notes.',
   FEY_COURTS:
     'Ancient and lyrical. Emphasizes cycles, memory, wildness, and time. Order = harmony with nature, patient growth, eternal memory. Chaos = the wild hunt, primal fury, untamed power that predates civilization. Tone is poetic but not flowery \u2014 spare and weighted with age.',
   DEMONIC: DEMONIC_FLAVOR_TONE,
   DEMONIC_KINGDOMS: DEMONIC_FLAVOR_TONE,
+  CELESTIAL_CRUSADE: CELESTIAL_FLAVOR_TONE,
+  THE_ENDLESS: ENDLESS_FLAVOR_TONE,
 };
 
 export const FACTION_DISPLAY_NAMES: Record<string, string> = {
@@ -766,6 +823,8 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
   FEY_COURTS: 'The Fey Courts',
   DEMONIC: 'The Demonic Kingdoms',
   DEMONIC_KINGDOMS: 'The Demonic Kingdoms',
+  CELESTIAL_CRUSADE: 'The Celestial Crusade',
+  THE_ENDLESS: 'The Endless',
 };
 
 export interface NamingPromptInput {

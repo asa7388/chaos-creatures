@@ -18,6 +18,7 @@ import type {
   GameMode,
   EndReason,
   SeasonRank,
+  FactionId,
 } from './enums';
 
 // ─── Effect Schema (atomic game logic unit) ─────────────
@@ -125,6 +126,27 @@ export interface BattleCreature extends BattleCard {
   board_slot: number;
 }
 
+// ─── Battle Ruin (Planar Ruin on board) ─────────────
+
+export interface BattleRuin extends BattleCard {
+  // Current stats
+  health: number;
+  max_health: number;
+
+  // State
+  is_alive: boolean;
+
+  // Board position
+  board_slot: number;
+
+  // Ruin-specific effects
+  passive_effect: Effect;
+  destruction_penalty: Effect;
+
+  // Ward protection (cannot be targeted by opponent modifier effects for 1 turn)
+  ward_active: boolean;
+}
+
 // ─── Blocker Assignment ─────────────
 
 export interface BlockerAssignment {
@@ -162,8 +184,11 @@ export interface BattlePlayer {
   // Instability (computed)
   instability: number;
 
-  // Board: 5 slots, each null (empty) or occupied
-  board: (BattleCreature | null)[];
+  // Board: 5 slots, each null (empty) or occupied by a creature or ruin
+  board: (BattleCreature | BattleRuin | null)[];
+
+  // Whether a Planar Ruin is currently on the board
+  ruin_on_board: boolean;
 
   // Hand
   hand: BattleCard[];

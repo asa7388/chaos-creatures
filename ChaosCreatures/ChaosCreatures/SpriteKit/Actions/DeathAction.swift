@@ -56,6 +56,8 @@ enum DeathAction {
         case .ironwright: factionColor = UIColor(hex: "#D4AF37")
         case .feyCourts: factionColor = UIColor(hex: "#81C784")
         case .demonicKingdoms: factionColor = UIColor(hex: "#FF5252")
+        case .celestialCrusade: factionColor = UIColor(hex: "#DAA520")
+        case .theEndless: factionColor = UIColor(hex: "#6B3FA0")
         }
         let shatter = ParticleEffects.deathShatter(at: position, color: factionColor)
         shatter.zPosition = SK.ZPosition.particles

@@ -44,6 +44,8 @@ struct KeywordBadgeView: View {
         case .deathtouch: return .chaosRed
         case .taunt: return .tauntGold
         case .piercing: return .warningYellow
+        case .haste: return .damageOrange
+        case .ward: return Color(hex: "#B39DDB")
         }
     }
 }
