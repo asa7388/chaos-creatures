@@ -10,6 +10,9 @@ struct CardInstance: Codable, Identifiable, Equatable {
     let templateId: UUID
     let ownerId: UUID
 
+    // Card type (denormalized from template, may be nil for legacy data)
+    var cardType: CardType?
+
     // Current state
     var tier: EvolutionTier
     var currentName: String
@@ -50,6 +53,7 @@ struct CardInstance: Codable, Identifiable, Equatable {
         case id
         case templateId = "template_id"
         case ownerId = "owner_id"
+        case cardType = "card_type"
         case tier
         case currentName = "current_name"
         case currentAttack = "current_attack"
@@ -75,6 +79,11 @@ struct CardInstance: Codable, Identifiable, Equatable {
     // MARK: - Computed Properties
 
     var artURL: URL? { URL(string: artUrl) }
+
+    var isPlanarRuin: Bool { cardType == .planarRuin }
+    var isCreature: Bool { cardType == .creature }
+    var isSpell: Bool { cardType == .spell }
+    var isStabilizer: Bool { cardType == .stabilizer }
 
     /// Effective keywords = union of innate + modifier keywords
     var effectiveKeywords: [Keyword] {

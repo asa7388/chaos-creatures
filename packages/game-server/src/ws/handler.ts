@@ -357,7 +357,7 @@ function handleDeclareAction(
   }
 
   if (action.type === 'DECLARE_ATTACKERS') {
-    const result = handleDeclareAttackersAction(state, action.attacker_ids);
+    const result = handleDeclareAttackersAction(state, action.attacker_ids, action.ruin_targets);
     if (!result.valid) {
       throw new GameError('INVALID_ATTACKERS', result.error ?? 'Invalid attackers');
     }

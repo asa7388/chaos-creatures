@@ -13,6 +13,8 @@ module.exports = {
         ironwright: { DEFAULT: '#6B8AFF', dark: '#4A6AE0' },
         fey: { DEFAULT: '#7CDB8A', dark: '#5CB86A' },
         demonic: { DEFAULT: '#FF6B6B', dark: '#E04A4A' },
+        celestial: { DEFAULT: '#DAA520', dark: '#B8860B' },
+        endless: { DEFAULT: '#6B3FA0', dark: '#5A2D8C' },
         // Admin UI colors
         surface: {
           DEFAULT: '#1a1a2e',

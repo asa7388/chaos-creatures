@@ -1,745 +1,1047 @@
-# Chaos Creatures -- Art Direction & Visual Asset Plan
-
-**Version:** 1.0
-**Last Updated:** 2026-02-18
-**Dependencies:** `00-game-design-master.md`, `03-prompt-templates.md`, `08-audio-design.md`, `PLAN-faction-expansion.md`, `faction-art-bible.md`
-
----
+# Chaos Creatures --- Art Direction Document
 
 ## Revision Log
 
-| Date | Version | Changes |
-|---|---|---|
-| 2026-02-18 | v1.0 | Initial creation. Complete art inventory, decision matrix, background prompts, Planar Ruins art direction, season identity, asset purchase research, new/rethemed faction art bible sections. |
+| Date | Version | Changes | Author |
+|---|---|---|---|
+| 2026-02-18 | v1.0 | Initial creation. Complete art inventory, decision matrix, background prompts, Planar Ruins art direction, season identity, asset purchase research, new/rethemed faction art bible sections. | art-director |
+| 2026-02-18 | v2.0 | Complete rewrite for full 5-faction scope. Added: unified color palettes (Section 3), 5-faction visual identity guide with composition tendencies, creature design language, sub-faction differentiation, 13 environments per faction, public domain work citations (Section 4), expanded Planar Ruins direction with prompt templates (Section 5), complete app background prompts (Section 6), season visual identity (Section 7), purchasable asset research with specific recommendations (Section 8), asset production schedule with dependencies and milestones (Section 9). | art-director |
 
 ---
 
 ## Table of Contents
 
-1. [Art Style Foundation](#1-art-style-foundation)
-2. [Complete Art Inventory](#2-complete-art-inventory)
-3. [AI-Generated vs Purchased Decision Matrix](#3-ai-generated-vs-purchased-decision-matrix)
-4. [App Background Art Prompts](#4-app-background-art-prompts)
+1. [Art Inventory](#1-art-inventory)
+2. [AI-Generated vs. Purchased Decision Matrix](#2-ai-generated-vs-purchased-decision-matrix)
+3. [Color Palettes](#3-color-palettes)
+4. [Faction Visual Identity Guide](#4-faction-visual-identity-guide)
 5. [Planar Ruins Art Direction](#5-planar-ruins-art-direction)
-6. [Season 1 Visual Identity](#6-season-1-visual-identity)
-7. [Asset Purchase Research & Recommendations](#7-asset-purchase-research--recommendations)
-8. [Updated Faction Art Bible: Celestial Crusade](#8-updated-faction-art-bible-celestial-crusade)
-9. [Updated Faction Art Bible: The Endless](#9-updated-faction-art-bible-the-endless)
-10. [Updated Faction Art Bible: Ironwright Collective (Rethemed)](#10-updated-faction-art-bible-ironwright-collective-rethemed)
+6. [App Background Art Prompts](#6-app-background-art-prompts)
+7. [Season Visual Identity](#7-season-visual-identity)
+8. [Purchasable Asset Research](#8-purchasable-asset-research)
+9. [Asset Production Schedule](#9-asset-production-schedule)
 
 ---
 
-## 1. Art Style Foundation
+## 1. Art Inventory
 
-### Global Aesthetic
+Complete list of every visual asset needed for the full game, organized by category with exact counts.
 
-All visual art in Chaos Creatures adheres to a **palette knife oil painting / traditional media aesthetic**. This is the non-negotiable style anchor. Every piece of art -- card illustrations, backgrounds, icons, UI textures, and loading screens -- must look hand-painted, with visible impasto brushstrokes, ink linework, crosshatching, and the organic imperfections of real paint on real surfaces. Nothing should look digital, smooth, gradient-based, or AI-generated in the typical "smooth diffusion" sense.
+### 1.1 Card Art
 
-### LoRA Enforcement
-
-All card art is generated via fal.ai FLUX with a custom LoRA:
-- **EldritchPaletteKnife** at weight **0.9**
-- Trained on curated keeper images from base card generation
-- Ensures stylistic consistency across all five factions and Planar Ruins
-
-### Public Domain Artist References (All Died Pre-1953)
-
-| Role | Artist | Died | Style Contribution |
-|---|---|---|---|
-| **Base anchor** | Gustave Dore | 1883 | Dramatic engraving, chiaroscuro, biblical/epic scale, ink crosshatching |
-| **Base anchor** | N.C. Wyeth | 1945 | Saturated oil painting, adventure illustration, bold compositions |
-| **Ironwright** | Giovanni Battista Piranesi | 1778 | Impossible architecture, prison/industrial interiors, oppressive scale |
-| **Ironwright** | John Martin | 1854 | Apocalyptic landscapes, vast industrial vistas, divine-scale destruction |
-| **Fey Courts** | Arthur Rackham | 1939 | Twisted trees, sinuous linework, fairy-tale grotesquerie, pen-and-ink detail |
-| **Fey Courts** | Edmund Dulac | 1953 | Luminous watercolor, decorative pattern, jewel-toned fantasy |
-| **Demonic Kingdoms** | Hieronymus Bosch | 1516 | Surreal hellscapes, grotesque hybrid creatures, nightmare logic |
-| **Celestial Crusade** | Gustave Dore (biblical) | 1883 | Divine radiance, angelic hosts, overwhelming heavenly light |
-| **Celestial Crusade** | William Blake | 1827 | Visionary painting, muscular divine figures, ecstatic spirituality |
-| **The Endless** | Gustave Dore (Inferno) | 1883 | Dante's circles, tormented souls, spectral darkness |
-| **The Endless** | Francisco Goya | 1828 | Black Paintings, nightmare figures, psychological horror, decay |
-
-### Color Philosophy
-
-Colors are vivid and saturated within the oil painting aesthetic. They are applied with thick impasto strokes, not digital gradients. Each faction has a distinct, immediately recognizable palette. The muted earth-tone base from the style anchor grounds everything, but faction-specific accent colors punch through.
-
-### Quality Gate
-
-If a generated image looks:
-- Smooth, plastic, or "AI-generated"
-- Like it came from a different game
-- Generic digital art without visible paint texture
-- Inconsistent with the palette knife oil painting aesthetic
-
-It is a **failed generation** and must be rejected and regenerated.
-
----
-
-## 2. Complete Art Inventory
-
-### 2.1 Card Art
-
-| Category | Count Per Unit | Units | Total Images | Notes |
+| Category | Count | Dimensions | Format | Notes |
 |---|---|---|---|---|
-| Base creature cards | 13-14 per faction | 5 factions | **65-70** | Common tier art, batch-generated pre-launch |
-| Evolved creature cards | 4 evolutions per card | 65-70 base cards | **260-280** | Generated via img2img during gameplay; not pre-generated |
-| Planar Ruins -- neutral | 1 per archetype | 8 archetypes | **8** | Ancient, faction-neutral structures |
-| Planar Ruins -- evolved | 5 faction variants per archetype | 8 archetypes | **40** | Faction-transformed ruin art |
-| **Total pre-launch card art** | | | **113-118** | Base creatures + neutral ruins + evolved ruins |
-| **Total including evolution art** | | | **373-398** | All card art including player-triggered evolutions |
+| Ironwright Collective creature cards | 14 | 768x1024 | webp | Base set, Common tier art |
+| Fey Courts creature cards | 14 | 768x1024 | webp | Base set, Common tier art |
+| Demonic Kingdoms creature cards | 14 | 768x1024 | webp | Base set, Common tier art |
+| Celestial Crusade creature cards | 13 | 768x1024 | webp | Base set, Common tier art |
+| The Endless creature cards | 13 | 768x1024 | webp | Base set, Common tier art |
+| Neutral Planar Ruin cards | 8 | 768x1024 | webp | 8 archetypes per PHASE1C |
+| Ironwright evolved ruin cards | 8 | 768x1024 | webp | 1 per archetype |
+| Fey Courts evolved ruin cards | 8 | 768x1024 | webp | 1 per archetype |
+| Demonic Kingdoms evolved ruin cards | 8 | 768x1024 | webp | 1 per archetype |
+| Celestial Crusade evolved ruin cards | 8 | 768x1024 | webp | 1 per archetype |
+| The Endless evolved ruin cards | 8 | 768x1024 | webp | 1 per archetype |
+| **Card Art Subtotal** | **116** | | | |
 
-### 2.2 App Chrome (Backgrounds & Screens)
+Evolution art (mid-tier through Legendary) is generated via Kontext img2img at play time, not pre-generated. Estimated 260-280 evolution images generated by players during gameplay --- not counted in the pre-launch inventory.
 
-| Asset | Dimensions | Count | Notes |
-|---|---|---|---|
-| App icon | 1024x1024 | 1 | App Store requirement. Faction-neutral, shows Chaos energy motif. |
-| Launch screen / splash | 1290x2796 (iPhone 15 Pro Max) | 1 | Chaos motes swirling through fractured plane, logo overlay |
-| Home screen background | 1290x2796 | 1 | Faction-neutral or adaptive to active deck faction |
-| Collection screen background | 1290x2796 | 1 | Card vault / archive aesthetic |
-| Deck builder background | 1290x2796 | 1 | Workshop / war table aesthetic |
-| Shop background | 1290x2796 | 1 | Marketplace / bazaar aesthetic |
-| Battle screen background | 1290x2796 | 5 | One per faction (player's faction determines battlefield) |
-| Settings/profile background | 1290x2796 | 1 | Subtle, dark, non-distracting |
-| Loading screen backgrounds | 1290x2796 | 8 | Rotating set, lore-themed vignettes |
-| Onboarding faction slides | 1290x2796 | 5 | One per faction, introduces visual identity |
-| Match result screen (victory) | 1290x2796 | 1 | Triumphant, golden light |
-| Match result screen (defeat) | 1290x2796 | 1 | Somber, fading embers |
-| Evolution ceremony background | 1290x2796 | 1 | Planar Shard energy, chaotic swirl |
-| **App Chrome Total** | | **28** | |
+### 1.2 App Art
 
-### 2.3 Faction Assets (Per Faction x 5)
-
-| Asset | Dimensions | Count Per Faction | Total (x5) | Notes |
+| Asset | Count | Dimensions | Format | Notes |
 |---|---|---|---|---|
-| Faction emblem / icon | 512x512 | 1 | **5** | Used in UI, card info, deck builder, profile |
-| Card back design | 768x1024 | 1 | **5** | Faction-specific back face |
-| Universal card back | 768x1024 | -- | **1** | Default before faction is chosen |
-| Faction banner | 1024x256 | 1 | **5** | Shop headers, profile display, battle intro |
-| Battle field background | 1290x2796 | 1 | **5** | (same as battle screen backgrounds above) |
-| Faction particle base texture | 128x128 | 1 | **5** | Used in SpriteKit particle emitters |
-| **Faction Assets Total** | | | **26** | (5 counted in App Chrome already) |
+| App icon | 1 | 1024x1024 | png | Required for App Store |
+| Launch/splash screen | 1 | 1290x2796 | webp | Chaos motes + logo |
+| Home screen background (neutral) | 1 | 1290x2796 | webp | Default, faction-neutral |
+| Home screen backgrounds (faction) | 5 | 1290x2796 | webp | Shown when player has active deck |
+| Collection screen background | 1 | 1290x2796 | webp | |
+| Deck builder background | 1 | 1290x2796 | webp | |
+| Shop background | 1 | 1290x2796 | webp | |
+| Battle select background | 1 | 1290x2796 | webp | |
+| Profile screen background | 1 | 1290x2796 | webp | |
+| Settings background | 1 | 1290x2796 | webp | Subtle, dark |
+| Onboarding backgrounds | 5 | 1290x2796 | webp | Welcome, lore, faction pick, tutorial, first deck |
+| Ruin collection background | 1 | 1290x2796 | webp | |
+| Loading screen backgrounds | 8 | 1290x2796 | webp | Rotating lore vignettes |
+| Match result --- victory | 1 | 1290x2796 | webp | |
+| Match result --- defeat | 1 | 1290x2796 | webp | |
+| Evolution ceremony background | 1 | 1290x2796 | webp | |
+| Faction selection banners | 5 | 1024x256 | webp | Horizontal, 1 per faction |
+| **App Art Subtotal** | **36** | | | |
 
-### 2.4 UI Elements
+### 1.3 Card Frame Assets
 
-| Asset | Dimensions | Count | Notes |
-|---|---|---|---|
-| Keyword icons | 256x256 | 9 | Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward |
-| Stat icons (chaos motes, ATK, HP) | 128x128 | 3 | Already have v1 iterations generated |
-| Rarity edge glow textures | 512x32 (strip) | 5 | Common (none), Uncommon (metallic), Rare (energy), Epic (purple), Legendary (gold prismatic) |
-| Currency icon -- Chaos Dust | 256x256 | 1 | Swirling purple-gold mote |
-| Planar Shard icons (per tier) | 256x256 | 3 | Planar Shard, Refined, Prismatic |
-| Evolution energy icon | 128x128 | 1 | Chaos energy accumulation indicator |
-| Achievement badge icons | 128x128 | 23 | Per achievement (existing 23 achievements) |
-| Quest type icons | 128x128 | 6 | Daily/weekly/faction/seasonal/ruins/special |
-| Button background texture | 512x128 | 3 | Primary, secondary, destructive |
-| Tab bar icons | 64x64 | 5 | Home, Collection, Battle, Shop, Profile |
-| Chaos Roll D20 face texture | 512x512 | 1 | Applied to 3D-rendered D20 in SpriteKit |
-| Card text panel overlay | 768x300 | 1 | Translucent dark panel for card name/stats area |
-| Mana crystal (empty/filled) | 64x64 | 2 | Resource display on battlefield |
-| Sub-faction emblems | 256x256 | 10 | One per sub-faction (used in avatar selection, profile) |
-| Avatar portrait frames | 512x512 | 10 | One per avatar, thematic border |
-| **UI Elements Total** | | **83** | |
+| Asset | Count | Dimensions | Format | Notes |
+|---|---|---|---|---|
+| Rarity card frames (creature) | 5 | 768x1024 | png (alpha) | Common, Uncommon, Rare, Epic, Legendary |
+| Planar Ruin card frame (neutral) | 1 | 768x1024 | png (alpha) | Ancient stone aesthetic |
+| Planar Ruin card frames (evolved) | 5 | 768x1024 | png (alpha) | 1 per faction tint |
+| Card back (universal) | 1 | 768x1024 | webp | Default |
+| Card backs (faction-specific) | 5 | 768x1024 | webp | 1 per faction |
+| Rarity edge glow textures | 5 | 512x32 | png (alpha) | Strip textures for edge effects |
+| Card text panel overlay | 1 | 768x300 | png (alpha) | Translucent dark panel |
+| **Card Frame Subtotal** | **23** | | | |
 
-### 2.5 Battle VFX Textures
+### 1.4 Icons and Emblems
 
-| Asset | Dimensions | Count | Notes |
-|---|---|---|---|
-| Attack impact -- per faction | 256x256 spritesheet | 5 | Ironwright: sparks/metal shrapnel. Fey: leaf burst/vine whip. Demonic: fire/obsidian shards. Celestial: divine light flash. Endless: spectral wail. |
-| Damage number background | 128x64 | 1 | Translucent dark pill for floating damage text |
-| Creature death -- per faction | 256x256 spritesheet | 5 | Ironwright: metal collapse/rust cloud. Fey: decomposition/spore burst. Demonic: hellfire immolation. Celestial: divine ascension/light scatter. Endless: spectral dissolution. |
-| Chaos Roll D20 texture | 512x512 | 1 | (same as UI above) |
-| Event popup -- Order background | 512x256 | 1 | Crystalline blue-gold frame |
-| Event popup -- Chaos background | 512x256 | 1 | Fiery red-purple frame |
-| Ruin placement effect | 256x256 spritesheet | 1 | Ancient stone materialization, energy settling |
-| Ruin destruction effect | 256x256 spritesheet | 5 | Per faction -- how faction-evolved ruins shatter |
-| Faction particle emitter textures | 128x128 | 5 | divine_radiance, spectral_mist, augment_spark, bond_bloom, corruption_flame |
-| Shield keyword visual | 128x128 | 1 | Translucent barrier overlay on creature |
-| Lifesteal drain arc | 256x64 | 1 | Red energy arc from target to source |
-| Flying hover particles | 64x64 | 1 | Wind/lift particles under creature |
-| Taunt aggro indicator | 128x128 | 1 | Red targeting reticle/forced-attack glow |
-| Ward protection shimmer | 128x128 | 1 | Blue-white protective aura texture |
-| Haste speed trail | 256x64 | 1 | Motion blur/afterimage trail |
-| Exalt aura pulse | 256x256 | 1 | Golden radial pulse outward from creature |
-| Persist death trigger | 256x256 | 1 | Ghostly echo / lingering shadow effect |
-| Bond connection line | 16x256 (tileable) | 1 | Green-gold energy thread between bonded creatures |
-| Augment stack glow | 128x128 | 1 | Blue-orange layered tech glow per stack |
-| Corruption self-damage | 128x128 | 1 | Red veins / cracking skin texture |
-| **Battle VFX Total** | | **36** | |
+| Asset | Count | Dimensions | Format | Notes |
+|---|---|---|---|---|
+| Faction emblems | 5 | 512x512 | png (alpha) | Ironwright, Fey, Demonic, Celestial, Endless |
+| Sub-faction emblems | 10 | 256x256 | png (alpha) | 2 per faction |
+| Keyword icons | 9 | 256x256 | png (alpha) | Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward |
+| Mechanic icons | 5 | 256x256 | png (alpha) | Augment, Bond, Corruption, Exalt, Persist |
+| Stat icons (CM, ATK, HP) | 3 | 128x128 | png (alpha) | May need update for new style |
+| Ruin HP icon | 1 | 128x128 | png (alpha) | Distinct from creature HP |
+| Ruin effect indicator | 1 | 128x128 | png (alpha) | Passive effect active |
+| Currency icon (Chaos Dust) | 1 | 256x256 | png (alpha) | Swirling purple-gold mote |
+| Planar Shard icons (3 tiers) | 3 | 256x256 | png (alpha) | Planar, Refined, Prismatic |
+| Evolution energy icon | 1 | 128x128 | png (alpha) | Progress indicator |
+| Achievement badges | 23 | 128x128 | png (alpha) | Per existing achievement |
+| Quest type icons | 6 | 128x128 | png (alpha) | Daily/weekly/faction/seasonal/ruins/special |
+| Tab bar icons | 5 | 64x64 | png (alpha) | Home, Collection, Battle, Shop, Profile |
+| Mana crystals (empty/filled) | 2 | 64x64 | png (alpha) | Resource display |
+| **Icons Subtotal** | **75** | | | |
 
-### 2.6 App Store Assets
+### 1.5 Avatar Art
 
-| Asset | Dimensions | Count | Notes |
-|---|---|---|---|
-| Screenshots -- 6.7" (iPhone 15 Pro Max) | 1290x2796 | 6 | Home, Collection, Battle, Evolution, Shop, Deck Builder |
-| Screenshots -- 6.1" (iPhone 15) | 1179x2556 | 6 | Same screens, different resolution |
-| App Store preview video frames | 1290x2796 | 10 | Key moments for optional preview video |
-| Feature graphic | 1024x500 | 1 | Promotional banner (if Apple features) |
-| **App Store Total** | | **23** | |
+| Asset | Count | Dimensions | Format | Notes |
+|---|---|---|---|---|
+| Avatar portraits | 10 | 512x512 | webp | Per lore bible Section 5 |
+| Avatar portrait frames | 10 | 512x512 | png (alpha) | Thematic border per avatar |
+| **Avatar Subtotal** | **20** | | | |
 
-### 2.7 Grand Total Summary
+Avatars: Korvax (Foundry Directorate), Vex (Scrap Legions), Sylara (Verdant Throne), Morrigan (Hollow Court), Kael (Obsidian Bureaucracy), Lilith (Furnace Lords), Serevain (Knights of Deliverance), Ophaniel (Heaven's Chosen), Vothrak (Necromantic Cabals), Thessaly (Lost Spectres).
 
-| Category | Asset Count |
+### 1.6 Battle Visual Assets
+
+| Asset | Count | Dimensions | Format | Notes |
+|---|---|---|---|---|
+| Battlefield backgrounds (faction) | 5 | 1290x2796 | webp | 1 per faction theme |
+| Battlefield background (neutral) | 1 | 1290x2796 | webp | Cross-faction matches |
+| Particle textures (faction) | 5 | 256x256 | png (alpha) | forge_sparks, nature_wisps, hellfire_embers, divine_radiance, spectral_mist |
+| Attack impact spritesheets | 5 | 256x256 | png (alpha) | 1 per faction |
+| Creature death spritesheets | 5 | 256x256 | png (alpha) | 1 per faction |
+| Chaos Roll D20 texture | 1 | 512x512 | png (alpha) | Applied to 3D D20 |
+| Event overlay --- Order | 1 | 512x256 | png (alpha) | Crystalline blue-gold frame |
+| Event overlay --- Chaos | 1 | 512x256 | png (alpha) | Fiery red-purple frame |
+| Event overlay --- Nothing | 1 | 512x256 | png (alpha) | Neutral frame |
+| Ruin placement VFX | 1 | 256x256 | png (alpha) | Stone materialization |
+| Ruin destruction VFX | 5 | 256x256 | png (alpha) | 1 per faction |
+| Keyword VFX textures | 9 | 128x128 | png (alpha) | Shield barrier, Lifesteal arc, Flying particles, Reach indicator, Deathtouch skull, Taunt aggro, Piercing trail, Haste speed, Ward shimmer |
+| Mechanic VFX textures | 5 | 256x256 | png (alpha) | Exalt aura, Persist echo, Bond thread, Augment glow, Corruption veins |
+| Damage number background | 1 | 128x64 | png (alpha) | Floating text pill |
+| **Battle Visual Subtotal** | **46** | | | |
+
+### 1.7 Marketing / App Store
+
+| Asset | Count | Dimensions | Format | Notes |
+|---|---|---|---|---|
+| Screenshots (6.7" iPhone 15 Pro Max) | 6 | 1290x2796 | png | Captured from Simulator |
+| Screenshots (6.1" iPhone 15) | 6 | 1179x2556 | png | Same screens, scaled |
+| Feature graphic | 1 | 1024x500 | png | Promotional banner |
+| Social media card | 1 | 1200x630 | png | Open Graph / Twitter |
+| App Store preview poster | 1 | 1290x2796 | png | Video preview fallback |
+| **Marketing Subtotal** | **15** | | | |
+
+### 1.8 Grand Total
+
+| Category | Count |
 |---|---|
-| Pre-launch card art (base creatures + all ruins) | 113-118 |
-| App Chrome (backgrounds, screens) | 28 |
-| Faction assets (emblems, card backs, banners, particles) | 21 (excl. 5 battle BGs counted in Chrome) |
-| UI elements | 83 |
-| Battle VFX textures | 36 |
-| App Store assets | 23 |
-| **Total visual assets (pre-launch)** | **304-309** |
-| Evolution card art (generated at runtime by players) | 260-280 (not pre-generated) |
+| Card Art | 116 |
+| App Art | 36 |
+| Card Frame Assets | 23 |
+| Icons and Emblems | 75 |
+| Avatar Art | 20 |
+| Battle Visual Assets | 46 |
+| Marketing / App Store | 15 |
+| **GRAND TOTAL** | **331** |
 
 ---
 
-## 3. AI-Generated vs Purchased Decision Matrix
+## 2. AI-Generated vs. Purchased Decision Matrix
 
-| Category | Method | Est. Cost | Tools/Sources | Notes |
+| Category | Count | Method | Est. Cost | Notes |
 |---|---|---|---|---|
-| **Card art (creatures)** | AI-generated | ~$8-12 | fal.ai FLUX + LoRA | 65-70 base cards at ~$0.04/gen, ~3 gens per keeper |
-| **Card art (evolutions)** | AI-generated | Runtime cost | fal.ai FLUX Kontext img2img | Generated during gameplay, cost per evolution ~$0.04-0.08 |
-| **Planar Ruins -- neutral** | AI-generated | ~$1.50 | fal.ai FLUX + LoRA | 8 archetypes, ~5 gens per keeper |
-| **Planar Ruins -- evolved** | AI-generated | ~$6-8 | fal.ai FLUX + LoRA | 40 variants, ~4 gens per keeper |
-| **App backgrounds** | AI-generated | ~$4-6 | fal.ai FLUX + LoRA | 28 backgrounds at ~$0.04/gen, ~5 gens per keeper |
-| **Faction emblems** | AI-generated | ~$1 | fal.ai FLUX (no LoRA) | 5 emblems, transparent BG, icon style |
-| **Card backs** | AI-generated | ~$1 | fal.ai FLUX + LoRA | 6 designs (5 faction + 1 universal) |
-| **Faction banners** | AI-generated | ~$1 | fal.ai FLUX + LoRA | 5 banners |
-| **Keyword icons** | AI-generated | ~$1.50 | fal.ai FLUX (no LoRA) | 9 icons, transparent BG, stylized |
-| **Sub-faction emblems** | AI-generated | ~$1.50 | fal.ai FLUX (no LoRA) | 10 emblems |
-| **Avatar portrait frames** | Created in code | $0 | SpriteKit / SwiftUI | Procedural borders with faction colors |
-| **Stat icons** | AI-generated | ~$0.50 | fal.ai FLUX (no LoRA) | 3 icons, already have v1 |
-| **Achievement badges** | AI-generated | ~$2 | fal.ai FLUX (no LoRA) | 23 badges, simple symbolic designs |
-| **Quest type icons** | AI-generated | ~$0.50 | fal.ai FLUX (no LoRA) | 6 icons |
-| **Button textures** | Created in code | $0 | SwiftUI gradients + overlays | Procedural, faction-tinted |
-| **Tab bar icons** | Created in code (SF Symbols) | $0 | Apple SF Symbols | Free system icons |
-| **Rarity glow textures** | Created in code | $0 | SpriteKit shaders + SKAction | Procedural glow, shimmer, pulse |
-| **Currency/shard icons** | AI-generated | ~$0.50 | fal.ai FLUX (no LoRA) | 4 icons total |
-| **D20 face texture** | AI-generated | ~$0.25 | fal.ai FLUX (no LoRA) | 1 texture, engraved stone look |
-| **Card text panel** | Created in code | $0 | SwiftUI / SpriteKit | Translucent dark overlay, procedural |
-| **Mana crystals** | AI-generated | ~$0.25 | fal.ai FLUX (no LoRA) | 2 states (empty/filled) |
-| **Battle VFX spritesheets** | Mix: AI + code | ~$2 | fal.ai + SpriteKit particles | AI generates base textures; particle systems coded |
-| **Faction particle textures** | AI-generated | ~$0.50 | fal.ai FLUX (no LoRA) | 5 base textures for emitters |
-| **Event popup frames** | Created in code | $0 | SwiftUI + SpriteKit | Procedural frame with faction tinting |
-| **App icon** | AI-generated | ~$0.50 | fal.ai FLUX + LoRA | Must look premium at 1024x1024 |
-| **App Store screenshots** | Captured from Simulator | $0 | Xcode Simulator | Annotated with marketing text overlays |
-| **Fonts** | Free/open-source | $0 | Google Fonts (OFL) | Cinzel + Alegreya |
-| **SFX -- card game** | Purchased | $0-20 | itch.io / freesound.org | See Section 7 |
-| **SFX -- UI** | Purchased | $0-12 | itch.io / freesound.org | See Section 7 |
-| **Battle music** | Purchased | $15-28 | itch.io | See Section 7 |
-| **Ambient/environmental** | Free | $0 | Suno.ai free tier / Freesound.org CC0 | See Section 7 |
-| **Particle texture reference** | Free | $0 | OpenGameArt.org CC0 | Base textures adapted in SpriteKit |
+| Creature card art | 68 | AI-generated (fal.ai FLUX + LoRA) | ~$8-12 | ~3 gens per keeper at $0.04/gen |
+| Planar Ruin card art (neutral) | 8 | AI-generated (fal.ai FLUX + LoRA) | ~$1.50 | ~5 gens per keeper |
+| Planar Ruin card art (evolved) | 40 | AI-generated (fal.ai FLUX Kontext + LoRA) | ~$6-8 | img2img from neutral base |
+| Avatar portraits | 10 | AI-generated (fal.ai FLUX) | ~$1.50 | Per lore bible prompts |
+| App backgrounds (all) | 28 | AI-generated (fal.ai FLUX + LoRA) | ~$4-6 | ~5 gens per keeper |
+| Faction emblems | 5 | AI-generated (fal.ai FLUX, no LoRA) | ~$1 | Icon style, alpha bg |
+| Sub-faction emblems | 10 | AI-generated (fal.ai FLUX, no LoRA) | ~$1.50 | Simpler variants |
+| Card backs | 6 | AI-generated (fal.ai FLUX + LoRA @ 0.7) | ~$1 | |
+| Card frames (creature + ruin) | 11 | AI-generated + SpriteKit glow code | ~$2 | |
+| Faction banners | 5 | AI-generated (fal.ai FLUX + LoRA) | ~$1 | |
+| Keyword icons | 9 | AI-generated (fal.ai FLUX, no LoRA) | ~$1.50 | 256x256, alpha bg |
+| Mechanic icons | 5 | AI-generated (fal.ai FLUX, no LoRA) | ~$0.75 | |
+| Stat/currency/shard icons | 10 | AI-generated (fal.ai FLUX, no LoRA) | ~$1 | |
+| Achievement badges | 23 | AI-generated (fal.ai FLUX, no LoRA) | ~$2 | Simple symbolic |
+| Quest + tab + mana icons | 13 | AI-generated or SF Symbols | ~$0.50 | |
+| D20 texture | 1 | AI-generated (fal.ai FLUX, no LoRA) | ~$0.25 | |
+| App icon | 1 | AI-generated (fal.ai FLUX + LoRA) | ~$0.50 | Multiple attempts |
+| Battlefield backgrounds | 6 | AI-generated (fal.ai FLUX + LoRA) | ~$1 | |
+| Battle VFX spritesheets | 24 | AI-generated base + SpriteKit code | ~$2 | |
+| Particle textures (faction) | 5 | Purchased or AI-gen | ~$0-4 | OpenGameArt CC0 first |
+| Marketing graphics | 3 | AI-generated (fal.ai FLUX) | ~$0.25 | |
+| Avatar frames | 10 | Code-generated (SpriteKit/SwiftUI) | $0 | Procedural borders |
+| Rarity glow effects | 5 | Code-generated (SpriteKit shaders) | $0 | SKAction + SKShader |
+| Event popup frames | 3 | Code-generated (SwiftUI + SpriteKit) | $0 | |
+| Button textures | 3 | Code-generated (SwiftUI gradients) | $0 | |
+| Card text panel | 1 | Code-generated (SpriteKit) | $0 | |
+| Ruin VFX frames | 6 | Code-generated (SpriteKit shaders) | $0 | |
+| SFX --- card game | ~30 | Purchased (itch.io) | $0-15 | See Section 8 |
+| SFX --- UI | ~15 | Purchased (itch.io) | $0-12 | See Section 8 |
+| Battle music | 5-7 | Purchased (itch.io) | $15-28 | See Section 8 |
+| Menu/ambient music | 2-3 | Suno.ai free tier / purchased | $0-10 | |
+| Environmental ambience | 5 | Free (Sonniss GDC / freesound.org CC0) | $0 | |
+| Fonts | 2 families | Free (Google Fonts OFL) | $0 | Cinzel + Alegreya |
+| App Store screenshots | 12 | Captured from Simulator | $0 | |
 
 ### Cost Summary
 
 | Category | Estimated Cost |
 |---|---|
-| AI art generation (fal.ai) -- all visual assets | ~$32-42 |
-| Purchased audio assets (SFX + music) | ~$45-75 |
-| Free assets (fonts, CC0 sounds, SF Symbols) | $0 |
+| AI art generation (fal.ai) --- all visual assets | ~$32-42 |
+| Purchased audio (SFX + music) | ~$45-75 |
+| Free assets (fonts, CC0 sounds, SF Symbols, Sonniss) | $0 |
 | Code-generated assets (procedural) | $0 |
-| **Total visual + audio asset budget** | **~$77-117** |
+| **TOTAL** | **~$77-117** |
 | **Budget available** | **~$100** |
 
-Budget is tight but achievable. Prioritize: (1) card art quality, (2) battle music, (3) card game SFX. Everything else can use free alternatives or code generation.
+Budget is tight but achievable. Priorities: (1) card art quality, (2) battle music, (3) card game SFX. Everything else uses free alternatives or code generation.
 
 ---
 
-## 4. App Background Art Prompts
+## 3. Color Palettes
 
-All background prompts use the style anchor and LoRA. Backgrounds are generated at landscape orientation (2796x1290) or portrait (1290x2796) depending on screen orientation, then cropped/scaled in the app. All include heavy depth-of-field blur in the mid/background to avoid competing with foreground UI elements.
+### 3.1 Ironwright Collective --- Brutalist Space-Industrial
 
-### 4.1 Global Style Prefix for Backgrounds
+| Role | Name | Hex | RGB | Usage |
+|---|---|---|---|---|
+| Primary | Steel Blue-Gray | `#6B7B8D` | 107, 123, 141 | Card frame tint, UI headers, hull plating |
+| Secondary | Cold Iron | `#4A5568` | 74, 85, 104 | Backgrounds, secondary panels, structural elements |
+| Accent | Warning Orange | `#E07020` | 224, 112, 32 | Active states, highlights, hazard markings, CTA buttons |
+| Highlight | Reactor Blue | `#3B82C4` | 59, 130, 196 | Energy indicators, power conduits, Augment glow |
+| Background | Void Industrial | `#1A1D23` | 26, 29, 35 | Screen backgrounds, card back base |
+| Text (primary) | Cold White | `#E2E8F0` | 226, 232, 240 | Readable text on dark backgrounds |
+| Text (secondary) | Muted Steel | `#94A3B8` | 148, 163, 184 | Flavor text, secondary info |
+| Card Frame Tint | Iron Plate | `#3D4654` | 61, 70, 84 | Translucent text panel overlay |
 
-```
-BG_STYLE_PREFIX = "palette knife oil painting, heavy impasto brushstrokes visible, traditional media on canvas, muted earth tones with vivid accent colors, atmospheric perspective, deep depth of field blur, no text no borders no watermarks, painted in the style of Gustave Dore and N.C. Wyeth, wide establishing shot"
-```
+**Additional accents:** Concrete Gray `#8B8B83` (brutalist architecture). Rust `#8B4513` (Scrap Legions oxidation).
 
-### 4.2 Home Screen
+### 3.2 The Fey Courts --- Living Forest
 
-**Faction-Neutral Version (default):**
-```
-{BG_STYLE_PREFIX}, a vast fractured landscape where the Plane of Order meets the Plane of Chaos, crystalline geometric structures on the left gradually crumbling into swirling chaotic energy on the right, a massive rift in the sky revealing cosmic void above, chaos motes drifting like fireflies through the scene, muted golds and deep purples and midnight blues, epic scale, contemplative mood, painted like a John Martin apocalyptic landscape
-```
+| Role | Name | Hex | RGB | Usage |
+|---|---|---|---|---|
+| Primary | Emerald | `#2E8B57` | 46, 139, 87 | Card frame tint, UI headers, growth indicators |
+| Secondary | Forest Gold | `#B8860B` | 184, 134, 11 | Accents, borders, seasonal highlights |
+| Accent | Bioluminescent | `#7FFFD4` | 127, 255, 212 | Active states, bond connection lines |
+| Highlight | Bark Brown | `#8B4513` | 139, 69, 19 | Grounding elements, text panels |
+| Background | Deep Forest | `#0A1A0A` | 10, 26, 10 | Screen backgrounds, card back base |
+| Text (primary) | Moonlight | `#F0FFF0` | 240, 255, 240 | Readable text |
+| Text (secondary) | Moss Green | `#8FAE8F` | 143, 174, 143 | Flavor text |
+| Card Frame Tint | Forest Shadow | `#1A3A1A` | 26, 58, 26 | Translucent text panel overlay |
 
-**Faction-Adaptive Versions** (shown when player has active deck):
+**Additional accents:** Ice Blue `#A0C4E8` (Hollow Court frost). Autumn Rust `#C45030` (Hollow Court decay).
 
-**Ironwright:**
-```
-{BG_STYLE_PREFIX}, a vast orbital shipyard seen from a command bridge viewport, massive iron hulls under construction with welding sparks like stars, rebar scaffolding stretching to infinity, reactor glow illuminating concrete bulkheads, cold steel blue-gray and warning orange accents, industrial grandeur, painted like a Piranesi prison imagined in space, void of stars visible through gaps in the superstructure
-```
+### 3.3 The Demonic Kingdoms --- Volcanic Infernal
 
-**Fey Courts:**
-```
-{BG_STYLE_PREFIX}, the interior of an impossibly vast hollow tree, spiral staircases of living wood ascending into darkness, bioluminescent mushrooms casting soft teal and gold light, roots thick as rivers weaving through the space, a single shaft of moonlight descending from an opening far above, emerald green and gold and deep teal, painted like an Arthur Rackham fairy tale illustration, enchanted and ancient
-```
+| Role | Name | Hex | RGB | Usage |
+|---|---|---|---|---|
+| Primary | Blood Red | `#8B2252` | 139, 34, 82 | Card frame tint, UI headers, damage indicators |
+| Secondary | Volcanic Orange | `#FF4500` | 255, 69, 0 | Fire effects, active states, attack indicators |
+| Accent | Hellfire Yellow | `#FFD700` | 255, 215, 0 | Highlights, gold accents, contract text |
+| Highlight | Obsidian Black | `#1A0A0A` | 26, 10, 10 | Deep shadows, card panels |
+| Background | Hellscape | `#1A0A0A` | 26, 10, 10 | Screen backgrounds, card back base |
+| Text (primary) | Ash White | `#F5E6E0` | 245, 230, 224 | Readable text |
+| Text (secondary) | Sulfur Tan | `#C4A882` | 196, 168, 130 | Flavor text |
+| Card Frame Tint | Smoked Obsidian | `#2A1010` | 42, 16, 16 | Translucent text panel overlay |
 
-**Demonic Kingdoms:**
-```
-{BG_STYLE_PREFIX}, a volcanic throne room viewed from the foot of obsidian stairs, lava channels carved into the floor casting hellfire glow upward, bone pillars supporting a vaulted ceiling of fused skulls, a distant throne silhouetted against a wall of flame, burnt crimson and charcoal black and sulfur yellow, oppressive heat shimmer, painted like a Hieronymus Bosch vision of the infernal court
-```
+**Additional accents:** Parchment Tan `#D4C4A8` (Bureaucracy contracts). Stamp Red `#CC2200` (Bureaucracy seals).
 
-**Celestial Crusade:**
-```
-{BG_STYLE_PREFIX}, a cathedral of light floating in golden clouds, massive arched windows pouring divine radiance inward, marble columns carved with angelic figures, a central altar radiating concentric rings of holy light, the floor reflecting like still water, divine ivory and holy gold and celestial rose, transcendent and overwhelming, painted like a Gustave Dore illustration of Paradise
-```
+### 3.4 The Celestial Crusade --- Divine Radiance
 
-**The Endless:**
-```
-{BG_STYLE_PREFIX}, a necropolis stretching to the horizon under a sick green-black sky, mausoleums and crypts in various states of decay, spectral energy drifting between tombstones like luminous fog, a massive lich tower in the distant center radiating necrotic purple light, bone white and ghostly teal and necrotic purple, oppressive silence made visible, painted like a Francisco Goya Black Painting given depth and architecture
-```
+| Role | Name | Hex | RGB | Usage |
+|---|---|---|---|---|
+| Primary | Holy Gold | `#DAA520` | 218, 165, 32 | Card frame tint, UI headers, divine indicators |
+| Secondary | Divine Ivory | `#F5F0E1` | 245, 240, 225 | Light backgrounds, text panels |
+| Accent | Righteous Blue | `#3B5998` | 59, 89, 152 | Knight armor highlights, Exalt indicators |
+| Highlight | Celestial Rose | `#C47A8E` | 196, 122, 142 | Warm divine glow, angelic tints |
+| Background | Celestial Void | `#1A1520` | 26, 21, 32 | Screen backgrounds, card back base |
+| Text (primary) | Radiant White | `#FFFAF0` | 255, 250, 240 | Readable text |
+| Text (secondary) | Faded Gold | `#B8A070` | 184, 160, 112 | Flavor text |
+| Card Frame Tint | Divine Shadow | `#2A2030` | 42, 32, 48 | Translucent text panel overlay |
 
-### 4.3 Collection Screen
+**Additional accents:** Judgment White `#F8F4F0` (Chosen divine radiance). Burning Halo `#FFE0A0` (divine fire).
 
-```
-{BG_STYLE_PREFIX}, an ancient library or archive interior, towering shelves of leather-bound tomes and card cases stretching into darkness, warm amber candlelight from scattered brass fixtures, a central reading table with cards spread across it catching the light, dust motes drifting in light shafts, mahogany brown and amber gold and deep shadow, scholarly and reverent, every surface textured with age and use
-```
+### 3.5 The Endless --- Necrotic Spectral
 
-### 4.4 Deck Builder Screen
+| Role | Name | Hex | RGB | Usage |
+|---|---|---|---|---|
+| Primary | Necrotic Purple | `#6B3FA0` | 107, 63, 160 | Card frame tint, UI headers, death indicators |
+| Secondary | Bone White | `#E8DCC8` | 232, 220, 200 | Text panels, skeletal elements |
+| Accent | Ghostly Teal | `#5F9EA0` | 95, 158, 160 | Active states, spectral glow, Persist indicators |
+| Highlight | Sickly Green | `#7B9E5F` | 123, 158, 95 | Necromantic energy, ectoplasm |
+| Background | Grave Dark | `#0D0D1A` | 13, 13, 26 | Screen backgrounds, card back base |
+| Text (primary) | Ghost Light | `#E8E0F0` | 232, 224, 240 | Readable text |
+| Text (secondary) | Faded Bone | `#A89E8E` | 168, 158, 142 | Flavor text |
+| Card Frame Tint | Tomb Shadow | `#1A1525` | 26, 21, 37 | Translucent text panel overlay |
 
-```
-{BG_STYLE_PREFIX}, a war room table seen from slightly above, covered in tactical maps and scattered cards and glowing crystal markers, candles and lanterns providing warm focused light, the edges of the scene falling into shadow, implements of strategy visible (compass, quill, wax seals), warm amber and parchment cream and deep wood brown, focused and strategic, a general planning their campaign
-```
+**Additional accents:** Dried Blood Brown `#5C3A2E` (old stains, preserved flesh). Phylactery Gold `#C4A030` (soul-light).
 
-### 4.5 Shop / Store Screen
+### 3.6 Neutral and UI Colors
 
-```
-{BG_STYLE_PREFIX}, a mysterious merchant's tent interior, shelves and display cases filled with glowing artifacts and sealed card cases, fabric draping from above in rich jewel tones, a central counter with scattered chaos motes and planar shards catching candlelight, the tent flaps revealing a starfield beyond, rich burgundy and gold and deep purple and candlelight amber, enticing and opulent, the feeling of discovering rare treasures
-```
+| Role | Name | Hex | Usage |
+|---|---|---|---|
+| Card text panel bg | Translucent Black | `#000000` @ 60% | Universal card text overlay |
+| Common rarity | Matte Gray | `#808080` | No glow, matte edge |
+| Uncommon rarity | Metallic Silver | `#C0C0C0` | Subtle metallic sheen |
+| Rare rarity | Energy Blue | `#4DA6FF` | Pulsing blue edge glow |
+| Epic rarity | Purple Shimmer | `#9B59B6` | SKShader purple shimmer |
+| Legendary rarity | Gold Prismatic | `#FFD700` | Particle emitter gold |
+| Neutral ruin --- stone | Ancient Stone | `#C4B8A0` | Ruin card frame |
+| Neutral ruin --- crystal | Builder Crystal | `#B0C4DE` | Ancient Builder elements |
+| Neutral ruin --- dark | Deep Ruin | `#3A342A` | Ruin card back base |
+| Neutral ruin --- glow | Amber Glow | `#DAA06D` | Engraving light |
+| UI positive | Green | `#22C55E` | Success states |
+| UI negative | Red | `#EF4444` | Error states |
+| UI warning | Amber | `#F59E0B` | Warning states |
+| UI info | Blue | `#3B82F6` | Info states |
+| UI disabled | Gray | `#6B7280` | Disabled states |
+| Global background | Near Black | `#0F0F14` | App-wide base |
 
-### 4.6 Settings / Profile Screen
+### 3.7 Accessibility Notes
 
-```
-{BG_STYLE_PREFIX}, a quiet chamber with stone walls and a single arched window showing a distant landscape, simple furnishings, a desk with personal effects, soft diffused light, understated and calm, deep shadow and muted earth tones, a private space away from the chaos of war, minimal and contemplative
-```
+All 5 factions use distinct hue families for color-blind safety:
 
-### 4.7 Evolution Ceremony Background
+| Faction | Hue Family | Shape Cue |
+|---|---|---|
+| Ironwright | Blue-gray (cool neutral) | Gear/cog motif |
+| Fey Courts | Green (warm green) | Leaf/vine motif |
+| Demonic Kingdoms | Red-orange (warm) | Flame/horn motif |
+| Celestial Crusade | Gold-blue (warm metallic) | Wing/halo motif |
+| The Endless | Purple-teal (cool saturated) | Skull/bone motif |
 
-```
-{BG_STYLE_PREFIX}, a Planar Shard floating in the center of a vortex of chaos energy, crystalline fractures radiating outward with light pouring through the cracks, swirling motes of gold and purple converging on the shard, the ground below cracked and glowing with planar energy, deep cosmic purple and crackling gold and white-hot energy at the center, the moment before transformation, overwhelming power barely contained
-```
+Every faction UI element includes both color and shape identification. The 5-hue spread (blue, green, red, gold, purple) provides maximum perceptual distance across protanopia, deuteranopia, and tritanopia.
 
-### 4.8 Match Result -- Victory
+---
 
-```
-{BG_STYLE_PREFIX}, triumphant golden light breaking through storm clouds, battlefield wreckage below bathed in warm radiance, a single figure or banner silhouetted against the light, scattered chaos motes settling like embers, warm gold and amber and deep shadow contrast, glory and earned triumph, the storm has passed
-```
+## 4. Faction Visual Identity Guide
 
-### 4.9 Match Result -- Defeat
+### 4.1 Ironwright Collective --- Brutalist Space-Industrial
 
-```
-{BG_STYLE_PREFIX}, a battlefield at dusk, scattered remnants of battle in fading light, embers and ash drifting slowly, the sky darkening from deep orange to black, a broken banner or fallen weapon in the foreground, muted orange and ash gray and deepening shadow, somber but dignified, loss without despair, the sun sets but will rise again
-```
+**Visual Pillars**: Brutalist, industrial, orbital, monolithic, functional
 
-### 4.10 Loading Screen Backgrounds (Rotating Set of 8)
+**Texture References**: Poured concrete with visible aggregate and form marks. Exposed rebar grids. Cold-rolled iron plate with bolt patterns. Hydraulic piston assemblies with oil sheen. Welded seams with bead marks. Reactor-blue conduit tubing. Void-darkened viewports. Industrial coolant frost. Rusted I-beam scaffolding. Serial number stencils in military font. Warning markings (orange-and-black hazard stripes). Magnetic boot prints on dusty hull surfaces.
 
-Each loading screen depicts a different lore-significant location or event, providing visual worldbuilding during brief load times.
+**NOT**: Brass, gears, steam, clockwork, Victorian, whimsical, ornate, decorative, steampunk goggles, top hats, cogs.
 
-**1. The Great Fracture:**
-```
-{BG_STYLE_PREFIX}, a cosmic event viewed from a distance, the sky tearing open along a massive jagged rift, Order (geometric, crystalline, blue-white) on one side and Chaos (organic, swirling, purple-red) on the other, the land below buckling and splitting, figures tiny against the scale of the event, epic catastrophe, painted like John Martin's The Great Day of His Wrath
-```
+**Light Quality**: Cold and artificial. Reactor-blue glow from power conduits. Harsh overhead industrial floodlights creating deep knife-edge shadows. No warm tones except warning orange. Color temperature 6500K-9000K. Light always comes from machinery, never from natural sources.
 
-**2. The Ancient Ruin Discovery:**
-```
-{BG_STYLE_PREFIX}, explorers with lanterns entering a vast underground chamber, a partially buried ruin of impossible architecture glowing with faint crystalline light, the explorers dwarfed by the structure, pale otherworldly colors contrasting with the warm lantern light, mystery and awe, the first discovery of the Planar Ruins
-```
+**Composition Tendencies**:
+- `DRAMATIC_LOW_ANGLE` --- machines and constructs towering overhead, oppressive scale
+- `ENVIRONMENTAL_UNDERGROUND` --- reactor cores, mine shafts, pressurized chambers
+- `ACTION_COMMAND` --- Directorate officers on command platforms
+- `PORTRAIT_THREE_QUARTER` --- standard construct portrait against void-dock scaffolding
+- `ENVIRONMENTAL_WIDE` --- orbital shipyards, planetary strip-mines, star-forges
+- `DETAIL_MACRO` --- reactor core details, hydraulic joints, bolt patterns
 
-**3. Ironwright Void-Forge:**
-```
-{BG_STYLE_PREFIX}, a massive orbital factory seen from space, the structure wrapping around a dying star being harvested for energy, industrial spires and docking arms extending in all directions, reactor glow and welding sparks visible even at this scale, steel blue-gray and reactor blue and warning orange, Piranesi architecture at cosmic scale, the machine empire's beating heart
-```
+**Environment Descriptions** (13):
 
-**4. The Hollow Court (Fey):**
-```
-{BG_STYLE_PREFIX}, a frozen throne room in a dead forest, bare bone-white trees forming a natural cathedral, a throne of ice and thorns at the center, the Hollow Court in winter, a single figure barely visible on the throne, frost and moonlight and deep shadow, Arthur Rackham's darkest fairy tale, beauty in desolation
-```
+| # | Environment |
+|---|---|
+| 1 | Inside an orbital shipyard, exposed rebar scaffolding against void-black space, arc-welding sparks cascading from above, half-assembled dreadnought hull in background |
+| 2 | On a planetary strip-mine surface, terraced excavation into red rock, massive bucket-wheel excavators, conveyor belts hauling ore into sky-piercing processing towers |
+| 3 | Inside a void-reactor chamber, concentric rings of supercooled containment coils, reactor-blue glow at the core, concrete radiation shielding walls five meters thick |
+| 4 | On a gravity-tether supply line between orbital stations, open walkway with rebar railings over infinite void, cargo containers moving along magnetized rails |
+| 5 | Inside a concrete command bunker, banks of analogue instruments and toggle switches, green-tinted tactical displays, reinforced blast doors |
+| 6 | On the hull of a void-forge dreadnought, exterior maintenance scaffolding, hull plating stretching to vanishing point, stars and distant nebulae beyond |
+| 7 | Inside a mote-refinery, containment arrays of glass and iron holding swirling violet chaos energy, pipes routing refined motes into storage cylinders |
+| 8 | In a reclaimation sprawl, mountains of salvaged warship components, jury-rigged workshops under scrap-metal canopies, sparks from cutting torches |
+| 9 | On a re-entry corridor, heat-shield tiles glowing orange, atmospheric plasma streaming past reinforced viewports, cockpit instruments redlining |
+| 10 | Inside a gravity-well factory, massive centrifuges spinning in concrete housings, artificial gravity generators humming, workers in pressure suits |
+| 11 | On a decommissioned star-harvester, dead solar collection arrays the size of cities, cooling towers venting last heat into space, abandoned but not empty |
+| 12 | Inside a void-dock loading bay, magnetic crane arms swinging iron containers, exhaust vents cycling, warning klaxon lights flashing orange |
+| 13 | At a forward siege position, walking siege engines advancing across blasted terrain, concrete fortifications behind, reactor-blue targeting beams cutting through smoke |
 
-**5. The Furnace Lords' Domain (Demonic):**
-```
-{BG_STYLE_PREFIX}, the interior of a volcanic caldera repurposed as a war fortress, lava rivers channeled into forges and weapon foundries, demonic architects overseeing construction of siege engines from bone and obsidian, hellfire light from below casting everything in deep red and black, Bosch's hell given industrial purpose
-```
+**Creature Design Language**: All Ironwright creatures are machines --- constructs, automatons, siege engines, drones. No biological organisms. Silhouettes are blocky, geometric, heavy-bottomed. Visible structural elements: rebar skeletons, hydraulic joints, bolted plate armor, exhaust ports. Scale ranges from insect-sized maintenance drones (CM 1) to planet-crusher leviathans (CM 7+). Foundry Directorate units are symmetrical, blueprinted, identical. Scrap Legion units are asymmetrical, patchwork, unique.
 
-**6. The Celestial March:**
-```
-{BG_STYLE_PREFIX}, an army of armored celestial beings marching across a bridge of light spanning an abyss, their golden armor reflecting divine radiance, massive angelic figures flying in formation above the column, clouds parting before their advance, holy gold and divine ivory and righteous blue, painted like Gustave Dore's Crusade illustrations, overwhelming holy military might
-```
+**Sub-faction Visual Differentiation**:
+- **Foundry Directorate**: Geometric, symmetrical, pristine industrial. Reactor-blue glow. Clean bolt patterns. Purpose-built. Right angles dominate. Every unit has a serial number. Palette: steel blue-gray + cold iron + reactor blue.
+- **Scrap Legions**: Asymmetrical, jagged, patchwork. Warning-orange sparks. Mismatched components from multiple factions welded together. Jury-rigged. Diagonal lines dominate. Each unit is unique. Palette: rust orange + steel gray + chaotic multi-faction accents.
 
-**7. The Necromantic Cabal:**
-```
-{BG_STYLE_PREFIX}, a circle of robed liches performing a massive ritual in a bone-encrusted cathedral, spectral energy spiraling upward from the ritual circle, the undead rising from graves visible through gaps in the floor, necrotic purple and bone white and ghostly teal, Francisco Goya's witches' sabbath reimagined as necromantic industry
-```
+**Public Domain Art References** (specific works):
+- Giovanni Battista Piranesi, *Carceri d'invenzione* (Imaginary Prisons, 1761) --- impossible architecture, oppressive scale, iron mechanisms, dramatic perspective. Use for: command structures, void-dock interiors, factory-cathedrals.
+- John Martin, *The Fall of Babylon* (1831) --- apocalyptic industrial scale, towering structures dwarfing figures. Use for: orbital shipyard establishing shots, planetary bombardment.
+- John Martin, *Pandemonium* (1841) --- vast vaulted interior spaces with tiny figures, monumental architecture lit by furnaces. Use for: reactor chambers, command centers, void-forge interiors.
+- John Martin, *The Great Day of His Wrath* (1851-53) --- divine-scale destruction, collapsing architecture. Use for: siege scenes, planetary strip-mine vistas.
 
-**8. The Plane of Chaos:**
-```
-{BG_STYLE_PREFIX}, a landscape where physics has collapsed, floating islands of rock and crystal tumbling through prismatic void, rivers flowing upward, trees growing sideways, creatures half-transformed by chaos energy, every surface crackling with motes of chaotic power, deep purple and crackling gold and impossible colors, the raw Plane of Chaos before the Fracture stabilized, alien and beautiful and terrifying
-```
+---
 
-### 4.11 Onboarding Faction Slides (5)
+### 4.2 The Fey Courts --- Living Forest
 
-Each slide introduces a faction with its key visual identity, shown during the faction selection flow.
+**Visual Pillars**: Organic, ancient, bioluminescent, cyclical, untamed
 
-**Ironwright Collective:**
-```
-{BG_STYLE_PREFIX}, a commanding view of a brutalist orbital shipyard, massive concrete-and-iron warships docked at industrial piers, cranes and scaffolding filling the frame, void of space visible through industrial windows, a Foundry Directorate officer in heavy armor inspecting blueprints in the foreground, steel blue-gray and cold iron and reactor blue, Piranesi and John Martin, industrial empire at the height of its power
-```
+**Texture References**: Living bark with visible grain patterns. Moss and lichen crusts. Bioluminescent fungal networks. Spider silk (wet and dry). Antler velvet. Moth-wing dust. Dragonfly wing venation. Mycelial thread networks. Flower petals (fresh and dried). Frozen dew drops. Leaf translucency. Thorn hooks. Root systems breaking through stone. Birch paper bark. Honeycomb wax. Frog skin. Snail shell nacre.
 
-**Fey Courts:**
-```
-{BG_STYLE_PREFIX}, the Verdant Throne court in full bloom, a clearing in an ancient forest where the trees have grown into a natural palace, flowers exploding from every surface, a fey lord on a throne of living wood and crystal, bioluminescent creatures hovering like attendants, emerald and gold and teal, Arthur Rackham and Edmund Dulac, the beauty and danger of the wild
-```
+**Light Quality**: Natural and filtered. Dappled sunlight through canopy for Verdant Throne (warm, 4000-5000K). Cold moonlight and bioluminescence for Hollow Court (blue-silver, 7000-10000K). Light always comes from nature --- sun, moon, bioluminescent organisms, fireflies. Never artificial. Deep shadows in the undergrowth.
 
-**Demonic Kingdoms:**
-```
-{BG_STYLE_PREFIX}, the Obsidian Bureaucracy's soul exchange trading floor, towering filing cabinets of damned contracts, demonic brokers haggling over soul-jars at obsidian counters, hellfire braziers providing harsh light, a Furnace Lord overseeing from a raised volcanic throne, burnt crimson and charcoal and sulfur, Hieronymus Bosch, hell as organized commerce and unrestrained ambition
-```
+**Composition Tendencies**:
+- `ENVIRONMENTAL_EMERGING` --- creatures half-hidden in foliage, emerging from root systems
+- `ENVIRONMENTAL_WIDE` --- vast canopy vistas, root networks extending to horizons
+- `ACTION_PROWL` --- Hollow Court predators stalking through underbrush
+- `NARRATIVE_MOMENT` --- creatures bonding, mycelial networks connecting
+- `PORTRAIT_FROM_BEHIND` --- mysterious figures disappearing into the forest
+- `NARRATIVE_DUAL` --- two bonded creatures interacting
 
-**Celestial Crusade:**
-```
-{BG_STYLE_PREFIX}, the Knights of Deliverance marshaling for holy war, armored paladins in formation before a cathedral of golden light, divine banners catching wind, biblically-accurate multi-winged celestial beings hovering above blessing the troops, the sky cracked open revealing Heaven beyond, holy gold and divine ivory and righteous blue, Gustave Dore and William Blake, righteous certainty and overwhelming divine power
-```
+**Environment Descriptions** (13):
 
-**The Endless:**
-```
-{BG_STYLE_PREFIX}, a Necromantic Cabal lich standing atop a tower overlooking a vast army of the risen dead, bone constructs and spectral warriors stretching to the horizon, ghostly mist flowing between the ranks, the lich's phylactery glowing with necrotic energy, a Lost Spectre drifting past the tower weeping translucent tears, necrotic purple and bone white and sickly green, Gustave Dore's Inferno and Goya's Black Paintings, death as industry and inevitability
-```
+| # | Environment |
+|---|---|
+| 1 | In a cathedral grove where ancient trees are wider than houses, canopy closing overhead like a vaulted ceiling, shafts of golden light piercing through gaps |
+| 2 | Beneath the Heartwood Spire, roots the size of rivers radiating outward, bioluminescent sap flowing through translucent root walls, trunk disappearing into clouds |
+| 3 | In a bioluminescent cavern, fungal colonies pulsing with slow blue-green light, mycelial threads creating a web of connections across the ceiling |
+| 4 | At the Bone Orchard, interlocking antlers, ribs, and skulls forming tree structures that bloom with real flowers in impossible colors |
+| 5 | In a frozen winter forest at midnight, bare branches like bone against a full moon, frost crystals on every surface, silence so deep it feels solid |
+| 6 | On a clifftop where ancient forest meets the sea, salt-spray and wild roses, storm clouds approaching, roots gripping the cliff edge |
+| 7 | In a meadow of giant wildflowers at twilight, each flower head large enough to shelter under, fireflies spelling forgotten runes |
+| 8 | Inside the hollow trunk of a dead god-tree, fungal constellations on inner walls, a spiral staircase of living wood ascending into darkness |
+| 9 | At a fairy ring crossroads, mushroom circle at midnight, the space inside brighter and stranger than surrounding forest, physics loosened |
+| 10 | In a flooded temple ruin overtaken by sacred lotus and silver fish, moonlight on still water, half-submerged standing stones with moss beards |
+| 11 | At the border where the fey realm bleeds into the mortal world, colors shifting from vibrant saturated greens to muted mortal tones |
+| 12 | In a thorn maze with thirty-foot living briar walls, shifting passages, old bones visible in the hedge, paths that change when unobserved |
+| 13 | On the back of a slowly walking mountain-turtle, entire forest growing on its shell, horizon tilting with each colossal step |
+
+**Creature Design Language**: Fey creatures are biological but alien. Verdant Throne creatures are bright, vibrant, flowering --- bark-skin with green veins, flowering antlers, bioluminescent markings, symbiotic organisms. Hollow Court creatures are eerie, predatory, beautiful-but-wrong --- moth-winged hunters, frost-crowned stags with empty eye sockets, parasitic mycelial networks, bare-branch antlers. All fey have plant/animal hybridization. Silhouettes are elongated, organic, flowing. Scale: tiny sprites (CM 1) to ancient forest sentinels (CM 7+).
+
+**Sub-faction Visual Differentiation**:
+- **Verdant Throne (Spring/Summer)**: Bright greens, flowering elements, warm sunlight, golden pollen. Creatures are healthy, vigorous, growing. Bioluminescent markings pulse with life energy. Palette: emerald + forest gold + bioluminescent teal.
+- **Hollow Court (Autumn/Winter)**: Ice blues, bare branches, cold moonlight, decaying leaves. Creatures are predatory, eerie, threatening beauty. Black veins visible under pale skin. Palette: ice blue + bone white + deep shadow.
+
+**Public Domain Art References** (specific works):
+- Arthur Rackham, illustrations for *A Midsummer Night's Dream* (1908) --- gnarled trees with personality, detailed linework, creatures emerging from bark and root, dappled forest light. Use for: Verdant Throne creatures, ancient grove environments.
+- Arthur Rackham, illustrations for *Undine* (1909) --- water creatures, reflection imagery, figures merging with landscape. Use for: flooded environments, water-fey, boundary scenes.
+- Edmund Dulac, illustrations for *The Tempest* (1908) --- ethereal color, dreamlike atmosphere, figures lit from within, delicate but unsettling beauty. Use for: Hollow Court creatures, moonlit scenes, fairy ring encounters.
+- Edmund Dulac, illustrations for *Stories from the Arabian Nights* (1907) --- jewel-toned fantasy, rich decorative pattern. Use for: Fey court scenes, enchanted feast environments.
+- Arthur Rackham, illustrations for *Peter Pan in Kensington Gardens* (1906) --- detailed forest scenes, tiny figures in vast natural spaces. Use for: scale contrast, wide environmental shots.
+
+---
+
+### 4.3 The Demonic Kingdoms --- Volcanic Infernal
+
+**Visual Pillars**: Volcanic, contractual, hierarchical, consuming, excessive
+
+**Texture References**: Cracked obsidian (glassy fracture surfaces). Cooled lava (ropy pahoehoe and jagged aa). Sulfur crystal deposits. Pitted ancient black iron. Stretched skin as parchment. Polished and raw bone. Horn and chitin plates. Molten gold in channels. Congealed dark fluids. Chains (rusted, gilded, ethereal). Brimstone powder. Wax (melting, dripping). Cracked marble. Tarnished silver. Burnt parchment with moving ink.
+
+**Light Quality**: Underlighting from magma, hellfire, and burning braziers. Deep black shadows above, volcanic orange and blood-red below. Color temperature 2000-3000K (firelight) for Furnace Lords; sickly fluorescent yellow-green for Obsidian Bureaucracy. Extreme chiaroscuro. Light always reveals something unwelcome.
+
+**Composition Tendencies**:
+- `DRAMATIC_LOW_ANGLE` --- Furnace Lords towering, volcanic fury
+- `DRAMATIC_SILHOUETTE` --- figures against volcanic eruptions and hellfire
+- `ACTION_ATTACK` --- mid-strike devastation, debris flying
+- `PORTRAIT_PROFILE` --- Bureaucracy contract-holders in formal menace
+- `ENVIRONMENTAL_THRESHOLD` --- doorways between mortal world and hell
+- `DRAMATIC_DUTCH_ANGLE` --- unsettling Bureaucracy interior scenes
+
+**Environment Descriptions** (13):
+
+| # | Environment |
+|---|---|
+| 1 | On a volcanic cliff overlooking a sea of lava, obsidian spires rising from the molten surface, heat shimmer distorting the air |
+| 2 | In the Registry of Binding Debts, towering obsidian filing cabinets stretching into darkness, dim reddish light from stamp-seal braziers, endless corridors |
+| 3 | Inside the Crucible Caldera, active supervolcano as throne room and arena, magma churning below the obsidian platform |
+| 4 | On a bridge over a river of screaming souls, the far bank shrouded in perpetual darkness, chains anchoring to nothing visible |
+| 5 | Inside a flesh cathedral where walls are living skin and pillars are bone, candles of rendered fat burning with green flame |
+| 6 | At a demonic war forge where weapons are hammered from cursed iron and quenched in ichor, sparks flying in cascades |
+| 7 | In a volcanic glass maze reflecting distorted hellfire from every surface, no way to tell reflection from reality |
+| 8 | On a floating obsidian platform above an infinite void, chains anchoring to something far below, red lightning in the distance |
+| 9 | Inside the Soul Exchange trading floor, price boards flickering with soul valuations, frantic broker-demons, pneumatic soul-jar tubes |
+| 10 | In a coliseum of skulls where lesser demons spectate from tiered bone seats, blood-stained sand in the arena center |
+| 11 | At the foot of a fallen angel statue, wings broken, altar of dark offerings before it, sulfurous rain falling |
+| 12 | Inside a corruption nursery, demonic creatures in growth stages within translucent pods, half-formed beings pressing against membranes |
+| 13 | On the Penitent's Staircase, infinite stone stairs descending, each step carved with a different sin, air growing hotter with each step |
+
+**Creature Design Language**: Two aesthetics. Furnace Lords produce massive, brutal, flame-wreathed war beasts --- magma-armored, obsidian-horned, blood as literal fire, horns and tusks prominent. Heavy, broad, top-heavy silhouettes. Obsidian Bureaucracy produces unsettling administrative horrors --- too-many-eyed clerks, chain-bound messengers, smiling negotiators with wrong proportions, formal robes with inhuman details. Tall, thin, elongated silhouettes. Scale: imp-sized contract couriers (CM 1) to volcanic siege-demons (CM 7+).
+
+**Sub-faction Visual Differentiation**:
+- **Furnace Lords (Chaos-aligned)**: Volcanic, brutal, wreathed in flame. Obsidian armor, magma veins, horn-heavy silhouettes. Outdoor volcanic landscapes. Palette: volcanic orange + obsidian black + hellfire yellow.
+- **Obsidian Bureaucracy (Order-aligned)**: Administrative, clinical, unsettling. Formal robes with obsidian clasps, too-many eyes, ink-stained hands, chain mantles. Interior tower offices and filing vaults. Palette: deep black + dim red + parchment tan.
+
+**Public Domain Art References** (specific works):
+- Hieronymus Bosch, *The Garden of Earthly Delights* right panel (c. 1490-1510) --- surreal damnation, impossible creatures, organized chaos. Use for: Bureaucracy creatures, the Soul Exchange, contract scenes.
+- Hieronymus Bosch, *The Last Judgment* triptych (c. 1482) --- grotesque transformations, fire and darkness, half-organic half-object creatures. Use for: Furnace Lords war beasts, corruption effects.
+- John Martin, *The Fallen Angels Entering Pandemonium* (1841) --- vast hellish architecture, molten light from below. Use for: Crucible Caldera, throne rooms, establishing shots.
+- Hieronymus Bosch, *The Temptation of St. Anthony* (c. 1501) --- bizarre hybrid creatures, fever-dream landscapes, the mundane made nightmarish. Use for: creature design reference, corruption nursery environments.
+
+---
+
+### 4.4 The Celestial Crusade --- Divine Radiance
+
+**Visual Pillars**: Divine, geometric, overwhelming, righteous, terrifying-beauty
+
+**Texture References**: Hammered gold plate. White marble veined with gold. Divine blue silk tabards. Solidified light (crystalline, weight-bearing). Halo fire (golden-white, radiating). Angel feathers (massive, more like sword blades than down). Geometric sacred patterns (vesica piscis, Flower of Life, trefoil knots). Stained glass casting colored light. Incense smoke. Holy water (mercury-like, silver-gold). Sacred stone (marble warm to touch, veined with gold). Divine fabric (impossibly fine, catches light like liquid). Eye-covered surfaces (each eye blinking independently).
+
+**Light Quality**: Divine radiance from within. Knights: warm golden light (3500-4500K), cathedral light through stained glass, halo glow, gold armor reflections. Chosen: blinding white-gold that distorts air around them (color temperature undefined --- divine light outside normal spectrum). Light comes from the divine beings themselves. Shadows cast outward from Celestial, not upon them.
+
+**Composition Tendencies**:
+- `DRAMATIC_LOW_ANGLE` --- Knights in formation towering overhead
+- `DRAMATIC_OVERHEAD` --- geometric formation patterns, cathedral rose-window compositions
+- `ACTION_DEFEND` --- Knights in shield-wall formation
+- `NARRATIVE_RITUAL` --- consecration ceremonies, divine manifestations
+- `DRAMATIC_SILHOUETTE` --- Chosen entities backlighting entire scenes
+- `ACTION_COMMAND` --- Seraphim directing mortal forces
+
+**Environment Descriptions** (13):
+
+| # | Environment |
+|---|---|
+| 1 | Inside the Radiant Bastion, fortress-cathedral suspended above clouds on pillars of solidified light, stained glass casting colored patterns across marble floors |
+| 2 | On a cloud-field battlefield, divine light breaking through storm clouds in god-rays, golden armor reflecting radiance across an army in formation |
+| 3 | Inside the Sanctum of Open Eyes, cathedral-plane where geometry follows divine mathematics, walls curving impossibly, surfaces covered in open eyes |
+| 4 | At the Gates of Deliverance, massive golden doors carved with celestial victory scenes, light pouring through the widening gap |
+| 5 | In a consecration chamber, circular marble room with domed ceiling of celestial maps, golden braziers, divine light with no visible source |
+| 6 | On a divine warpath, ground purified white behind advancing Knight columns, darkness retreating ahead, the gold borderline glowing |
+| 7 | Inside a relic vault, golden reliquaries containing divine power fragments, each casting its own light, no shadows because every surface glows |
+| 8 | At a sky-bridge between floating cathedral-fortresses, bridge of crystallized prayer, clouds far below, angelic sentinels at each railing |
+| 9 | In a tribunal chamber, seven golden thrones in semicircle, divine judges with multiple halos, the accused in a circle of inescapable white light |
+| 10 | On a mountainside monastery, austere white stone buildings clinging to sheer cliffs, golden silk prayer flags, dawn light gilding every surface |
+| 11 | Inside a divine library, scrolls of holy scripture floating in organized orbits, golden ink glowing on white vellum, knowledge as visible light |
+| 12 | At the site of a divine manifestation, reality warped --- stone flowing like liquid, light bending, gravity uncertain, impression of something vast |
+| 13 | In a crusade encampment, rows of identical white tents with golden crosses, Knight formations drilling in perfect sync, fortress-cathedral on horizon |
+
+**Creature Design Language**: Two families. Knights of Deliverance are humanoid warriors in heavy gold-and-ivory plate armor with divine blue tabards. Silhouettes are broad-shouldered, heavy, symmetrical --- cathedral architecture in armor form. Formations are geometric: shield arches, spear columns, rose-window blade patterns. Heaven's Chosen are biblically-accurate celestial entities: concentric burning wheels covered in eyes, nested wings of golden fire, multiple halos at impossible angles. Silhouettes are radial, complex, layered. Scale: Knights human-to-large (CM 2-5). Chosen enormous and reality-distorting (CM 5-7+).
+
+**Sub-faction Visual Differentiation**:
+- **Knights of Deliverance (Order-aligned)**: Military, disciplined, uniform. Gold-ivory plate armor, divine blue tabards. Human-proportioned but idealized. Every Knight looks similar --- uniformity is the point. Palette: holy gold + divine ivory + righteous blue.
+- **Heaven's Chosen (Chaos-aligned)**: Alien, overwhelming, incomprehensible. Wheels within wheels, too many eyes, too many wings, burning halos, painful geometry. Each entity unique and terrifying. Palette: burning white-gold + celestial rose + reality-distortion effects.
+
+**Public Domain Art References** (specific works):
+- Gustave Dore, illustrations for Milton's *Paradise Lost* (1866) --- celestial warfare, divine hosts in formation, angelic radiance, impossible divine architecture. Use for: Knight formations, divine battlefields, Radiant Bastion.
+- Gustave Dore, Bible illustrations (1866) --- specifically Ezekiel's Vision (burning wheels and many-eyed creatures), Revelation scenes, divine judgment. Use for: Heaven's Chosen designs, divine manifestations, Sanctum of Open Eyes.
+- William Blake, *The Ancient of Days* (1794) --- visionary divine geometry, muscular divine figure with radiating energy. Use for: Chosen close-ups, divine energy effects.
+- William Blake, *The Great Red Dragon and the Woman Clothed in Sun* (1805-1810) --- the intersection of beauty and terror in divine forms. Use for: Chosen entity designs, reality-warping scenes.
+- William Blake, illustrations for *The Book of Job* (1826) --- framing with divine figures above and mortal figures below, hierarchical composition. Use for: Exalt aura visualization, judgment scenes.
+
+---
+
+### 4.5 The Endless --- Necrotic Spectral
+
+**Visual Pillars**: Decayed, spectral, tragic, relentless, liminal
+
+**Texture References**: Polished and raw bone (skulls, femurs, ribcages). Tattered scholarly robes. Embalming-stiff fabric. Dried blood on parchment. Ectoplasmic residue (luminous, viscous). Spectral mist (dense, ground-hugging). Corroded iron grave fittings. Coffin wood (worm-eaten). Funeral shroud linen. Phylactery crystal (pulsing with trapped soul-light). Chain links (tarnished, spectral). Candle wax (black, dripping). Tombstone granite. Cemetery moss. Frozen breath visible in cold spectral air.
+
+**Light Quality**: Two modes. Cabals: cold blue-green soul-light from phylacteries, eye sockets, necrotic sources (5000-7000K, green-tinted). Spectres: diffuse gray-teal light with no clear source --- permanently overcast graveyard at twilight, nothing casts a proper shadow. Fog always present. Light always dim, always insufficient.
+
+**Composition Tendencies**:
+- `ENVIRONMENTAL_EMERGING` --- spectres materializing from fog, constructs rising from ground
+- `NARRATIVE_AFTERMATH` --- battlefields of the dead, grave sites, ruins of the living
+- `DRAMATIC_SILHOUETTE` --- ghostly figures against gray skies, lich silhouettes in doorways
+- `PORTRAIT_CLOSE` --- lich eye-socket glow, spectral faces flickering between visible and invisible
+- `ACTION_PROWL` --- spectre swarms drifting low through fog, hunting without urgency
+- `NARRATIVE_MOMENT` --- a lich studying, a spectre remembering, bone constructs assembling
+
+**Environment Descriptions** (13):
+
+| # | Environment |
+|---|---|
+| 1 | In the Ossuary Parliament, subterranean cathedral built entirely from bones, spectral candles floating at intervals, ancient liches on thrones of fused skulls |
+| 2 | At the Wailing Reach, fog-choked battlefield from an ancient war, thousands of spectres drifting through mist, bone dust and rusted weapons underfoot |
+| 3 | Inside a necromancer's laboratory, surgical tables with partially assembled bone constructs, jars of preserved organs, soul-light illumination |
+| 4 | In a flooded crypt, water black as ink reflecting spectral light, coffins half-submerged, waterlogged funeral shrouds floating like jellyfish |
+| 5 | At a mass grave during slow rain, mud and bones churning as something rises, lanterns of ghostly teal light hovering at edges |
+| 6 | On the roof of a crumbling mausoleum, entire city of the dead spreading below, spectral mist flowing through streets like a river |
+| 7 | Inside a phylactery vault, rows of crystal containers pulsing with different soul-lights, iron and bone security mechanisms, absolute silence |
+| 8 | At a spectral convergence, dozens of ghosts drifting inward from all directions, drawn to a central gravity unrelated to physics |
+| 9 | In a forgotten library of the dead, books written in ectoplasmic ink, bone shelves, a lich reading in a chair made of spines |
+| 10 | On a frozen battlefield where dead are preserved in ice, spectral energy rising like steam, aurora overhead tinted necrotic green |
+| 11 | Inside a bone-ship sailing a river of fog, spectral crew at tarnished silver stations, far bank always invisible, destination unknown |
+| 12 | At the threshold of a sealed crypt, heavy stone doors with warnings in dead languages, ghostly hands reaching from the cracked seal |
+| 13 | In a grove of petrified trees where the dead hang suspended in amber-like resin, spectral echoes playing final moments in loop |
+
+**Creature Design Language**: Two families. Cabals produce constructed undead: bone constructs assembled from multiple corpses (geometric, deliberate), flesh golems (stitched, surgical), skeletal war machines (functional, industrial-undead), liches in tattered scholarly robes with phylacteries. Silhouettes heavy, angular, assembled --- you can see the seams. Spectres are ethereal: translucent figures flickering between solid and invisible, trailing spectral chains, features visible but fading. Silhouettes elongated, wispy, indistinct at edges. Scale: Cabals from small bone servants (CM 1) to massive bone-construct leviathans (CM 7+). Spectres human-sized but warp space around them.
+
+**Sub-faction Visual Differentiation**:
+- **Necromantic Cabals (Order-aligned)**: Constructed, deliberate, scholarly. Bone constructs with geometric precision. Liches in robes with phylacteries. Cold blue-green soul-light. Clinical, organized, death-as-engineering. Palette: bone white + necrotic purple + cold blue-green.
+- **Lost Spectres (Chaos-aligned)**: Ethereal, tragic, uncontrolled. Translucent figures, broken chains, flickering visibility. Sickly green spectral light. Emotional, raw, death-as-grief. Palette: ghostly teal + sickly green + fog gray.
+
+**Public Domain Art References** (specific works):
+- Gustave Dore, illustrations for Dante's *Inferno* (1857) --- the dead in vast numbers, detailed crosshatching creating texture of darkness, cavernous underworld spaces. Use for: Ossuary Parliament, mass graves, underworld environments.
+- Gustave Dore, illustrations for *The Rime of the Ancient Mariner* (1876) --- ghost ships, fog, death personified, liminal space between life and death. Use for: bone-ships, fog environments, spectral convergences.
+- Francisco Goya, *Saturn Devouring His Son* (1819-1823) --- raw terror, dissolution of form, figures consumed by darkness, heavy impasto on dark backgrounds. Use for: Lost Spectres emotional intensity, the Wailing Reach.
+- Francisco Goya, *The Sleep of Reason Produces Monsters* (1799) --- spectral creatures emerging from darkness around a figure. Use for: spectral swarm scenes, lich summoning, nightmare imagery.
+- Francisco Goya, *Witches' Sabbath (The Great He-Goat)* (1821-23) --- crowd of desperate figures, a dark central authority, faces distorted by fear and worship. Use for: Cabal rituals, phylactery ceremonies, necromantic industry.
 
 ---
 
 ## 5. Planar Ruins Art Direction
 
-### 5.1 Neutral Ruins Aesthetic
+### 5.1 The Ancient Builder Aesthetic --- Neutral Ruins
 
-Neutral Planar Ruins are the remnants of an ancient civilization that predates all five factions. They are mysterious, beautiful, and alien. They should look like nothing the factions have built -- a wholly different architectural tradition.
+Neutral Planar Ruins belong to no faction. They are remnants of a vanished civilization so old and alien that no current faction can claim them.
 
-**Core Visual Principles:**
-- **Materials**: Pale stone (not granite or marble -- something otherworldly, like petrified light), crystalline veins running through the structure, metallic elements of unknown alloy (not gold, not iron -- something in between, like electrum or orichalcum)
-- **Architecture**: Non-Euclidean geometry (subtle, not surreal). Arches that curve in unexpected ways. Columns with slight spiral forms. Surfaces covered in geometric patterns that suggest mathematical meaning
-- **Color palette**: Pale blue-white stone, warm amber crystalline veins, soft silver metallic accents, background of neutral earth tones. The ruins themselves provide the only bright colors in the scene.
-- **Condition**: Partially ruined but structurally stable. Some sections collapsed, others pristine. The intact sections glow faintly with residual energy. Vegetation growing in the ruins (moss, lichen, small plants) but not overtaking them.
-- **Scale**: Medium-large. Each ruin is the size of a small building or large monument. Large enough to provide shelter, small enough to fit on a battlefield.
-- **Lighting**: Self-illuminated from within (crystalline veins glow), supplemented by ambient environmental lighting. The glow suggests the ruin is still active, still containing energy.
-- **Mood**: Awe, mystery, melancholy. These are beautiful things from a lost world. They stabilize chaos energy, creating pockets of calm in a fractured plane.
+**Material Language**: Pale stone (not white marble --- think weathered limestone, sandstone with visible sedimentary layers). Crystalline alloy (metallic but translucent, refracting light into unexpected colors --- not gold, not iron, something between). Fused composites where stone and crystal merge without seam. No wood, no bone, no iron, no organic material.
 
-**Neutral Ruin Style Anchor (prepended to all neutral ruin prompts):**
+**Architectural Style**: Functional precision with alien beauty. Clean geometric forms (circles, arcs, perfect cubes) at slightly wrong proportions --- doorways too tall, platforms too wide, channels too narrow for any known species. Surfaces smooth where they should be rough, rough where they should be smooth.
+
+**State of Decay**: Partially ruined but structurally sound. Cracks and wear but core structure intact after millennia. Lichen of no natural color at the base. Dust motes defy gravity. Air feels different within arm's reach.
+
+**Scale and Framing**: Ruins are structures. They must feel LARGE. Use establishing shot compositions. The ruin is the subject, not a background element. Tiny figures or environmental objects provide scale reference. Camera angle typically low-angle looking up, or mid-distance establishing shot.
+
+**Neutral Ruin Color Palette**:
+
+| Element | Color | Hex |
+|---|---|---|
+| Primary stone | Weathered pale gray | `#C4B8A0` |
+| Crystal alloy | Blue-silver translucent | `#B0C4DE` |
+| Engraving glow | Soft amber | `#DAA06D` |
+| Ambient particles | White-violet | `#D8BFD8` |
+| Ground scorching | Dark charcoal | `#3A342A` |
+
+**Neutral Ruin Style Anchor**:
 ```
 RUIN_NEUTRAL_PREFIX = "palette knife oil painting, heavy impasto brushstrokes, an ancient ruin of pale crystalline-veined stone, non-human architecture with subtle non-Euclidean geometry, partially collapsed but structurally stable, faint warm amber glow emanating from intact crystalline veins, unknown metallic accents, moss and lichen growing in cracks, a sense of deep age and alien beauty, mysterious and melancholy, painted in the style of Gustave Dore and N.C. Wyeth, portrait composition"
 ```
 
-### 5.2 Eight Neutral Ruin Archetypes
+### 5.2 Faction Transformation Guide
 
-Each archetype is a distinct structure with a different visual identity and implied purpose.
+When a neutral ruin evolves into a faction-specific variant, the Ancient Builder base structure remains visible beneath the faction's additions. The transformation is an overlay, not a replacement.
 
-**1. The Stabilization Spire**
-```
-{RUIN_NEUTRAL_PREFIX}, a tall narrow spire of pale stone rising from a fractured base, the top section still intact with crystalline energy pulsing upward in a visible beam, the base surrounded by fallen stone blocks arranged in concentric circles, energy patterns on the surface suggesting it was built to project stability into surrounding space, vertical emphasis, sense of a lighthouse or beacon
-```
+#### Ironwright Transformation
 
-**2. The Resonance Well**
-```
-{RUIN_NEUTRAL_PREFIX}, a circular well or pool structure with stepped sides descending into a glowing center, crystalline water (or energy that looks like water) filling the basin and reflecting impossible colors, stone benches arranged around the rim suggesting a gathering place, the well rim carved with geometric patterns that pulse with the glow, sense of a font or ritual pool
-```
+The Ironwright encase, reinforce, and instrumentalize. The ruin becomes a machine.
 
-**3. The Archive Gate**
-```
-{RUIN_NEUTRAL_PREFIX}, a massive freestanding archway with no wall around it, the space within the arch shimmering with contained energy, the arch itself covered in dense geometric carvings that may be text or mathematical notation, broken stone tablets scattered at the base, the sense of a portal or gateway that once connected to something, imposing and scholarly
-```
+**Visual Keywords**: iron plating, bolt patterns, rebar, welded seams, reactor-blue conduit, industrial scaffolding, sensor arrays, hydraulic arms, schematics, warning lights
 
-**4. The Harmonic Pillars**
-```
-{RUIN_NEUTRAL_PREFIX}, a colonnade of seven pillars arranged in a semicircle, each pillar a different height and thickness, the tops of intact pillars humming with visible vibration (motion blur), crystalline caps on each pillar glowing in sequence, the ground between them unnaturally smooth and reflective, the sense of a musical instrument or tuning mechanism built at architectural scale
-```
-
-**5. The Temporal Anchor**
-```
-{RUIN_NEUTRAL_PREFIX}, a low squat structure like a bunker or vault, heavy stone walls with crystalline reinforcement, a single doorway revealing an interior lit with steady golden light, the exterior weathered and ancient but the interior visible through the door appears impossibly pristine, a time distortion effect at the threshold (subtle visual warping), the sense of something preserved against all entropy
-```
-
-**6. The Mote Collector**
-```
-{RUIN_NEUTRAL_PREFIX}, an open-topped structure like a stone bowl or amphitheater, the interior surface covered in crystalline filaments that reach upward like frozen grass, chaos motes drifting toward the structure and being captured by the filaments, the collected energy pooling at the center as visible light, the sense of a net or trap designed to harvest ambient chaos energy, glowing from within
-```
-
-**7. The Planar Lens**
-```
-{RUIN_NEUTRAL_PREFIX}, a structure built around a massive crystalline disc (the lens) mounted vertically in a stone frame, the disc refracting light into prismatic patterns on surrounding surfaces, the frame partially collapsed on one side but the lens intact and still functioning, energy patterns suggesting it was used to focus or redirect planar forces, rainbow refractions and deep shadow
-```
-
-**8. The Warden's Bastion**
-```
-{RUIN_NEUTRAL_PREFIX}, a fortified structure with thick walls and narrow observation slits, defensive architecture clearly designed to protect something inside, the roof partially collapsed revealing crystalline machinery within, guardian statues (broken) flanking the entrance, the sense of a military installation from a civilization that fought wars with energy and geometry rather than steel and fire
-```
-
-### 5.3 Faction-Evolved Ruin Transformations
-
-When a neutral ruin is evolved into a faction-specific variant, the base architecture remains recognizable but is visually transformed by the faction's aesthetic. The ruin becomes a hybrid -- ancient alien structure adapted and claimed by the faction.
-
-**Faction Transformation Style Anchors:**
-
-**Ironwright Evolution:**
 ```
 RUIN_IRONWRIGHT_SUFFIX = "the ancient ruin has been retrofitted with brutalist industrial additions, rebar reinforcement bolted into the pale stone, concrete patches over cracks, hydraulic pistons bracing weakened sections, reactor-powered conduits running along the exterior feeding into the crystalline systems, warning orange hazard markings, industrial plating covering some of the ancient carvings, the glow now tinged with reactor blue, the ancient beauty partially obscured by functional industrial pragmatism"
 ```
 
-**Fey Courts Evolution:**
+#### Fey Courts Transformation
+
+The Fey grow through and around. The ruin becomes a living thing.
+
+**Visual Keywords**: living wood, root systems, flowering vines, bioluminescent moss, mycelial networks, canopy, fireflies, bark growth, dappled green light
+
 ```
 RUIN_FEY_SUFFIX = "the ancient ruin has been claimed by living nature, roots and vines growing through and around the stone in symbiotic embrace, bioluminescent moss covering surfaces and adding green-gold glow to the original amber, flowers blooming from cracks, the crystalline veins now pulsing in harmony with the surrounding forest's rhythms, a sense that the forest is nurturing and protecting the ruin rather than consuming it, Arthur Rackham's trees embracing ancient stone"
 ```
 
-**Demonic Kingdoms Evolution:**
+#### Demonic Kingdoms Transformation
+
+The Demonic corrupt and consume. The ruin becomes a temple of suffering.
+
+**Visual Keywords**: scorched black stone, blood stains, chains, hooks, crimson crystal, hellfire, blood-red runes, obsidian growths, pentagonal sigils, sulfurous heat shimmer
+
 ```
 RUIN_DEMONIC_SUFFIX = "the ancient ruin has been corrupted by infernal energy, obsidian growths erupting from the pale stone like tumors, blood-red runes carved over the original geometric patterns, chains wrapped around structural elements, hellfire replacing the original amber glow with angry crimson light, the crystalline veins cracked and leaking dark energy, a sense of violation and repurposing, the ancient structure suffering under demonic occupation"
 ```
 
-**Celestial Crusade Evolution:**
+#### Celestial Crusade Transformation
+
+The Celestial purify and sanctify. The ruin becomes a holy relic.
+
+**Visual Keywords**: white marble, gold veining, golden inscriptions, divine script, angelic sculptures, halo of light, holy radiance, chalices, dove constructs, divine geometry
+
 ```
 RUIN_CELESTIAL_SUFFIX = "the ancient ruin has been purified and consecrated by divine power, golden light flooding the structure from within, angelic inscriptions carved alongside the original geometric patterns, small statues of celestial figures placed at key points, the crystalline veins now blazing with holy radiance, white marble additions smoothly integrated with the pale stone, a sense of claiming and sanctifying, the Celestial Crusade declaring this place holy and theirs by divine right"
 ```
 
-**The Endless Evolution:**
+#### The Endless Transformation
+
+The Endless haunt and inhabit. The ruin becomes a memorial to the dead.
+
+**Visual Keywords**: bone fragments, spectral mist, ghostly teal crystal, necrotic purple glow, ghostly hands, ectoplasm, skull mosaics, broken chains, funeral shroud draping
+
 ```
 RUIN_ENDLESS_SUFFIX = "the ancient ruin has been haunted by undead energy, spectral mist flowing from every opening, bone additions and necromantic symbols bolted or grown onto the stone, the crystalline veins now pulsing with ghostly teal and necrotic purple, shadows moving independently of any light source, frost forming on surfaces near the strongest spectral concentrations, a sense that the ruin is no longer empty -- it is full of the dead, Goya's nightmares given architecture"
 ```
 
-### 5.4 Example Evolved Ruin Prompt (Complete)
+### 5.3 Ruin Art Prompt Assembly
 
-**Stabilization Spire -- Fey Courts Evolved:**
+**Neutral ruin prompt:**
 ```
-palette knife oil painting, heavy impasto brushstrokes, an ancient ruin of pale crystalline-veined stone, non-human architecture with subtle non-Euclidean geometry, partially collapsed but structurally stable, faint warm amber glow emanating from intact crystalline veins, unknown metallic accents, painted in the style of Gustave Dore and N.C. Wyeth, portrait composition,
-
-a tall narrow spire of pale stone rising from a living forest floor, the top section still intact with crystalline energy pulsing upward, the base surrounded by massive roots that have grown around the fallen stone blocks in protective embrace,
-
-the ancient ruin has been claimed by living nature, roots and vines growing through and around the stone in symbiotic embrace, bioluminescent moss covering surfaces and adding green-gold glow to the original amber, flowers blooming from cracks, the crystalline veins now pulsing in harmony with the surrounding forest's rhythms, Arthur Rackham's trees embracing ancient stone,
-
-in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on the ancient structure
+{RUIN_NEUTRAL_PREFIX}, {SPECIFIC_RUIN_VISUAL_DESCRIPTION}
 ```
 
-**Archive Gate -- Ironwright Evolved:**
+**Evolved ruin prompt:**
 ```
-palette knife oil painting, heavy impasto brushstrokes, an ancient ruin of pale crystalline-veined stone, non-human architecture with subtle non-Euclidean geometry, partially collapsed but structurally stable, painted in the style of Gustave Dore and N.C. Wyeth, portrait composition,
+{RUIN_NEUTRAL_PREFIX}, {SPECIFIC_RUIN_VISUAL_DESCRIPTION}, {RUIN_FACTION_SUFFIX}, {FACTION_ENVIRONMENT}
+```
 
-a massive freestanding archway reinforced with industrial scaffolding, the shimmering energy within the arch now contained by reactor-powered field generators bolted to the frame, broken stone tablets stacked and catalogued in iron crates,
+All 8 neutral ruin visual descriptions are defined in `PHASE1C-planar-ruins.md` Section 2. The visual descriptions for all 40 evolved variants are defined in `PHASE1C-planar-ruins.md` Section 3.
 
-the ancient ruin has been retrofitted with brutalist industrial additions, rebar reinforcement bolted into the pale stone, concrete patches over cracks, hydraulic pistons bracing the arch, reactor-powered conduits running along the exterior feeding into the crystalline systems, warning orange hazard markings, the glow now tinged with reactor blue,
+### 5.4 Example Evolved Ruin Prompts
 
-inside a vast orbital construction bay, the gate structure clamped to a rotating industrial platform, void of space visible through gaps in the station hull
+**Fey Courts --- Heartwood Spire (from Resonance Spire):**
+```
+{RUIN_NEUTRAL_PREFIX}, a tall narrow spire of pale stone rising from a living forest floor, the top section intact with crystalline energy pulsing upward, base surrounded by massive roots that have grown around the fallen stone blocks in protective embrace, {RUIN_FEY_SUFFIX}, in a moonlit glade where bioluminescent mushrooms cast soft blue-green light on the ancient structure
+```
+
+**Ironwright --- Repair Pylon (from Resonance Spire):**
+```
+{RUIN_NEUTRAL_PREFIX}, a slender crystalline tower encased in welded iron plating with heavy rivets, hydraulic repair arms extending from the sides, the crystal glow channeled through conduit pipes into a directed beam, industrial coolant vents hissing from the base, geometric engravings overlaid with acid-etched schematics, {RUIN_IRONWRIGHT_SUFFIX}, inside a vast orbital construction bay, the structure clamped to a rotating industrial platform
 ```
 
 ---
 
-## 6. Season 1 Visual Identity
+## 6. App Background Art Prompts
 
-### 6.1 Season Theme: "The First Fracture"
+All prompts below are fal.ai-ready. Prepend the style anchor. Backgrounds use heavy depth-of-field blur to avoid competing with foreground UI.
 
-Season 1 tells the story of the Great Fracture -- the moment the barrier between the Plane of Order and the Plane of Chaos shattered, releasing chaos motes into the world and triggering the faction wars. This is the origin story of everything players know.
+### 6.1 Background Style Prefix
 
-### 6.2 Seasonal Color Palette Overlay
+```
+BG_STYLE_PREFIX = "palette knife oil painting, heavy impasto brushstrokes visible, traditional media on canvas, muted earth tones with vivid accent colors, atmospheric perspective, deep depth of field blur, no text no borders no watermarks, painted in the style of Gustave Dore and N.C. Wyeth, wide establishing shot"
+```
 
-The Season 1 palette is added as a subtle overlay/accent to the base faction palettes. It does not replace faction colors; it tints the world.
+### 6.2 Home Screen
 
-| Element | Color | Hex | Usage |
+**Faction-Neutral (default):**
+```
+{BG_STYLE_PREFIX}, a vast fractured landscape where the Plane of Order meets the Plane of Chaos, crystalline geometric structures on the left gradually crumbling into swirling chaotic energy on the right, a massive rift in the sky revealing cosmic void above, chaos motes drifting like fireflies, muted golds and deep purples and midnight blues, epic scale, painted like a John Martin apocalyptic landscape
+```
+
+**Ironwright:**
+```
+{BG_STYLE_PREFIX}, a vast orbital shipyard seen from a command bridge viewport, massive iron hulls under construction with welding sparks like stars, rebar scaffolding stretching to infinity, reactor glow illuminating concrete bulkheads, steel blue-gray and warning orange, Piranesi architecture at cosmic scale
+```
+
+**Fey Courts:**
+```
+{BG_STYLE_PREFIX}, the interior of an impossibly vast hollow tree, spiral staircases of living wood ascending into darkness, bioluminescent mushrooms casting soft teal and gold light, roots thick as rivers, a single shaft of moonlight from far above, emerald and gold, Arthur Rackham fairy tale
+```
+
+**Demonic Kingdoms:**
+```
+{BG_STYLE_PREFIX}, a volcanic throne room viewed from the foot of obsidian stairs, lava channels in the floor casting hellfire glow upward, bone pillars supporting a vaulted ceiling of fused skulls, a distant throne silhouetted against a wall of flame, burnt crimson and charcoal, Hieronymus Bosch infernal court
+```
+
+**Celestial Crusade:**
+```
+{BG_STYLE_PREFIX}, a cathedral of light floating in golden clouds, massive arched windows pouring divine radiance, marble columns carved with angelic figures, a central altar radiating concentric rings of light, divine ivory and holy gold, Gustave Dore Paradise
+```
+
+**The Endless:**
+```
+{BG_STYLE_PREFIX}, a necropolis stretching to the horizon under a sick green-black sky, mausoleums in various decay states, spectral energy drifting between tombstones like luminous fog, a massive lich tower radiating necrotic purple light, bone white and ghostly teal, Francisco Goya Black Painting given depth and architecture
+```
+
+### 6.3 Collection Screen
+
+```
+{BG_STYLE_PREFIX}, an ancient library or archive interior, towering shelves of tomes and card cases stretching into darkness, warm amber candlelight from brass fixtures, a central reading table with cards catching the light, dust motes in light shafts, mahogany and amber gold, scholarly and reverent
+```
+
+### 6.4 Deck Builder
+
+```
+{BG_STYLE_PREFIX}, a war room table seen from slightly above, covered in tactical maps and scattered cards and glowing crystal markers, candles providing warm focused light, edges falling into shadow, strategy implements visible, warm amber and parchment cream, a general planning their campaign
+```
+
+### 6.5 Shop
+
+```
+{BG_STYLE_PREFIX}, a mysterious merchant's tent interior, shelves and display cases with glowing artifacts, fabric draping in jewel tones, a central counter with chaos motes and planar shards catching candlelight, tent flaps revealing a starfield, burgundy and gold, enticing and opulent
+```
+
+### 6.6 Battle Select
+
+```
+{BG_STYLE_PREFIX}, two armies facing each other across a narrow battlefield, seen from high overhead, distant silhouettes one side warm one side cool, between them a massive chaos rift with violet energy surging upward, turbulent sky, lightning, the moment before the clash
+```
+
+### 6.7 Profile
+
+```
+{BG_STYLE_PREFIX}, a quiet chamber with stone walls and arched window showing a distant landscape, simple furnishings, a desk with personal effects, soft diffused light, deep shadow and muted earth tones, a private space away from war
+```
+
+### 6.8 Settings
+
+```
+{BG_STYLE_PREFIX}, dark minimal abstract background, Ancient Builder geometric patterns etched in faint lines on dark surface, a single line of crystalline alloy glowing softly along one edge, extremely subtle, non-distracting, mostly darkness with geometric texture
+```
+
+### 6.9 Onboarding
+
+**Step 1 --- Welcome:**
+```
+{BG_STYLE_PREFIX}, the Plane of Chaos seen from a cliff edge, sky fractured with violet energy cracks, a lone silhouette figure at the cliff edge overlooking the fractured world, Ancient Builder ruins in the middle distance, awe and danger
+```
+
+**Step 2 --- Lore (The Great Fracture):**
+```
+{BG_STYLE_PREFIX}, five distinct energy signatures colliding at a single point in the sky --- steel blue, forest green, volcanic red, divine gold, spectral purple, the collision tearing reality open, land below buckling and splitting, chaos motes pouring through like rain, John Martin apocalyptic beauty
+```
+
+**Step 3 --- Faction Selection:**
+```
+{BG_STYLE_PREFIX}, five faction territories in a semicircle viewed from a neutral center, each bleeding its characteristic color into surrounding space, separated by chaos rifts, a Planar Shard hovering at center catching light from all five
+```
+
+**Step 4 --- Tutorial:**
+```
+{BG_STYLE_PREFIX}, close-up of a hand holding a Planar Shard, through the shard the chaotic background becomes orderly and beautiful, the shard refracting faction-colored light, silhouetted hand, power and potential
+```
+
+**Step 5 --- First Deck:**
+```
+{BG_STYLE_PREFIX}, a collection of cards fanning outward from a central point each glowing with its own light, arranged on a stone surface matching the deck builder table, blurred battlefield behind suggesting games to come, excitement
+```
+
+### 6.10 Ruin Collection
+
+```
+{BG_STYLE_PREFIX}, an Ancient Builder excavation site, multiple ruin structures partially unearthed from pale stone ground, each in its own excavation pit, crystal alloy catching light, archaeological tools and measurement stakes, scholarly wonder mixed with alien mystery
+```
+
+### 6.11 Loading Screens (Rotating Set of 8)
+
+**1. The Great Fracture:**
+```
+{BG_STYLE_PREFIX}, the sky tearing open along a massive jagged rift, Order on one side and Chaos on the other, land below buckling and splitting, figures tiny against the scale, painted like John Martin's The Great Day of His Wrath
+```
+
+**2. Ancient Ruin Discovery:**
+```
+{BG_STYLE_PREFIX}, explorers with lanterns entering a vast underground chamber, a partially buried ruin of impossible architecture glowing with crystalline light, explorers dwarfed by the structure, mystery and awe
+```
+
+**3. Ironwright Void-Forge:**
+```
+{BG_STYLE_PREFIX}, a massive orbital factory wrapping around a dying star being harvested, industrial spires extending in all directions, welding sparks visible at cosmic scale, steel blue-gray and reactor blue, Piranesi at cosmic scale
+```
+
+**4. Hollow Court:**
+```
+{BG_STYLE_PREFIX}, a frozen throne room in a dead forest, bare bone-white trees forming a natural cathedral, a throne of ice and thorns, a single figure barely visible, frost and moonlight, Arthur Rackham's darkest fairy tale
+```
+
+**5. Furnace Lords:**
+```
+{BG_STYLE_PREFIX}, volcanic caldera repurposed as war fortress, lava rivers channeled into forges, demonic architects overseeing bone-and-obsidian siege engines, hellfire from below, Bosch's hell given industrial purpose
+```
+
+**6. Celestial March:**
+```
+{BG_STYLE_PREFIX}, armored celestial beings marching across a bridge of light spanning an abyss, golden armor reflecting divine radiance, biblically-accurate celestials flying above, clouds parting, Gustave Dore Crusade illustrations
+```
+
+**7. Necromantic Cabal:**
+```
+{BG_STYLE_PREFIX}, robed liches performing a massive ritual in a bone-encrusted cathedral, spectral energy spiraling upward, undead rising through floor gaps, necrotic purple and bone white, Goya's witches' sabbath as necromantic industry
+```
+
+**8. Plane of Chaos:**
+```
+{BG_STYLE_PREFIX}, a landscape where physics has collapsed, floating islands tumbling through prismatic void, rivers flowing upward, trees growing sideways, creatures half-transformed, purple and gold and impossible colors, alien and beautiful and terrifying
+```
+
+### 6.12 Match Result Screens
+
+**Victory:**
+```
+{BG_STYLE_PREFIX}, triumphant golden light breaking through storm clouds, battlefield wreckage below in warm radiance, a silhouetted banner against the light, chaos motes settling like embers, gold and amber, glory and triumph
+```
+
+**Defeat:**
+```
+{BG_STYLE_PREFIX}, a battlefield at dusk, scattered remnants in fading light, embers and ash drifting slowly, the sky darkening from orange to black, a broken banner in the foreground, somber but dignified, loss without despair
+```
+
+### 6.13 Evolution Ceremony
+
+```
+{BG_STYLE_PREFIX}, a Planar Shard floating in a vortex of chaos energy, crystalline fractures radiating outward with light pouring through, swirling gold and purple motes converging, cracked glowing ground below, the moment before transformation, overwhelming power barely contained
+```
+
+---
+
+## 7. Season Visual Identity
+
+### 7.1 Season 1: The First Fracture
+
+**Theme**: The five factions discover the Planar Ruins in the Plane of Chaos. The race to claim, evolve, and weaponize these ancient structures begins. Season 1 is about exploration, first contact with the Ancient Builder legacy, and escalation of the five-way war over ruin control.
+
+**Visual Motif**: The chaos rift opening --- violet energy tearing through reality, with pale Ancient Builder geometry visible through the gap.
+
+**Color Theme**: Neutral ruin palette (pale stone, crystal blue-silver, amber engravings) combined with violet chaos energy. Not aligned to any faction.
+
+### 7.2 Seasonal Color Overlay
+
+| Element | Name | Hex | Usage |
 |---|---|---|---|
-| Season primary | Fracture Gold | #C4A030 | Season pass progress bar, seasonal reward borders, XP text |
-| Season secondary | Rift Purple | #6B3FA0 | Seasonal event banners, chaos rift visual effects |
-| Season accent | Planar Silver | #B0B8C8 | Seasonal quest icons, milestone markers |
-| Season dark | Void Black | #0A0A12 | Seasonal screen backgrounds, card back seasonal edition |
+| Season primary | Fracture Gold | `#C4A030` | Season pass progress, reward borders, XP text |
+| Season secondary | Rift Purple | `#6B3FA0` | Event banners, chaos rift effects |
+| Season accent | Planar Silver | `#B0B8C8` | Quest icons, milestone markers |
+| Season dark | Void Black | `#0A0A12` | Seasonal backgrounds, card back edition |
 
-### 6.3 Seasonal UI Accents
-
-- **Season pass progress bar**: Fracture Gold fill on Void Black track, with subtle energy particles at the fill edge
-- **Seasonal quest markers**: Planar Silver icon with Rift Purple glow ring
-- **Milestone reward frames**: Fracture Gold border with animated energy cracks (SKAction)
-- **Battle pass card back**: Void Black base with Fracture Gold geometric crack patterns and a central Rift Purple chaos mote
-
-### 6.4 Battle Pass / Seasonal Reward Visual Style
-
-| Tier | Visual Treatment | Description |
-|---|---|---|
-| Free tier rewards | Planar Silver border | Clean, understated, accessible |
-| Premium tier rewards | Fracture Gold border with energy particles | Premium feel, animated shimmer |
-| Milestone rewards (every 10 levels) | Full art card-style frame with Rift Purple + Fracture Gold | Dramatic, collectible, screenshot-worthy |
-
-### 6.5 Seasonal Card Back (Battle Pass Reward)
+### 7.3 Season 1 Card Back
 
 ```
-{BG_STYLE_PREFIX}, a card back design showing the moment of the Great Fracture, a central point of blinding white-gold light with geometric cracks radiating outward through void black, each crack leaking different faction-colored energy (steel blue, emerald, crimson, holy gold, necrotic purple), the edges of the card framed with ancient geometric patterns from the Planar Ruin civilization, a single chaos mote hovering at the center of the fracture point, Fracture Gold and Rift Purple and Void Black, dramatic and collectible
+{BG_STYLE_PREFIX}, a card back design showing the Great Fracture moment, central blinding white-gold light with geometric cracks radiating outward through void black, each crack leaking different faction-colored energy (steel blue, emerald, crimson, holy gold, necrotic purple), edges framed with Ancient Builder geometric patterns, a single chaos mote at the center, Fracture Gold and Rift Purple and Void Black, dramatic and collectible
 ```
 
-### 6.6 Season Narrative Arc (Lore Beats for Loading Screens)
+### 7.4 Season 1 Promotional Art
 
-The 8 loading screen backgrounds in Section 4.10 are ordered to tell the Season 1 story:
+```
+{BG_STYLE_PREFIX}, the five factions approaching the Plane of Chaos from five directions, an Ironwright dreadnought descending from orbit, Fey scouts emerging from a living portal, Demonic war parties climbing from volcanic fissures, Celestial armies marching through golden gates, Endless spectres drifting through fog, at center a massive Ancient Builder structure glowing with neutral crystal light dwarfing all five armies, awe and menace
+```
+
+### 7.5 Season UI Accents
+
+- **Progress bar**: Fracture Gold fill on Void Black track with energy particles at fill edge
+- **Quest markers**: Planar Silver icon with Rift Purple glow ring
+- **Milestone frames**: Fracture Gold border with animated energy cracks (SKAction)
+- **Battle pass card back**: Void Black base with Fracture Gold crack patterns and central Rift Purple chaos mote
+
+### 7.6 Season Narrative Arc
+
+The 8 loading screens (Section 6.11) are ordered to tell the Season 1 story:
 1. The Great Fracture (cosmic event)
-2. The Ancient Ruin Discovery (aftermath exploration)
-3-7. Each faction's response to the Fracture (Ironwright industrialization, Fey retreat, Demonic exploitation, Celestial crusade, Endless rising)
+2. Ancient Ruin Discovery (aftermath exploration)
+3-7. Each faction's response (Ironwright industry, Fey retreat, Demonic exploitation, Celestial crusade, Endless rising)
 8. The Plane of Chaos (what lies beyond the rifts)
 
 ---
 
-## 7. Asset Purchase Research & Recommendations
+## 8. Purchasable Asset Research
 
-### 7.1 Budget Allocation
+### 8.1 Budget Allocation
 
 | Category | Budget | Priority |
 |---|---|---|
-| Battle music (5 faction themes + ambient) | $25-30 | HIGH -- music defines the atmosphere of every match |
-| Card game SFX (attack, damage, death, draw, card play) | $0-15 | HIGH -- core gameplay feel |
-| UI sounds (clicks, transitions, popups) | $0-12 | MEDIUM -- polish, not critical |
-| Particle textures | $0-5 | LOW -- can generate in code |
-| Environmental ambience | $0 | LOW -- Freesound CC0 or Suno free tier |
-| **Buffer** | $15-30 | Safety margin |
+| Battle music (5 faction + ambient) | $15-30 | HIGH --- defines match atmosphere |
+| Card game SFX (attack, damage, death, draw) | $0-15 | HIGH --- core gameplay feel |
+| UI sounds (clicks, transitions, popups) | $0-12 | MEDIUM --- polish layer |
+| Particle textures | $0-5 | LOW --- code fallback available |
+| Environmental ambience | $0 | LOW --- freesound.org CC0 first |
+| Buffer | $15-30 | Safety margin |
 | **Total** | **$55-92** | |
 
-### 7.2 Battle Music Recommendations
+### 8.2 Battle Music ($15-30)
 
-#### PRIMARY RECOMMENDATION: "10 RPG Battle Themes (+loops)" by BLACKMID
+**What to search for**: "fantasy battle music", "orchestral game music", "dark fantasy soundtrack", "faction battle theme music"
 
-- **URL**: https://blackmid.itch.io/10-rpg-battle-themes-loops
-- **Price**: $15.00 USD (minimum)
-- **Content**: 10 orchestral battle themes with looped + non-looped versions (20 files total). Dark fantasy, heroic, dramatic, epic, medieval styles.
-- **Format**: WAV 16-bit 44.1kHz
-- **License**: Unlimited royalty-free. YouTube-safe. No attribution required. Commercial use OK.
-- **Quality Assessment**: STRONG. Orchestral quality matches a premium card game. 10 themes provide enough variety for 5 factions with the adaptive mixing system (use different tracks as faction layers). Looped versions are critical for seamless battle music.
-- **Covers**: Foundation battle music for all factions. At $15, this is the highest-priority purchase.
+**Platforms**: itch.io (primary), Bandcamp (individual composers), GameDev Market
 
-#### SECONDARY RECOMMENDATION: "Epic Battle Music Pack Vol. 1" by OhmAudioStudios
+**Primary Recommendation: "10 RPG Battle Themes (+loops)" by BLACKMID**
+- Search: itch.io for "BLACKMID battle themes"
+- Price: $15.00 (minimum)
+- Content: 10 orchestral battle themes with looped + non-looped versions (20 files). Dark fantasy, heroic, dramatic styles.
+- Format: WAV 16-bit 44.1kHz
+- License: Unlimited royalty-free. No attribution required. Commercial use.
+- Why it fits: Orchestral quality matches premium card game. 10 themes provide enough variety for 5 factions. Looped versions critical for seamless playback.
 
-- **URL**: https://ohmaudiostudios.itch.io/epic-battle-music-pack-vol-1
-- **Price**: $15.00 USD (minimum)
-- **Content**: 14 full-length dark orchestral tracks + 14 seamless loops + 3 bonus combat loops (31 files total, 975 MB).
-- **Format**: WAV 44.1kHz 16-bit PCM Stereo
-- **License**: Royalty-free. Commercial + non-commercial use. Cannot redistribute as standalone music library.
-- **Quality Assessment**: STRONG. Larger library than BLACKMID. Dark orchestral style fits Demonic and Endless factions particularly well. Seamless loops ready for AVAudioEngine integration.
-- **Covers**: Battle music + additional faction-specific layers.
+**Secondary Recommendation: "Epic Battle Music Pack Vol. 1" by OhmAudioStudios**
+- Search: itch.io for "OhmAudioStudios epic battle"
+- Price: $15.00 (minimum)
+- Content: 14 tracks + 14 seamless loops + 3 bonus loops (31 files, 975 MB).
+- License: Royalty-free commercial use. Cannot redistribute as standalone.
+- Why it fits: Larger library. Dark orchestral fits Demonic and Endless well.
 
-#### ALTERNATIVE: "Dark Orchestra: Dark Fantasy" by Cyberleaf Studio
+**Premium Alternative: "Dark Orchestra: Dark Fantasy" by Cyberleaf Studio**
+- Search: itch.io for "Cyberleaf dark orchestra"
+- Price: $28.00
+- Content: 38 tracks (12 full, 10 short, 11 loops, 2 stingers). 63 minutes total.
+- License: Unrestricted commercial use. No attribution. Not content-ID registered.
+- Why it fits: Most comprehensive. Stingers usable as SFX (chaos roll, evolution). Loops + full tracks cover entire battle audio needs.
 
-- **URL**: https://cyberleaf.itch.io/dark-orchestra-dark-fantasy
-- **Price**: $28.00 USD
-- **Content**: 38 tracks (12 full-length, 10 short, 11 loops, 2 stingers). 42 minutes original, 63 minutes total. WAV and OGG.
-- **License**: Unrestricted commercial/non-commercial use. Not registered for content ID. No attribution.
-- **Quality Assessment**: EXCELLENT. Most comprehensive pack. Includes stingers (usable as SFX -- chaos roll result, event triggers, evolution reveal). Loops + full tracks + stingers cover the entire audio design needs for battle.
-- **Covers**: Battle music + menu themes + stingers for SFX moments.
-- **Tradeoff**: At $28, uses most of the music budget. Quality justifies the cost if budget allows.
+**Free Fallback: "Free Dark Fantasy Boss Battle Music Pack Vol. 2" by alkakrab**
+- Search: itch.io for "alkakrab fantasy boss battle"
+- Price: Free
+- Content: 8 dark fantasy battle tracks with loops.
+- License: Verify in pack --- likely royalty-free commercial.
 
-#### FREE ALTERNATIVE: "Free Dark Fantasy Boss Battle Music Pack Vol. 2" by alkakrab
+**Recommendation**: Purchase BLACKMID ($15) as primary. If insufficient, upgrade to Cyberleaf ($28) or add OhmAudio ($15). Total music: $15-30.
 
-- **URL**: https://alkakrab.itch.io/fantasy-boss-battle-music-pack-vol-2
-- **Price**: Free
-- **Content**: 8 dark fantasy boss battle tracks with loops
-- **License**: Check pack -- likely royalty-free for commercial use
-- **Quality Assessment**: DECENT. Free option if budget is extremely tight. Fewer tracks means less faction variety.
+### 8.3 Card Game SFX ($0-15)
 
-**RECOMMENDATION**: Purchase BLACKMID ($15) as primary battle music. If quality is insufficient after testing, upgrade to Cyberleaf ($28) or add OhmAudio ($15) for additional variety. Total music spend: $15-30.
+**What to search for**: "fantasy card game sfx", "card game sound effects", "rpg battle sfx"
 
-### 7.3 Card Game SFX Recommendations
+**Required sounds**: Card draw, card play, card flip, attack declaration, attack impact (physical), attack impact (magical), damage number tick, creature death, shield block, heal, buff applied, debuff applied, ruin placement, ruin destruction, evolution energy gain, evolution trigger.
 
-#### PRIMARY RECOMMENDATION: "Fantasy Card Game SFX Pack" by olexmazur
+**Primary Recommendation: "Fantasy Card Game SFX Pack" by olexmazur**
+- Search: itch.io for "olexmazur fantasy card game"
+- Price: Name-your-price (free download, suggest $5-10)
+- Content: 80+ sounds designed for fantasy card games.
+- License: Check included license file. Name-your-price suggests permissive.
+- Risk: License verification needed before commercial use.
 
-- **URL**: https://olexmazur.itch.io/fantasy-card-game
-- **Price**: Name your own price (free download available, suggest $5-10 donation)
-- **Content**: 80+ high-quality sound effects designed specifically for fantasy card games.
-- **Format**: ZIP (44 MB)
-- **License**: Not explicitly stated -- contact creator or check included license file. Name-your-price suggests permissive.
-- **Quality Assessment**: STRONG. Purpose-built for card games. 80+ effects covers card play, draw, shuffle, and likely attack/damage/death.
-- **Covers**: Core card gameplay SFX (card play, draw, shuffle, flip).
-- **Risk**: License unclear. Download and verify before commercial use.
+**Secondary Recommendation: "Free Fantasy 200 SFX Pack" by TomMusic**
+- Search: itch.io for "TomMusic fantasy 200 sfx"
+- Price: Free
+- Content: 200+ fantasy sound effects.
+- Why it fits: Large library covers combat, magic, and ambient SFX.
 
-#### SECONDARY RECOMMENDATION: "Free Fantasy 200 SFX Pack" by TomMusic
+**Free Baseline: Freesound.org CC0**
+- Search by tag + CC0 license filter
+- Terms: "whoosh card", "sword hit", "melee hit", "damage crunch", "heal chime", "dice roll"
+- Quality: Variable. Requires curation. Fills gaps from purchased packs.
 
-- **URL**: https://tommusic.itch.io/free-fantasy-200-sfx-pack
-- **Price**: Free
-- **Content**: 200+ fantasy sound effects
-- **License**: Likely free for commercial use (verify in pack)
-- **Quality Assessment**: GOOD. Large library means high chance of finding card game, combat, and magic SFX. May require more curation than a purpose-built pack.
-- **Covers**: Combat SFX, magic effects, ambient sounds, environmental effects.
+**Recommendation**: Download olexmazur (free/$5) as primary. Supplement with TomMusic (free). Fill gaps with Freesound.org CC0. Total SFX: $0-10.
 
-#### FREE BASELINE: Freesound.org CC0
+### 8.4 UI Sounds ($0-12)
 
-- **URL**: https://freesound.org (search by tag + CC0 license filter)
-- **Price**: Free
-- **License**: CC0 (public domain, no attribution required)
-- **Search terms per SFX** (from existing AUDIO-SOURCING-GUIDE.md):
-  - Card play: `whoosh card`, `swoosh paper`
-  - Attack: `sword hit`, `melee hit`
-  - Damage: `damage crunch`, `hit impact`
-  - Death: `glass shatter`, `crystal break`
-  - Heal: `heal chime`, `magic sparkle`
-  - D20 roll: `dice roll`, `dice shake`
-- **Quality Assessment**: VARIABLE. Individual sounds range from amateur to professional. Requires curation time.
-- **Covers**: Any gaps left by purchased packs.
+**What to search for**: "ui sound effects", "interface sfx", "game menu sounds"
 
-**RECOMMENDATION**: Download olexmazur pack (free/$5) as primary SFX source. Supplement with TomMusic 200 SFX (free) for combat and magic effects. Fill remaining gaps with Freesound.org CC0 individual downloads. Total SFX spend: $0-10.
+**Required sounds**: Button tap (primary/secondary), screen transition (forward/back), popup open/close, notification ping, error tone, success chime, tab switch, scroll tick, toggle switch, chaos roll start/result, turn start.
 
-### 7.4 UI Sound Effects Recommendations
+**Primary Recommendation: "Pack of 100 Royalty-Free UI Sounds" by 3rdEchoSounds**
+- Search: itch.io for "3rdEchoSounds UI sounds"
+- Price: $12.00
+- Content: 100 UI sounds. WAV 24-bit/44.1kHz.
+- License: Royalty-free. Unlimited projects. Commercial. Perpetual. No attribution.
+- Why it fits: 100 sounds covers all UI needs. Professional quality.
 
-#### PRIMARY RECOMMENDATION: "Pack of 100 Royalty-Free UI Sounds" by 3rdEchoSounds
+**Free Alternative: "Ultimate UI SFX Pack" by JDSherbert**
+- Search: itch.io for "JDSherbert UI sfx"
+- Price: Free (full version ~$6.50)
+- Content: 67 unique sounds (670 files across formats).
+- License: Requires credit attribution. Royalty-free otherwise.
 
-- **URL**: https://3rdechosounds.itch.io/pack-of-100-royalty-free-ui-sounds
-- **Price**: $12.00 USD
-- **Content**: 100 royalty-free UI sounds. High-quality WAV (24-bit/44.1kHz).
-- **License**: Royalty-free. Unlimited projects. Commercial and personal. Perpetual.
-- **Quality Assessment**: STRONG. 100 sounds at $12 is good value. 24-bit WAV is professional quality. Covers buttons, transitions, alerts, confirmations.
-- **Covers**: All UI SFX needs (button taps, tab switches, card flips, notifications, errors, level-ups).
+**Recommendation**: Purchase 3rdEchoSounds ($12) for no-attribution. Or JDSherbert (free/$6.50) with attribution in credits. Total UI: $0-12.
 
-#### FREE ALTERNATIVE: "Ultimate UI SFX Pack" by JDSherbert
+### 8.5 Particle Textures ($0-5)
 
-- **URL**: https://jdsherbert.itch.io/ultimate-ui-sfx-pack
-- **Price**: Free (full version ~$6.50 USD)
-- **Content**: 67 unique sounds (670 files across formats). WAV HD + SD, MP3, M4A, OGG. Stereo + Mono.
-- **License**: Requires credit attribution. No redistribution. Royalty-free otherwise.
-- **Quality Assessment**: GOOD. Multiple format options. Attribution requirement is minor (add to credits screen).
-- **Covers**: Core UI sounds with good variety.
+**What to search for**: "vfx textures", "particle sprites", "magic effect textures"
 
-**RECOMMENDATION**: Purchase 3rdEchoSounds ($12) for clean, no-attribution UI sounds. Or use JDSherbert (free/$6.50) if budget is tight, adding attribution to the credits screen. Total UI spend: $0-12.
+**Required**: forge_sparks (Ironwright), nature_wisps (Fey), hellfire_embers (Demonic), divine_radiance (Celestial), spectral_mist (Endless).
 
-### 7.5 Particle Textures
+**Primary: OpenGameArt.org CC0 Collections**
+- Search: OpenGameArt.org for "particle pack"
+- Price: Free (CC0)
+- Content: 80+ particle sprites (fire, smoke, magic, sparks).
 
-#### PRIMARY RECOMMENDATION: OpenGameArt.org CC0 Collections
+**Secondary: "Particle FX" by RagnaPixel**
+- Search: itch.io for "RagnaPixel particle fx"
+- Price: $3.99
+- Content: 73 effects. GIF + PNG + spritesheets.
+- License: CC-BY 4.0 (credit Raphael Hatencia).
 
-- **URL**: https://opengameart.org/content/particle-pack-80-sprites
-- **Price**: Free
-- **Content**: 80+ particle sprites (fire, smoke, magic, sparks, electricity)
-- **License**: CC0 (public domain)
-- **Quality Assessment**: ADEQUATE. These are base textures that will be tinted and processed in SpriteKit particle emitters. Exact art style is less critical for particles than for cards or backgrounds.
-- **Covers**: Fire, smoke, sparks, magic particles as base textures for SpriteKit.
+**Recommendation**: Start with OpenGameArt CC0. If insufficient, purchase RagnaPixel ($3.99). Fallback: SpriteKit procedural particles. Total: $0-4.
 
-#### SECONDARY: "Particle FX" by RagnaPixel
+### 8.6 Environmental Ambience ($0)
 
-- **URL**: https://ragnapixel.itch.io/particle-fx
-- **Price**: $3.99 USD
-- **Content**: 73 effects including fire, poison cloud, electric, sparks, water, smoke. GIF + PNG frames + spritesheets.
-- **License**: CC-BY 4.0 (attribution required: credit Raphael Hatencia)
-- **Quality Assessment**: GOOD. More polished than free alternatives. Spritesheets ready for SpriteKit integration.
-- **Covers**: Most VFX base texture needs.
+**Primary: Sonniss GDC Game Audio Bundle**
+- URL: sonniss.com/gameaudiogdc/
+- Price: Free. 200+ GB royalty-free game audio.
+- License: Royalty-free commercial. No attribution. Perpetual.
+- Why it fits: Professional quality. Virtually any ambient sound available.
 
-**RECOMMENDATION**: Start with OpenGameArt CC0 (free). If quality is insufficient for key effects (divine radiance, spectral mist, corruption flame), purchase RagnaPixel ($3.99). Most particle effects will be code-generated in SpriteKit with these textures as seeds. Total particle spend: $0-4.
+**Secondary: Freesound.org CC0**
+- Search by tag + CC0 filter for: "factory ambience", "forest ambience", "lava ambience", "cathedral reverb", "wind graveyard"
 
-### 7.6 Environmental Ambience
+**Recommendation**: Sonniss GDC bundles (free). Supplement with Freesound.org. Total: $0.
 
-#### PRIMARY RECOMMENDATION: Sonniss GDC Game Audio Bundle
+### 8.7 Non-Purchased Music Generation
 
-- **URL**: https://sonniss.com/gameaudiogdc/
-- **Price**: Free
-- **Content**: 200+ GB of royalty-free game audio from annual GDC bundles (2015-2024). Includes ambient, environmental, impact, and cinematic sounds.
-- **License**: Royalty-free. Commercial use. No attribution required. Unlimited projects. Perpetual.
-- **Quality Assessment**: EXCELLENT. Professional studio quality. The single best free resource for game audio. Massive library requires curation time but contains virtually any ambient sound needed.
-- **Covers**: All environmental ambience, atmospheric backgrounds, subtle atmospheric layers.
-
-#### SECONDARY: Freesound.org CC0
-
-- **URL**: https://freesound.org
-- **Price**: Free
-- **License**: Filter for CC0 only
-- **Covers**: Specific ambient sounds (wind, fire crackle, water, forest ambience) for faction-specific battle backgrounds.
-
-**RECOMMENDATION**: Download Sonniss GDC bundles (free, ~27 GB per year). Extract needed ambient sounds. Supplement with Freesound.org CC0 for specific faction-themed ambience. Total ambience spend: $0.
-
-### 7.7 Music Generation (Non-Purchased)
-
-For tracks not covered by purchased packs (menu theme, evolution ceremony, shop ambient):
-
-- **Suno.ai free tier**: Generate 2-3 tracks per month. Use for menu theme, shop ambient, and evolution ceremony music.
-- **Process**: Generate in Suno -> export WAV -> trim loops in Audacity (free) -> convert to CAF via `afconvert` (built-in macOS).
+For menu theme, evolution ceremony, shop ambient:
+- **Suno.ai free tier**: Generate 2-3 tracks/month
+- **Process**: Generate -> export WAV -> trim loops in Audacity -> convert to CAF via `afconvert`
 - **Cost**: $0
 
-### 7.8 Complete Purchase Plan
+### 8.8 Complete Purchase Plan
 
 | Priority | Item | Source | Price | Status |
 |---|---|---|---|---|
@@ -751,309 +1053,168 @@ For tracks not covered by purchased packs (menu theme, evolution ceremony, shop 
 | 6 | Ambient sounds | Sonniss GDC Bundle | $0 (free) | TO DOWNLOAD |
 | 7 | Ambient fills | Freesound.org CC0 | $0 (free) | TO DOWNLOAD |
 | 8 | Menu/evolution/shop music | Suno.ai free tier | $0 (free) | TO GENERATE |
-| -- | **TOTAL COMMITTED** | | **$32.00** | |
-| -- | **BUFFER REMAINING** | | **$68.00** | For upgrades if quality insufficient |
+| | **TOTAL COMMITTED** | | **$32.00** | |
+| | **BUFFER REMAINING** | | **$68.00** | For upgrades if quality insufficient |
 
-**Upgrade path if primary picks are insufficient:**
-- Battle music upgrade: Cyberleaf Dark Orchestra ($28) or OhmAudio Epic Battle ($15)
-- Card SFX upgrade: VisionaryEight Card Game Sound Effects ($45 -- eats most of buffer, only if free packs are unusable)
-- Particle upgrade: RagnaPixel Particle FX ($3.99)
-
----
-
-## 8. Updated Faction Art Bible: Celestial Crusade
-
-### The Celestial Crusade
-
-*Divine Wrath * Holy War * Formation * Radiance * Superiority * Judgment*
-
-The Celestial Crusade believes reality belongs to the divine. All non-celestial beings are lesser -- tolerable at best, obstacles at worst. They wage holy war not out of malice but out of absolute certainty that their dominion is the natural order. They are the most dangerous faction because they believe they are righteous.
+**Upgrade path**:
+- Music: Cyberleaf ($28) or OhmAudio ($15)
+- Particles: RagnaPixel ($3.99)
+- Card SFX: evaluate free packs first, budget $15-20 for premium if needed
 
 ---
 
-### Sub-Factions
+## 9. Asset Production Schedule
 
-#### Knights of Deliverance (Military Arm)
+### 9.1 Priority Tiers
 
-**Visual Identity**: Disciplined, austere, armored in divine metal. The Knights are soldiers first -- their holiness is expressed through martial perfection, not ecstatic visions. Think Templar Knights painted by Gustave Dore: stoic, massive, unyielding. Their armor is not ornate but functional, with divine symbols etched in gold on steel-white surfaces. Formation discipline is visible in every image -- even a single Knight suggests rank and file behind them.
+**Tier 1 --- CRITICAL (needed for playable game)**
 
-**Character Archetypes**:
-- **Paladin Commander**: Heavy plate armor of divine white metal, golden etchings, closed helm with narrow eye slit, commanding pose, holding a banner or signal weapon. Authority incarnate.
-- **Shield Bearer**: Massive tower shields bearing the Celestial emblem, crouched in defensive formation, face hidden behind shield rim. The wall that does not break.
-- **Divine Lancer**: Mounted on an armored celestial steed (not a horse -- something with multiple wings folded, extra eyes along the neck), lance couched, charging pose. Holy cavalry.
-- **Battle Priest**: Lighter armor under vestments, one hand raised in blessing/ward, the other gripping a mace. The spiritual anchor of a unit.
-- **Siege Engineer**: Operating a divine artillery piece (a golden trebuchet that fires concentrated light). Methodical, professional. Holy war is logistics too.
-- **Squire / Initiate**: Young, unarmored or lightly armored, carrying a Knight's equipment. The next generation. Not yet touched by battle.
+| # | Asset Category | Count | Method | Est. Cost | Dependencies |
+|---|---|---|---|---|---|
+| 1 | Card frames (creature, 5 rarity) | 5 | fal.ai + SpriteKit | $0.20 | None --- must exist before card rendering |
+| 2 | Faction emblems | 5 | fal.ai FLUX | $1.00 | None --- used in card rendering |
+| 3 | Keyword icons (9) | 9 | fal.ai FLUX | $1.50 | None --- used in card rendering |
+| 4 | Stat/UI icons | 10 | fal.ai FLUX | $1.00 | None --- used in card rendering |
+| 5 | Creature card art --- Ironwright | 14 | fal.ai FLUX + LoRA | $1.68 | Frames + icons (items 1-4) |
+| 6 | Creature card art --- Fey Courts | 14 | fal.ai FLUX + LoRA | $1.68 | Frames + icons |
+| 7 | Creature card art --- Demonic | 14 | fal.ai FLUX + LoRA | $1.68 | Frames + icons |
+| 8 | Creature card art --- Celestial | 13 | fal.ai FLUX + LoRA | $1.56 | Frames + icons |
+| 9 | Creature card art --- Endless | 13 | fal.ai FLUX + LoRA | $1.56 | Frames + icons |
+| | **Tier 1 Subtotal** | **97** | | **$11.86** | |
 
-**Environments**:
-- A vast parade ground before a cathedral-fortress, thousands of Knights in formation
-- A breached city wall, Knights pouring through with divine light behind them
-- A command tent with maps and holy texts side by side on a campaign table
-- A forge-chapel where armor is blessed as it is made
-- A mountain pass held by a small unit, shields locked, divine banners catching wind
-- The deck of a celestial war-barge (floating ship of golden wood and divine metal)
-- A captured ruin being consecrated, Knights kneeling in prayer around a central altar
-- A field hospital where injured Knights are healed by divine light, not medicine
+Note: Cost per creature card assumes ~3 generations per keeper at $0.04/gen = $0.12/keeper.
 
-**Moods & Palettes**:
-- Martial glory: Golden hour, divine light breaking through clouds, holy gold/steel white/righteous blue/blood-shadow
-- Grim duty: Overcast, pre-battle, muted ivory/cold steel/dark earth/distant golden light
-- Absolute conviction: Harsh divine light from above, no shadow to hide in, blinding gold/pure white/nothing else
-- The cost of crusade: Battlefield aftermath, golden light on fallen bodies, somber gold/rust/dried blood/ash
+**Tier 2 --- HIGH (needed for complete experience)**
 
-#### Heaven's Chosen (Divine Arm)
+| # | Asset Category | Count | Method | Est. Cost | Dependencies |
+|---|---|---|---|---|---|
+| 10 | Neutral Planar Ruin art | 8 | fal.ai FLUX + LoRA | $1.60 | After creature art validates style |
+| 11 | Ruin card frames (neutral + 5 faction) | 6 | fal.ai + SpriteKit | $1.20 | Before ruin card rendering |
+| 12 | Evolved Planar Ruin art | 40 | fal.ai Kontext + LoRA | $6.40 | After neutral ruin art + ruin frames |
+| 13 | Avatar portraits | 10 | fal.ai FLUX | $1.50 | None (parallel with ruins) |
+| 14 | Card backs (universal + 5 faction) | 6 | fal.ai FLUX + LoRA @ 0.7 | $1.00 | None (parallel) |
+| 15 | Battlefield backgrounds (5 + neutral) | 6 | fal.ai FLUX + LoRA | $1.00 | None (parallel) |
+| 16 | Battle SFX pack | ~16+ | Purchase itch.io | $5-15 | None |
+| 17 | Battle music pack | 10+ | Purchase itch.io | $15-28 | None |
+| | **Tier 2 Subtotal** | **92+** | | **$32-56** | |
 
-**Visual Identity**: Biblically accurate celestials. These are NOT pretty angels with feathered wings and halos. They are multi-winged, multi-eyed, geometrically impossible beings of living light and divine substance. Wheels within wheels. Faces that are all faces at once. Wings covered in eyes that all see. They are terrifying and beautiful in equal measure. William Blake's visionary paintings are the primary reference -- ecstatic, overwhelming, muscular divine forms that transcend human anatomy.
+**Tier 3 --- MEDIUM (polish and completeness)**
 
-**Character Archetypes**:
-- **Seraphim**: Six-winged beings of living flame, two wings covering their face, two covering their feet, two for flight. The highest choir. Their presence burns mortals.
-- **Ophanim**: Wheels within wheels, covered in eyes, spinning slowly, radiating divine judgment. Not creatures in the usual sense -- divine machinery.
-- **Throne Guardian**: A massive armored figure with four faces (human, lion, eagle, ox), four wings, standing at attention before a gate or altar. Ancient and immovable.
-- **Herald of Judgment**: A being of pure light taking vaguely humanoid form, wielding a trumpet or horn, the sound of which is visible as golden shockwaves. The announcement of divine will.
-- **Celestial Architect**: A multi-armed being constructing or repairing divine structures, each arm working independently, eyes studying blueprints only they can read. Heaven is maintained.
-- **Fallen Aspirant**: A mortal who attempted to ascend and partially succeeded -- caught between human and celestial, flesh cracking with golden light, expression caught between agony and ecstasy. The cost of reaching for divinity.
+| # | Asset Category | Count | Method | Est. Cost | Dependencies |
+|---|---|---|---|---|---|
+| 18 | App backgrounds (all screens) | 28 | fal.ai FLUX + LoRA | $4-6 | None |
+| 19 | Faction selection banners | 5 | fal.ai FLUX + LoRA | $1.00 | None |
+| 20 | Mechanic icons (5) | 5 | fal.ai FLUX | $0.75 | None |
+| 21 | Sub-faction emblems | 10 | fal.ai FLUX | $1.50 | None |
+| 22 | UI sounds pack | 100+ | Purchase itch.io | $0-12 | None |
+| 23 | Particle textures | 5+ | Free / $0-4 | $0-4 | None |
+| 24 | Chaos Roll D20 texture | 1 | fal.ai FLUX | $0.25 | None |
+| 25 | Event overlays | 3 | fal.ai FLUX | $0.25 | None |
+| 26 | Environmental ambience | 5+ | Sonniss / Freesound CC0 | $0 | None |
+| | **Tier 3 Subtotal** | **67+** | | **$8-26** | |
 
-**Environments**:
-- The Celestial Throne Room: Impossibly vast, golden light from no visible source, geometric patterns on every surface, the floor a mirror reflecting a different sky
-- The Garden of Judgment: A garden where every plant is made of crystallized light, paths of golden stone, figures kneeling in supplication before blooming light-trees
-- The Armory of Heaven: Weapons of divine light arranged in perfect order, each one singing with faint harmonic resonance, attended by Ophanim
-- The Bridge of Ascension: A span of pure light connecting a mortal city to a celestial citadel, pilgrims walking upward, some transforming as they climb
-- Above the clouds: The celestial war camp, tents of golden fabric, war plans written in light on tables of divine crystal, the world far below
-- A mortal city under celestial occupation: Golden banners hung from every building, mortals going about daily life under the watchful eyes of Seraphim overhead
+**Tier 4 --- LAUNCH PREP (pre-submission)**
 
-**Moods & Palettes**:
-- Divine ecstasy: Blinding central light, all shadows pushed to edges, holy gold/divine ivory/celestial rose/pure white
-- Terrible beauty: Harsh geometric light, shadows that are too sharp, gold/cold silver/eye-white/void behind the light
-- Judgment without mercy: Single beam of divine light illuminating a target, everything else in darkness, gold beam/black void/crimson judgment
-- Heavenly serenity: Soft diffused golden light, no harsh shadows, warm ivory/gentle gold/soft blue/cream
+| # | Asset Category | Count | Method | Est. Cost | Dependencies |
+|---|---|---|---|---|---|
+| 27 | App icon | 1 | fal.ai FLUX + LoRA | $0.50 | None |
+| 28 | Loading/splash screens | 2 | fal.ai FLUX + LoRA | $0.50 | None |
+| 29 | Season 1 card back | 1 | fal.ai FLUX + LoRA | $0.25 | After standard card back |
+| 30 | Achievement badges | 23 | fal.ai FLUX | $2.00 | None |
+| 31 | Avatar portrait frames | 10 | Code-generated | $0 | After avatar portraits |
+| 32 | Rarity glow effects | 5 | SpriteKit code | $0 | None |
+| 33 | Ruin VFX frames | 6 | SpriteKit code | $0 | None |
+| 34 | App Store screenshots | 12 | Simulator capture | $0 | After all UI is final |
+| 35 | Marketing graphics | 3 | fal.ai FLUX + LoRA | $0.25 | After art style locked |
+| | **Tier 4 Subtotal** | **63** | | **$3.50** | |
 
-### Textures
+### 9.2 Total Cost Summary
 
-Divine white metal (neither steel nor silver -- something that glows faintly), golden etchings that are slightly raised from the surface, crystallized light (solid but transparent), angelic feathers (if any -- massive, more like sword blades than down), divine fire (gold and white, not orange), holy water (mercury-like, reflective, silver-gold), sacred stone (marble but warm to the touch, veined with gold), divine fabric (impossibly fine, catches light like liquid), living geometric patterns (tessellating, evolving slowly), eye-covered surfaces (each eye blinking independently, iris colors shifting).
-
-### Color Palette Detail
-
-| Color | Hex | Usage |
+| Category | Count | Cost |
 |---|---|---|
-| Holy Gold | #DAA520 | Primary accent. Armor etchings, divine light, UI borders. |
-| Divine Ivory | #F5F0E1 | Base surfaces. Stone, fabric, sky, card frame. |
-| Righteous Blue | #3B5998 | Secondary accent. Celestial steel, shadow tint, Knight armor trim. |
-| Celestial Rose | #C47A8E | Tertiary accent. Healing effects, inner light, flesh tones of celestial beings. |
-| Judgment White | #F8F4F0 | Highlights. Divine radiance, weapon edges, eye glow. |
-| Celestial BG Dark | #1A1520 | Background darkness. Deep purple-black behind all that light. |
+| AI generation (fal.ai) | ~250 keeper images (~750 total gens) | ~$30-40 |
+| Purchased audio (SFX + music) | ~130 sounds + ~10 tracks | $32-55 |
+| Purchased VFX | ~5 textures | $0-4 |
+| Free assets (fonts, ambience, particles) | Misc | $0 |
+| Code-generated | ~25 effects | $0 |
+| **TOTAL** | **331+ assets** | **$62-99** |
 
----
+Within $100 polish budget with $1-38 buffer.
 
-## 9. Updated Faction Art Bible: The Endless
+### 9.3 Dependency Graph
 
-### The Endless
+```
+[Card Frames + Icons] ──────────────────────────> [Card Rendering System]
+         |                                              ^
+         v                                              |
+[Creature Card Art (5 factions)] ──────────────────────/
+         |
+         v (validates style)
+[Neutral Ruin Art] ──> [Ruin Card Frames] ──> [Evolved Ruin Art] ──> [Ruin Card Rendering]
 
-*Death * Undeath * Persistence * Spectral * Bone * Inevitability*
+[Avatar Portraits] ──> [Avatar Frames] ──> [Profile Screen]
+[Card Backs] ──> [Collection Screen / Card Flip Animation]
+[Battlefield Backgrounds + Battle SFX + Battle Music] ──> [Battle Scene]
+[App Backgrounds] ──> [All non-battle screens]
+[UI Sounds + Particle Textures] ──> [App-wide interaction layer]
+[App Icon + Screenshots + Marketing] ──> [App Store Submission]
+```
 
-The Endless are the undead -- raised, summoned, bound, and abandoned. They are not a unified army; they are a fractured ecosystem of necromancers and their creations, held together by the simple truth that death endures when everything else fails. The liches raise them, the spectres linger when the liches no longer care, and the whole rotten machinery of undeath grinds on.
+### 9.4 Production Milestones
 
----
+| Milestone | Assets | Est. Days | Gate |
+|---|---|---|---|
+| M1: Card rendering prerequisites | Frames, icons, emblems (29 assets) | 1 day | Review: do frames + icons work in card layout? |
+| M2: Creature card art | 68 creature cards across 5 factions | 2-3 days | Review: style consistency across factions |
+| M3: Ruin art | 8 neutral + 40 evolved ruin images | 2-3 days | Review: faction transformation quality |
+| M4: Audio purchase + integration | SFX + music packs purchased and imported | 1 day | Review: audio quality, license verification |
+| M5: Avatar + battle assets | 10 avatars + 6 battlefields + particles | 1 day | Review: portrait quality, battle scene feel |
+| M6: App backgrounds + UI polish | 28 backgrounds + UI sounds + misc icons | 1-2 days | Review: screen coherence, interaction feel |
+| M7: Launch prep | App icon, screenshots, marketing, badges | 1 day | Review: App Store readiness |
+| **Total** | **331+ assets** | **9-12 days** | |
 
-### Sub-Factions
+### 9.5 Quality Gate Criteria
 
-#### Necromantic Cabals (Commanders)
+Every AI-generated image must pass:
 
-**Visual Identity**: Liches and necromancers -- the power brokers of undeath. Robed figures of immense arcane knowledge, surrounded by the tools of their craft: phylacteries, bone constructs, ritual circles, preserved organs in jars. They are scholars of death, treating it as a resource to be extracted, refined, and deployed. Gustave Dore's illustrations of Dante's Inferno are the primary reference -- vast underground spaces, tortured landscapes, figures of authority presiding over realms of suffering. But the Cabals are not demonic -- they are cold, academic, methodical. Death is their laboratory.
+1. **Style consistency**: Looks like it belongs in the same game as every other card. Same brushwork, same color restraint, same atmospheric mood.
+2. **No AI artifacts**: No extra limbs, fused body parts, floating objects, text/watermarks, white backgrounds.
+3. **Faction identity**: Faction immediately recognizable from color palette and visual language.
+4. **Composition quality**: Matches intended template. Subject properly framed.
+5. **Resolution**: Sharp at generated resolution. No blur or compression artifacts.
+6. **Emotional tone**: Correct mood for faction and rarity.
 
-**Character Archetypes**:
-- **Arch-Lich**: Skeletal figure in ornate robes, phylactery visible (glowing gem embedded in chest or floating nearby), surrounded by floating bone fragments and necromantic energy, seated on a throne of fused bones. The ultimate necromancer -- ancient, powerful, utterly detached from mortal concerns.
-- **Bone Architect**: Hunched figure assembling a construct from raw skeletal material, tools made of enchanted bone, wearing leather apron over robes, surrounded by works-in-progress. The engineer of the undead.
-- **Flesh Binder**: Necromancer specializing in re-animating intact corpses rather than skeletons. Surgical tools, preservation fluids, half-sewn bodies on slabs. Medical horror meets magical industry.
-- **Thrall Commander**: Armored lich leading a regiment of skeletal soldiers, riding a bone-horse construct, pointing forward with a staff crackling with necrotic energy. The field general.
-- **Phylactery Guard**: Massive bone construct built specifically to protect a lich's phylactery. Hulking, heavily armored in bone plate, single-minded. The most dangerous undead because destroying it means nothing if the phylactery survives.
-- **Apprentice Necromancer**: Still partly alive, bags under eyes, stained robes, struggling to control a small summoning. The beginning of the descent.
-
-**Environments**:
-- A lich's laboratory: Stone chamber filled with shelves of preserved specimens, ritual circles drawn on the floor, a central worktable where a corpse is being prepared for reanimation, candlelight and necrotic glow
-- A bone quarry: A vast pit where skeletons are mined from ancient battlefields, bone sorted by type and size, necromancers overseeing the extraction like mining foremen
-- The Phylactery Vault: A heavily warded underground chamber where liches store their soul vessels, each phylactery on a pedestal surrounded by protective constructs, the most important room in the undead empire
-- A necromantic academy: Lecture hall where apprentices study anatomy and death magic, cadavers on demonstration tables, chalkboards covered in arcane notation, an Arch-Lich lecturing
-- The Risen Factory: An assembly line where raw bone material enters one end and fully assembled undead soldiers emerge from the other, overseen by Bone Architects working in shifts
-- A battlefield from the lich's perspective: The aftermath of a battle, necromancers moving among the fallen, selecting useful corpses, the living wounded watching in horror
-
-**Moods & Palettes**:
-- Academic horror: Cold blue-green lighting, clinical detachment, bone white/ghostly teal/surgical silver/necrotic purple
-- Industrial death: Harsh overhead light, assembly-line efficiency, bone white/rust/dried fluid brown/cold iron gray
-- Ancient power: Deep shadow with pinpoints of phylactery glow, necrotic purple/bone white/gold(phylactery)/void black
-- Quiet menace: Dim candlelight, long shadows, things moving at the edge of vision, sickly green/bone white/warm candle amber/deep shadow
-
-#### The Lost Spectres (The Abandoned Dead)
-
-**Visual Identity**: Ghosts, wraiths, and spectral entities -- the undead that liches summoned and then abandoned when they were no longer useful, or spirits that escaped binding and now drift without purpose. They are tragic, ethereal, translucent. Goya's "Black Paintings" are the primary reference -- specifically "The Dog," "Saturn Devouring His Son," and "Witches' Sabbath" for their sense of isolation, horror, and beings trapped in states they cannot escape. Lost Spectres are not evil -- they are lost, abandoned, and in pain.
-
-**Character Archetypes**:
-- **Wandering Shade**: A translucent humanoid figure drifting through a landscape, features barely visible, expression frozen in whatever emotion they died with (usually fear or confusion). The baseline spectre.
-- **Banshee**: A spectral figure with mouth open in a perpetual scream, sound waves visible as distortion in the air around them. Their scream is their only remaining power.
-- **Phantom Knight**: A ghost still wearing the armor they died in, going through the motions of patrol or battle, unaware they are dead. Spectral equipment glowing with residual energy.
-- **Poltergeist Swarm**: Not a single entity but a cluster of tiny spectral fragments orbiting a central point, causing physical objects to move and shatter. Rage without form.
-- **Memory Echo**: A spectre replaying a moment from their life on loop -- a mother holding a child, a soldier raising a sword, a scholar reading. Transparent, repeating, heartbreaking.
-- **Spectre Lord**: A rare powerful ghost that has retained its identity and will. More solid than other spectres, with visible features and personality. They lead other Lost Spectres not through power but through shared grief.
-
-**Environments**:
-- A ruined village at night: Spectres drifting through collapsed houses, re-enacting daily routines, moonlight passing through translucent forms
-- A haunted battlefield: Ghost soldiers fighting a battle that ended centuries ago, spectral weapons clashing silently, the ground still scarred
-- The Drift: An ethereal void between the material world and death, where spectres float in endless mist, losing memories and form over time
-- A graveyard during the raising: Freshly risen spectres emerging from graves, confused and frightened, as a distant lich's summoning circle glows on the horizon -- the moment of their creation and abandonment
-- A living city haunted: A mortal settlement where spectres have accumulated, transparent figures overlapping with living inhabitants, the living unaware or resigned
-- The Wailing Cliffs: A cliff face where spectres gather, drawn by some resonance, their combined grief creating a perpetual wind that howls with their voices
-
-**Moods & Palettes**:
-- Ethereal grief: Soft diffused moonlight, everything slightly transparent, ghostly teal/bone white/moonlight silver/deep void blue
-- Psychological horror: Goya-style darkness, harsh contrast, faces emerging from black, sickly green/bone white/void black/single point of spectral light
-- Abandoned isolation: Vast empty space, single spectre small in frame, muted everything/ghostly teal glow the only color
-- Spectral fury: Poltergeist energy, objects in motion, harsh strobing spectral light, white/teal/purple/black in violent contrast
-
-### Textures
-
-Translucent ectoplasm (like very thin smoke with faint color), old bone (yellowed, cracked, porous -- not clean white), preserved flesh (grey-green, leathery, stitched), phylactery gem glow (deep purple with gold core), necromantic energy (sickly green threads, like veins of bad light), spectral forms (transparent with faint outline glow, visible environment through them), grave soil (dark, damp, with root fragments), ritual chalk (white and red markings on dark stone), embalming fluid (amber, slightly luminous), moth-eaten fabric (robes, shrouds, burial wrappings -- thin, grey, fragmenting), frozen breath (visible exhalation in cold spectral air), rust and verdigris on ancient armor and weapons carried by ghost knights.
-
-### Color Palette Detail
-
-| Color | Hex | Usage |
-|---|---|---|
-| Necrotic Purple | #6B3FA0 | Primary accent. Phylactery glow, necromantic energy, lich power. |
-| Bone White | #E8DCC8 | Base surfaces. Skeletal material, architecture, fabric. |
-| Ghostly Teal | #5F9EA0 | Spectral glow. Spectre outlines, haunted environments, ghost fire. |
-| Sickly Green | #7B9E5F | Decay accent. Necromantic ambient glow, corruption, pestilence. |
-| Void Dark | #0D0D1A | Background darkness. Deeper and colder than other factions' darks. |
-| Dried Blood Brown | #5C3A2E | Tertiary. Old stains, preserved flesh, grave soil. |
-
----
-
-## 10. Updated Faction Art Bible: Ironwright Collective (Rethemed)
-
-### The Ironwright Collective (Brutalist Space-Industrial Empire)
-
-*Conquest * Industry * Void * Iron * Concrete * Efficiency * Star-Forges * Rebar*
-
-The Ironwright Collective has been rethemed from Victorian steampunk to a **brutalist space-industrial empire**. This is a machine civilization that conquers the stars through industry and the efficiency of war. Massive orbital shipyards. Star-harvesting factories. Void-faring siege engines. Exposed rebar, poured concrete, rusted iron, hydraulic pistons. Space conquest through brutal industrial efficiency.
-
-**NOT**: brass, gears, steam, clockwork, Victorian, whimsical, ornate, decorative, steampunk goggles, top hats, cogs.
-**IS**: concrete, iron, hydraulics, rebar, void industry, star conquest, orbital machinery, brutalist architecture, military engineering, void-dock scaffolding, gravity-well factories, re-entry corridors.
-
-The artistic references shift from generic steampunk to **Piranesi's "Carceri d'Invenzione" (Imaginary Prisons)** -- impossible architectural spaces of overwhelming scale, oppressive industrial interiors, staircases and bridges leading nowhere, mechanisms whose purpose is unclear -- combined with **John Martin's apocalyptic landscapes** -- vast vistas of divine-scale destruction, collapsing architecture, tiny humans dwarfed by the forces they have unleashed.
-
----
-
-### Sub-Factions
-
-#### The Foundry Directorate (Centralized Command)
-
-**Visual Identity**: Purpose-built, geometric, blueprinted. The Directorate represents the Ironwright ideal: every component designed, approved, and manufactured to specification. Their constructs are angular, precise, new-looking (by industrial standards). Colors trend toward cold steel blue-gray and reactor blue. Everything has a serial number. Everything follows the plan. Order-aligned within the faction.
-
-**Character Archetypes**:
-- **Directorate Commander**: Heavy industrial power armor of reinforced concrete composite over iron frame, reactor pack on back, visor displaying tactical data. Not ornate -- functional. The officer who fights from the command bridge but can walk onto the hull if needed.
-- **Void-Forge Engineer**: Sealed environment suit with magnetic boots, carrying industrial tools (rivet gun, plasma welder, structural scanner). The worker who builds warships in the vacuum of space. Practical, exhausted, essential.
-- **Rebar Golem**: A humanoid construct of poured concrete over an iron rebar skeleton, hydraulic joints, optical sensors embedded in the chest (no head -- heads are wasteful), designed for heavy labor and combat interchangeably. The Directorate's workhorse.
-- **Star-Harvester Mech**: A massive construct designed to operate near stellar surfaces, heat-resistant plating glowing dull red, energy collection arrays on its back, moving slowly and deliberately. An industrial machine that happens to be combat-capable.
-- **Orbital Automaton**: A standardized humanoid combat unit, mass-produced, identical to thousands of others, serial number stenciled on chest plate. Basic but effective. The infantry.
-- **Blueprint Savant**: An augmented human whose body has been partially replaced with industrial components -- one arm is a hydraulic crane, one eye is a reactor-powered sensor array. The mind that designs what the factory builds.
-
-**Environments**:
-- An orbital shipyard: Massive warship hull under construction, scaffolding stretching in all directions, welders creating constellations of sparks, void of space visible through gaps, scale that makes humans invisible
-- A star-forge interior: The inside of a facility built around a captured star, energy conduits channeling stellar power to industrial processes, the walls glowing with contained heat, everything built to withstand forces that would crush planets
-- A void-dock: The docking facility for interstellar warships, concrete platforms extending into vacuum, magnetic clamps securing hulls, supply lines running like veins, the organized chaos of military logistics
-- A planetary strip-mine: An entire planet's surface being systematically harvested, terraced excavations visible from orbit, hauler vehicles the size of buildings, the horizon nothing but industrial activity
-- A re-entry corridor: The interior passage of a ship during atmospheric entry, the walls glowing cherry-red from friction heat, crew strapped in, everything shaking, the moment before deployment
-- The Assembly Line: An interior factory where constructs are built -- rebar frames moving along conveyor systems, concrete poured into molds, hydraulic actuators being installed, quality control stations
-- A gravity-well factory: A facility built in the extreme gravity near a massive celestial body, everything reinforced to an absurd degree, workers in heavy-assist exoskeletons, the weight of reality itself as an industrial challenge
-- A command bridge: Brutalist, functional, no decoration -- concrete walls, iron consoles, reactor-powered displays, officers in uniform gray, watching the void through armored viewports
-
-**Moods & Palettes**:
-- Industrial might: Harsh overhead factory lighting, steel blue-gray/cold iron/reactor blue glow/concrete gray, the pride of efficient production
-- Void isolation: The cold light of distant stars, steel blue/void black/reactor blue pinpoints/concrete gray silhouettes, alone in the vast
-- War machine: Warning orange emergency lighting, steel/iron/warning orange/concrete dust/smoke, everything at battle stations
-- Blueprint precision: Clinical white light on technical drawings, white/steel blue/pencil gray/annotation red, the mind before the machine
-
-#### The Scrap Legions (Battlefield Salvage)
-
-**Visual Identity**: Self-assembled from the wreckage of conquered worlds and lost battles. Patchwork, jury-rigged, improvised. Where the Directorate is precise and planned, the Scrap Legions are chaotic and adaptive. They use whatever works -- alien technology scavenged from defeated enemies, damaged Directorate equipment repaired with incompatible parts, organic material fused with industrial components out of desperation. Colors trend toward rust, warning orange, and the mismatched metals of a dozen different sources. Chaos-aligned within the faction.
-
-**Character Archetypes**:
-- **Scrap Warlord**: A construct assembled from the best salvage of a hundred battlefields, no two parts matching, some alien, some Directorate, some unknown. Larger than standard constructs because they just kept adding. Covered in kill markings and territorial symbols.
-- **Wreck-Diver**: A scavenger who crawls through destroyed ships and facilities salvaging useful components, wearing cobbled-together environment suit, carrying a cutting tool and a sack of parts. The supply chain of the Legions.
-- **Jury-Rig Medic**: Part mechanic, part field surgeon, responsible for keeping damaged constructs and augmented soldiers functional using whatever is available. Carries a toolbox of mismatched components. Patches of alien tech grafted onto Ironwright frames.
-- **Siege Crawler**: A massive improvised siege engine built from the combined wreckage of multiple destroyed vehicles, moving on mismatched treads and legs, bristling with salvaged weapons pointing in every direction. Ugly, effective, terrifying.
-- **Feral Automaton**: A Directorate automaton that lost its command signal and has been self-repairing for so long it barely resembles its original design. Twitchy, unpredictable, parts grafted from alien sources. The Legion's shock trooper.
-- **Void Barnacle**: A small parasitic construct that attaches to enemy ships and slowly dismantles them from the outside, feeding salvaged material back to the Legions. Not humanoid -- more like an industrial crustacean.
-
-**Environments**:
-- A scrapyard planet: An entire world used as a dump for destroyed warships and failed constructs, mountains of metal wreckage, Legion camps built from salvage, smoke from processing fires
-- A battlefield being harvested: The aftermath of a space battle, debris fields being picked through by Wreck-Divers, destroyed hulls being towed to processing stations
-- A jury-rigged fortress: A defensive position built entirely from salvage, walls of stacked hull plating, gun emplacements made from repurposed ship weapons, no two sections matching
-- Inside a captured enemy ship: Scrap Legion occupiers tearing out interior systems and replacing them with their own jury-rigged alternatives, alien technology being grafted onto Ironwright power systems
-- The Proving Yard: An arena where new constructs and siege engines are tested, surrounded by the wreckage of failed attempts, engineers watching from armored observation posts
-- A deep space convoy: A fleet of mismatched salvage ships moving through void, no two the same size or design, held together by welding and hope, the Scrap Legions on the move
-
-**Moods & Palettes**:
-- Scavenger resourcefulness: Harsh, uneven lighting from multiple sources, rust orange/mismatched metal grays/warning orange/alien color accents (anything goes)
-- Post-battle harvest: Dim emergency lighting, debris floating in zero-g, dark void/spark orange/hull gray/dried fluid stains
-- Improvised grandeur: A surprisingly impressive structure made entirely from salvage, lit by captured reactor glow, rust/reactor blue/concrete gray/scavenged gold (from alien decoration)
-- Feral machine: Glitchy light from damaged systems, shadows moving wrong, warning orange/glitch-white/void black/rust
-
-### Textures
-
-Poured concrete (raw, unfinished, showing form marks and aggregate), exposed rebar (rusted, bent, protruding from broken concrete), industrial iron plate (thick, heavy, bolted), hydraulic piston assemblies (oil-sheened, articulated), reactor glow (contained blue-white light behind shielding), void of space (pure black with pinpoint stars), welding sparks (brief, bright, scattered), hull plating (layered, riveted, scarred from micro-meteorite impacts), magnetic boot prints on dusty hull surfaces, conduit runs (bundled pipes and cables along walls and ceilings), serial number stencils (military font, spray-painted), warning markings (orange-and-black hazard stripes), concrete dust (fine gray powder on everything), cracked viewport glass (spiderwebbed from impact but holding), cargo netting (industrial mesh restraining equipment), military uniform fabric (coarse gray-blue, functional), scrap metal (torn, oxidized, mismatched alloys), jury-rigged welds (lumpy, uneven, holding but ugly), alien material fragments (unknown composition, wrong color, wrong texture -- integrated but not understood).
-
-### Color Palette Detail
-
-| Color | Hex | Usage |
-|---|---|---|
-| Steel Blue-Gray | #6B7B8D | Primary base. Hull plating, armor, uniform fabric. |
-| Cold Iron | #4A5568 | Secondary base. Structural elements, concrete shadow. |
-| Warning Orange | #E07020 | Primary accent. Hazard markings, emergency lighting, Scrap Legion identity. |
-| Reactor Blue | #3B82C4 | Secondary accent. Power sources, Directorate energy, digital displays. |
-| Concrete Gray | #8B8B83 | Neutral base. Brutalist architecture, unpainted surfaces. |
-| Industrial BG Dark | #1A1D23 | Background darkness. The void of space, the interior of unlit stations. |
-| Rust | #8B4513 | Scrap Legion accent. Oxidation, age, salvaged material. |
-
----
-
-## Cross-Faction Variety Strategies (Updated for 5 Factions)
-
-1. **Rotate sub-factions**: Never two consecutive cards from the same sub-faction within a faction.
-2. **Vary scale**: Alternate close-ups, medium shots, epic wide shots. Use the CM-based scale system (TINY/SMALL/LARGE/COLOSSAL).
-3. **Vary time of day and weather**: Apply the existing probabilistic weather (30%) and time (40%) systems to all five factions.
-4. **Include non-combat moments**: Liches studying, Knights praying, spectres drifting through ruins, Fey feasting, Directorate engineers blueprinting.
-5. **Show faction intersections**: A captured ruin being fought over by two factions. An Ironwright construct powered by scavenged celestial technology. A spectre haunting a Demonic throne room.
-6. **Age and body diversity across humanoid characters**: Veteran lich vs. apprentice necromancer. Grizzled Knight commander vs. fresh squire. Ancient Fey lord vs. young sprite.
-7. **"What If" expander**: Unusual angles, unusual weather, something gone wrong, first day on the job, unexpected sub-faction environment (a Spectre in a Directorate shipyard, a Knight in a Fey forest).
-8. **New faction-specific variety**: Celestial -- vary between militant (Knights) and terrifying-divine (Chosen). Endless -- vary between cold-clinical (Cabals) and tragic-ethereal (Spectres). Ironwright -- vary between precise-new (Directorate) and chaotic-salvaged (Scrap Legions).
+Expected reject rate: ~20%. Budget includes regeneration overhead.
 
 ---
 
 ## Appendix A: Prompt Assembly Reference
 
-### Card Art Prompt Order
+### Card Art
 ```
 {STYLE_ANCHOR}, {FACTION_PREFIX}, {CREATURE_DESCRIPTION}, {COMPOSITION}, {ENVIRONMENT}, [{WEATHER}], [{TIME_OF_DAY}], [{SCALE}]
 ```
 
-### Planar Ruin Prompt Order (Neutral)
+### Planar Ruin (Neutral)
 ```
 {RUIN_NEUTRAL_PREFIX}, {ARCHETYPE_DESCRIPTION}
 ```
 
-### Planar Ruin Prompt Order (Evolved)
+### Planar Ruin (Evolved)
 ```
-{RUIN_NEUTRAL_PREFIX}, {ARCHETYPE_DESCRIPTION}, {FACTION_SUFFIX}, {FACTION_ENVIRONMENT}
+{RUIN_NEUTRAL_PREFIX}, {ARCHETYPE_DESCRIPTION}, {RUIN_FACTION_SUFFIX}, {FACTION_ENVIRONMENT}
 ```
 
-### Background Prompt Order
+### Background
 ```
 {BG_STYLE_PREFIX}, {SCENE_DESCRIPTION}
 ```
 
 ### LoRA Application
-- **Card art (creatures + ruins)**: EldritchPaletteKnife @ 0.9
-- **App backgrounds**: EldritchPaletteKnife @ 0.9
-- **Icons and emblems**: NO LoRA (simpler style, transparent backgrounds)
-- **Card backs**: EldritchPaletteKnife @ 0.7 (slightly less heavy to allow graphic design elements)
+- Card art (creatures + ruins): EldritchPaletteKnife @ 0.9
+- App backgrounds: EldritchPaletteKnife @ 0.9
+- Icons and emblems: NO LoRA (simpler style, transparent backgrounds)
+- Card backs: EldritchPaletteKnife @ 0.7 (allows graphic design elements)
 
 ### Negative Prompt (Universal)
 ```
@@ -1064,22 +1225,27 @@ text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, expl
 
 ## Appendix B: Asset File Naming Convention
 
-All generated assets follow this naming pattern:
-
 | Asset Type | Pattern | Example |
 |---|---|---|
 | Base creature card | `BASE-{faction}-{id}.webp` | `BASE-celestial-c01.webp` |
 | Evolved creature card | `EVO-{faction}-{id}-t{tier}.webp` | `EVO-endless-e05-t3.webp` |
-| Neutral ruin | `RUIN-neutral-{archetype}.webp` | `RUIN-neutral-stabilization-spire.webp` |
-| Evolved ruin | `RUIN-{faction}-{archetype}.webp` | `RUIN-ironwright-archive-gate.webp` |
+| Neutral ruin | `RUIN-neutral-{archetype}.webp` | `RUIN-neutral-resonance-spire.webp` |
+| Evolved ruin | `RUIN-{faction}-{archetype}.webp` | `RUIN-ironwright-repair-pylon.webp` |
 | Background | `BG-{screen}-{variant}.webp` | `BG-home-celestial.webp` |
 | Faction emblem | `ICON-faction-{faction}.png` | `ICON-faction-endless.png` |
+| Sub-faction emblem | `ICON-subfaction-{name}.png` | `ICON-subfaction-scrap-legions.png` |
 | Card back | `CARDBACK-{faction}.webp` | `CARDBACK-fey.webp` |
 | Keyword icon | `ICON-keyword-{name}.png` | `ICON-keyword-ward.png` |
+| Mechanic icon | `ICON-mechanic-{name}.png` | `ICON-mechanic-exalt.png` |
 | Faction banner | `BANNER-{faction}.webp` | `BANNER-demonic.webp` |
-| Onboarding slide | `ONBOARD-{faction}.webp` | `ONBOARD-celestial.webp` |
+| Avatar portrait | `AVATAR-{name}.webp` | `AVATAR-ophaniel.webp` |
+| Onboarding slide | `ONBOARD-{step}.webp` | `ONBOARD-03-faction-select.webp` |
 | Loading screen | `LOADING-{number}-{name}.webp` | `LOADING-03-void-forge.webp` |
 | Particle texture | `PARTICLE-{name}.png` | `PARTICLE-divine-radiance.png` |
-| Sub-faction emblem | `ICON-subfaction-{name}.png` | `ICON-subfaction-scrap-legions.png` |
+| Achievement badge | `BADGE-{id}.png` | `BADGE-first-win.png` |
 
-All card art and backgrounds stored in Cloudflare R2. All UI assets stored in the Xcode asset catalog.
+All card art and backgrounds stored in Cloudflare R2. All UI assets stored in Xcode asset catalog.
+
+---
+
+*End of Art Direction Document v2.0*

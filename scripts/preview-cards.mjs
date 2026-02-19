@@ -90,22 +90,25 @@ function buildHTML() {
         <!-- Full-bleed art layer -->
         ${artSrc ? `<img src="${artSrc}" class="card-art" alt="${card.name || 'Card art'}">` : '<div class="card-art placeholder">No art</div>'}
 
-        <!-- Mana cost - top right, over art -->
-        <div class="mana-cost">
-          <img src="/preview-icon/chaos-motes" class="mana-icon" alt="Mana">
-          <span class="mana-value">${card.manaCost ?? '?'}</span>
+        <!-- Name bar at top -->
+        <div class="name-bar">
+          <div class="card-name">${card.name || 'Unnamed'}</div>
+          <div class="mana-cost">
+            <img src="/preview-icon/chaos-motes" class="mana-icon" alt="Mana">
+            <span class="mana-value">${card.manaCost ?? '?'}</span>
+          </div>
         </div>
+
+        <!-- Faction badge (bottom-left, over art) -->
+        <div class="faction-badge faction-${faction.cssClass}">${faction.name}</div>
+        ${card.label ? `<div class="lora-badge">${card.label}</div>` : ''}
 
         <!-- Unified text panel at bottom -->
         <div class="text-panel">
           <div class="panel-content">
-            <!-- Card name -->
-            <div class="card-name">${card.name || 'Unnamed'}</div>
-
-            <!-- Type line + faction badge row -->
+            <!-- Type line -->
             <div class="type-row">
               <span class="card-type">${card.typeLine || card.cardType || 'Creature'}</span>
-              <span class="faction-badge faction-${faction.cssClass}">${faction.name}</span>
             </div>
 
             <!-- Keywords -->
@@ -137,6 +140,8 @@ function buildHTML() {
         <span class="meta-faction faction-meta-${faction.cssClass}">${faction.name}</span>
         <span class="meta-rarity rarity-${rarityClass}">${card.rarity || 'common'}</span>
         ${card.composition ? `<span class="meta-comp">${card.composition}</span>` : ''}
+        ${card.lora ? `<span class="meta-lora">${card.lora}</span>` : ''}
+        ${card.label ? `<span class="meta-label">${card.label}</span>` : ''}
       </div>
     </div>`;
   }).join('\n');
@@ -262,26 +267,63 @@ function buildHTML() {
       background: #111;
     }
 
-    /* ── Mana Cost (top-right, over art) ── */
-    .mana-cost {
+    /* ── Paper Texture Overlay ── */
+    .card::after {
+      content: '';
       position: absolute;
-      top: 10px;
-      right: 12px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 8;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity: 0.5;
+    }
+
+    /* ── Name Bar (top, over art) ── */
+    .name-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
       z-index: 10;
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px 18px 14px;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.72) 0%,
+        rgba(0, 0, 0, 0.45) 55%,
+        rgba(0, 0, 0, 0) 100%
+      );
+    }
+
+    .name-bar .card-name {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ── Mana Cost (inside name bar, right side) ── */
+    .mana-cost {
+      display: flex;
+      align-items: center;
       gap: 2px;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0, 0, 0, 0.45);
       border-radius: 20px;
-      padding: 4px 10px 4px 6px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      padding: 3px 8px 3px 5px;
       border: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+      margin-left: 8px;
     }
 
     .mana-icon {
       width: 22px;
       height: 22px;
+      border-radius: 50%;
+      object-fit: cover;
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
     }
 
@@ -299,7 +341,7 @@ function buildHTML() {
       bottom: 0;
       left: 0;
       right: 0;
-      height: 28%;
+      height: 32%;
       z-index: 5;
       /* Gradient: transparent at top, solid dark at bottom */
       background: linear-gradient(
@@ -336,7 +378,7 @@ function buildHTML() {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
     .card-type {
@@ -345,47 +387,74 @@ function buildHTML() {
       color: #aaa;
       text-transform: uppercase;
       letter-spacing: 0.06em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
     }
 
     .faction-badge {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 10;
       font-family: 'Alegreya', serif;
-      font-size: 0.62em;
+      font-size: 0.58em;
       font-weight: 500;
-      padding: 1px 8px;
+      padding: 2px 8px;
       border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .lora-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      font-family: 'Alegreya', serif;
+      font-size: 0.52em;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #e0c080;
+      border: 1px solid rgba(200, 160, 80, 0.4);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .faction-ironwright {
-      background: rgba(180, 130, 50, 0.3);
-      color: #e8c06a;
-      border: 1px solid rgba(180, 130, 50, 0.5);
+      background: rgba(60, 50, 35, 0.7);
+      color: #b8a478;
+      border: 1px solid rgba(120, 100, 60, 0.35);
     }
 
     .faction-fey {
-      background: rgba(50, 170, 100, 0.25);
-      color: #6edba0;
-      border: 1px solid rgba(50, 170, 100, 0.45);
+      background: rgba(35, 55, 40, 0.7);
+      color: #8aab8a;
+      border: 1px solid rgba(70, 100, 70, 0.35);
     }
 
     .faction-demonic {
-      background: rgba(180, 40, 40, 0.3);
-      color: #e86a6a;
-      border: 1px solid rgba(180, 40, 40, 0.5);
+      background: rgba(55, 30, 30, 0.7);
+      color: #b08080;
+      border: 1px solid rgba(100, 55, 55, 0.35);
     }
 
     .faction-unknown {
-      background: rgba(128, 128, 128, 0.25);
-      color: #999;
-      border: 1px solid rgba(128, 128, 128, 0.4);
+      background: rgba(50, 50, 50, 0.7);
+      color: #888;
+      border: 1px solid rgba(80, 80, 80, 0.35);
     }
 
     /* ── Keywords ── */
     .card-keywords {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 4px;
+      overflow: hidden;
     }
 
     .keyword-badge {
@@ -406,8 +475,8 @@ function buildHTML() {
       font-style: italic;
       font-size: 0.65em;
       color: #b0a080;
-      line-height: 1.3;
-      max-height: 2.6em;
+      line-height: 1.35;
+      max-height: 4em;
       overflow: hidden;
     }
 
@@ -428,6 +497,8 @@ function buildHTML() {
     .stat-icon {
       width: 18px;
       height: 18px;
+      border-radius: 50%;
+      object-fit: cover;
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
     }
 
@@ -476,6 +547,8 @@ function buildHTML() {
     .rarity-legendary { color: #ff9800; text-shadow: 0 0 6px rgba(255,152,0,0.4); }
 
     .meta-comp { color: #888; font-style: italic; }
+    .meta-lora { color: #e0c080; border-color: #5a4a20; }
+    .meta-label { color: #80c0e0; border-color: #204a5a; font-family: monospace; }
 
     .empty-state {
       text-align: center;
@@ -528,9 +601,13 @@ function buildHTML() {
         display: none;
       }
 
-      /* Smaller text panel */
+      /* Smaller panels */
+      .name-bar {
+        padding: 6px 8px 12px 10px;
+      }
+
       .text-panel {
-        height: 22%;
+        height: 18%;
       }
 
       .card-name {
@@ -562,14 +639,16 @@ function buildHTML() {
         font-size: 0.75em;
       }
 
+      .name-bar {
+        padding: 4px 6px 10px 8px;
+      }
+
       .text-panel {
-        height: 20%;
+        height: 16%;
       }
 
       .mana-cost {
         padding: 2px 6px 2px 4px;
-        top: 6px;
-        right: 6px;
       }
 
       .mana-icon {

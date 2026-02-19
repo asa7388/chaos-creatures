@@ -99,7 +99,7 @@ struct BattleContainerView: View {
                                 viewModel.selectHandCard(cardId)
                                 // Tell the scene about the selected card for slot highlighting
                                 let card = viewModel.hand.first(where: { $0.instanceId == cardId })
-                                let needsSlot = card?.cardType == .creature || card?.cardType == .stabilizer
+                                let needsSlot = card?.cardType == .creature || card?.cardType == .stabilizer || card?.cardType == .planarRuin
                                 viewModel.battleScene?.setSelectedHandCard(cardId, needsSlot: needsSlot)
                             },
                             onPlay: { cardId in
@@ -488,12 +488,16 @@ struct HandCardView: View {
                 .lineLimit(1)
 
             // Stats
-            if let atk = card.baseAttack, let hp = card.baseHealth {
+            if card.cardType == .planarRuin, let hp = card.baseHealth {
+                Text("HP \(hp)")
+                    .font(CardFont.stats(size: 9))
+                    .foregroundColor(.textSecondary)
+            } else if let atk = card.baseAttack, let hp = card.baseHealth {
                 Text("\(atk)/\(hp)")
                     .font(CardFont.stats(size: 9))
                     .foregroundColor(.textSecondary)
             } else {
-                Text("Spell")
+                Text(card.cardType == .stabilizer ? "Stabilizer" : "Spell")
                     .font(CardFont.body(size: 9))
                     .foregroundColor(.textSecondary)
             }

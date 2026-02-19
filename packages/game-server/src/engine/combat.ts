@@ -5,6 +5,7 @@
 import type {
   GameState,
   BattleCreature,
+  BattleRuin,
   BattlePlayer,
   CombatPairResult,
   UnblockedResult,
@@ -12,7 +13,14 @@ import type {
 } from '../types/game-state';
 import type { PlayerSide, Keyword } from '../types/enums';
 import { recalculateInstability } from './instability';
-import { resolveTriggeredAbilities, processDeaths } from './effects';
+import {
+  resolveTriggeredAbilities,
+  processDeaths,
+  isBattleRuin,
+  isBattleCreature,
+  recheckExaltAuras,
+  applyDamageToRuin,
+} from './effects';
 
 /** Check if a creature has a specific keyword */
 function hasKeyword(creature: BattleCreature, keyword: Keyword): boolean {
@@ -31,9 +39,19 @@ function getDefendingPlayer(state: GameState): BattlePlayer {
 
 /** Find a creature on a player's board by instance_id */
 function findOnBoard(player: BattlePlayer, creatureId: string): BattleCreature | null {
-  for (const creature of player.board) {
-    if (creature && creature.instance_id === creatureId) {
-      return creature;
+  for (const entity of player.board) {
+    if (entity && entity.instance_id === creatureId && isBattleCreature(entity)) {
+      return entity;
+    }
+  }
+  return null;
+}
+
+/** Find a ruin on a player's board by instance_id */
+function findRuinOnBoard(player: BattlePlayer, ruinId: string): BattleRuin | null {
+  for (const entity of player.board) {
+    if (entity && entity.instance_id === ruinId && isBattleRuin(entity)) {
+      return entity;
     }
   }
   return null;
@@ -42,21 +60,26 @@ function findOnBoard(player: BattlePlayer, creatureId: string): BattleCreature |
 /** Count creatures with Taunt that can legally block */
 export function countTauntCreatures(player: BattlePlayer): number {
   let count = 0;
-  for (const creature of player.board) {
-    if (creature && creature.is_alive && hasKeyword(creature, 'TAUNT') && creature.card_type !== 'STABILIZER') {
-      count++;
-    }
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
+    if (entity.card_type === 'STABILIZER' || entity.card_type === 'PLANAR_RUIN') continue;
+    if (hasKeyword(entity, 'TAUNT')) count++;
   }
   return count;
 }
 
-/** Count creatures that can attack (not stabilizers, alive) */
+/** Count creatures that can attack (not stabilizers, not ruins, alive, not summoning sick unless Haste) */
 export function countAttackableCreatures(player: BattlePlayer): number {
   let count = 0;
-  for (const creature of player.board) {
-    if (creature && creature.is_alive && creature.card_type !== 'STABILIZER') {
-      count++;
-    }
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
+    if (entity.card_type === 'STABILIZER') continue;
+    if (entity.card_type === 'PLANAR_RUIN') continue;
+    // Summoning sick creatures can't attack unless they have Haste
+    if (entity.summoning_sick && !entity.active_keywords.includes('HASTE')) continue;
+    count++;
   }
   return count;
 }
@@ -85,6 +108,13 @@ export function validateDeclareAttackers(
     }
     if (creature.card_type === 'STABILIZER') {
       return { valid: false, error: 'Stabilizers cannot attack' };
+    }
+    if (creature.card_type === 'PLANAR_RUIN') {
+      return { valid: false, error: 'Ruins cannot attack' };
+    }
+    // Summoning sickness: creatures cannot attack on deployment turn unless they have Haste
+    if (creature.summoning_sick && !creature.active_keywords.includes('HASTE')) {
+      return { valid: false, error: `Creature ${id} has summoning sickness and cannot attack without Haste` };
     }
   }
 
@@ -136,6 +166,9 @@ export function validateBlockerAssignments(
     if (blocker.card_type === 'STABILIZER') {
       return { valid: false, error: 'Stabilizers cannot block' };
     }
+    if (blocker.card_type === 'PLANAR_RUIN') {
+      return { valid: false, error: 'Ruins cannot block' };
+    }
     if (usedBlockers.has(blocker.instance_id)) {
       return { valid: false, error: `Blocker already assigned: ${assignment.blocker_id}` };
     }
@@ -155,11 +188,12 @@ export function validateBlockerAssignments(
   }
 
   // Validate Taunt forced-block: all Taunt creatures MUST block if they can legally block any attacker
-  for (const creature of defendingPlayer.board) {
-    if (!creature || !creature.is_alive) continue;
-    if (!hasKeyword(creature, 'TAUNT')) continue;
-    if (creature.card_type === 'STABILIZER') continue;
-    if (usedBlockers.has(creature.instance_id)) continue;
+  for (const entity of defendingPlayer.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
+    if (!hasKeyword(entity, 'TAUNT')) continue;
+    if (entity.card_type === 'STABILIZER') continue;
+    if (usedBlockers.has(entity.instance_id)) continue;
 
     // Check if any unblocked attacker can be legally blocked by this Taunt creature
     for (const attackerId of state.declared_attackers) {
@@ -169,12 +203,12 @@ export function validateBlockerAssignments(
 
       // Can this Taunt creature legally block this attacker?
       if (hasKeyword(attacker, 'FLYING')) {
-        if (!hasKeyword(creature, 'FLYING') && !hasKeyword(creature, 'REACH')) {
+        if (!hasKeyword(entity, 'FLYING') && !hasKeyword(entity, 'REACH')) {
           continue; // Cannot legally block flying
         }
       }
       // This Taunt creature CAN block but wasn't assigned
-      return { valid: false, error: `Taunt creature ${creature.instance_id} must block if able` };
+      return { valid: false, error: `Taunt creature ${entity.instance_id} must block if able` };
     }
   }
 
@@ -341,6 +375,45 @@ export function resolveCombat(state: GameState): CombatResult {
     const attacker = findOnBoard(activePlayer, attackerId);
     if (!attacker || !attacker.is_alive) continue;
 
+    // Check if this attacker is targeting a ruin
+    const targetRuinId = state.ruin_attack_targets?.[attackerId];
+    if (targetRuinId) {
+      const ruin = findRuinOnBoard(defendingPlayer, targetRuinId);
+      if (ruin && ruin.is_alive) {
+        // Attack the ruin
+        const damage = attacker.attack;
+
+        // Deathtouch: destroy ruin regardless of damage amount
+        if (hasKeyword(attacker, 'DEATHTOUCH') && damage > 0) {
+          ruin.health = 0;
+          ruin.is_alive = false;
+        } else {
+          applyDamageToRuin(state, ruin, damage, defendingPlayer);
+        }
+
+        // Lifesteal applies when attacking ruins
+        let lifesteal = 0;
+        if (hasKeyword(attacker, 'LIFESTEAL') && damage > 0) {
+          lifesteal = damage;
+          activePlayer.current_hp = Math.min(
+            activePlayer.current_hp + damage,
+            activePlayer.max_hp
+          );
+        }
+
+        // NOTE: Piercing does NOT apply to ruins (no "defending player" behind a ruin)
+
+        unblockedResults.push({
+          attacker_id: attackerId,
+          face_damage: 0, // Damage went to ruin, not face
+          lifesteal,
+        });
+        continue;
+      }
+      // If ruin is already dead/gone, fall through to face damage
+    }
+
+    // Standard unblocked: deal face damage
     const faceDamage = attacker.attack;
     defendingPlayer.current_hp -= faceDamage;
 
@@ -381,11 +454,19 @@ export function resolveCombat(state: GameState): CombatResult {
     resolveTriggeredAbilities(state, entry.creature, 'ON_DEATH', entry.owner);
   }
 
-  // STEP 9: Recalculate instability for both players
+  // STEP 9: Process ruin deaths on defending side (from ruin attacks)
+  processDeaths(state, defendingPlayer);
+  processDeaths(state, activePlayer);
+
+  // STEP 10: Recheck Exalt thresholds after combat deaths
+  recheckExaltAuras(state, activePlayer);
+  recheckExaltAuras(state, defendingPlayer);
+
+  // STEP 11: Recalculate instability for both players
   recalculateInstability(activePlayer);
   recalculateInstability(defendingPlayer);
 
-  // STEP 10: Check win condition
+  // STEP 12: Check win condition
   if (defendingPlayer.current_hp <= 0 && activePlayer.current_hp <= 0) {
     // Simultaneous death: active player loses (they took the risk of attacking)
     state.winner = defendingPlayer.side;
@@ -398,6 +479,7 @@ export function resolveCombat(state: GameState): CombatResult {
   // Clean up combat state
   state.declared_attackers = [];
   state.blocker_assignments = [];
+  state.ruin_attack_targets = {};
 
   return {
     pairs: combatPairs,

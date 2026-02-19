@@ -29,15 +29,20 @@ const R2_BUCKET_NAME = env.R2_BUCKET_NAME;
 const R2_PUBLIC_URL = env.R2_PUBLIC_URL;
 
 // ==========================================================================
-// Style anchor (same as v3 base generation — keeps visual consistency)
+// Style anchor (v5 — public domain artist references only)
 // ==========================================================================
 
 const STYLE_ANCHOR =
-  'traditional oil painting on canvas by Donato Giancola and Frank Frazetta, ' +
-  'visible heavy brushwork and palette knife texture, cracked oil paint surface, ' +
-  'classical fantasy illustration from 1990s Magic: The Gathering, muted earth tone palette, ' +
-  'chiaroscuro lighting, raw and gritty not polished, imperfect asymmetric anatomy, ' +
-  'single creature portrait 3:4 ratio, no text no borders no watermarks';
+  'fantasy creature illustration in the style of Gustave Dore engravings and N.C. Wyeth oil paintings, ' +
+  'traditional media on illustration board, thick acrylic and ink on textured watercolor paper, ' +
+  'heavy visible impasto brushstrokes, dry brush ink linework, crosshatching in shadow areas, ' +
+  'rough sketchy rendering with areas left intentionally unfinished and raw, ' +
+  'dramatic chiaroscuro lighting with a single harsh directional light source, deep blacks, ' +
+  'muted earth tones, raw umber and burnt sienna, desaturated and muddy palette, ' +
+  'visible paper grain and canvas texture throughout, paint cracking at edges, ' +
+  'dark moody atmospheric illustration, raw unpolished asymmetric anatomy, ' +
+  '3:4 portrait ratio, no text no borders no UI no watermarks, ' +
+  'NOT digital art, NOT 3D render, NOT smooth, NOT airbrushed, NOT photorealistic, NOT CGI, NOT clean lines';
 
 // Faction environments for evolution art (mirrors prompts.ts)
 const FACTION_ENVIRONMENTS = {
@@ -95,7 +100,7 @@ const EVOLUTIONS = [
     base_name: 'Furnace Sentinel',
     direction: 'ORDER',
     modifier_description: 'Large visible hydraulic cylinders extending along the limbs, surfaces polished and reinforced, additional heavy riveting over seams',
-    faction_style: 'grimy industrial steampunk, corroded brass and blackened iron, painted like Brom',
+    faction_style: 'grimy industrial steampunk, corroded brass and blackened iron, in the style of John Martin and Gustave Dore',
     // ORDER: refinement, structure, crystallization
     transform_instruction:
       'Refine and upgrade this mechanical creature with Order energy. ' +
@@ -111,7 +116,7 @@ const EVOLUTIONS = [
     base_name: 'Thornroot Warden',
     direction: 'CHAOS',
     modifier_description: 'Eyes shift to predatory feral glow, sharp defensive thorns erupting from joints, the creature appears larger and more imposing',
-    faction_style: 'dark fey forest creature, twisted ancient wood, painted like Brian Froud',
+    faction_style: 'dark fey forest creature, twisted ancient wood, in the style of Arthur Rackham and Edmund Dulac',
     // CHAOS: wildness, primal fury, untamed
     transform_instruction:
       'Transform this forest root creature with violent Chaos energy. ' +
@@ -127,7 +132,7 @@ const EVOLUTIONS = [
     base_name: 'Molten Bone Ripper',
     direction: 'CHAOS',
     modifier_description: 'Glowing molten lava cracks running through flesh like veins of liquid fire, hellfire corona engulfing the creature',
-    faction_style: 'grotesque infernal creature, fused bone and volcanic rock, painted like Wayne Barlowe',
+    faction_style: 'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
     // CHAOS: unbound carnage, apocalyptic
     transform_instruction:
       'Transform this infernal bone creature with explosive Chaos energy. ' +

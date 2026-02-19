@@ -18,6 +18,8 @@ import {
   P1_HAND_SIZE,
   P2_HAND_SIZE,
   DECK_SIZE,
+  RUIN_FAMILIARITY_WIN,
+  RUIN_FAMILIARITY_LOSS,
 } from './constants';
 import { SeededRNG, generateMatchSeed } from './rng';
 import { recalculateInstability } from './instability';
@@ -101,6 +103,8 @@ export function createMatch(
     mana_cap: MAX_MANA,
     instability: 1,
     board: Array(MAX_BOARD_SLOTS).fill(null),
+    ruin_on_board: false,
+    lingering_effects: [],
     hand: p1Hand,
     deck: p1Deck,
     graveyard: [],
@@ -124,6 +128,8 @@ export function createMatch(
     mana_cap: MAX_MANA,
     instability: 1,
     board: Array(MAX_BOARD_SLOTS).fill(null),
+    ruin_on_board: false,
+    lingering_effects: [],
     hand: p2Hand,
     deck: p2Deck,
     graveyard: [],
@@ -152,6 +158,7 @@ export function createMatch(
     first_player: 'PLAYER_1',
     declared_attackers: [],
     blocker_assignments: [],
+    ruin_attack_targets: {},
     last_roll_value: null,
     last_roll_event: null,
     last_roll_event_id: null,
@@ -169,11 +176,19 @@ export function createMatch(
 
 // ─── End Match ─────────────
 
+/** Ruin familiarity progress earned in a match */
+export interface RuinFamiliarityProgress {
+  player_id: string;
+  ruin_template_ids: string[];
+  familiarity_gained: number;
+}
+
 export interface MatchEndResult {
   winner_id: string;
   loser_id: string;
   end_reason: EndReason;
   match_record: MatchRecord;
+  ruin_familiarity: RuinFamiliarityProgress[];
 }
 
 /**
@@ -232,11 +247,39 @@ export function endMatch(
 
   removeMatch(state.match_id);
 
+  // Track ruin familiarity progress for both players
+  const ruinFamiliarity: RuinFamiliarityProgress[] = [];
+  for (const player of [state.player_1, state.player_2]) {
+    // Find all PLANAR_RUIN cards that were in the player's deck or graveyard
+    const ruinTemplateIds = new Set<string>();
+    for (const card of [...player.graveyard, ...player.deck, ...player.hand]) {
+      if (card.card_type === 'PLANAR_RUIN') {
+        ruinTemplateIds.add(card.template_id);
+      }
+    }
+    // Also check the board for any surviving ruins
+    for (const entity of player.board) {
+      if (entity && entity.card_type === 'PLANAR_RUIN') {
+        ruinTemplateIds.add(entity.template_id);
+      }
+    }
+
+    if (ruinTemplateIds.size > 0) {
+      const isWinner = player.player_id === winner.player_id;
+      ruinFamiliarity.push({
+        player_id: player.player_id,
+        ruin_template_ids: Array.from(ruinTemplateIds),
+        familiarity_gained: isWinner ? RUIN_FAMILIARITY_WIN : RUIN_FAMILIARITY_LOSS,
+      });
+    }
+  }
+
   return {
     winner_id: winner.player_id,
     loser_id: loser.player_id,
     end_reason: endReason,
     match_record: matchRecord,
+    ruin_familiarity: ruinFamiliarity,
   };
 }
 

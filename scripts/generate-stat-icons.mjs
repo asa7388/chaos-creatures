@@ -52,7 +52,7 @@ const STAT_ICONS = [
   },
   {
     name: 'sword-atk',
-    prompt: 'painterly oil painting style, heavy visible brushwork, traditional fantasy RPG game icon, dark moody background, a single upright fantasy battle sword, ornate crossguard, glowing warm orange-red magical energy along the blade edge, attack power weapon icon, no text no letters no words no borders no watermarks, square format, centered composition',
+    prompt: 'painterly oil painting style, heavy visible brushwork, traditional fantasy RPG game icon, very dark almost black background, a single large bold upright longsword filling most of the frame, thick bright silver steel blade with sharp clean silhouette, simple straight crossguard, the blade glows with warm orange-red magical fire along its edge, high contrast sword against dark background, must be immediately readable as a sword at any size, no text no letters no words no borders no watermarks, square format, centered composition',
   },
   {
     name: 'heart-hp',

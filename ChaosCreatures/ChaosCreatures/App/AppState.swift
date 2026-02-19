@@ -128,6 +128,8 @@ final class AppState {
         let ironwrightId = UUID()
         let feyId = UUID()
         let demonicId = UUID()
+        let celestialId = UUID()
+        let endlessId = UUID()
         let now = Date()
 
         player = Player(
@@ -137,7 +139,7 @@ final class AppState {
             friendCode: "CHAOS-1234",
             subscriptionTier: .mid,
             primaryFactionId: ironwrightId,
-            unlockedFactionIds: [ironwrightId, feyId, demonicId],
+            unlockedFactionIds: [ironwrightId, feyId, demonicId, celestialId, endlessId],
             onboardingComplete: true,
             playerLevel: 12,
             playerXp: 2450,
@@ -170,6 +172,8 @@ final class AppState {
             Faction(id: ironwrightId, name: "The Ironwright Collective", shortName: .ironwright, exclusiveMechanic: .augment, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_ironwright", colorPrimary: "#C4A04E", colorSecondary: "#8B7635", colorBackground: "#1A1A2E", particleTheme: "sparks", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 40, createdAt: now),
             Faction(id: feyId, name: "The Fey Courts", shortName: .feyCourts, exclusiveMechanic: .bond, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_fey", colorPrimary: "#7CB342", colorSecondary: "#558B2F", colorBackground: "#1A2E1A", particleTheme: "leaves", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 38, createdAt: now),
             Faction(id: demonicId, name: "The Demonic Kingdoms", shortName: .demonicKingdoms, exclusiveMechanic: .corruption, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_demonic", colorPrimary: "#E53935", colorSecondary: "#B71C1C", colorBackground: "#2E1A1A", particleTheme: "embers", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 35, createdAt: now),
+            Faction(id: celestialId, name: "The Celestial Crusade", shortName: .celestialCrusade, exclusiveMechanic: .exalt, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_celestial", colorPrimary: "#DAA520", colorSecondary: "#B8860B", colorBackground: "#2E2A1A", particleTheme: "light", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 30, createdAt: now),
+            Faction(id: endlessId, name: "The Endless", shortName: .theEndless, exclusiveMechanic: .persist, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_endless", colorPrimary: "#6B3FA0", colorSecondary: "#5A2D8C", colorBackground: "#1A1A2E", particleTheme: "void", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 28, createdAt: now),
         ]
 
         activeMissions = [

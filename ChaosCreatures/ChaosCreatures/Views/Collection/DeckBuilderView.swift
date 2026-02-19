@@ -20,8 +20,10 @@ struct DeckBuilderView: View {
     @State private var error: String?
     @State private var searchQuery = ""
     @State private var showDeckPanel = false  // For phone toggle layout (S-25)
+    @State private var cardTypeFilter: CardType? = nil  // nil = all types
 
     private let maxCards = 20
+    private let maxRuins = 2
 
     var body: some View {
         VStack(spacing: 0) {
@@ -70,9 +72,16 @@ struct DeckBuilderView: View {
 
                 Spacer()
 
-                Text("\(totalCards)/\(maxCards)")
-                    .font(CardFont.stats(size: 14))
-                    .foregroundColor(totalCards == maxCards ? .healGreen : .warningYellow)
+                HStack(spacing: 8) {
+                    if ruinCount > 0 {
+                        Text("\(ruinCount)/\(maxRuins) Ruins")
+                            .font(CardFont.body(size: 12))
+                            .foregroundColor(ruinCount > maxRuins ? .chaosRed : .textTertiary)
+                    }
+                    Text("\(totalCards)/\(maxCards)")
+                        .font(CardFont.stats(size: 14))
+                        .foregroundColor(totalCards == maxCards ? .healGreen : .warningYellow)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -143,6 +152,20 @@ struct DeckBuilderView: View {
 
     private var cardPoolSection: some View {
         VStack(spacing: 0) {
+            // Card type filter tabs
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    cardTypeFilterTab(nil, label: "All")
+                    cardTypeFilterTab(.creature, label: "Creatures")
+                    cardTypeFilterTab(.spell, label: "Spells")
+                    cardTypeFilterTab(.stabilizer, label: "Stabilizers")
+                    cardTypeFilterTab(.planarRuin, label: "Ruins")
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+            }
+            .background(Color.bgSecondary)
+
             // Search
             TextField("Search...", text: $searchQuery)
                 .textFieldStyle(.roundedBorder)
@@ -219,21 +242,69 @@ struct DeckBuilderView: View {
         deckCards.reduce(0) { $0 + $1.quantity }
     }
 
+    /// Count of Planar Ruins currently in the deck
+    private var ruinCount: Int {
+        deckCards.reduce(0) { total, entry in
+            guard let card = findCard(entry.cardInstanceId),
+                  card.cardType == .planarRuin else { return total }
+            return total + entry.quantity
+        }
+    }
+
     private var filteredAvailable: [CardInstance] {
-        if searchQuery.isEmpty { return availableCards }
-        let query = searchQuery.lowercased()
-        return availableCards.filter { $0.currentName.lowercased().contains(query) }
+        var cards = availableCards
+
+        // Apply card type filter
+        if let typeFilter = cardTypeFilter {
+            cards = cards.filter { $0.cardType == typeFilter }
+        }
+
+        // Apply search query
+        if !searchQuery.isEmpty {
+            let query = searchQuery.lowercased()
+            cards = cards.filter { $0.currentName.lowercased().contains(query) }
+        }
+
+        return cards
     }
 
     private func canAddCard(_ card: CardInstance) -> Bool {
         guard totalCards < maxCards else { return false }
         let existing = deckCards.first(where: { $0.cardInstanceId == card.id })
-        return (existing?.quantity ?? 0) < 2
+        let currentCopies = existing?.quantity ?? 0
+
+        // Planar Ruins: max 2 total ruins in deck, max 1 copy of each
+        if card.cardType == .planarRuin {
+            return currentCopies < 1 && ruinCount < maxRuins
+        }
+
+        return currentCopies < 2
+    }
+
+    // MARK: - Card Type Filter Tab
+
+    private func cardTypeFilterTab(_ type: CardType?, label: String) -> some View {
+        let isSelected = (cardTypeFilter == type)
+        return Button(action: {
+            withAnimation(.easeInOut(duration: 0.15)) { cardTypeFilter = type }
+        }) {
+            Text(label)
+                .font(CardFont.bodyBold(size: 12))
+                .foregroundColor(isSelected ? .white : .textTertiary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(isSelected ? Color.orderBlue.opacity(0.4) : Color.bgTertiary)
+                .cornerRadius(6)
+        }
     }
 
     private func addCard(_ card: CardInstance) {
         guard canAddCard(card) else {
-            appState.showToast("Can't add more copies", type: .warning)
+            if card.cardType == .planarRuin && ruinCount >= maxRuins {
+                appState.showToast("Max \(maxRuins) ruins per deck", type: .warning)
+            } else {
+                appState.showToast("Can't add more copies", type: .warning)
+            }
             return
         }
 

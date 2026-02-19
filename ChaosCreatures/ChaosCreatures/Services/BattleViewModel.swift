@@ -177,6 +177,12 @@ final class BattleViewModel: ObservableObject {
         case .eventTriggered(let data):
             addLogEntry(type: .eventTriggered, message: "\(data.eventName): \(data.description)")
 
+        case .ruinDestroyed(let data):
+            addLogEntry(type: .creatureDied, message: "Ruin destroyed (\(data.cause))")
+
+        case .ruinPassiveEffect(let data):
+            addLogEntry(type: .eventTriggered, message: "\(data.ruinName): \(data.effectDescription)")
+
         default:
             break
         }
@@ -192,9 +198,10 @@ final class BattleViewModel: ObservableObject {
 
         selectedHandCardId = nil
 
-        // For creatures/stabilizers, auto-select the first empty slot if none specified
+        // For creatures/stabilizers/planar ruins, auto-select the first empty slot if none specified
         var slot = targetSlot
-        if slot == nil && (card.cardType == .creature || card.cardType == .stabilizer) {
+        let needsSlot = card.cardType == .creature || card.cardType == .stabilizer || card.cardType == .planarRuin
+        if slot == nil && needsSlot {
             if let state = stateMachine.gameState {
                 slot = state.me.board.firstIndex(where: { $0 == nil })
             }

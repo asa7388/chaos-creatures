@@ -14,6 +14,7 @@ import type {
 import type {
   GameState,
   BattleCreature,
+  BattleRuin,
   BattleCard,
   EventDefinition,
   CombatPairResult,
@@ -44,6 +45,7 @@ export const EndMainPhaseSchema = z.object({
 export const DeclareAttackersSchema = z.object({
   type: z.literal('DECLARE_ATTACKERS'),
   attacker_ids: z.array(z.string()),
+  ruin_targets: z.record(z.string(), z.string()).optional(), // attacker_id -> ruin_id
 });
 
 export const AssignBlockersSchema = z.object({
@@ -300,7 +302,7 @@ export interface ClientBattlePlayer {
   current_mana: number;
   mana_cap: number;
   instability: number;
-  board: (BattleCreature | null)[];
+  board: (BattleCreature | BattleRuin | null)[];
   hand_count: number;
   deck_count: number;
   graveyard_count: number;

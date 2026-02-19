@@ -4,14 +4,18 @@
 import type {
   GameState,
   BattleCreature,
+  BattleRuin,
   BattlePlayer,
   Effect,
   EffectResult,
   TempBuff,
+  LingeringEffect,
 } from '../types/game-state';
-import type { TriggerType, Keyword, TargetType } from '../types/enums';
+import type { TriggerType, Keyword, TargetType, FactionMechanic } from '../types/enums';
 import { SeededRNG } from './rng';
 import { recalculateInstability } from './instability';
+import { MAX_LINGERING_EFFECTS } from './constants';
+import { randomUUID } from 'crypto';
 
 /** Get active player from game state */
 function getActivePlayer(state: GameState): BattlePlayer {
@@ -33,16 +37,28 @@ function saveRNG(state: GameState, rng: SeededRNG): void {
   state.rng_counter = rng.getCounter();
 }
 
-/** Get all alive creatures for a player */
-function getAliveCreatures(player: BattlePlayer): BattleCreature[] {
-  return player.board.filter((c): c is BattleCreature => c !== null && c.is_alive);
+/** Check if a board entity is a BattleRuin */
+export function isBattleRuin(entity: BattleCreature | BattleRuin | null): entity is BattleRuin {
+  return entity !== null && entity.card_type === 'PLANAR_RUIN';
+}
+
+/** Check if a board entity is a BattleCreature (not a ruin) */
+export function isBattleCreature(entity: BattleCreature | BattleRuin | null): entity is BattleCreature {
+  return entity !== null && entity.card_type !== 'PLANAR_RUIN' && 'attack' in entity;
+}
+
+/** Get all alive creatures for a player (excludes ruins) */
+export function getAliveCreatures(player: BattlePlayer): BattleCreature[] {
+  return player.board.filter(
+    (c): c is BattleCreature => c !== null && isBattleCreature(c) && c.is_alive
+  );
 }
 
 /** Find creature with lowest HP on a player's board (leftmost if tied) */
 function findLowestHpCreature(player: BattlePlayer): BattleCreature | null {
+  const alive = getAliveCreatures(player);
   let lowest: BattleCreature | null = null;
-  for (const creature of player.board) {
-    if (!creature || !creature.is_alive) continue;
+  for (const creature of alive) {
     if (!lowest || creature.health < lowest.health) {
       lowest = creature;
     }
@@ -52,9 +68,9 @@ function findLowestHpCreature(player: BattlePlayer): BattleCreature | null {
 
 /** Find creature with highest ATK on a player's board (leftmost if tied) */
 function findHighestAtkCreature(player: BattlePlayer): BattleCreature | null {
+  const alive = getAliveCreatures(player);
   let highest: BattleCreature | null = null;
-  for (const creature of player.board) {
-    if (!creature || !creature.is_alive) continue;
+  for (const creature of alive) {
     if (!highest || creature.attack > highest.attack) {
       highest = creature;
     }
@@ -85,7 +101,8 @@ function resolveTargets(
       break;
     }
     case 'ENEMY_CREATURE': {
-      const alive = getAliveCreatures(opponent);
+      // Ward creatures are excluded from targeted effects by opponent
+      const alive = getAliveCreatures(opponent).filter(c => !c.ward_active);
       if (alive.length > 0) targets = [alive[0]];
       break;
     }
@@ -112,7 +129,8 @@ function resolveTargets(
       break;
     }
     case 'RANDOM_ENEMY': {
-      const alive = getAliveCreatures(opponent);
+      // Ward creatures are excluded from random targeting by opponent
+      const alive = getAliveCreatures(opponent).filter(c => !c.ward_active);
       if (alive.length > 0) {
         const idx = rng.nextInt(0, alive.length - 1);
         targets = [alive[idx]];
@@ -369,7 +387,7 @@ export function resolveEffect(
 }
 
 /** Find which player owns a creature */
-function findCreatureOwner(state: GameState, creature: BattleCreature): BattlePlayer | null {
+export function findCreatureOwner(state: GameState, creature: BattleCreature): BattlePlayer | null {
   for (const c of state.player_1.board) {
     if (c && c.instance_id === creature.instance_id) return state.player_1;
   }
@@ -461,40 +479,66 @@ export function resolveTriggeredAbilities(
 
 /**
  * Process deaths on a player's board: mark dead, remove from board, fire ON_DEATH abilities.
+ * Handles both BattleCreatures and BattleRuins. For ruins, triggers destruction penalty.
+ * For creatures with Persist modifiers, creates lingering effects.
  */
 export function processDeaths(state: GameState, player: BattlePlayer): void {
+  // Mark dead entities
   for (let slot = 0; slot < player.board.length; slot++) {
-    const creature = player.board[slot];
-    if (creature && creature.health <= 0 && creature.is_alive) {
-      creature.is_alive = false;
+    const entity = player.board[slot];
+    if (entity && entity.health <= 0 && entity.is_alive) {
+      entity.is_alive = false;
     }
   }
 
   // Collect dead creatures (sorted by slot for deterministic ordering)
-  const dead: { creature: BattleCreature; slot: number }[] = [];
+  const deadCreatures: { creature: BattleCreature; slot: number }[] = [];
+  const deadRuins: { ruin: BattleRuin; slot: number }[] = [];
+
   for (let slot = 0; slot < player.board.length; slot++) {
-    const creature = player.board[slot];
-    if (creature && !creature.is_alive) {
-      dead.push({ creature, slot });
-      player.board[slot] = null;
-      player.graveyard.push(creature);
+    const entity = player.board[slot];
+    if (!entity || entity.is_alive) continue;
+
+    if (isBattleRuin(entity)) {
+      deadRuins.push({ ruin: entity, slot });
+    } else if (isBattleCreature(entity)) {
+      deadCreatures.push({ creature: entity, slot });
+    }
+
+    player.board[slot] = null;
+    player.graveyard.push(entity);
+  }
+
+  // Process dead ruins: fire destruction penalty effects
+  for (const { ruin } of deadRuins) {
+    player.ruin_on_board = false;
+    if (ruin.destruction_penalty) {
+      resolveEffect(state, ruin.destruction_penalty, player);
     }
   }
 
-  // Fire ON_DEATH abilities left-to-right
-  for (const { creature } of dead) {
+  // Fire ON_DEATH abilities left-to-right for creatures
+  for (const { creature } of deadCreatures) {
     resolveTriggeredAbilities(state, creature, 'ON_DEATH', player);
+
+    // Process Persist modifiers: create lingering effects from Persist-type modifiers
+    processPersistOnDeath(state, creature, player);
   }
+
+  // After processing deaths, recheck Exalt thresholds for the player
+  recheckExaltAuras(state, player);
 }
 
 /**
  * Expire temporary buffs at end of turn.
  */
 export function expireTempBuffs(player: BattlePlayer): void {
-  for (const creature of player.board) {
-    if (!creature || !creature.is_alive) continue;
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
+    const creature = entity;
 
-    const expiring = creature.temp_buffs.filter(b => b.expires_at === 'END_OF_TURN');
+    const expiring = creature.temp_buffs.filter((b: TempBuff) => b.expires_at === 'END_OF_TURN');
 
     for (const buff of expiring) {
       // Reverse the effect
@@ -535,8 +579,10 @@ export function expireTempBuffs(player: BattlePlayer): void {
  * Called after every chaos roll.
  */
 export function recalculateAllCreatureStats(player: BattlePlayer): void {
-  for (const creature of player.board) {
-    if (!creature || !creature.is_alive) continue;
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
+    const creature = entity;
 
     // Start from base stats
     let atk = creature.base_attack ?? 0;
@@ -607,5 +653,243 @@ function applyStatEffect(
   }
   if (effect.effect_type === 'STAT_MODIFY_HEALTH' && effect.value !== undefined) {
     apply({ atk: 0, hp: effect.value });
+  }
+}
+
+// ─── Exalt Mechanic (Celestial Crusade) ─────────────
+
+/**
+ * Count alive creatures for Exalt threshold purposes.
+ * Stabilizers and Planar Ruins do NOT count toward Exalt thresholds.
+ */
+export function getExaltCreatureCount(player: BattlePlayer): number {
+  let count = 0;
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (entity.card_type === 'CREATURE') count++;
+  }
+  return count;
+}
+
+/**
+ * Check and apply/deactivate Exalt auras for a player's board.
+ * Exalt modifiers have faction_mechanic === 'EXALT' and use CREATURE_COUNT_GTE condition.
+ * When the threshold is met, the modifier's base_effect applies to all friendly creatures.
+ * When the threshold drops below, the aura deactivates.
+ *
+ * Called after every board state change (creature play, creature death).
+ */
+export function recheckExaltAuras(state: GameState, player: BattlePlayer): void {
+  const creatureCount = getExaltCreatureCount(player);
+  const aliveCreatures = getAliveCreatures(player);
+
+  // First pass: determine which Exalt bonuses are active
+  // Exalt modifiers use condition.type === 'CREATURE_COUNT_GTE' and condition.value is the threshold
+  for (const creature of aliveCreatures) {
+    for (const modifier of creature.modifiers) {
+      if (modifier.faction_mechanic !== 'EXALT') continue;
+
+      // Check if this Exalt modifier's threshold is met
+      const threshold = modifier.base_effect.condition?.value ?? 2;
+      const wasActive = modifier.is_attuned_active; // Reusing is_attuned_active for Exalt state tracking
+
+      if (modifier.base_effect.condition?.type === 'CREATURE_COUNT_GTE') {
+        // The Exalt condition is on the base_effect. Apply if threshold met.
+        const isNowActive = creatureCount >= threshold;
+
+        if (isNowActive && !wasActive) {
+          // Exalt just activated: apply the effect to ALL friendly creatures
+          for (const target of aliveCreatures) {
+            applyExaltBonus(target, modifier.base_effect);
+          }
+        } else if (!isNowActive && wasActive) {
+          // Exalt just deactivated: remove the effect from ALL friendly creatures
+          for (const target of aliveCreatures) {
+            removeExaltBonus(target, modifier.base_effect);
+          }
+        }
+      }
+    }
+  }
+
+  // Recalculate stats after Exalt changes
+  recalculateAllCreatureStats(player);
+}
+
+/** Apply an Exalt aura bonus to a creature */
+function applyExaltBonus(creature: BattleCreature, effect: Effect): void {
+  if (effect.effect_type === 'STAT_MODIFY_ATTACK' && effect.value !== undefined) {
+    creature.attack += effect.value;
+  }
+  if (effect.effect_type === 'STAT_MODIFY_HEALTH' && effect.value !== undefined) {
+    creature.health += effect.value;
+    creature.max_health += effect.value;
+  }
+  if (effect.effect_type === 'GRANT_KEYWORD' && effect.keyword) {
+    if (!creature.active_keywords.includes(effect.keyword)) {
+      creature.active_keywords.push(effect.keyword);
+    }
+    if (effect.keyword === 'SHIELD') {
+      creature.shield_active = true;
+    }
+  }
+}
+
+/** Remove an Exalt aura bonus from a creature */
+function removeExaltBonus(creature: BattleCreature, effect: Effect): void {
+  if (effect.effect_type === 'STAT_MODIFY_ATTACK' && effect.value !== undefined) {
+    creature.attack -= effect.value;
+    creature.attack = Math.max(0, creature.attack);
+  }
+  if (effect.effect_type === 'STAT_MODIFY_HEALTH' && effect.value !== undefined) {
+    creature.max_health -= effect.value;
+    creature.max_health = Math.max(1, creature.max_health);
+    creature.health = Math.min(creature.health, creature.max_health);
+  }
+  if (effect.effect_type === 'GRANT_KEYWORD' && effect.keyword) {
+    // Only remove if not from innate or another source
+    creature.active_keywords = creature.active_keywords.filter(k => k !== effect.keyword);
+    if (effect.keyword === 'SHIELD') {
+      creature.shield_active = false;
+    }
+  }
+}
+
+// ─── Persist Mechanic (The Endless) ─────────────
+
+/**
+ * Process Persist modifiers on a creature that just died.
+ * Persist modifiers (faction_mechanic === 'PERSIST') fire their effects on death
+ * and may create lingering effects that persist on the battlefield.
+ */
+function processPersistOnDeath(
+  state: GameState,
+  creature: BattleCreature,
+  owner: BattlePlayer
+): void {
+  for (const modifier of creature.modifiers) {
+    if (modifier.faction_mechanic !== 'PERSIST') continue;
+
+    // Fire the Persist death effect (base_effect is the on-death trigger)
+    resolveEffect(state, modifier.base_effect, owner, creature);
+
+    // If the modifier also has a penalty_effect, use it as a lingering effect
+    // Persist lingering effects use penalty_effect to define the per-turn lingering damage/debuff
+    if (modifier.has_penalty && modifier.penalty_effect) {
+      addLingeringEffect(owner, {
+        id: randomUUID(),
+        effect: modifier.penalty_effect,
+        turns_remaining: modifier.penalty_effect.duration === 'THIS_TURN' ? 1 : 2,
+        source_name: `${creature.name} (${modifier.name})`,
+        source_creature_id: creature.instance_id,
+      });
+    }
+  }
+}
+
+/**
+ * Add a lingering effect to a player. Respects MAX_LINGERING_EFFECTS limit.
+ * If adding would exceed the limit, the oldest effect is removed.
+ */
+export function addLingeringEffect(player: BattlePlayer, effect: LingeringEffect): void {
+  if (player.lingering_effects.length >= MAX_LINGERING_EFFECTS) {
+    // Remove the oldest lingering effect
+    player.lingering_effects.shift();
+  }
+  player.lingering_effects.push(effect);
+}
+
+/**
+ * Process lingering effects at the start of a player's turn.
+ * Fires each lingering effect, then decrements its counter.
+ * Removes effects when counter reaches 0.
+ */
+export function processLingeringEffects(state: GameState, player: BattlePlayer): EffectResult[] {
+  const results: EffectResult[] = [];
+
+  for (const lingering of player.lingering_effects) {
+    // Fire the lingering effect
+    const effectResults = resolveEffect(state, lingering.effect, player);
+    results.push(...effectResults);
+
+    // Decrement counter
+    lingering.turns_remaining -= 1;
+  }
+
+  // Remove expired lingering effects
+  player.lingering_effects = player.lingering_effects.filter(e => e.turns_remaining > 0);
+
+  return results;
+}
+
+// ─── Ruin Passive Effects ─────────────
+
+/**
+ * Apply passive effects from all ruins on a player's board.
+ * Called at START_OF_TURN for each player.
+ */
+export function applyRuinPassiveEffects(state: GameState, player: BattlePlayer): EffectResult[] {
+  const results: EffectResult[] = [];
+
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleRuin(entity)) continue;
+
+    // Apply the ruin's passive effect
+    const effectResults = resolveEffect(state, entity.passive_effect, player);
+    results.push(...effectResults);
+  }
+
+  return results;
+}
+
+/**
+ * Apply damage to a ruin, handling destruction.
+ */
+export function applyDamageToRuin(
+  state: GameState,
+  ruin: BattleRuin,
+  damage: number,
+  _owner: BattlePlayer
+): number {
+  if (damage <= 0) return 0;
+
+  ruin.health -= damage;
+
+  if (ruin.health <= 0) {
+    ruin.is_alive = false;
+  }
+
+  return damage;
+}
+
+// ─── Ward Helpers ─────────────
+
+/**
+ * Clear Ward from all creatures that should have it expired.
+ * Called at START_OF_TURN for the active player (Ward expires at start of controller's next turn).
+ */
+export function expireWard(player: BattlePlayer): void {
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+
+    if (isBattleCreature(entity) && entity.ward_active) {
+      entity.ward_active = false;
+      // Also remove WARD from active keywords
+      entity.active_keywords = entity.active_keywords.filter(k => k !== 'WARD');
+    }
+  }
+}
+
+/**
+ * Clear summoning sickness from all creatures at START_OF_TURN.
+ */
+export function clearSummoningSickness(player: BattlePlayer): void {
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+
+    if (isBattleCreature(entity) && entity.summoning_sick) {
+      entity.summoning_sick = false;
+    }
   }
 }

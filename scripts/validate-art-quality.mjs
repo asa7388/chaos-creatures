@@ -39,32 +39,36 @@ mkdirSync(OUTPUT_DIR, { recursive: true });
 // Prompt constants (mirrored from generate-test-cards.mjs / prompts.ts)
 // ---------------------------------------------------------------------------
 
-// v4 style anchor: 1990s MTG artists, ink linework, sketchy rendering
+// v5 style anchor: public domain artist references only (all died pre-1953)
 const STYLE_ANCHOR =
-  '1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, ' +
-  'traditional media on illustration board, visible brushstrokes and ink linework, ' +
-  'sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, ' +
-  'muted earth tones and desaturated palette, gritty textured surface with grain and tooth, ' +
-  'raw unpolished asymmetric forms, dark atmospheric mood, ' +
-  '3:4 portrait ratio, no text no borders no watermarks';
+  'fantasy creature illustration in the style of Gustave Dore engravings and N.C. Wyeth oil paintings, ' +
+  'traditional media on illustration board, thick acrylic and ink on textured watercolor paper, ' +
+  'heavy visible impasto brushstrokes, dry brush ink linework, crosshatching in shadow areas, ' +
+  'rough sketchy rendering with areas left intentionally unfinished and raw, ' +
+  'dramatic chiaroscuro lighting with a single harsh directional light source, deep blacks, ' +
+  'muted earth tones, raw umber and burnt sienna, desaturated and muddy palette, ' +
+  'visible paper grain and canvas texture throughout, paint cracking at edges, ' +
+  'dark moody atmospheric illustration, raw unpolished asymmetric anatomy, ' +
+  '3:4 portrait ratio, no text no borders no UI no watermarks, ' +
+  'NOT digital art, NOT 3D render, NOT smooth, NOT airbrushed, NOT photorealistic, NOT CGI, NOT clean lines';
 
-// v4 faction prefixes with updated artist references
+// v5 faction prefixes with public domain artist references
 const FACTION_PREFIXES = {
   IRONWRIGHT:
     'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
     'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
     'warm ochre and raw umber palette, smoky atmospheric background, ' +
-    'painted like a Ron Spencer or Mark Tedin industrial horror',
+    'in the style of John Martin apocalyptic industrial landscapes and Gustave Dore dramatic engravings',
   FEY_COURTS:
     'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
     'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
     'overgrown with moss and lichen, more Brothers Grimm than Disney, ' +
-    'painted like a Rebecca Guay or Quinton Hoover ethereal watercolor',
+    'in the style of Arthur Rackham twisted ink drawings and Edmund Dulac muted watercolors',
   DEMONIC:
     'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
     'lit from below by hellfire glow, deep shadow obscuring details, ' +
     'burnt crimson and charcoal black palette, oppressive and heavy, ' +
-    'painted like a Pete Venters or Anson Maddocks grotesque dark fantasy',
+    'in the style of Gustave Dore Dante Inferno engravings and Hieronymus Bosch hellscape paintings',
 };
 
 // v4: 25 composition templates (mirrors prompts.ts)

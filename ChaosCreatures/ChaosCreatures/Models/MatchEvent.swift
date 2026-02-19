@@ -28,6 +28,8 @@ enum ServerEvent: Codable {
     case phaseChanged(PhaseChangedData)
     case chaosSparkUsed(ChaosSparkUsedData)
     case opponentHandUpdate(OpponentHandUpdateData)
+    case ruinDestroyed(RuinDestroyedData)
+    case ruinPassiveEffect(RuinPassiveEffectData)
     case serverError(ServerErrorData)
 
     enum CodingKeys: String, CodingKey {
@@ -83,6 +85,10 @@ enum ServerEvent: Codable {
             self = .chaosSparkUsed(try singleContainer.decode(ChaosSparkUsedData.self))
         case "OPPONENT_HAND_UPDATE":
             self = .opponentHandUpdate(try singleContainer.decode(OpponentHandUpdateData.self))
+        case "RUIN_DESTROYED":
+            self = .ruinDestroyed(try singleContainer.decode(RuinDestroyedData.self))
+        case "RUIN_PASSIVE_EFFECT":
+            self = .ruinPassiveEffect(try singleContainer.decode(RuinPassiveEffectData.self))
         case "SERVER_ERROR":
             self = .serverError(try singleContainer.decode(ServerErrorData.self))
         default:
@@ -117,6 +123,8 @@ enum ServerEvent: Codable {
         case .phaseChanged(let data): try container.encode(data)
         case .chaosSparkUsed(let data): try container.encode(data)
         case .opponentHandUpdate(let data): try container.encode(data)
+        case .ruinDestroyed(let data): try container.encode(data)
+        case .ruinPassiveEffect(let data): try container.encode(data)
         case .serverError(let data): try container.encode(data)
         }
     }
@@ -411,6 +419,37 @@ struct ChaosSparkUsedData: Codable {
 struct OpponentHandUpdateData: Codable {
     let type: String
     let count: Int
+}
+
+struct RuinDestroyedData: Codable {
+    let type: String
+    let ruinId: String
+    let boardSlot: Int
+    let player: PlayerSide
+    let cause: String
+
+    enum CodingKeys: String, CodingKey {
+        case type, player, cause
+        case ruinId = "ruin_id"
+        case boardSlot = "board_slot"
+    }
+}
+
+struct RuinPassiveEffectData: Codable {
+    let type: String
+    let ruinId: String
+    let ruinName: String
+    let player: PlayerSide
+    let effectDescription: String
+    let effectResults: [EffectResultData]
+
+    enum CodingKeys: String, CodingKey {
+        case type, player
+        case ruinId = "ruin_id"
+        case ruinName = "ruin_name"
+        case effectDescription = "effect_description"
+        case effectResults = "effect_results"
+    }
 }
 
 struct ServerErrorData: Codable {

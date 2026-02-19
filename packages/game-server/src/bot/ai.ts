@@ -2,10 +2,11 @@
 // Contains bot constants, deck builder, and AI decision logic for practice matches.
 // Source: docs/design/PRACTICE-MATCH-SPEC.md Section 3.1
 
-import type { BattleCard, BattleCreature, BattlePlayer, GameState } from '../types/game-state';
-import type { Keyword, CardType } from '../types/enums';
+import type { BattleCard, BattleCreature, BattleRuin, BattlePlayer, GameState } from '../types/game-state';
+import type { Keyword, CardType, FactionId } from '../types/enums';
 import { getSupabase } from '../services/supabase';
-import { MAX_BOARD_SLOTS } from '../engine/constants';
+import { MAX_BOARD_SLOTS, MAX_RUINS_ON_FIELD } from '../engine/constants';
+import { isBattleCreature, isBattleRuin } from '../engine/effects';
 import { randomUUID } from 'crypto';
 
 // ─── Bot Constants ─────────────
@@ -25,8 +26,55 @@ export const BOT_PLAYER_ID = '00000000-0000-0000-0000-000000000000';
 /** Fixed UUID for the bot's synthetic deck */
 export const BOT_DECK_ID = '00000000-0000-0000-0000-000000000001';
 
-/** Fixed avatar ID for the bot: Kael, the Bound Tyrant */
+/** Fixed avatar ID for the bot — default Kael, the Bound Tyrant */
 export const BOT_AVATAR_ID = 'b0000000-0000-0000-0000-000000000005';
+
+/** Avatar IDs per faction for bot variety */
+export const BOT_FACTION_AVATARS: Record<string, { avatar_id: string; instability_modifier: number; faction_id: string }> = {
+  IRONWRIGHT: {
+    avatar_id: 'b0000000-0000-0000-0000-000000000001',
+    instability_modifier: 3,
+    faction_id: 'a0000000-0000-0000-0000-000000000001',
+  },
+  FEY_COURTS: {
+    avatar_id: 'b0000000-0000-0000-0000-000000000003',
+    instability_modifier: 5,
+    faction_id: 'a0000000-0000-0000-0000-000000000002',
+  },
+  DEMONIC_KINGDOMS: {
+    avatar_id: 'b0000000-0000-0000-0000-000000000005',
+    instability_modifier: 7,
+    faction_id: 'a0000000-0000-0000-0000-000000000003',
+  },
+  CELESTIAL_CRUSADE: {
+    avatar_id: 'b0000000-0000-0000-0000-000000000007',
+    instability_modifier: 4,
+    faction_id: 'a0000000-0000-0000-0000-000000000004',
+  },
+  THE_ENDLESS: {
+    avatar_id: 'b0000000-0000-0000-0000-000000000009',
+    instability_modifier: 6,
+    faction_id: 'a0000000-0000-0000-0000-000000000005',
+  },
+};
+
+/** All faction IDs the bot can pick from */
+const ALL_FACTION_IDS: FactionId[] = ['IRONWRIGHT', 'FEY_COURTS', 'DEMONIC_KINGDOMS', 'CELESTIAL_CRUSADE', 'THE_ENDLESS'];
+
+/**
+ * Pick a random faction for the bot.
+ */
+export function pickRandomBotFaction(): FactionId {
+  const idx = Math.floor(Math.random() * ALL_FACTION_IDS.length);
+  return ALL_FACTION_IDS[idx];
+}
+
+/**
+ * Get the bot's avatar config for a given faction.
+ */
+export function getBotFactionConfig(factionId: FactionId) {
+  return BOT_FACTION_AVATARS[factionId] ?? BOT_FACTION_AVATARS.DEMONIC_KINGDOMS;
+}
 
 // ─── Bot Deck Config ─────────────
 
@@ -52,45 +100,49 @@ export type BotAction = BotPlayCardAction;
  *
  * Strategy:
  * 1. Query all active card_templates
- * 2. Filter to CREATURE and SPELL types only (no STABILIZER for bot simplicity)
+ * 2. Filter to CREATURE, SPELL, and optionally PLANAR_RUIN types
  * 3. Build a balanced deck with a good mana curve
  * 4. Convert card_templates into BattleCard[] with synthetic instance IDs
  *
  * The bot has NO card_instances in the database. All cards are synthesized
  * in-memory from card_templates with fake instance IDs.
+ *
+ * If no faction_id is provided, a random faction is chosen for variety.
  */
 export async function buildBotDeck(config: BotDeckConfig = { card_count: 20 }): Promise<BattleCard[]> {
   const supabase = getSupabase();
 
-  // Query all active card templates (the is_active column is on card_templates
-  // but may not exist yet -- fall back to querying all)
+  // If no faction specified, pick a random one for bot variety
+  const factionId = config.faction_id ?? getBotFactionConfig(pickRandomBotFaction()).faction_id;
+
+  // Query all active card templates including PLANAR_RUIN
   const { data: templates, error } = await supabase
     .from('card_templates')
     .select('id, name, card_type, faction_id, mana_cost, base_attack, base_health, base_instability, base_keywords, art_url')
-    .in('card_type', ['CREATURE', 'SPELL']);
+    .in('card_type', ['CREATURE', 'SPELL', 'PLANAR_RUIN']);
 
   if (error || !templates || templates.length === 0) {
     // Fallback: generate a hardcoded starter deck
     return generateFallbackDeck();
   }
 
-  // Filter by faction if specified
+  // Filter by faction
   let pool = templates;
-  if (config.faction_id) {
-    const factionCards = templates.filter((t: any) => t.faction_id === config.faction_id);
-    if (factionCards.length >= 10) {
-      pool = factionCards;
-    }
-    // Otherwise use full pool
+  const factionCards = templates.filter((t: any) => t.faction_id === factionId);
+  if (factionCards.length >= 10) {
+    pool = factionCards;
   }
+  // Otherwise use full pool (faction may not have enough cards yet)
 
   // Separate by card type
   const creatures = pool.filter((t: any) => t.card_type === 'CREATURE');
   const spells = pool.filter((t: any) => t.card_type === 'SPELL');
+  const ruins = pool.filter((t: any) => t.card_type === 'PLANAR_RUIN');
 
-  // Target: 16 creatures, 4 spells (if available)
-  const targetCreatures = Math.min(16, creatures.length);
+  // Target: 15 creatures, 4 spells, 1 ruin (if available), total 20
+  const targetRuins = Math.min(1, ruins.length);
   const targetSpells = Math.min(4, spells.length);
+  const targetCreatures = Math.min(config.card_count - targetSpells - targetRuins, creatures.length);
 
   // Build mana curve for creatures: prefer 2-4 cost range
   const sortedCreatures = [...creatures].sort((a: any, b: any) => {
@@ -137,6 +189,12 @@ export async function buildBotDeck(config: BotDeckConfig = { card_count: 20 }): 
       selectedCards.push(spell);
       templateCounts[spell.id] = count + 1;
     }
+  }
+
+  // Select ruins (max 1 for bot decks)
+  for (const ruin of ruins) {
+    if (selectedCards.length >= targetCreatures + targetSpells + targetRuins) break;
+    selectedCards.push(ruin);
   }
 
   // Fill remaining slots with any cards
@@ -227,19 +285,34 @@ function generateFallbackDeck(): BattleCard[] {
  * Returns an array of actions to execute sequentially.
  *
  * Strategy (single difficulty level -- "Normal"):
- * 1. Play creatures if board has empty slots, prioritizing by mana efficiency
- * 2. Play the most expensive creature the bot can afford first (greedy mana use)
- * 3. Do not play spells (bot does not target -- spells require targeting logic)
- * 4. Stop when out of mana or no playable cards remain
+ * 1. Play ruins first if bot has board space and no ruin on field
+ * 2. Play creatures if board has empty slots, prioritizing by mana efficiency
+ * 3. Play the most expensive creature the bot can afford first (greedy mana use)
+ * 4. Haste creatures are prioritized when bot is low on HP (immediate damage)
+ * 5. Ward creatures are prioritized when opponent has many creatures (modifier protection)
+ * 6. Celestial (Exalt) bot prioritizes getting creature count up
+ * 7. Do not play spells (bot does not target -- spells require targeting logic)
+ * 8. Stop when out of mana or no playable cards remain
  */
 export function decideBotMainPhase(state: GameState): BotAction[] {
   const bot = getBotPlayer(state);
+  const opponent = getOpponentPlayer(state);
   const actions: BotAction[] = [];
+  let ruinPlayed = false;
 
-  // Sort hand by mana cost descending (play biggest creature first)
+  // Determine how many empty board slots remain
+  const emptySlotCount = bot.board.filter(s => s === null).length;
+  const opponentCreatureCount = opponent.board.filter(s => s !== null && isBattleCreature(s)).length;
+
+  // Sort hand by priority: ruins first (if no ruin on field), then creatures by mana cost descending
   const playableCards = [...bot.hand]
     .filter((card) => {
       if (card.mana_cost > bot.current_mana) return false;
+
+      if (card.card_type === 'PLANAR_RUIN') {
+        // Can only play if no ruin on field and there's an empty slot
+        return !bot.ruin_on_board && !ruinPlayed && emptySlotCount > 0;
+      }
       if (card.card_type === 'CREATURE' || card.card_type === 'STABILIZER') {
         // Need an empty board slot
         return bot.board.some((slot) => slot === null);
@@ -247,7 +320,28 @@ export function decideBotMainPhase(state: GameState): BotAction[] {
       // Skip spells for now (targeting is complex)
       return false;
     })
-    .sort((a, b) => b.mana_cost - a.mana_cost);
+    .sort((a, b) => {
+      // Ruins first (strategic placement)
+      if (a.card_type === 'PLANAR_RUIN' && b.card_type !== 'PLANAR_RUIN') return -1;
+      if (b.card_type === 'PLANAR_RUIN' && a.card_type !== 'PLANAR_RUIN') return 1;
+
+      // Haste creatures prioritized when bot is low on HP
+      if (bot.current_hp <= 8) {
+        const aHasHaste = a.innate_keywords.includes('HASTE') ? 1 : 0;
+        const bHasHaste = b.innate_keywords.includes('HASTE') ? 1 : 0;
+        if (aHasHaste !== bHasHaste) return bHasHaste - aHasHaste;
+      }
+
+      // Ward creatures prioritized when opponent has many creatures (lots of modifier effects)
+      if (opponentCreatureCount >= 3) {
+        const aHasWard = a.innate_keywords.includes('WARD') ? 1 : 0;
+        const bHasWard = b.innate_keywords.includes('WARD') ? 1 : 0;
+        if (aHasWard !== bHasWard) return bHasWard - aHasWard;
+      }
+
+      // Otherwise sort by mana cost descending (play biggest first)
+      return b.mana_cost - a.mana_cost;
+    });
 
   let remainingMana = bot.current_mana;
 
@@ -257,6 +351,12 @@ export function decideBotMainPhase(state: GameState): BotAction[] {
     // Find first empty slot
     const emptySlot = bot.board.findIndex((slot) => slot === null);
     if (emptySlot === -1) break;
+
+    // For ruins, check the limit again (may have changed during this planning loop)
+    if (card.card_type === 'PLANAR_RUIN') {
+      if (bot.ruin_on_board || ruinPlayed) continue;
+      ruinPlayed = true;
+    }
 
     actions.push({
       type: 'PLAY_CARD',
@@ -271,32 +371,66 @@ export function decideBotMainPhase(state: GameState): BotAction[] {
 }
 
 /**
- * Decide which creatures to declare as attackers.
+ * Decide which creatures to declare as attackers and which ruins to target.
  *
  * Strategy:
- * 1. Attack with ALL creatures that are alive and not Stabilizers
+ * 1. Attack with ALL eligible creatures (alive, not Stabilizer, not Ruin, not summoning sick unless Haste)
  * 2. Respect P1 Turn 1 restriction (no attacks)
  * 3. Obey Taunt forced-attack rules (must attack with at least minAttackers)
+ * 4. Consider targeting opponent's ruins if they provide strong passive effects
  *
- * This is aggressive but simple -- the bot always attacks with everything.
+ * Returns attacker IDs and optional ruin targets.
  */
-export function decideBotAttackers(state: GameState): string[] {
+export function decideBotAttackers(state: GameState): { attackerIds: string[]; ruinTargets: Record<string, string> } {
   const bot = getBotPlayer(state);
+  const opponent = getOpponentPlayer(state);
 
   // P1 Turn 1 restriction
   if (state.current_turn === 1 && state.active_player === state.first_player) {
-    return [];
+    return { attackerIds: [], ruinTargets: {} };
   }
 
   const attackerIds: string[] = [];
-  for (const creature of bot.board) {
-    if (!creature) continue;
-    if (!creature.is_alive) continue;
-    if (creature.card_type === 'STABILIZER') continue;
-    attackerIds.push(creature.instance_id);
+  for (const entity of bot.board) {
+    if (!entity) continue;
+    if (!entity.is_alive) continue;
+    // Ruins and stabilizers cannot attack
+    if (entity.card_type === 'STABILIZER' || entity.card_type === 'PLANAR_RUIN') continue;
+    if (!isBattleCreature(entity)) continue;
+    // Summoning sickness: can't attack unless Haste
+    if (entity.summoning_sick && !entity.active_keywords.includes('HASTE')) continue;
+    attackerIds.push(entity.instance_id);
   }
 
-  return attackerIds;
+  // Check if opponent has ruins that should be targeted
+  const ruinTargets: Record<string, string> = {};
+  const opponentRuin = opponent.board.find(
+    e => e !== null && isBattleRuin(e) && e.is_alive
+  );
+
+  // Check if opponent has Taunt creatures — if so, we must attack them, not ruins
+  const opponentHasTaunt = opponent.board.some(
+    e => e !== null && isBattleCreature(e) && e.is_alive && e.active_keywords.includes('TAUNT')
+  );
+
+  if (opponentRuin && !opponentHasTaunt && attackerIds.length > 0) {
+    // Assign one attacker to target the ruin (the weakest attacker, to not waste big damage on a structure)
+    // Find the attacker with the lowest ATK
+    let weakestAttackerId: string | null = null;
+    let weakestAtk = Infinity;
+    for (const id of attackerIds) {
+      const creature = bot.board.find(e => e && e.instance_id === id) as BattleCreature | undefined;
+      if (creature && creature.attack < weakestAtk) {
+        weakestAtk = creature.attack;
+        weakestAttackerId = creature.instance_id;
+      }
+    }
+    if (weakestAttackerId) {
+      ruinTargets[weakestAttackerId] = opponentRuin.instance_id;
+    }
+  }
+
+  return { attackerIds, ruinTargets };
 }
 
 /**
@@ -319,21 +453,22 @@ export function decideBotBlockers(
   const usedBlockers = new Set<string>();
   const usedAttackers = new Set<string>();
 
-  // Get all available blockers (alive, not Stabilizer)
+  // Get all available blockers (alive creatures, not Stabilizer, not Ruin)
   const availableBlockers: BattleCreature[] = [];
-  for (const creature of bot.board) {
-    if (!creature) continue;
-    if (!creature.is_alive) continue;
-    if (creature.card_type === 'STABILIZER') continue;
-    availableBlockers.push(creature);
+  for (const entity of bot.board) {
+    if (!entity) continue;
+    if (!entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
+    if (entity.card_type === 'STABILIZER' || entity.card_type === 'PLANAR_RUIN') continue;
+    availableBlockers.push(entity);
   }
 
-  // Get all declared attackers
+  // Get all declared attackers (only actual creatures)
   const attackerCreatures: BattleCreature[] = [];
   for (const attackerId of state.declared_attackers) {
-    for (const creature of attacker.board) {
-      if (creature && creature.instance_id === attackerId && creature.is_alive) {
-        attackerCreatures.push(creature);
+    for (const entity of attacker.board) {
+      if (entity && entity.instance_id === attackerId && entity.is_alive && isBattleCreature(entity)) {
+        attackerCreatures.push(entity);
       }
     }
   }

@@ -44,12 +44,16 @@ const FACTION_NAMES: Record<string, string> = {
   IRONWRIGHT: 'Ironwright',
   FEY_COURTS: 'Fey Courts',
   DEMONIC_KINGDOMS: 'Demonic Kingdoms',
+  CELESTIAL_CRUSADE: 'Celestial Crusade',
+  THE_ENDLESS: 'The Endless',
 };
 
 const FACTION_COLORS: Record<string, string> = {
   IRONWRIGHT: 'bg-ironwright/20 text-ironwright border-ironwright/30',
   FEY_COURTS: 'bg-fey/20 text-fey border-fey/30',
   DEMONIC_KINGDOMS: 'bg-demonic/20 text-demonic border-demonic/30',
+  CELESTIAL_CRUSADE: 'bg-celestial/20 text-celestial border-celestial/30',
+  THE_ENDLESS: 'bg-endless/20 text-endless border-endless/30',
 };
 
 function getStatusBadge(job: GenerationJob) {

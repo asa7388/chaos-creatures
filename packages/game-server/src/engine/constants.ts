@@ -77,3 +77,18 @@ export const EVOLUTION_THRESHOLDS = {
 /** Energy earned per game */
 export const ENERGY_PER_WIN = 2;
 export const ENERGY_PER_LOSS = 1;
+
+/** Planar Ruin limits */
+export const MAX_RUINS_ON_FIELD = 1;
+export const MAX_RUINS_IN_DECK = 2;
+
+/** Ward duration (turns after deployment) */
+export const WARD_DURATION_TURNS = 1;
+
+/** Ruin familiarity progression */
+export const RUIN_FAMILIARITY_WIN = 2;
+export const RUIN_FAMILIARITY_LOSS = 1;
+export const RUIN_FAMILIARITY_THRESHOLD = 10;
+
+/** Maximum lingering effects per player (Persist mechanic) */
+export const MAX_LINGERING_EFFECTS = 3;

@@ -106,7 +106,7 @@ struct CardDisplayData {
         self.attack = instance.currentAttack
         self.health = instance.currentHealth
         self.tier = instance.tier
-        self.cardType = instance.currentAttack != nil ? .creature : .spell
+        self.cardType = instance.cardType ?? (instance.currentAttack != nil ? .creature : .spell)
         self.faction = faction
         self.keywords = instance.effectiveKeywords
         self.flavorText = instance.flavorText
@@ -320,7 +320,13 @@ struct CardFrameView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             // ATK/HP stats row
-            if let atk = data.attack, let hp = data.health {
+            if data.cardType == .planarRuin, let hp = data.health {
+                // Ruins show HP only (no ATK)
+                HStack(spacing: 0) {
+                    Spacer()
+                    statIcon(imageName: "StatIcons/heart-hp", value: hp, color: .healGreen)
+                }
+            } else if let atk = data.attack, let hp = data.health {
                 HStack(spacing: 0) {
                     Spacer()
                     statIcon(imageName: "StatIcons/sword-atk", value: atk, color: .damageOrange)
@@ -380,7 +386,14 @@ struct CardFrameView: View {
             }
 
             // ATK/HP stats row (bottom-right)
-            if let atk = data.attack, let hp = data.health {
+            if data.cardType == .planarRuin, let hp = data.health {
+                // Ruins show HP only (no ATK)
+                HStack(spacing: 0) {
+                    Spacer()
+                    statIcon(imageName: "StatIcons/heart-hp", value: hp, color: .healGreen)
+                }
+                .padding(.top, 2)
+            } else if let atk = data.attack, let hp = data.health {
                 HStack(spacing: 0) {
                     Spacer()
                     statIcon(imageName: "StatIcons/sword-atk", value: atk, color: .damageOrange)

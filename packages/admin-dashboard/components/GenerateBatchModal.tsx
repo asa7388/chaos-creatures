@@ -146,6 +146,7 @@ export default function GenerateBatchModal({
                 <option value="CREATURE">Creature</option>
                 <option value="SPELL">Spell</option>
                 <option value="STABILIZER">Stabilizer</option>
+                <option value="PLANAR_RUIN">Planar Ruin</option>
               </select>
             </div>
 

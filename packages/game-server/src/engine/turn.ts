@@ -5,6 +5,7 @@ import type {
   GameState,
   BattlePlayer,
   BattleCreature,
+  BattleRuin,
   BattleCard,
   ChaosRollResult,
   EventResolutionResult,
@@ -17,6 +18,7 @@ import {
   MAX_HP,
   MAX_MANA,
   MAX_BOARD_SLOTS,
+  MAX_RUINS_ON_FIELD,
   D20_MIN,
   D20_MAX,
 } from './constants';
@@ -29,6 +31,13 @@ import {
   recalculateAllCreatureStats,
   resolveEffect,
   applyDamageToCreature,
+  applyRuinPassiveEffects,
+  processLingeringEffects,
+  expireWard,
+  clearSummoningSickness,
+  recheckExaltAuras,
+  isBattleCreature,
+  isBattleRuin,
 } from './effects';
 import { resolveEventPhase, eventRequiresChoice, getValidEventTargets, getEventById, peekNextEvent, resolveEventWithTarget } from './events';
 import { resolveCombat, validateDeclareAttackers, validateBlockerAssignments } from './combat';
@@ -44,9 +53,9 @@ function getDefendingPlayer(state: GameState): BattlePlayer {
 }
 
 function findOnBoard(player: BattlePlayer, creatureId: string): BattleCreature | null {
-  for (const creature of player.board) {
-    if (creature && creature.instance_id === creatureId) {
-      return creature;
+  for (const entity of player.board) {
+    if (entity && entity.instance_id === creatureId && isBattleCreature(entity)) {
+      return entity;
     }
   }
   return null;
@@ -70,21 +79,34 @@ export function resolveStartOfTurn(state: GameState): StartOfTurnResult {
   const corruptionDamage: Array<{ creature_id: string; damage: number }> = [];
   const deaths: string[] = [];
 
+  // Clear Ward from active player's creatures (Ward expires at start of controller's next turn)
+  expireWard(activePlayer);
+
+  // Clear summoning sickness from active player's creatures
+  clearSummoningSickness(activePlayer);
+
+  // Apply ruin passive effects for the active player
+  applyRuinPassiveEffects(state, activePlayer);
+
+  // Process lingering effects (Persist mechanic) for the active player
+  processLingeringEffects(state, activePlayer);
+
   // Fire start-of-turn effects left-to-right (slot 0 -> slot 4)
   for (let slot = 0; slot < MAX_BOARD_SLOTS; slot++) {
-    const creature = activePlayer.board[slot];
-    if (!creature || !creature.is_alive) continue;
+    const entity = activePlayer.board[slot];
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
 
     // Corruption self-damage from modifiers
-    for (const modifier of creature.modifiers) {
+    for (const modifier of entity.modifiers) {
       if (
         modifier.base_effect.effect_type === 'DAMAGE' &&
         modifier.base_effect.target === 'SELF' &&
         modifier.base_effect.value !== undefined
       ) {
         const damage = modifier.base_effect.value;
-        applyDamageToCreature(state, creature, damage, activePlayer);
-        corruptionDamage.push({ creature_id: creature.instance_id, damage });
+        applyDamageToCreature(state, entity, damage, activePlayer);
+        corruptionDamage.push({ creature_id: entity.instance_id, damage });
       }
     }
   }
@@ -96,6 +118,9 @@ export function resolveStartOfTurn(state: GameState): StartOfTurnResult {
       deaths.push(creature.instance_id);
     }
   }
+
+  // Recheck Exalt thresholds after any deaths
+  recheckExaltAuras(state, activePlayer);
 
   // Recalculate instability after any board changes
   const instability = recalculateInstability(activePlayer);
@@ -135,10 +160,11 @@ export function resolveChaosRoll(state: GameState): ChaosRollResult {
   state.last_roll_event = result;
   activePlayer.last_event_type = result;
 
-  // Update attunement state on all active player's creatures
-  for (const creature of activePlayer.board) {
-    if (!creature || !creature.is_alive) continue;
-    for (const modifier of creature.modifiers) {
+  // Update attunement state on all active player's creatures (not ruins)
+  for (const entity of activePlayer.board) {
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
+    for (const modifier of entity.modifiers) {
       modifier.is_attuned_active = modifier.attunement === result;
       modifier.is_penalty_active = modifier.has_penalty && modifier.attunement !== result;
     }
@@ -230,6 +256,7 @@ export function handlePlayCard(
   }
 
   let creature: BattleCreature | undefined;
+  let ruin: BattleRuin | undefined;
   const effectResults: EffectResult[] = [];
 
   if (card.card_type === 'CREATURE' || card.card_type === 'STABILIZER') {
@@ -254,6 +281,30 @@ export function handlePlayCard(
         effectResults.push(...results);
       }
     }
+
+    // Recheck Exalt thresholds after new creature enters the board
+    recheckExaltAuras(state, activePlayer);
+
+    recalculateInstability(activePlayer);
+  } else if (card.card_type === 'PLANAR_RUIN') {
+    // Validate ruin placement
+    if (activePlayer.ruin_on_board) {
+      throw new GameError('RUIN_LIMIT', `Max ${MAX_RUINS_ON_FIELD} ruin on field at a time`);
+    }
+    if (targetSlot === undefined) {
+      throw new GameError('NO_SLOT', 'Must specify board slot for ruin');
+    }
+    if (targetSlot < 0 || targetSlot >= MAX_BOARD_SLOTS) {
+      throw new GameError('INVALID_SLOT', `Slot must be 0-${MAX_BOARD_SLOTS - 1}`);
+    }
+    if (activePlayer.board[targetSlot] !== null) {
+      throw new GameError('SLOT_OCCUPIED', 'Slot is occupied');
+    }
+
+    // Place ruin on board
+    ruin = createBattleRuin(card, targetSlot);
+    activePlayer.board[targetSlot] = ruin;
+    activePlayer.ruin_on_board = true;
 
     recalculateInstability(activePlayer);
   } else if (card.card_type === 'SPELL') {
@@ -320,7 +371,8 @@ export function handleUseChaosSparkAction(state: GameState): { mana_after: numbe
 
 export function handleDeclareAttackersAction(
   state: GameState,
-  attackerIds: string[]
+  attackerIds: string[],
+  ruinTargets?: Record<string, string>  // attacker_id -> target_ruin_id
 ): { valid: boolean; error?: string } {
   state.phase = 'DECLARE_ATTACKERS';
 
@@ -341,6 +393,7 @@ export function handleDeclareAttackersAction(
   }
 
   state.declared_attackers = attackerIds;
+  state.ruin_attack_targets = ruinTargets ?? {};
   return { valid: true };
 }
 
@@ -394,17 +447,18 @@ export function resolveEndOfTurn(state: GameState): void {
   expireTempBuffs(activePlayer);
   expireTempBuffs(defendingPlayer);
 
-  // Reset has_attacked on all creatures
-  for (const creature of activePlayer.board) {
-    if (creature) creature.has_attacked = false;
+  // Reset has_attacked on all creatures (not ruins)
+  for (const entity of activePlayer.board) {
+    if (entity && isBattleCreature(entity)) entity.has_attacked = false;
   }
-  for (const creature of defendingPlayer.board) {
-    if (creature) creature.has_attacked = false;
+  for (const entity of defendingPlayer.board) {
+    if (entity && isBattleCreature(entity)) entity.has_attacked = false;
   }
 
   // Clear combat state
   state.declared_attackers = [];
   state.blocker_assignments = [];
+  state.ruin_attack_targets = {};
 
   // Check win condition
   if (state.winner) return;
@@ -534,6 +588,7 @@ export class GameError extends Error {
 export function createBattleCreature(card: BattleCard, slot: number): BattleCreature {
   const keywords = [...card.innate_keywords];
   const hasShield = keywords.includes('SHIELD');
+  const hasWard = keywords.includes('WARD');
 
   // Add keywords from always-active modifiers
   for (const modifier of card.modifiers) {
@@ -556,6 +611,39 @@ export function createBattleCreature(card: BattleCard, slot: number): BattleCrea
     shield_active: hasShield,
     temp_buffs: [],
     board_slot: slot,
+    // Summoning sickness: can't attack this turn unless creature has Haste
+    summoning_sick: true,
+    // Ward: active on deployment if creature has Ward keyword
+    ward_active: hasWard,
+  };
+}
+
+/**
+ * Create a BattleRuin from a BattleCard when placed on the board.
+ * Ruins have health, 0 ATK, cannot attack or block.
+ */
+export function createBattleRuin(card: BattleCard, slot: number): BattleRuin {
+  // Extract passive_effect and destruction_penalty from the card's triggered abilities
+  // Convention: first ON_PLAY ability is the passive effect, first ON_DEATH ability is the destruction penalty
+  let passiveEffect = card.triggered_abilities.find(a => a.trigger === 'ON_PLAY');
+  let destructionPenalty = card.triggered_abilities.find(a => a.trigger === 'ON_DEATH');
+
+  // Default passive effect: no-op (heal 0 to self)
+  const defaultEffect = {
+    effect_type: 'HEAL' as const,
+    target: 'PLAYER_SELF' as const,
+    value: 0,
+  };
+
+  return {
+    ...card,
+    health: card.base_health ?? 7,
+    max_health: card.base_health ?? 7,
+    is_alive: true,
+    board_slot: slot,
+    passive_effect: passiveEffect?.effect ?? defaultEffect,
+    destruction_penalty: destructionPenalty?.effect ?? defaultEffect,
+    ward_active: false,
   };
 }
 

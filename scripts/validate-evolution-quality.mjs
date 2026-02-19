@@ -37,11 +37,16 @@ if (!FAL_KEY) { console.error('Missing FAL_KEY in packages/game-server/.env'); p
 // ---------------------------------------------------------------------------
 
 const STYLE_ANCHOR =
-  'traditional oil painting on canvas by Donato Giancola and Frank Frazetta, ' +
-  'visible heavy brushwork and palette knife texture, cracked oil paint surface, ' +
-  'classical fantasy illustration from 1990s Magic: The Gathering, muted earth tone palette, ' +
-  'chiaroscuro lighting, raw and gritty not polished, imperfect asymmetric anatomy, ' +
-  'single creature portrait 3:4 ratio, no text no borders no watermarks';
+  'fantasy creature illustration in the style of Gustave Dore engravings and N.C. Wyeth oil paintings, ' +
+  'traditional media on illustration board, thick acrylic and ink on textured watercolor paper, ' +
+  'heavy visible impasto brushstrokes, dry brush ink linework, crosshatching in shadow areas, ' +
+  'rough sketchy rendering with areas left intentionally unfinished and raw, ' +
+  'dramatic chiaroscuro lighting with a single harsh directional light source, deep blacks, ' +
+  'muted earth tones, raw umber and burnt sienna, desaturated and muddy palette, ' +
+  'visible paper grain and canvas texture throughout, paint cracking at edges, ' +
+  'dark moody atmospheric illustration, raw unpolished asymmetric anatomy, ' +
+  '3:4 portrait ratio, no text no borders no UI no watermarks, ' +
+  'NOT digital art, NOT 3D render, NOT smooth, NOT airbrushed, NOT photorealistic, NOT CGI, NOT clean lines';
 
 const NEGATIVE_PROMPT =
   'text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, ' +
@@ -92,7 +97,7 @@ const EVOLUTION_TESTS = [
     direction: 'ORDER',
     strength: 0.40,
     faction_style:
-      'grimy industrial steampunk, corroded brass and blackened iron, painted like Brom',
+      'grimy industrial steampunk, corroded brass and blackened iron, in the style of John Martin and Gustave Dore',
     transform_instruction:
       'Refine and upgrade this mechanical creature with Order energy. ' +
       'Add reinforced hydraulic pistons along its arms and legs. Polish key armor plates to a cleaner finish while keeping the weathered base. ' +
@@ -109,7 +114,7 @@ const EVOLUTION_TESTS = [
     direction: 'CHAOS',
     strength: 0.55,
     faction_style:
-      'dark fey forest creature, twisted ancient wood, painted like Brian Froud',
+      'dark fey forest creature, twisted ancient wood, in the style of Arthur Rackham and Edmund Dulac',
     transform_instruction:
       'Transform this forest root creature with violent Chaos energy. ' +
       'Its knothole eyes now burn with intense predatory green fire. Jagged thorns erupt aggressively from its joints and spine. ' +
@@ -126,7 +131,7 @@ const EVOLUTION_TESTS = [
     direction: 'CHAOS',
     strength: 0.55,
     faction_style:
-      'grotesque infernal creature, fused bone and volcanic rock, painted like Wayne Barlowe',
+      'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
     transform_instruction:
       'Transform this infernal bone creature with explosive Chaos energy. ' +
       'Deep glowing lava cracks split open across its entire body like volcanic fissures. A corona of hellfire erupts from its back and shoulders. ' +

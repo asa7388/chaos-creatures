@@ -282,11 +282,16 @@ final class BattleScene: SKScene {
 
     /// Animate a card being played to the board
     func animateCardPlayed(_ data: CardPlayedData) {
+        // Spells have no slot and no creature data
         guard let slot = data.slot, let creatureData = data.creature else {
             // Spell card — show spell effect
             animateSpellCast(data)
             return
         }
+
+        // Note: Planar Ruins are also placed on the board using CreatureNode.
+        // The server sends them with attack=0 and the CreatureNode displays accordingly.
+        // Ruins use the same board slots as creatures.
 
         let isPlayer = (data.player == lastGameState?.mySide)
         let boardNode = isPlayer ? playerBoard! : opponentBoard!
@@ -640,6 +645,53 @@ final class BattleScene: SKScene {
         }
     }
 
+    // MARK: - Ruin Events
+
+    /// Animate a Planar Ruin being destroyed
+    func animateRuinDestroyed(_ data: RuinDestroyedData) {
+        guard let node = creatureNodes[data.ruinId] else {
+            stateMachine?.animationDidComplete()
+            return
+        }
+
+        // SFX: death (ruins use the same destruction sound)
+        BattleAudioManager.shared.playSFX(.death, in: self)
+
+        // Ruin destruction: crumble/fade effect
+        DeathAction.playDeath(creature: node, faction: node.factionShortName, in: self) { [weak self] in
+            self?.creatureNodes.removeValue(forKey: data.ruinId)
+            let board = (data.player == self?.lastGameState?.mySide) ? self?.playerBoard : self?.opponentBoard
+            board?.removeCreature(id: data.ruinId)
+            self?.stateMachine?.animationDidComplete()
+        }
+    }
+
+    /// Animate a Planar Ruin's passive effect triggering
+    func animateRuinPassiveEffect(_ data: RuinPassiveEffectData) {
+        guard let node = creatureNodes[data.ruinId] else {
+            stateMachine?.animationDidComplete()
+            return
+        }
+
+        // Brief glow pulse on the ruin to indicate its passive activated
+        let glowColor: UIColor = SK.Colors.orderBlue
+        let pulse = SKAction.sequence([
+            SKAction.colorize(with: glowColor, colorBlendFactor: 0.6, duration: 0.2),
+            SKAction.colorize(withColorBlendFactor: 0, duration: 0.4)
+        ])
+        node.run(pulse)
+
+        // Show a small label with the ruin's effect description
+        EventSlideAction.showEvent(
+            eventName: data.ruinName,
+            eventType: .order,
+            description: data.effectDescription,
+            in: self
+        ) { [weak self] in
+            self?.stateMachine?.animationDidComplete()
+        }
+    }
+
     // MARK: - Touch Handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -940,6 +992,10 @@ extension BattleScene: BattleStateMachineDelegate {
                 }
             }
             sm.animationDidComplete()
+        case .ruinDestroyed(let data):
+            animateRuinDestroyed(data)
+        case .ruinPassiveEffect(let data):
+            animateRuinPassiveEffect(data)
         default:
             sm.animationDidComplete()
         }

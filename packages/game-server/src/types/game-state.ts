@@ -124,6 +124,27 @@ export interface BattleCreature extends BattleCard {
 
   // Board position
   board_slot: number;
+
+  // Summoning sickness (cannot attack on deployment turn unless Haste)
+  summoning_sick: boolean;
+
+  // Ward protection (cannot be targeted by opponent modifier effects for 1 turn)
+  ward_active: boolean;
+}
+
+// ─── Lingering Effect (Persist mechanic — persists after creature death) ─────────────
+
+export interface LingeringEffect {
+  /** Unique ID for tracking */
+  id: string;
+  /** The effect to apply each turn */
+  effect: Effect;
+  /** Turns remaining (decremented at start of turn, removed at 0) */
+  turns_remaining: number;
+  /** Source creature name for logging */
+  source_name: string;
+  /** Source creature instance_id for tracking */
+  source_creature_id: string;
 }
 
 // ─── Battle Ruin (Planar Ruin on board) ─────────────
@@ -190,6 +211,9 @@ export interface BattlePlayer {
   // Whether a Planar Ruin is currently on the board
   ruin_on_board: boolean;
 
+  // Lingering effects (from Persist mechanic — death triggers that persist after creature removal)
+  lingering_effects: LingeringEffect[];
+
   // Hand
   hand: BattleCard[];
 
@@ -235,6 +259,8 @@ export interface GameState {
   // Combat state
   declared_attackers: string[];
   blocker_assignments: BlockerAssignment[];
+  // Map of attacker_id -> ruin_id for creatures declared as attacking ruins
+  ruin_attack_targets: Record<string, string>;
 
   // Chaos roll state
   last_roll_value: number | null;

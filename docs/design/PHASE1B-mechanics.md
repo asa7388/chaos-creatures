@@ -1,1451 +1,884 @@
-# PHASE1B — Mechanics Design: Faction Expansion
+# PHASE1B --- Mechanics Expansion: New Factions, New Keywords, Modifier Pools
 
-Working document for the faction expansion mechanical design. Will be incorporated into 01-battle-mechanics.md and 02-card-data-model.md in Phase 2.
+This document defines the complete mechanical design for the Chaos Creatures faction expansion: the Celestial Crusade (Exalt), The Endless (Persist), Haste and Ward keywords, all 144 faction modifiers (48 Celestial + 48 Endless + 48 rethemed Ironwright), starter decks, and balance analysis.
+
+**Depends on:** `01-battle-mechanics.md` (PP budget system, modifier pool structure, keyword definitions, combat resolution), `00-game-design-master.md` (systems overview), `02-card-data-model.md` (data structures), `11-lore-bible.md` (faction identities), `PLAN-faction-expansion.md` (master plan)
 
 ---
 
 ## Revision Log
 
-| Date | Change | Section(s) |
+| Date | Version | Changes |
 |---|---|---|
-| 2026-02-18 | Initial creation. Full mechanical design for Exalt, Persist, Haste, Ward, 9x9 keyword matrix, 144 faction modifiers, Ironwright retheme, starter decks, balance analysis. | All |
+| 2026-02-18 | v1.0 | Initial creation --- full mechanics expansion: Exalt, Persist, Haste, Ward, 9x9 keyword matrix, 144 faction modifiers (CF01-CF48, EF01-EF48, IF01-IF48), 2 starter decks, balance analysis |
 
 ---
 
 ## Table of Contents
 
-1. [Exalt Mechanic (Celestial Crusade)](#1-exalt-mechanic)
-2. [Celestial Faction Modifiers (CF01-CF48)](#2-celestial-faction-modifiers)
-3. [Persist Mechanic (The Endless)](#3-persist-mechanic)
-4. [Endless Faction Modifiers (EF01-EF48)](#4-endless-faction-modifiers)
-5. [Ironwright Modifier Retheme (IF01-IF48)](#5-ironwright-modifier-retheme)
-6. [Haste Keyword](#6-haste-keyword)
-7. [Ward Keyword](#7-ward-keyword)
-8. [Full 9x9 Keyword Interaction Matrix](#8-keyword-interaction-matrix)
+1. [Exalt Mechanic (Celestial Crusade)](#1-exalt-mechanic-celestial-crusade)
+2. [Persist Mechanic (The Endless)](#2-persist-mechanic-the-endless)
+3. [Haste Keyword](#3-haste-keyword)
+4. [Ward Keyword](#4-ward-keyword)
+5. [Keyword Interaction Matrix (9x9)](#5-keyword-interaction-matrix-9x9)
+6. [Celestial Faction Modifiers (CF01-CF48)](#6-celestial-faction-modifiers-cf01-cf48)
+7. [Endless Faction Modifiers (EF01-EF48)](#7-endless-faction-modifiers-ef01-ef48)
+8. [Rethemed Ironwright Modifiers (IF01-IF48)](#8-rethemed-ironwright-modifiers-if01-if48)
 9. [Celestial Starter Deck](#9-celestial-starter-deck)
 10. [Endless Starter Deck](#10-endless-starter-deck)
-11. [Balance Analysis: 5 Mechanics x 9 Keywords](#11-balance-analysis)
+11. [Balance Analysis](#11-balance-analysis)
 
 ---
 
-## 1. Exalt Mechanic
+## 1. Exalt Mechanic (Celestial Crusade)
 
-### Overview
+### Core Rule
 
-**Exalt** is the exclusive mechanic of the Celestial Crusade faction. Exalt modifiers provide aura effects that benefit the controlling player's board when specific board conditions are met. The Celestial player wins by building a wide, stable formation where every creature empowers every other creature through divine mandate.
+**Exalt** is the exclusive mechanic of the Celestial Crusade. Exalt modifiers provide aura effects that benefit all friendly creatures when a board-presence threshold is met. The power is in the formation --- a single Celestial creature is ordinary, but a board of Celestial creatures amplifying each other through Exalt auras becomes overwhelming.
 
-### Core Rules
+**Rule text:** *"Exalt N --- [Effect]. (While you control N or more creatures, all friendly creatures gain [Effect].)"*
 
-1. **Exalt effects are conditional auras.** Each Exalt modifier has a threshold condition (e.g., "while you control 3+ creatures") and an aura effect that applies when the condition is met.
+Exalt is a continuous aura. It checks the board state in real-time. The instant the creature count drops below the threshold, the Exalt bonus deactivates for ALL sources that required that threshold. The instant the count meets or exceeds the threshold again, the bonus reactivates.
 
-2. **Exalt auras affect ALL friendly creatures** (including the source creature), unless the modifier text specifies otherwise. This is distinct from Bond (Fey), which often references adjacent creatures or other Bond-holders specifically. Exalt is about divine commandment -- all are uplifted.
+### Exalt Thresholds
 
-3. **Exalt thresholds are creature-count based.** The primary trigger is the number of friendly creatures on the board. Early-tier Exalt modifiers use low thresholds (2+ creatures). Late-tier Exalt modifiers use high thresholds (3+ or 4+ creatures) for stronger effects.
-
-4. **Exalt auras are NOT cumulative by default.** If two creatures both have "Exalt: while you control 3+ creatures, all friendly creatures get +1 ATK," each creature gets +2 ATK total (one from each source). The auras stack from different sources but a single source only applies its effect once.
-
-5. **Exalt collapses when the threshold is not met.** If a board wipe or targeted removal drops the creature count below the threshold, the aura deactivates immediately. This is the core weakness -- Exalt is powerful when the board is wide but fragile to removal.
-
-6. **Exalt interacts with the Chaos Roll system through attunement:**
-   - **Order-attuned Exalt modifiers** lean defensive: HP auras, Shield propagation, healing auras. These reward building and holding a stable formation.
-   - **Chaos-attuned Exalt modifiers** lean offensive: ATK auras, damage-dealing auras, keyword sharing. These reward pushing aggression with a full board.
-
-### Exalt Threshold Tiers
-
-| Threshold | Difficulty | Typical Power | Design Notes |
+| Threshold | Designation | Typical Modifier Tier | Design Intent |
 |---|---|---|---|
-| 2+ creatures | Easy | Low | Early-tier modifiers. Met with just 2 creatures on board. Modest bonuses. |
-| 3+ creatures | Medium | Moderate | Core Exalt threshold. Requires committing 3+ board slots. |
-| 4+ creatures | Hard | High | Late-tier modifiers. Almost-full board required. Powerful but fragile. |
-| Full board (5) | Very Hard | Very High | Rare, Legendary-tier effects only. Maximum investment, maximum reward. |
-
-### Exalt vs. Other Mechanics
-
-| Matchup | Dynamic |
-|---|---|
-| Exalt vs. Augment (Ironwright) | Wide board vs. tall stack. Exalt wants many creatures; Augment wants one super-creature. Board wipes hurt Exalt more. Targeted removal hurts Augment more. |
-| Exalt vs. Bond (Fey) | Both are board-centric, but Exalt auras are global (all creatures) while Bond effects are network-specific (creatures with Bond modifiers). Exalt is simpler but less resilient to partial removal. |
-| Exalt vs. Corruption (Demonic) | Formation vs. burn. Demonic aggro can shatter the Celestial formation before it stabilizes. But if Celestial stabilizes with Shield auras and healing, Demonic burns out. |
-| Exalt vs. Persist (Endless) | Formation vs. attrition. Endless wants to trade and get death triggers; Celestial wants to avoid losing creatures. Celestial's Shield auras and HP buffs resist Persist's death-based value. But if Endless can force enough trades, the Exalt formation collapses and Persist triggers fire. |
-
-### Weakness Profile
-
-- **Board wipes** collapse all auras simultaneously. A single "deal damage to all" effect can cascade -- killing one creature drops below threshold, removing the aura, causing other creatures to lose HP buffs and potentially die too.
-- **Targeted removal of high-value Exalt sources.** If the creature providing the best aura is killed, the entire board weakens.
-- **Low individual creature power.** Celestial creatures are slightly below-curve individually (paying for the aura potential). A Celestial creature alone on the board with an Exalt modifier has a dead modifier.
-- **Slow startup.** Exalt needs 2-3 creatures on board before any aura activates. Aggro decks can punish the setup phase.
-
----
-
-## 2. Celestial Faction Modifiers (CF01-CF48)
-
-### Pool Structure Reference
-
-12 pools: 3 PP budgets (1, 2, 3) x 2 tier brackets (Early, Late) x 2 attunements (Order, Chaos).
-4 modifiers per pool = 48 total.
-
-### Pool 1: 1 PP, Early Tier, Order-Attuned (CF01-CF04)
-
-**CF01 — Blessed Vigil**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: +1 HP while you control 2+ creatures (Exalt). Attuned bonus: +1 HP to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Golden filigree armor plates with soft divine glow at the joints
-
-**CF02 — Watchful Grace**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: -1 instability. Exalt aura: while you control 2+ creatures, this creature has +1 HP. Attuned bonus: heal this creature 1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Luminous eyes radiating pale golden light, a halo of tiny orbiting motes
-
-**CF03 — Crusader's Oath**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: while you control 2+ creatures, all friendly creatures get +0/+1 (Exalt aura). Attuned bonus: this creature gains Reach this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Inscribed oath-marks glowing on pauldrons in celestial script
-
-**CF04 — Pilgrim's Resolve**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: +1 HP. Exalt condition: while you control 3+ creatures, this creature also gets +1 ATK. Attuned bonus: none (strong base covers budget).
-- **Instability adjustment**: 0
-- **Visual prompt**: Simple iron-and-gold staff humming with restrained divine energy
-
-### Pool 2: 1 PP, Early Tier, Chaos-Attuned (CF05-CF08)
-
-**CF05 — Righteous Fury**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 ATK while you control 2+ creatures (Exalt). Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Flaming blade wreathed in divine fire, sparks of gold
-
-**CF06 — Zealot's Brand**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 instability. Exalt aura: while you control 2+ creatures, all friendly creatures get +1 ATK. Attuned bonus: +1 ATK to this creature.
-- **Instability adjustment**: +1
-- **Visual prompt**: Branded celestial sigil seared into the creature's forehead, pulsing red-gold
-
-**CF07 — Smiting Presence**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: while you control 2+ creatures, this creature gets +1 ATK (Exalt). Attuned bonus: deal 1 damage to a random enemy creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Radiant corona of holy fire expanding outward from the creature
-
-**CF08 — Wrath of the Chosen**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 ATK. Exalt condition: while you control 3+ creatures, this creature also has Piercing. Attuned bonus: none (Piercing grant is high value for 1PP).
-- **Instability adjustment**: 0
-- **Visual prompt**: Celestial lance tip glowing with penetrating white-gold energy
-
-### Pool 3: 2 PP, Early Tier, Order-Attuned (CF09-CF12)
-
-**CF09 — Divine Aegis**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: Exalt aura -- while you control 3+ creatures, all friendly creatures get +0/+1. Attuned bonus: grant Shield to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Translucent golden dome of divine light sheltering the formation
-
-**CF10 — Consecrated Ground**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: +1 HP. Exalt aura: while you control 2+ creatures, all friendly creatures heal 1 HP at start of your turn. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ground beneath the creature radiating warm golden light in expanding rings
-
-**CF11 — Sanctified Armor**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: -1 instability, +1 HP. Exalt condition: while you control 3+ creatures, this creature gets +1 ATK. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Ivory-and-gold plate armor engraved with protective wards
-
-**CF12 — Heaven's Bulwark**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: Exalt aura -- while you control 2+ creatures, this creature and adjacent creatures get +0/+1. Attuned bonus: this creature gains Taunt this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Massive tower shield inscribed with celestial commandments, radiating protective force
-
-### Pool 4: 2 PP, Early Tier, Chaos-Attuned (CF13-CF16)
-
-**CF13 — Holy Judgment**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: Exalt aura -- while you control 3+ creatures, all friendly creatures get +1/+0. Attuned bonus: +1 ATK to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Burning golden eyes casting judgment-light on all enemies
-
-**CF14 — Crusade Banner**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 ATK, +1 HP. Exalt condition: while you control 2+ creatures, all friendly creatures get +1 ATK. Attuned bonus: none (strong base + aura).
-- **Instability adjustment**: 0
-- **Visual prompt**: Holy battle standard streaming divine fire, inspiring nearby warriors
-
-**CF15 — Divine Wrath**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 instability, +1 ATK. Exalt aura: while you control 3+ creatures, all friendly creatures get +1 ATK. Attuned bonus: +1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Multiple wings unfurling wreathed in righteous flame
-
-**CF16 — Celestial Charge**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: Exalt -- while you control 2+ creatures, this creature gets +2 ATK. Attuned bonus: this creature gains Piercing this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Divine lance couched for a charge, trailing golden contrail
-
-### Pool 5: 3 PP, Early Tier, Order-Attuned (CF17-CF20)
-
-**CF17 — Archangel's Mantle**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: Shield. Exalt aura: while you control 3+ creatures, all friendly creatures get +0/+1. Attuned bonus: regenerate Shield at start of turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Wings of pure light forming a protective canopy over the entire formation
-
-**CF18 — Radiant Sanctuary**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: -1 instability, +2 HP. Exalt aura: while you control 2+ creatures, all friendly creatures heal 1 HP at start of turn. Attuned bonus: +1 HP to all friendly creatures.
-- **Instability adjustment**: -1
-- **Visual prompt**: Cathedral-like energy structure forming around the creature, stained-glass light
-
-**CF19 — Divine Proclamation**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: +1 ATK, +1 HP. Exalt aura: while you control 3+ creatures, all friendly creatures get +1/+1. Attuned bonus: none (powerful aura covers budget).
-- **Instability adjustment**: 0
-- **Visual prompt**: Scroll of divine decree unfurling, letters burning with holy authority
-
-**CF20 — Bastion of Faith**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: Shield, +1 HP. Exalt condition: while you control 4+ creatures, all friendly creatures gain Shield. Attuned bonus: +0/+1 to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Fortress-like divine construct materializing around the creature, battlements of light
-
-### Pool 6: 3 PP, Early Tier, Chaos-Attuned (CF21-CF24)
-
-**CF21 — Seraphic Assault**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +2 ATK. Exalt aura: while you control 3+ creatures, all friendly creatures get +1 ATK. Attuned bonus: +1 ATK to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Six-winged seraph-form wreathed in holy fire, each wing tipped with a blade
-
-**CF22 — Celestial Condemnation**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +1 instability, +1 ATK, +1 HP. Exalt aura: while you control 3+ creatures, all friendly creatures get +1 ATK. Attuned bonus: deal 1 damage to all enemy creatures.
-- **Instability adjustment**: +1
-- **Visual prompt**: Pillars of holy fire descending from above to strike at the unworthy
-
-**CF23 — War of the Righteous**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +1 ATK. Exalt aura: while you control 2+ creatures, all friendly creatures get +1 ATK and Piercing. Attuned bonus: none (Piercing aura is very high value).
-- **Instability adjustment**: 0
-- **Visual prompt**: Holy weapons manifesting in the hands of all nearby allies, glowing gold
-
-**CF24 — Blazing Crusade**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +2 ATK, +1 HP. Exalt condition: while you control 4+ creatures, deal 2 damage to the enemy avatar at start of your turn. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Divine fire erupting from the ground in a line, burning a path toward the enemy
-
-### Pool 7: 1 PP, Late Tier, Order-Attuned (CF25-CF28)
-
-**CF25 — Eternal Vigil**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: while you control 2+ creatures, all friendly creatures get +0/+1 (Exalt aura). Attuned bonus: if this creature has Shield, +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Angelic sentinel standing guard with immovable divine authority
-
-**CF26 — Martyr's Blessing**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: -1 instability. Exalt condition: when a friendly creature dies while you control 3+ creatures, heal your avatar 2 HP. Attuned bonus: +1 HP to this creature.
-- **Instability adjustment**: -1
-- **Visual prompt**: Gentle golden light rising from fallen allies, absorbed by the surviving formation
-
-**CF27 — Radiant Persistence**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: Exalt aura -- while you control 3+ creatures, all friendly creatures get +0/+1. Attuned bonus: this creature gains Ward this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Persistent halo of golden motes orbiting the entire formation
-
-**CF28 — Celestial Anchor**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: +1 HP. Exalt condition: while you control 2+ creatures, this creature and one random friendly creature gain Reach. Attuned bonus: none.
-- **Instability adjustment**: 0
-- **Visual prompt**: Chains of divine light tethering the creature to the battlefield, immovable
-
-### Pool 8: 1 PP, Late Tier, Chaos-Attuned (CF29-CF32)
-
-**CF29 — Burning Conviction**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 ATK while you control 2+ creatures (Exalt). Attuned bonus: deal 1 damage to the enemy creature with the lowest HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Flames of righteous anger flickering along the creature's weapons
-
-**CF30 — Zealot's Frenzy**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 instability. Exalt condition: while you control 3+ creatures, this creature gets +2 ATK. Attuned bonus: +1 ATK this turn. Order penalty: -1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Wild-eyed zealot energy, divine fire replacing rational thought
-
-**CF31 — Rapture Strike**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: Exalt aura -- while you control 2+ creatures, all friendly creatures get +1 ATK. Attuned bonus: this creature gains Haste (relevant for newly played creatures with this modifier from a prior evolution).
-- **Instability adjustment**: 0
-- **Visual prompt**: Sudden burst of transcendent speed, afterimage trailing divine light
-
-**CF32 — Scourge of the Faithless**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 ATK. Exalt condition: while you control 4+ creatures, deal 1 damage to all enemy creatures at start of your turn. Attuned bonus: none (recurring AoE is powerful).
-- **Instability adjustment**: 0
-- **Visual prompt**: Divine radiance so bright it burns the unholy, light as a weapon
-
-### Pool 9: 2 PP, Late Tier, Order-Attuned (CF33-CF36)
-
-**CF33 — Throne of Grace**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: Exalt aura -- while you control 3+ creatures, all friendly creatures get +0/+1 and heal 1 HP at start of your turn. Attuned bonus: this creature gains Shield.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ethereal throne of golden light manifesting behind the creature
-
-**CF34 — Absolution**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: -1 instability, +1 HP. Exalt condition: while you control 3+ creatures, when a friendly creature dies, give all surviving friendly creatures +0/+2 permanently. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Circle of absolution on the ground, golden runes activating upon sacrifice
-
-**CF35 — Heaven's Mandate**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: Exalt aura -- while you control 2+ creatures, all friendly creatures get +1/+1. Attuned bonus: draw 1 card. Order penalty on opposite: none.
-- **Instability adjustment**: 0
-- **Visual prompt**: Divine decree written across the sky in burning celestial script
-
-**CF36 — Shield of the Faithful**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: Shield. Exalt condition: while you control 3+ creatures with Shield, all friendly creatures get +0/+2. Attuned bonus: regenerate Shield at start of turn if 3+ creatures on board.
-- **Instability adjustment**: 0
-- **Visual prompt**: Interlocking shield-barriers of holy light connecting all friendly creatures
-
-### Pool 10: 2 PP, Late Tier, Chaos-Attuned (CF37-CF40)
-
-**CF37 — Divine Retribution**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: Exalt aura -- while you control 3+ creatures, all friendly creatures get +1 ATK. Attuned bonus: deal 2 damage to a random enemy creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Spears of golden light striking down from above upon the enemy
-
-**CF38 — Wrath Incarnate**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 instability, +2 ATK. Exalt condition: while you control 3+ creatures, this creature gains Piercing. Attuned bonus: +1 ATK. Order penalty: -1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Creature transformed into an avatar of divine wrath, eyes and hands burning gold
-
-**CF39 — Crusader's Fervor**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: Exalt aura -- while you control 4+ creatures, all friendly creatures get +2 ATK. Attuned bonus: none (powerful aura at high threshold).
-- **Instability adjustment**: 0
-- **Visual prompt**: Battle frenzy of holy purpose, each warrior empowered by the group's devotion
-
-**CF40 — Smite the Wicked**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 ATK, +1 HP. Exalt condition: while you control 3+ creatures, when this creature attacks, deal 1 damage to all enemy creatures. Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Shockwave of divine energy radiating from every sword strike
-
-### Pool 11: 3 PP, Late Tier, Order-Attuned (CF41-CF44)
-
-**CF41 — Ascension Protocol**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: Shield, +1 HP. Exalt aura: while you control 3+ creatures, all friendly creatures get +1/+1 and gain Ward for 1 turn after deployment. Attuned bonus: +0/+2 to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ascending spiral of pure light, creature lifting partially off the ground in divine transcendence
-
-**CF42 — Covenant of the Undying**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: -2 instability, +2 HP. Exalt condition: while you control 4+ creatures, the first friendly creature that would die each turn instead survives with 1 HP. Attuned bonus: +1 HP to all friendly creatures.
-- **Instability adjustment**: -2
-- **Visual prompt**: Binding covenant runes connecting all creatures in golden chains of mutual protection
-
-**CF43 — Paradise Restored**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: +1 ATK, +2 HP. Exalt aura: while you control 3+ creatures, all friendly creatures heal 2 HP at start of your turn. Attuned bonus: all friendly creatures gain Shield (once per game).
-- **Instability adjustment**: 0
-- **Visual prompt**: Garden of divine light blooming around the formation, golden flowers of pure energy
-
-**CF44 — Eternal Formation**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: Shield, Taunt. Exalt condition: while you control 4+ creatures, this creature has +3 HP and all Exalt aura effects on your board are doubled. Attuned bonus: regenerate Shield.
-- **Instability adjustment**: 0
-- **Visual prompt**: The creature becomes the keystone of an architectural divine construct, all allies connected through it
-
-### Pool 12: 3 PP, Late Tier, Chaos-Attuned (CF45-CF48)
-
-**CF45 — Armageddon Crusade**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 ATK, +1 HP. Exalt aura: while you control 3+ creatures, all friendly creatures get +2 ATK. Attuned bonus: deal 1 damage to all enemy creatures. Order penalty: -1 ATK to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Apocalyptic divine army manifesting behind the creature, holy war at its peak
-
-**CF46 — Judgment Day**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 instability, +3 ATK. Exalt condition: while you control 4+ creatures, deal 3 damage to the enemy avatar at start of your turn. Attuned bonus: +2 ATK this turn. Order penalty: -2 ATK.
-- **Instability adjustment**: +2
-- **Visual prompt**: The sky splitting open to reveal a blinding divine tribunal, fire raining down
-
-**CF47 — Final Crusade**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +1 ATK. Exalt aura: while you control 3+ creatures, all friendly creatures get +1 ATK and Piercing. Attuned bonus: +2 ATK to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Holy weapons in every hand, divine fire on every blade, unstoppable crusading force
-
-**CF48 — Celestial Purge**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 ATK. Exalt condition: while you control 5 creatures (full board), all friendly creatures get +3 ATK and Piercing. Attuned bonus: deal 2 damage to all enemy creatures. Order penalty: this creature takes 2 damage.
-- **Instability adjustment**: 0
-- **Visual prompt**: Purifying holy fire consuming everything, the boundary between divine and mortal dissolving
-
----
-
-## 3. Persist Mechanic
-
-### Overview
-
-**Persist** is the exclusive mechanic of The Endless faction. Persist modifiers trigger effects when creatures die or create lingering effects that continue after death. The Endless player wins through attrition -- every creature that dies (on either side) generates value. Trading is not just acceptable, it is the strategy.
-
-### Core Rules
-
-1. **Persist effects trigger on death.** The primary trigger is ON_DEATH -- when the creature carrying the Persist modifier is destroyed. This includes death from combat damage, spell damage, Chaos events, and any other source.
-
-2. **Persist lingering effects persist after death.** Some Persist modifiers create a lasting effect that remains active for a number of turns after the creature dies. These are tracked as board-level effects, not creature-level effects.
-
-3. **Persist effects can trigger from ANY death.** Late-tier Persist modifiers can trigger when other friendly creatures die (not just the carrier). This makes board wipes actively dangerous for the opponent -- killing 3 Endless creatures might trigger 3+ death effects.
-
-4. **Persist effects cannot trigger more than once per creature per death.** A creature with 3 Persist modifiers that dies triggers all 3 death effects, but each modifier fires exactly once. No recursion loops.
-
-5. **Persist does NOT bring creatures back.** Persist is about death consequences, not resurrection. Creatures that die stay dead. The value comes from the effects they leave behind, not from cheating death.
-
-6. **Persist interacts with the Chaos Roll system through attunement:**
-   - **Order-attuned Persist modifiers** lean toward sustain and board preservation: healing allies on death, buffing survivors, creating lingering defensive effects.
-   - **Chaos-attuned Persist modifiers** lean toward aggression and punishment: dealing damage on death, debuffing enemies, creating lingering offensive effects.
-
-### Persist Effect Categories
-
-| Category | Description | Examples |
+| Exalt 2 | Minor Exalt | 1 PP (Early) | Easy to activate --- any two creatures on board. Small bonuses. Rewards simply playing the game. |
+| Exalt 3 | Standard Exalt | 2 PP (Early/Late) | Moderate commitment. Three creatures means investing board slots in bodies rather than quality. The core Celestial breakpoint. |
+| Exalt 4 | Major Exalt | 2-3 PP (Late) | Heavy board commitment. Four creatures out of five slots. Powerful effects but fragile to removal. |
+| Exalt 5 | Supreme Exalt | 3 PP (Late only) | Full board. Maximum reward but maximum vulnerability. A single removal collapses the bonus. Legendary-tier payoffs. |
+
+**Threshold counts ALL friendly creatures**, not just creatures with Exalt modifiers. A Celestial board with 2 Exalt creatures and 2 vanilla creatures still counts as 4 creatures for threshold purposes. This is intentional --- Exalt rewards going wide with any creatures, not just Exalt-modified ones.
+
+### Exalt Stacking
+
+Multiple Exalt sources **stack additively**. If Creature A has "Exalt 3 --- all friendly creatures get +1 ATK" and Creature B has "Exalt 3 --- all friendly creatures get +1 HP," then when you control 3+ creatures, all friendly creatures (including A and B themselves) get +1 ATK and +1 HP.
+
+**Exalt bonuses from the same creature do NOT stack with themselves.** A creature with two Exalt modifiers that both say "+1 ATK" at Exalt 3 provides +2 ATK to all friendlies (two separate sources). This is correct --- the creature invested two modifier slots into Exalt and is rewarded with doubled output.
+
+**Exalt bonuses affect the source creature.** Creature A with Exalt 3 +1 ATK gives itself +1 ATK as well. The Celestial creature is part of the formation it inspires.
+
+### Exalt and Creature Death
+
+When a creature with an Exalt modifier dies, its Exalt aura immediately deactivates. This has two compounding effects:
+
+1. The aura bonus provided by that creature is lost (direct loss).
+2. The creature count drops, potentially collapsing OTHER Exalt thresholds (cascade loss).
+
+**Example cascade:** You have 4 creatures, each with Exalt 3 and Exalt 4 effects active. An opponent kills 1 creature. Now you have 3 creatures. The dead creature's auras are gone, AND all Exalt 4 effects on the remaining 3 creatures deactivate. You lost one creature but lost the effective power of four Exalt 4 bonuses.
+
+This cascade vulnerability is the core weakness of the Celestial Crusade. Board wipes are catastrophic. Targeted removal of any single creature degrades the entire formation.
+
+### Exalt and Non-Creature Board Occupants
+
+Stabilizers and Planar Ruins occupy creature slots but are NOT creatures. They do NOT count toward Exalt thresholds. A board with 2 creatures and 1 stabilizer has an Exalt count of 2, not 3. This creates a meaningful tension for Celestial players: stabilizers/ruins cost board slots that could be creatures contributing to Exalt.
+
+### Exalt Timing
+
+Exalt checks are continuous --- they do not fire at specific phases. Whenever the board state changes (creature played, creature dies, creature leaves), Exalt thresholds are recalculated immediately. Stat changes from Exalt activation/deactivation apply before any subsequent resolution steps.
+
+**Example:** During Phase 8 (Combat Resolution), if a blocking creature dies from combat damage and the board drops below an Exalt threshold, the Exalt bonuses deactivate immediately. If another combat pair resolves after this, the remaining creatures fight WITHOUT the Exalt bonus. Board slot resolution is still left-to-right.
+
+### Weaknesses and Counterplay
+
+- **Board wipes** (spells dealing damage to all creatures, Upheaval chaos event) collapse Exalt bonuses entirely.
+- **Targeted removal** of any creature degrades all Exalt thresholds. Removing the creature with the most Exalt modifiers is especially punishing.
+- **Deathtouch** efficiently removes Celestial creatures regardless of Exalt-buffed HP.
+- **Flying** bypasses Celestial Taunt formations that protect Exalt sources.
+- **Aggro rush** can pressure before Celestial assembles enough creatures for meaningful Exalt thresholds.
+- **Corruption self-damage** (Demonic) race can outpace Exalt's incremental value.
+
+### Keyword Affinities
+
+| Keyword | Synergy with Exalt | Rating |
 |---|---|---|
-| Death Trigger (damage) | Deal damage when this creature dies | "On death: deal 2 damage to a random enemy creature" |
-| Death Trigger (buff) | Buff allies when this creature dies | "On death: all friendly creatures get +1/+1 permanently" |
-| Death Trigger (resource) | Generate resources on death | "On death: draw 1 card" or "On death: gain 1 chaos mote" |
-| Lingering Effect | Create a board-level effect that lasts N turns after death | "On death: for 2 turns, all friendly creatures deal +1 damage" |
-| Death Sympathy | Trigger when ANY friendly creature dies | "When a friendly creature dies: this creature gets +1 ATK permanently" |
-| Retaliation | Punish the opponent for killing | "On death: deal this creature's ATK as damage to the creature that killed it" |
-
-### Persist vs. Other Mechanics
-
-| Matchup | Dynamic |
-|---|---|
-| Persist vs. Augment (Ironwright) | Attrition vs. investment. Augment stacks value on one creature that Persist wants to kill. But Persist's on-death value means even if Augment trades efficiently, the Endless player gets compensated. Augment's weakness to 1-for-1 removal is Persist's strength. |
-| Persist vs. Bond (Fey) | Death triggers vs. board network. Fey wants to keep creatures alive for Bond; Endless profits from death. Forcing trades is key for Endless. If Fey can avoid trading (using Taunt and Shield to protect the network), Persist modifiers sit unused. |
-| Persist vs. Corruption (Demonic) | Both factions thrive on creature death but from different angles. Demonic kills its own creatures for burst; Endless profits from all death. This matchup creates explosive, volatile games where creatures die constantly and both players generate value from it. |
-| Persist vs. Exalt (Celestial) | Attrition vs. formation. Celestial wants a wide board; Endless wants to pick it apart. Every creature Endless kills weakens the Exalt auras AND triggers Persist effects. But Celestial's Shield auras and HP buffs make it hard to force trades. |
-
-### Weakness Profile
-
-- **Fast aggro that goes face.** If the opponent ignores the Endless player's creatures and just attacks the avatar, Persist modifiers never trigger (the creatures don't die). Endless needs the opponent to interact with its board.
-- **Effects that prevent death triggers.** Silence effects, exile effects, or "prevent death trigger" effects (if added in future) shut down Persist entirely.
-- **Shield.** Shield prevents the Endless player's creatures from trading in combat. A shielded creature absorbs a Deathtouch hit without dying, wasting the Persist setup.
-- **Slow buildup.** Persist modifiers do nothing while the creature is alive. The value is back-loaded into the death moment. If the game ends before creatures die, Persist was dead weight.
+| Shield | Protect Exalt sources from removal. Shield on an Exalt creature preserves the aura for an extra hit. | Strong |
+| Ward | Protect Exalt sources from targeted modifier effects on deployment turn. | Strong |
+| Taunt | Force opponents to attack into your Taunt creature instead of your key Exalt sources. Formation defense. | Strong |
+| Lifesteal | Sustain to keep Exalt creatures alive longer. Exalt ATK buffs increase Lifesteal healing. | Moderate |
+| Reach | Defensive --- blocks Flying threats that would bypass Taunt and kill Exalt sources. | Moderate |
+| Haste | Deploy a creature and immediately benefit from the increased Exalt count. Tempo. | Moderate |
+| Flying | Less synergistic --- Flying creatures bypass defenders but Exalt wants formation, not evasion. | Low |
+| Piercing | Exalt ATK buffs increase Piercing overflow damage. Some synergy in aggressive Celestial builds. | Low |
+| Deathtouch | Low synergy --- Deathtouch is most efficient on small creatures, but Exalt wants board presence, not efficiency per creature. | Low |
 
 ---
 
-## 4. Endless Faction Modifiers (EF01-EF48)
+## 2. Persist Mechanic (The Endless)
 
-### Pool 1: 1 PP, Early Tier, Order-Attuned (EF01-EF04)
+### Core Rule
 
-**EF01 — Parting Gift**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: +1 HP. Persist: on death, heal a random friendly creature for 2 HP. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ghostly hands reaching out to mend the wounds of allies as the creature fades
+**Persist** is the exclusive mechanic of The Endless. Persist modifiers create effects that trigger when the creature dies, leave lingering effects on the battlefield after death, or make every kill costly for the opponent. The Endless do not fear death --- they weaponize it.
 
-**EF02 — Spectral Residue**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: -1 instability. Persist: on death, give a random friendly creature +0/+1 permanently. Attuned bonus: +1 HP to this creature.
-- **Instability adjustment**: -1
-- **Visual prompt**: Translucent ectoplasmic mist clinging to nearby allies, strengthening them
+**Rule text:** *"Persist --- [On-death effect]."* or *"Persist --- [Lingering effect] for N turns after this creature dies."*
 
-**EF03 — Undying Will**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: +1 HP. Persist: on death, give all friendly creatures +0/+1 this turn. Attuned bonus: heal your avatar 1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ethereal determination solidifying into protective light around allies
+Persist effects fire during the death-processing step (Phase 8 step 8, or any phase where a creature dies). The creature is already removed from the board when the Persist effect resolves --- it cannot target itself.
 
-**EF04 — Grave Tribute**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: Persist -- on death, draw 1 card. Attuned bonus: +1 HP to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ancient burial coins manifesting around the creature, payment for passage
+### Persist Trigger Types
 
-### Pool 2: 1 PP, Early Tier, Chaos-Attuned (EF05-EF08)
+| Type | Rule | Example | Design Tier |
+|---|---|---|---|
+| **Death Strike** | When this creature dies, deal N damage to a target. | "Persist --- deal 2 damage to a random enemy creature." | Early (1-2 PP) |
+| **Death Buff** | When this creature dies, grant a buff to friendly creatures. | "Persist --- all friendly creatures get +1 ATK permanently." | Early-Late (1-3 PP) |
+| **Death Debuff** | When this creature dies, apply a debuff to enemy creatures. | "Persist --- a random enemy creature gets -2 ATK permanently." | Late (2-3 PP) |
+| **Lingering Effect** | After this creature dies, an effect persists on the battlefield for N turns. | "Persist --- for 2 turns after death, deal 1 damage to all enemy creatures at start of your turn." | Late (2-3 PP) |
+| **Soul Harvest** | When this creature dies, generate a resource or card advantage. | "Persist --- draw 1 card." | Late (2-3 PP) |
+| **Spectral Echo** | When this creature dies, summon a weaker token creature in its slot. | "Persist --- summon a 1/1 Spectre token in this creature's slot." | Late (3 PP) |
 
-**EF05 — Death Rattle**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 ATK. Persist: on death, deal 1 damage to a random enemy creature. Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Bone shards exploding outward from the creature upon destruction
+### Persist Stacking
 
-**EF06 — Necrotic Burst**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 instability. Persist: on death, deal 2 damage to a random enemy creature. Attuned bonus: +1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Sickly green energy detonating upon the creature's demise
+A creature can have multiple Persist modifiers. ALL of them fire when the creature dies, resolving in the order they were acquired (first modifier first). This means a fully evolved Legendary Endless creature with 4 Persist modifiers triggers a chain of 4 death effects.
 
-**EF07 — Vengeful Spirit**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 ATK. Persist: on death, deal 1 damage to the enemy avatar. Attuned bonus: deal 1 additional damage to the enemy avatar on death.
-- **Instability adjustment**: 0
-- **Visual prompt**: Wrathful ghost tearing free from the fallen body, screaming toward the enemy
+**This is intentional and is the core power of The Endless.** Killing a 4-Persist Legendary should feel terrible for the opponent --- like opening Pandora's box. The cost is that the Endless player invested all 4 modifier slots into death triggers instead of combat-relevant effects. The creature fights below curve while alive.
 
-**EF08 — Cursed Touch**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: Persist -- on death, give a random enemy creature -1 ATK permanently. Attuned bonus: +1 ATK to this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Withering curse spreading from the creature's dying grasp
+### Persist and Board State
 
-### Pool 3: 2 PP, Early Tier, Order-Attuned (EF09-EF12)
+**Persist effects resolve AFTER the creature is removed from the board.** The creature's slot is empty. If the Persist effect summons a token (Spectral Echo), the token occupies the now-empty slot.
 
-**EF09 — Soul Shepherd**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: +1 HP. Persist sympathy: when any friendly creature dies, this creature gets +0/+1 permanently. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ghostly flock of spirits orbiting the creature, each a fallen ally's echo
+**Persist effects that reference "friendly creatures" count only creatures still alive on the board** at the time of resolution. Per the existing death-processing rules in `01-battle-mechanics.md` Phase 8 step 8: all destroyed creatures are removed first, THEN on-death effects fire left-to-right. So Persist effects see the board AFTER all combat deaths are removed.
 
-**EF10 — Memento Mori**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: -1 instability, +1 HP. Persist: on death, heal all friendly creatures for 2 HP. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Skull talisman radiating calm, accepting light -- death as peace
+### Lingering Effects
 
-**EF11 — Ancestral Shield**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: +1 HP. Persist: on death, grant Shield to the friendly creature with the lowest HP. Attuned bonus: this creature gains Shield.
-- **Instability adjustment**: 0
-- **Visual prompt**: Spectral shields of fallen ancestors materializing around the weakest ally
+Lingering Persist effects create a "ghost" marker on the battlefield that lasts for a specified number of turns. The marker occupies no slot --- it is tracked as a persistent effect on the controlling player's side.
 
-**EF12 — Last Rites**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: Persist -- on death, give all friendly creatures +0/+2 permanently. Attuned bonus: draw 1 card on death.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ritual circle activating upon the creature's death, empowering survivors with ancient rites
+**Lingering effect tracking:**
+- Each lingering effect has a remaining-turns counter.
+- At the start of the controlling player's turn (Phase 1), lingering effects fire their per-turn effect, then decrement the counter.
+- When the counter reaches 0, the lingering effect is removed.
+- Lingering effects are NOT affected by board wipes, removal spells, or any other effect that targets creatures. They are intangible.
+- Maximum 3 lingering effects active per player at once. If a 4th would be created, the oldest one is removed.
 
-### Pool 4: 2 PP, Early Tier, Chaos-Attuned (EF13-EF16)
+### Spectral Echo Tokens
 
-**EF13 — Grave Eruption**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 ATK. Persist: on death, deal 2 damage to all enemy creatures. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ground splitting open beneath the fallen creature, necrotic energy erupting upward
+Spectral Echo is the most complex Persist type. When it fires, a token creature is summoned in the dead creature's former slot.
 
-**EF14 — Corpse Detonation**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 instability, +1 ATK, +1 HP. Persist: on death, deal damage equal to this creature's ATK to a random enemy creature. Attuned bonus: +1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Volatile necrotic energy building in the creature's core, primed to detonate
+**Token rules:**
+- Tokens are 1/1 creatures with no keywords, no modifiers, and 0 base instability.
+- Tokens DO count as creatures for all purposes (Exalt thresholds, Bond counts, combat, etc.).
+- Tokens do NOT evolve, do NOT earn chaos energy, and do NOT have faction restrictions (they are neutral spectre tokens).
+- Tokens CAN be buffed by events, spells, and other creatures' auras.
+- If the slot is already occupied when Spectral Echo fires (e.g., another Persist summoned a token first), the token is NOT summoned (lost).
+- Token art: a generic translucent spectral figure. Faction-neutral.
 
-**EF15 — Draining Demise**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 ATK. Persist: on death, deal 2 damage to the enemy avatar. Attuned bonus: Lifesteal on this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Life-draining tendrils reaching toward the enemy, darkening as the creature fades
+### Weaknesses and Counterplay
 
-**EF16 — Blight Carrier**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +2 ATK. Persist: on death, give all enemy creatures -1 ATK permanently. Attuned bonus: none (powerful debuff aura).
-- **Instability adjustment**: 0
-- **Visual prompt**: Plague-bearing entity leaving a trail of decay, corruption spreading on contact
+- **Fast aggro** can pressure Endless before their death-trigger value accumulates. Killing cheap Endless creatures with only 1 Persist is not costly enough to slow down an aggressive deck.
+- **Exile/silence effects** (if introduced in future) would prevent Persist from firing.
+- **Shield** absorbs the first Persist damage strike, protecting key creatures from death-trigger chip damage.
+- **Ward** protects creatures from targeted Persist debuffs on their deployment turn.
+- **Avoiding combat** --- an opponent who refuses to attack into Endless creatures (going face with Flying, using spells) can minimize Persist triggers. Endless creatures must die for Persist to matter.
+- **Healing through attrition** --- Order decks that heal past Persist damage and lingering effects can outlast the Endless value.
+- **Wide boards** dilute targeted Persist effects (random targeting spreads damage across many creatures).
 
-### Pool 5: 3 PP, Early Tier, Order-Attuned (EF17-EF20)
+### Keyword Affinities
 
-**EF17 — Requiem**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: Shield, +1 HP. Persist: on death, all friendly creatures gain Shield and +0/+1 permanently. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Mournful hymn manifesting as visible sound waves of pale protective light
-
-**EF18 — Phylactery Binding**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: -1 instability, +2 HP. Persist sympathy: when any friendly creature dies, this creature gets +1/+1 permanently. Attuned bonus: +1 HP, heal this creature 1 HP at start of turn.
-- **Instability adjustment**: -1
-- **Visual prompt**: Glowing phylactery embedded in the creature's chest, pulsing with absorbed souls
-
-**EF19 — Tomb Warden**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: +1 ATK, +1 HP, Taunt. Persist: on death, give the friendly creature with the highest ATK +2/+2 permanently. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ancient armored guardian standing before a crypt, bones fused with stone
-
-**EF20 — Deathless Devotion**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: +2 HP. Persist: on death, heal your avatar for 5 HP and all friendly creatures for 2 HP. Attuned bonus: draw 1 card on death.
-- **Instability adjustment**: 0
-- **Visual prompt**: Radiant ghost ascending upon death, showering healing light down upon allies
-
-### Pool 6: 3 PP, Early Tier, Chaos-Attuned (EF21-EF24)
-
-**EF21 — Mass Grave**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +2 ATK. Persist: on death, deal 3 damage to all enemy creatures. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Skeletal hands erupting from the ground in a wave of necrotic destruction
-
-**EF22 — Soul Bomb**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +1 instability, +2 ATK, +1 HP. Persist: on death, deal damage equal to this creature's ATK to the enemy avatar. Attuned bonus: +2 ATK this turn.
-- **Instability adjustment**: +1
-- **Visual prompt**: Massive concentration of spectral energy building to critical mass, detonation imminent
-
-**EF23 — Lich's Bargain**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +1 ATK, Deathtouch. Persist: on death, give all friendly creatures +2 ATK permanently. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Lich's staff crackling with deadly energy, phylactery chain glowing sickly green
-
-**EF24 — Entropy Cascade**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +3 ATK. Persist: on death, all enemy creatures lose their highest keyword (removed permanently). Attuned bonus: +1 ATK. Order penalty: -1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Cascading wave of entropy radiating from the creature, dissolving magical protections
-
-### Pool 7: 1 PP, Late Tier, Order-Attuned (EF25-EF28)
-
-**EF25 — Ghostly Ward**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: +1 HP. Persist: on death, create a lingering effect for 2 turns: all friendly creatures get +0/+1. Attuned bonus: this creature gains Ward.
-- **Instability adjustment**: 0
-- **Visual prompt**: Protective spectral barrier that remains visible even after the creature is gone
-
-**EF26 — Echoing Sacrifice**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: -1 instability. Persist sympathy: when any friendly creature dies, heal your avatar 1 HP. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Echo of life force returning to the avatar from each fallen ally
-
-**EF27 — Death's Certainty**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: Persist -- on death, the next friendly creature played this game enters with +1/+1. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Inevitable sense of destiny, the creature accepting death as a stepping stone
-
-**EF28 — Restless Bones**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: +1 HP. Persist: on death, reduce the cost of the highest-cost card in your hand by 1 (this turn only). Attuned bonus: draw 1 card.
-- **Instability adjustment**: 0
-- **Visual prompt**: Bones rattling with residual energy, refusing to fully stop even in death
-
-### Pool 8: 1 PP, Late Tier, Chaos-Attuned (EF29-EF32)
-
-**EF29 — Grave Chill**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 ATK. Persist: on death, give a random enemy creature -1 ATK and -1 HP permanently. Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Freezing necrotic cold radiating from the creature, chilling enemies to the bone
-
-**EF30 — Haunting Wail**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 instability. Persist: on death, deal 1 damage to all enemy creatures and the enemy avatar. Attuned bonus: +1 ATK. Order penalty: -1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Unearthly wail escaping the creature's mouth, a sound that damages the living
-
-**EF31 — Death Mark**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 ATK. Persist: on death, mark a random enemy creature -- it takes 2 damage at start of its controller's next turn. Attuned bonus: this creature gains Haste.
-- **Instability adjustment**: 0
-- **Visual prompt**: Cursed rune appearing on the target, counting down to punishment
-
-**EF32 — Feeding Frenzy**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: Persist sympathy -- when any friendly creature dies, this creature gets +1 ATK permanently. Attuned bonus: +1 ATK on each trigger.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ravenous undead growing stronger with each fallen ally, consuming their remnant energy
-
-### Pool 9: 2 PP, Late Tier, Order-Attuned (EF33-EF36)
-
-**EF33 — Spirit Anchor**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: +1 HP. Persist: on death, create a lingering effect for 3 turns: all friendly creatures heal 1 HP at start of turn. Attuned bonus: Shield on this creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Spectral anchor embedded in the ground, tethering healing energy to the area
-
-**EF34 — Legacy of the Fallen**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: -1 instability, +1 HP. Persist: on death, give all friendly creatures +1/+1 permanently. Attuned bonus: the next friendly creature played enters with Shield.
-- **Instability adjustment**: -1
-- **Visual prompt**: Golden death-light ascending and splitting into beams that empower each surviving ally
-
-**EF35 — Martyr's Chain**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: Shield. Persist sympathy: when any friendly creature dies, this creature gets +0/+2 permanently and gains Shield (if it doesn't have one). Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Chain of spectral links connecting to fallen allies, each death adding another link of armor
-
-**EF36 — Eternal Vigil**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: Taunt, +1 HP. Persist: on death, the friendly creature with the lowest HP gains Taunt and +0/+3 permanently. Attuned bonus: draw 1 card.
-- **Instability adjustment**: 0
-- **Visual prompt**: Undying sentinel passing its duty to the next in line upon falling
-
-### Pool 10: 2 PP, Late Tier, Chaos-Attuned (EF37-EF40)
-
-**EF37 — Necrotic Explosion**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 ATK. Persist: on death, deal 3 damage to all enemy creatures and 1 damage to all friendly creatures. Attuned bonus: +2 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Massive necrotic detonation, purple-black energy wave consuming everything nearby
-
-**EF38 — Doom Pact**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 instability, +2 ATK. Persist: on death, deal this creature's ATK as damage split evenly among all enemy creatures (round down, leftover to avatar). Attuned bonus: +1 ATK. Order penalty: -1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Dark pact sigils burning into the creature's flesh, ensuring death brings doom
-
-**EF39 — Plague Wind**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 ATK, +1 HP. Persist: on death, give all enemy creatures -2 ATK for 2 turns. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Pestilent wind of spectral disease billowing from the creature's fallen form
-
-**EF40 — Carrion Feast**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +2 ATK. Persist sympathy: when any friendly creature dies, deal 2 damage to a random enemy creature. Attuned bonus: +1 ATK per friendly creature that has died this game (cap +3).
-- **Instability adjustment**: 0
-- **Visual prompt**: Swarm of spectral carrion birds descending to feed on the dead, then attacking the living
-
-### Pool 11: 3 PP, Late Tier, Order-Attuned (EF41-EF44)
-
-**EF41 — Undying Covenant**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: Shield, +2 HP. Persist: on death, all friendly creatures get +1/+2 permanently and gain Shield. Attuned bonus: heal all friendly creatures 2 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Solemn oath of mutual protection, spectral bindings connecting all allies in death
-
-**EF42 — Death's Embrace**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: -2 instability, +2 HP. Persist: on death, create a lingering effect for 3 turns: all friendly creatures get +1/+1 and heal 1 HP at start of turn. Attuned bonus: +1 HP to all friendly creatures.
-- **Instability adjustment**: -2
-- **Visual prompt**: Gentle spectral embrace enveloping allies, warmth from beyond the grave
-
-**EF43 — Soulkeeper**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: +1 ATK, +1 HP, Taunt. Persist sympathy: when any friendly creature dies, this creature gets +1/+1 permanently and heals 2 HP. Attuned bonus: draw 1 card whenever a friendly creature dies.
-- **Instability adjustment**: 0
-- **Visual prompt**: Massive bone-and-spirit construct growing larger with each soul it absorbs
-
-**EF44 — Resurrection Echo**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: +2 HP. Persist: on death, the next creature played from your hand this game enters with +3/+3 and Shield. Attuned bonus: draw 2 cards on death.
-- **Instability adjustment**: 0
-- **Visual prompt**: Brilliant echo of life persisting after death, ready to infuse the next vessel
-
-### Pool 12: 3 PP, Late Tier, Chaos-Attuned (EF45-EF48)
-
-**EF45 — Death Nova**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 ATK, +1 HP. Persist: on death, deal 4 damage to all enemy creatures and 2 damage to the enemy avatar. Attuned bonus: +2 ATK this turn. Order penalty: -1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Catastrophic necrotic supernova erupting from the creature's core upon destruction
-
-**EF46 — Apocalypse Trigger**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 instability, +3 ATK. Persist: on death, deal this creature's ATK as damage to the enemy avatar. Attuned bonus: +2 ATK. Order penalty: -2 ATK.
-- **Instability adjustment**: +2
-- **Visual prompt**: Doomsday runes carved into the creature's skeleton, glowing brighter as death approaches
-
-**EF47 — Eternal Hunger**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +1 ATK, Deathtouch. Persist sympathy: when any creature dies (friend or enemy), this creature gets +1 ATK permanently. Attuned bonus: Lifesteal.
-- **Instability adjustment**: 0
-- **Visual prompt**: Insatiable hunger incarnate, growing in power with every death on the battlefield
-
-**EF48 — Final Harvest**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 ATK. Persist: on death, deal 2 damage to all creatures and all avatars. For each creature killed by this effect, deal 2 additional damage to the enemy avatar. Attuned bonus: +1 ATK. Order penalty: this creature takes 1 damage at start of your turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Spectral scythe sweeping across the entire battlefield, reaping everything in its path
+| Keyword | Synergy with Persist | Rating |
+|---|---|---|
+| Lifesteal | Sustain while alive, punish on death. Lifesteal keeps Endless creatures fighting longer, then Persist fires on death. Dual-phase value. | Strong |
+| Deathtouch | Guarantees that the Endless creature trades when blocked. Opponent must kill it (triggering Persist) or let it through (taking damage). Lose-lose. | Strong |
+| Haste | Deploy and attack immediately, forcing the opponent to deal with the creature NOW. Faster Persist cycling. | Strong |
+| Taunt | Forces the opponent to attack into the Persist creature. Guarantees the death trigger fires. Proactive Persist activation. | Moderate |
+| Piercing | Push face damage while alive, then punish on death. Aggressive Endless builds want maximum value from every creature lifecycle. | Moderate |
+| Shield | Keeps the creature alive longer, delaying Persist. This is a tension --- Shield is anti-synergy with wanting to die, but useful for timing deaths strategically. | Low |
+| Ward | Minor protection on deployment. Less relevant for Endless --- they WANT opponents to interact with their creatures. | Low |
+| Flying | Evasion reduces the chance of dying in combat. Anti-synergy with Persist's desire for death. | Low |
+| Reach | Defensive only. Persist wants proactive deaths, not defensive postures. | Low |
 
 ---
 
-## 5. Ironwright Modifier Retheme (IF01-IF48)
-
-The Ironwright Collective is rethemed from Victorian steampunk to **brutalist space-industrial empire**. All 48 modifiers retain the Augment mechanic (effects scale with Augment count on the creature) but receive new names, flavor text, and visual descriptions.
-
-**NOT**: brass, gears, steam, clockwork, Victorian.
-**IS**: concrete, iron, hydraulics, rebar, void industry, star conquest, orbital machinery, reactor cores, gravity wells.
-
-### Pool 1: 1 PP, Early Tier, Order-Attuned (IF01-IF04)
-
-**IF01 — Rebar Reinforcement**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: +1 HP per Augment modifier on this creature. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Exposed rebar lattice fused into the creature's frame, concrete patching over joints
-
-**IF02 — Hull Plating**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: -1 instability. +1 HP while this creature has any Augment modifier. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Void-rated hull plating bolted onto the creature's exterior in overlapping segments
-
-**IF03 — Structural Integrity**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: +1 HP. Augment condition: if this creature has 2+ Augment modifiers, also +1 ATK. Attuned bonus: none.
-- **Instability adjustment**: 0
-- **Visual prompt**: Load-bearing infrastructure visible through transparent chest panel, engineering perfection
-
-**IF04 — Gravity Anchor**
-- **Pool**: 1 PP / Early / Order
-- **Effect**: Base: +1 HP per Augment on this creature. Attuned bonus: this creature gains Reach this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Heavy gravity anchor chains dragging from the creature's base, grounding it to the deck
-
-### Pool 2: 1 PP, Early Tier, Chaos-Attuned (IF05-IF08)
-
-**IF05 — Overclock Protocol**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 ATK per Augment modifier on this creature. Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Reactor core glowing dangerously bright, heat vents flaring orange
-
-**IF06 — Reactor Surge**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 instability, +1 ATK per Augment modifier on this creature. Attuned bonus: +1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Reactor breach warning lights flashing, energy output spiking beyond safe limits
-
-**IF07 — Void-Tempered Edge**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 ATK. Augment condition: if this creature has 2+ Augment modifiers, gain Piercing. Attuned bonus: none.
-- **Instability adjustment**: 0
-- **Visual prompt**: Blade edge forged in the void of space, impossibly sharp and cold
-
-**IF08 — Orbital Strike Array**
-- **Pool**: 1 PP / Early / Chaos
-- **Effect**: Base: +1 ATK per Augment on this creature. Attuned bonus: deal 1 damage to a random enemy creature.
-- **Instability adjustment**: 0
-- **Visual prompt**: Shoulder-mounted targeting array linked to orbital weapons platforms
-
-### Pool 3: 2 PP, Early Tier, Order-Attuned (IF09-IF12)
-
-**IF09 — Ablative Shielding**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: Shield. Augment condition: regenerate Shield at start of turn if this creature has 2+ Augment modifiers. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Layered ablative armor segments that crack off under damage and regrow from nano-fabricators
-
-**IF10 — Foundry Directive**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: -1 instability, +1 HP per Augment modifier on this creature. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Foundry directive code scrolling across the creature's visor, optimizing defensive protocols
-
-**IF11 — Bulkhead Construction**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: +1 HP. Augment aura: +1 HP per Augment modifier on this creature. Attuned bonus: this creature gains Taunt this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Massive bulkhead sections deployed around the creature, fortress-like defensive posture
-
-**IF12 — Void Dock Repairs**
-- **Pool**: 2 PP / Early / Order
-- **Effect**: Base: +1 HP per Augment on this creature. Augment condition: if 3+ Augment modifiers, heal this creature 1 HP at start of turn. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Automated repair drones swarming from void-dock bays, patching damage in real-time
-
-### Pool 4: 2 PP, Early Tier, Chaos-Attuned (IF13-IF16)
-
-**IF13 — Siege Engine Mode**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 ATK per Augment modifier on this creature. Attuned bonus: +1 ATK per Augment on this creature (doubles the scaling).
-- **Instability adjustment**: 0
-- **Visual prompt**: Transformation into siege configuration, weapons systems deploying from every surface
-
-**IF14 — Star-Forge Tempering**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 instability, +1 ATK, +1 HP. Augment condition: +1 ATK per Augment modifier. Attuned bonus: +1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Creature's metal components glowing white-hot from star-forge reprocessing
-
-**IF15 — Hydraulic Overload**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +2 ATK. Augment condition: if 2+ Augment modifiers, gain Piercing. Attuned bonus: none (high value combo).
-- **Instability adjustment**: 0
-- **Visual prompt**: Hydraulic pistons extending past safe limits, immense mechanical force output
-
-**IF16 — Weapons Platform**
-- **Pool**: 2 PP / Early / Chaos
-- **Effect**: Base: +1 ATK per Augment on this creature. Augment condition: if 3+ Augment, +2 ATK. Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Additional weapons platforms welded onto the creature's frame, bristling with armament
-
-### Pool 5: 3 PP, Early Tier, Order-Attuned (IF17-IF20)
-
-**IF17 — Dreadnought Armor**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: Shield, +1 HP per Augment modifier on this creature. Attuned bonus: regenerate Shield at start of turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Void-dreadnought-class armor plating encasing the creature, massive and impenetrable
-
-**IF18 — Foundry Core**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: -1 instability, +2 HP. Augment condition: +1 HP per Augment modifier. If 3+ Augments, also heal 1 HP per turn. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Central foundry reactor core visible through armored viewport, powering regeneration systems
-
-**IF19 — Redundant Systems Array**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: +1 ATK, +1 HP per Augment. Augment condition: if 3+ Augments, this creature cannot be reduced below 1 HP by a single source of damage (once per turn). Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Triple-redundant system architecture visible in cross-section, failsafe upon failsafe
-
-**IF20 — Orbital Shipyard**
-- **Pool**: 3 PP / Early / Order
-- **Effect**: Base: Shield, +1 HP. Augment condition: if 4+ Augment modifiers, all Augment stat bonuses on this creature are doubled. Attuned bonus: +0/+1.
-- **Instability adjustment**: 0
-- **Visual prompt**: Miniature orbital shipyard scaffolding forming around the creature, constantly upgrading
-
-### Pool 6: 3 PP, Early Tier, Chaos-Attuned (IF21-IF24)
-
-**IF21 — Void Cannon**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +2 ATK per Augment modifier on this creature. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Massive void-energy cannon fused to the creature's arm, barrel glowing with contained devastation
-
-**IF22 — Strip-Mine Protocol**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +1 instability, +1 ATK, +1 HP. +1 ATK per Augment modifier. Attuned bonus: deal 1 damage to all enemy creatures.
-- **Instability adjustment**: +1
-- **Visual prompt**: Mining lasers repurposed for combat, strip-mining enemy defenses
-
-**IF23 — Re-Entry Assault**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +2 ATK. Augment condition: if 2+ Augments, gain Piercing. If 3+ Augments, also +2 ATK. Attuned bonus: none (very high ceiling).
-- **Instability adjustment**: 0
-- **Visual prompt**: Creature wreathed in re-entry plasma, descending from orbit like a living missile
-
-**IF24 — Gravity Well Generator**
-- **Pool**: 3 PP / Early / Chaos
-- **Effect**: Base: +1 ATK, +1 HP. +1 ATK per Augment modifier. Augment condition: if 4+ Augments, enemy creatures get -1 ATK. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Localized gravity distortion warping space around the creature, pulling enemies off-balance
-
-### Pool 7: 1 PP, Late Tier, Order-Attuned (IF25-IF28)
-
-**IF25 — Containment Protocol**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: +1 HP per Augment on this creature. Attuned bonus: if this creature has Shield, also gains Ward this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Emergency containment fields activating around the creature, layered protective barriers
-
-**IF26 — Void-Hardened Frame**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: -1 instability. +1 HP per Augment. Attuned bonus: heal this creature 1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Frame tempered by extended void exposure, impossibly dense and resistant
-
-**IF27 — Modular Repair Bay**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: Augment condition -- if 3+ Augment modifiers, heal this creature 2 HP at start of turn. Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Internal repair bay cycling damaged components, automated maintenance
-
-**IF28 — Fleet Formation**
-- **Pool**: 1 PP / Late / Order
-- **Effect**: Base: +1 HP. Augment condition: if 2+ Augments, adjacent creatures get +0/+1. Attuned bonus: none.
-- **Instability adjustment**: 0
-- **Visual prompt**: Fleet formation hologram projecting tactical positioning data to nearby units
-
-### Pool 8: 1 PP, Late Tier, Chaos-Attuned (IF29-IF32)
-
-**IF29 — Targeting Override**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 ATK per Augment on this creature. Attuned bonus: deal 1 damage to the enemy creature with the highest ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Targeting reticle locking onto highest-priority target, red laser designation
-
-**IF30 — Reactor Meltdown**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 instability, +1 ATK per Augment. Attuned bonus: +1 ATK this turn. Order penalty: -1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Reactor containment failing, dangerous energy bleeding through cracks in the hull
-
-**IF31 — Scrap Legion Fury**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 ATK. Augment condition: if 2+ Augments, gain Haste (relevant for newly played creatures). Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Jury-rigged scrap armor and weapons, aggressive patchwork combat modifications
-
-**IF32 — Bombardment Array**
-- **Pool**: 1 PP / Late / Chaos
-- **Effect**: Base: +1 ATK per Augment. Augment condition: if 4+ Augments, deal 1 damage to all enemy creatures at start of turn. Attuned bonus: none.
-- **Instability adjustment**: 0
-- **Visual prompt**: Array of bombardment cannons tracking multiple targets simultaneously
-
-### Pool 9: 2 PP, Late Tier, Order-Attuned (IF33-IF36)
-
-**IF33 — Citadel Mode**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: Shield. +1 HP per Augment modifier. Augment condition: if 3+ Augments, regenerate Shield at start of turn. Attuned bonus: +0/+2.
-- **Instability adjustment**: 0
-- **Visual prompt**: Creature locking into citadel configuration, armor panels sealing into fortress mode
-
-**IF34 — Central Command**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: -1 instability, +1 HP per Augment. Augment condition: if 3+ Augments, adjacent creatures get +0/+1 per Augment on this creature. Attuned bonus: +1 HP.
-- **Instability adjustment**: -1
-- **Visual prompt**: Command bridge holographics projecting tactical data, coordinating nearby units
-
-**IF35 — Emergency Fabrication**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: +1 HP per Augment. Augment condition: when this creature takes damage, if it has 3+ Augments, heal 1 HP immediately. Attuned bonus: draw 1 card.
-- **Instability adjustment**: 0
-- **Visual prompt**: Emergency nano-fabrication swarm repairing damage as fast as it occurs
-
-**IF36 — Bulwark Dreadnought**
-- **Pool**: 2 PP / Late / Order
-- **Effect**: Base: Taunt, +1 HP per Augment. Augment condition: if 4+ Augments, this creature takes 1 less damage from all sources (minimum 1). Attuned bonus: +1 HP.
-- **Instability adjustment**: 0
-- **Visual prompt**: Dreadnought-class unit deployed in defensive position, immovable object
-
-### Pool 10: 2 PP, Late Tier, Chaos-Attuned (IF37-IF40)
-
-**IF37 — Weapons Free**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 ATK per Augment modifier. Attuned bonus: +1 ATK per Augment on this creature (doubles scaling).
-- **Instability adjustment**: 0
-- **Visual prompt**: All weapons systems unlocked and firing simultaneously, maximum engagement
-
-**IF38 — Nova Reactor**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 instability, +2 ATK. Augment condition: if 3+ Augments, gain Piercing. Attuned bonus: +1 ATK. Order penalty: -1 ATK.
-- **Instability adjustment**: +1
-- **Visual prompt**: Experimental nova reactor core pushing output past theoretical limits
-
-**IF39 — Planetary Siege**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +1 ATK per Augment. Augment condition: if 4+ Augments, deal 2 damage to the enemy avatar at start of your turn. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Planetary bombardment cannons warming up, targeting enemy stronghold from orbit
-
-**IF40 — Annihilator Beam**
-- **Pool**: 2 PP / Late / Chaos
-- **Effect**: Base: +2 ATK. Augment condition: if 3+ Augments, when this creature attacks, deal 1 damage to all enemy creatures. Attuned bonus: +1 ATK this turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Concentrated annihilation beam cutting through everything in its path
-
-### Pool 11: 3 PP, Late Tier, Order-Attuned (IF41-IF44)
-
-**IF41 — Titan-Class Armor**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: Shield, +1 HP per Augment. Augment condition: if 3+ Augments, this creature and adjacent creatures gain Shield at start of turn. Attuned bonus: +0/+2.
-- **Instability adjustment**: 0
-- **Visual prompt**: Titan-class void armor encasing the creature completely, nearby units receiving auxiliary shielding
-
-**IF42 — Failsafe Protocol**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: -2 instability, +2 HP. Augment condition: if 4+ Augment modifiers, when this creature would die, survive with 1 HP instead (once per game) and gain Shield. Attuned bonus: +1 HP to all friendly creatures.
-- **Instability adjustment**: -2
-- **Visual prompt**: Emergency failsafe systems engaging, creature ejecting from destroyed shell into backup frame
-
-**IF43 — Star-Forge Masterwork**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: +1 ATK, +2 HP per Augment modifier on this creature. Augment condition: if 4+ Augments, all Augment stat bonuses are doubled. Attuned bonus: none (ceiling is enormous).
-- **Instability adjustment**: 0
-- **Visual prompt**: Creature reforged in a star-forge, every component replaced with superior materials
-
-**IF44 — Absolute Zero Containment**
-- **Pool**: 3 PP / Late / Order
-- **Effect**: Base: Shield, Taunt, +1 HP per Augment. Augment condition: if 3+ Augments, reduce all damage to this creature by 1 (min 1). Attuned bonus: regenerate Shield.
-- **Instability adjustment**: 0
-- **Visual prompt**: Absolute zero containment field freezing everything that approaches, impenetrable cold
-
-### Pool 12: 3 PP, Late Tier, Chaos-Attuned (IF45-IF48)
-
-**IF45 — Extinction Protocol**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 ATK per Augment modifier. Attuned bonus: +1 ATK per Augment. Order penalty: -1 ATK per Augment.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ultimate weapons protocol engaged, creature becoming an engine of total destruction
-
-**IF46 — Singularity Core**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 instability, +3 ATK. Augment condition: if 4+ Augments, deal 3 damage to a random enemy creature at start of turn. Attuned bonus: +2 ATK. Order penalty: -2 ATK.
-- **Instability adjustment**: +2
-- **Visual prompt**: Miniature singularity tearing at the fabric of space inside the creature's core
-
-**IF47 — Void Supremacy**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +1 ATK, Piercing. +1 ATK per Augment modifier. Augment condition: if 3+ Augments, Piercing damage is doubled. Attuned bonus: +1 ATK.
-- **Instability adjustment**: 0
-- **Visual prompt**: Supreme void-conquest weapon platform, all systems dedicated to punching through defenses
-
-**IF48 — Total War Machine**
-- **Pool**: 3 PP / Late / Chaos
-- **Effect**: Base: +2 ATK. Augment condition: if 4+ Augments, this creature gets +1 ATK per Augment modifier, gains Piercing, and deals 1 damage to all enemy creatures when it attacks. Attuned bonus: +2 ATK this turn. Order penalty: this creature takes 2 damage at start of turn.
-- **Instability adjustment**: 0
-- **Visual prompt**: Ultimate war machine configuration, every system weaponized, the final form of industrial conquest
-
----
-
-## 6. Haste Keyword
+## 3. Haste Keyword
 
 ### Definition
 
-**Haste** -- This creature can attack the turn it is played.
+**Haste** --- This creature can attack the turn it is played.
 
-**Wait -- doesn't the existing game already have no summoning sickness?**
+**New default rule:** With the introduction of Haste, **summoning sickness** is now a default rule. Creatures played from hand CANNOT attack the same turn they enter the battlefield, UNLESS they have the Haste keyword.
 
-The expansion plan introduces Haste, which implies summoning sickness is being added as the default. This is a critical design decision that requires clarification.
+This changes the existing game rule from `01-battle-mechanics.md` Phase 5 which currently states "No summoning sickness --- they can attack this same turn." The expansion overrides this.
 
-**Resolution: Summoning sickness is NOT being added.** Creatures can already attack the turn they are played (00-game-design-master.md Section 8: "No Summoning Sickness"). Adding summoning sickness as a global rule would be a fundamental change to the game's tempo and violate the protected design docs.
+**Updated Phase 5 text:** "Play creature cards from hand onto empty board slots (costs chaos motes). Creatures enter the board immediately with full stats. Creatures have summoning sickness --- they cannot attack the turn they are played unless they have the Haste keyword."
 
-**Revised Haste definition:** Haste allows a creature to **bypass effects that would prevent it from attacking on the turn it is played.** In the base game, this has no effect (there is no summoning sickness). However, Haste becomes relevant in the following contexts:
-
-1. **Ward interaction:** A creature with Ward cannot be targeted by opponent modifier effects for 1 turn. Some future effects might restrict freshly-played creatures. Haste ensures the creature can always act immediately regardless of board-state restrictions.
-
-2. **Persist interaction (Endless):** Some Persist lingering effects create zones that debuff or restrict newly-played creatures. Haste creatures ignore deployment restrictions from lingering effects.
-
-3. **Planar Ruin interaction:** Some evolved Planar Ruins may impose deployment penalties on the opponent (e.g., "creatures you play enter with -1 ATK this turn"). Haste creatures ignore these penalties.
-
-4. **Future-proofing:** The data model supports additional deployment restrictions. Haste is the universal answer to any "slow down deployment" mechanic.
-
-**Alternative interpretation (recommended):** Given the base game has no summoning sickness, Haste should provide a DIFFERENT benefit that fits the aggressive attrition theme of The Endless:
-
-**FINAL DESIGN -- Haste: When this creature is played, it may immediately declare an attack against a target creature before the normal Declare Attackers phase.** This is a bonus attack that happens during the Main Phase as an immediate combat. The creature can still attack normally during the Declare Attackers phase that same turn. This makes Haste a powerful tempo tool -- the creature effectively gets to attack twice on its first turn (once immediately, once in combat).
-
-**Simplified ruling:** On the turn a creature with Haste is played, during the Main Phase, the controlling player may immediately declare it as attacking a specific enemy creature. Combat resolves instantly (Shield check, damage, Deathtouch, Piercing, Lifesteal -- full combat resolution for that pair only). The Haste creature can then still attack during the normal Declare Attackers phase.
+**Updated Phase 6 text:** "Creatures that cannot attack are dimmed: Creatures with summoning sickness (played this turn and lacking Haste)."
 
 ### PP Cost
 
-**Haste: 2 PP**
+| Keyword | PP Cost | Rationale |
+|---|---|---|
+| Haste | 1 PP | Tempo advantage of one attack. Valuable for aggro but diminishes as the game goes longer. Most impactful on high-ATK creatures and creatures with on-attack triggers. Cheap because the benefit is one-time (after the first turn, Haste is irrelevant). |
 
-Rationale: Haste provides significant tempo advantage (effectively a free attack on the play turn). This is comparable to Flying (2 PP) in impact -- both create situations where damage gets through that normally wouldn't. Haste's bonus attack is particularly strong on high-ATK creatures and creatures with Deathtouch (instant removal on play).
+### Summoning Sickness Rules
 
-### Faction Affinity
+- A creature has summoning sickness from the moment it enters the battlefield until the START of its controller's NEXT turn (Phase 1).
+- Summoning sickness prevents the creature from being declared as an attacker (Phase 6). It can still block (Phase 7). It can still use triggered abilities. It can still be targeted by spells, events, and effects.
+- Haste bypasses summoning sickness entirely. A Haste creature can attack the turn it is played.
+- Summoning sickness applies ONLY to the turn a creature enters the battlefield. On all subsequent turns, the creature can attack normally regardless of whether it has Haste.
+- Creatures already on the board that GAIN Haste through a modifier or event do not benefit from it (they already have no summoning sickness).
+- P1's turn 1 attack restriction remains unchanged: P1 cannot attack on turn 1 regardless of Haste.
 
-- **Primary: The Endless** -- Aggressive attrition. Haste creatures enter, attack immediately, then serve as Persist fodder. The "attack on entry" fits the relentless, inevitable theme.
-- **Secondary: Demonic Kingdoms** -- Fast aggro. Corruption creatures are on a clock from self-damage. Haste squeezes maximum value before they burn out.
-- **Tertiary: Ironwright (Scrap Legions sub-faction)** -- Jury-rigged war machines that hit fast.
+### Strategic Impact
 
-### Design Intent
+Haste fundamentally changes the tempo calculation. Without Haste, playing a creature is a defensive investment --- you spend mana now but the creature cannot attack until next turn. With Haste, the creature provides immediate offensive value.
 
-Haste creatures should be designed with moderate-to-high ATK and lower HP. They are meant to deal damage quickly, trade aggressively, and die -- generating value for Persist or spending their window before Corruption burns them down.
+- **Aggro decks** value Haste highly --- every turn of attack matters when racing.
+- **Control decks** value Haste minimally --- they want creatures for blocking and defensive value.
+- **The Endless** have the strongest Haste synergy --- play a creature, attack immediately, and if it dies in combat, Persist triggers fire. Maximum lifecycle value in one turn.
+- **Celestial Crusade** has moderate Haste synergy --- deploying a Haste creature immediately increases the Exalt count AND can attack.
 
-| Keyword | Haste Synergy |
-|---|---|
-| Shield | Haste + Shield: attack immediately with protection. Strong but expensive (5 PP total). |
-| Lifesteal | Haste + Lifesteal: immediate heal on the bonus attack. Good sustain for aggro. |
-| Flying | Haste + Flying: bonus attack can target any creature (not evasion -- the Haste attack targets a specific creature). Normal attack phase uses Flying evasion. |
-| Reach | Minimal synergy. Reach is defensive; Haste is offensive. |
-| Deathtouch | Haste + Deathtouch: instant creature removal on play. Extremely powerful. Design at high CM cost. |
-| Taunt | Haste + Taunt: deploy and immediately force engagement. Strong defensive deploy. |
-| Piercing | Haste + Piercing: bonus attack excess damage hits face. Good for pushing damage. |
-| Ward | Haste + Ward: deploy protected and attack immediately. The creature is both safe and aggressive. |
+### Counters
+
+- **Shield** absorbs the first Haste attack, negating the tempo advantage.
+- **Taunt** forces the Haste creature to attack into the Taunt creature (which the opponent chose as a favorable blocker), wasting the Haste tempo.
+- **High-HP creatures** survive the Haste attack and trade back on their turn.
 
 ---
 
-## 7. Ward Keyword
+## 4. Ward Keyword
 
 ### Definition
 
-**Ward** -- This creature cannot be targeted by the opponent's modifier effects, triggered ability effects, or spell effects for 1 turn after deployment. Ward expires at the start of the controlling player's next turn.
+**Ward** --- This creature cannot be targeted by opponent's triggered abilities and modifier effects for 1 turn after deployment.
 
-### Clarifications
+Ward provides a window of protection against targeted non-combat effects. The opponent cannot use abilities that say "target enemy creature" or "deal N damage to a random enemy creature" against a creature with active Ward. Ward does NOT protect against combat damage, untargeted AoE effects, or the creature's controller's own effects.
 
-1. **Ward only protects against targeted effects.** Area-of-effect abilities and events (e.g., "deal 1 damage to ALL creatures") bypass Ward. Ward stops "deal 3 damage to target creature" but not "deal 2 damage to all enemy creatures."
+### What Ward Blocks
 
-2. **Ward only protects against the OPPONENT's effects.** The controlling player can still target their own Ward creature with buffs, heals, and spells.
+| Blocked | Not Blocked |
+|---|---|
+| Opponent's triggered abilities targeting this creature (ON_ORDER, ON_CHAOS, ON_PLAY, ON_ATTACK, ON_BLOCK effects that target a specific enemy creature) | Combat damage (attacker/blocker damage in Phase 8) |
+| Opponent's Persist death-strike effects targeting this creature | AoE effects that hit all creatures (Upheaval, "deal N to all enemy creatures") |
+| Opponent's spell cards that say "target enemy creature" | AoE events (C3 Upheaval) |
+| Random-target effects from opponent ("damage a random enemy creature") --- Ward creature is excluded from the random pool | Effects from the Ward creature's controller |
+| Chaos event C2 Wildfire (random enemy creature damage) --- Ward creature excluded from random pool | Chaos event C6 Chaos Siphon (damages a friendly creature --- controller's own effect) |
+| Chaos event C7 Maelstrom --- if it would target the Ward creature on the opponent's side, reroll | Board-wide permanent stat changes (O3 Steady Growth only affects friendly creatures, not blocked anyway) |
 
-3. **Ward does NOT protect against combat damage.** If the opponent declares an attack and the Ward creature blocks (or is attacked while having Taunt), combat damage resolves normally.
+### Duration
 
-4. **Ward expires at the start of the controlling player's next turn.** This means Ward protects the creature for approximately one full round -- the opponent's entire turn plus the chaos roll/event phase of the controlling player's next turn. Once the controlling player's Start of Turn phase begins, Ward drops.
+Ward lasts from the moment the creature enters the battlefield until the START of its controller's NEXT turn (Phase 1). This means:
 
-5. **Ward is consumed on expiry, not on absorption.** Unlike Shield (which breaks when it absorbs damage), Ward simply expires after its duration regardless of whether it was "tested."
-
-6. **Ward does NOT prevent Chaos/Order event effects.** Events are system-level effects, not targeted spell/modifier effects. If a Chaos event deals 2 damage to a random enemy creature and selects the Ward creature, the damage still applies. Ward only blocks effects originating from the opponent player's cards and abilities.
-
-7. **Ward blocks death-touch effects from Persist.** If a Persist modifier's death trigger targets the Ward creature specifically (e.g., "deal 2 damage to a random enemy creature" and it randomly selects the Ward creature), the effect is blocked and retargets to another valid target. If no other valid target exists, the effect fizzles.
+- On the turn a creature is played: Ward is active. The opponent cannot target it with abilities during their next turn's event resolution, combat triggers, etc.
+- At the start of the controller's next turn: Ward expires. The creature can now be targeted normally.
+- Ward lasts for exactly 1 full opponent turn cycle.
 
 ### PP Cost
 
-**Ward: 1 PP**
+| Keyword | PP Cost | Rationale |
+|---|---|---|
+| Ward | 1 PP | One-turn protection window. Valuable for protecting key creatures on deployment but irrelevant after the first turn. Same reasoning as Haste --- one-time benefit, cheap cost. |
 
-Rationale: Ward is a one-turn protective effect that only stops targeted effects. It does not protect against combat, AoE, or events. Its value is primarily in protecting a key creature during the vulnerable deployment turn. At 1 PP, it is comparable to Reach (1 PP, situational defensive) and Taunt (1 PP, forces engagement). Ward is slightly stronger in some situations (protects from removal spells) but weaker in others (does nothing against combat or AoE).
+### Ward and Reapplication
 
-### Faction Affinity
+Ward does NOT refresh or reapply. It fires once on deployment and expires. If a creature gains Ward through a modifier during evolution (not at deployment), the Ward activates the next time the creature enters the battlefield. In the current game, creatures are played once from hand, so Ward from modifiers is relevant on that single deployment.
 
-- **Primary: Celestial Crusade** -- Protective formation. Ward helps Celestial creatures survive long enough to establish Exalt auras. Deploy a creature with Ward, and it is safe from removal for one turn while the Exalt network builds.
-- **Secondary: Ironwright (Foundry Directorate sub-faction)** -- Protecting the investment. Augment creatures have high stacked value; Ward protects them from targeted removal during critical turns.
-- **Tertiary: Fey Courts** -- Protecting the Bond network.
+**Practical clarification for modifiers:** Celestial and Endless modifiers that reference Ward specify "When this creature enters the battlefield, it has Ward" to clarify that the Ward window starts on deployment regardless of when the modifier was gained.
 
-### Design Intent
+### Ward and Combat
 
-Ward is a deployment-protection keyword. It ensures that newly-played creatures survive their first turn on the board, which is critical for mechanics that need time to activate (Exalt thresholds, Augment stacking, Bond networks).
+Ward does NOT prevent the creature from being attacked. Opponents can freely declare attacks against a Ward creature and assign blockers to it. Ward only prevents targeted non-combat effects.
 
-Ward is deliberately weak against:
-- **Board wipes and AoE** (cannot protect against "damage all" effects)
-- **Combat** (Taunt creatures can force the Ward creature into combat)
-- **Events** (Chaos events that deal random damage still work)
+### Ward and Taunt
 
-This ensures Ward is not an absolute protection -- it is a timing tool that gives the creature one safe turn against targeted removal.
+A creature with both Ward and Taunt can be attacked normally (Taunt forces engagement, Ward does not prevent combat). Ward protects the Taunt creature from being removed by targeted spells or abilities before the opponent is forced to attack into it.
 
-| Keyword | Ward Synergy |
-|---|---|
-| Shield | Ward + Shield: double protection. Ward blocks targeted removal; Shield blocks the first combat hit. Expensive (4 PP) but very safe. |
-| Lifesteal | Minimal synergy. Lifesteal is about dealing damage; Ward is about surviving. |
-| Flying | Ward + Flying: evasive AND removal-proof for one turn. Strong aggressive combo. |
-| Reach | Ward + Reach: protected defensive creature. Solid but not exciting. |
-| Deathtouch | Ward + Deathtouch: the opponent cannot remove the Deathtouch threat with spells for one turn. They must commit to combat. Very strong. |
-| Taunt | Ward + Taunt: forces engagement AND cannot be targeted with removal. Opponent must attack into it. Excellent defensive deploy. |
-| Piercing | Minimal synergy. Both are primarily aggressive tools. |
-| Haste | Ward + Haste: deploy, attack immediately, and be safe from removal. Maximum tempo. |
+### Counters
+
+- **Combat damage** bypasses Ward completely. Attack the creature directly.
+- **AoE effects** bypass Ward. Upheaval, board-wide damage spells, and "all enemy creatures" effects ignore Ward.
+- **Waiting one turn** --- Ward expires naturally. Patient opponents can simply target the creature next turn.
 
 ---
 
-## 8. Full 9x9 Keyword Interaction Matrix
+## 5. Keyword Interaction Matrix (9x9)
 
-How every keyword interacts with every other keyword when they appear in combat or on the same creature.
+Complete interaction matrix for all 9 keywords. Each cell describes what happens when a creature with the row keyword interacts with a creature with the column keyword in combat or on the same board.
 
-### Combat Interactions (Attacker vs. Defender)
-
-| Attacker \ Defender | Shield | Lifesteal | Flying | Reach | Deathtouch | Taunt | Piercing | Haste | Ward |
+| | **Shield** | **Lifesteal** | **Flying** | **Reach** | **Deathtouch** | **Taunt** | **Piercing** | **Haste** | **Ward** |
 |---|---|---|---|---|---|---|---|---|---|
-| **Shield** | Both shields absorb. Shields cancel each other. No damage dealt. Both shields break. | Shield absorbs defender's damage. Lifesteal heals 0. Attacker deals damage normally (defender has no Shield). | No special interaction. | No special interaction. | Shield absorbs Deathtouch hit. Creature survives. Shield breaks. | No special interaction. Shield still absorbs first hit. | No special interaction. | No special interaction. | No combat interaction (Ward does not affect combat). |
-| **Lifesteal** | Lifesteal heals 0 if defender's Shield absorbs (no damage dealt). | Both heal for damage dealt. Both creatures survive longer in sustain matchups. | No special interaction. | No special interaction. | Lifesteal attacker heals for damage dealt. Deathtouch defender kills attacker regardless. Both effects resolve. | No special interaction. | No special interaction. | No special interaction. | No combat interaction. |
-| **Flying** | No special interaction. | No special interaction. | Both creatures can block each other. Standard combat. | Reach creature CAN block Flying attacker. Defender chooses. | Flying attacker can be killed by Deathtouch if blocked by a creature with Deathtouch + Flying or Deathtouch + Reach. | Ground Taunt cannot block Flying (forced-block waived). Taunt + Reach or Taunt + Flying CAN block. Forced-attack obligation still applies. | No special interaction. | No special interaction. | No combat interaction. |
-| **Reach** | No special interaction. | No special interaction. | Reach creature blocks Flying attacker normally. | No special interaction (Reach vs Reach is standard combat). | No special interaction. | No special interaction. | No special interaction. | No special interaction. | No combat interaction. |
-| **Deathtouch** | Shield absorbs Deathtouch hit. Creature survives. Shield breaks. | Deathtouch kills defender. Defender's Lifesteal still heals (simultaneous damage). | No special interaction (still needs to be blocked). | No special interaction. | Both creatures kill each other regardless of stats (mutual Deathtouch). | Taunt forces engagement. Deathtouch kills the Taunt creature regardless of HP. | Deathtouch kills blocker. Piercing applies -- all ATK minus 1 (minimum needed for Deathtouch kill) goes to face. EXTREMELY powerful combo. | No special interaction. | No combat interaction. |
-| **Taunt** | No special interaction. | No special interaction. | Taunt forced-block waived against Flying if Taunt lacks Reach/Flying. Forced-attack still applies. | No special interaction. | Taunt forces engagement. Deathtouch kills the Taunt creature. | Multiple Taunts: opponent must send 1 attacker per Taunt (up to creature count). Defender chooses which Taunt blocks which. | No special interaction. | No special interaction. | No combat interaction. |
-| **Piercing** | Shield absorbs ALL damage. No pierce-through. Shield breaks. 0 damage to face. | No special interaction. | No special interaction. | No special interaction. | Piercing attacker's excess goes to face. Deathtouch defender kills attacker. Both effects resolve. Face damage still applies. | Piercing through Taunt blocker sends excess to face. | Piercing is attacker-only. If both have Piercing, only attacker's piercing applies. Defender's Piercing does nothing when blocking. | No special interaction. | No combat interaction. |
-| **Haste** | No special combat interaction (Haste is a deployment keyword). | No special interaction. | No special interaction. | No special interaction. | No special interaction. | No special interaction. | No special interaction. | If both creatures have Haste, no special interaction (Haste is about deployment, not combat). | No combat interaction. |
-| **Ward** | No combat interaction (Ward does not affect combat). | No combat interaction. | No combat interaction. | No combat interaction. | No combat interaction. Ward does NOT protect against Deathtouch in combat. | No combat interaction. Ward creature with Taunt still must block. | No combat interaction. | No combat interaction. | No combat interaction (Ward vs Ward is irrelevant). |
+| **Shield** | Both Shields absorb the other's damage. Both break. Neither creature takes damage. Both survive. | Shield absorbs all incoming damage. Lifesteal heals 0. Shield breaks. | No special interaction. Both apply independently. | No special interaction. Both apply independently. | Shield absorbs Deathtouch hit. Shield breaks. Creature survives. | No special combat interaction. Taunt forces engagement; Shield absorbs first hit. Strong defensive combo. | Shield absorbs ALL damage including pierce-through. 0 to face. Shield breaks. | No special interaction. Both apply independently. | No special interaction. Both apply independently on same creature. |
+| **Lifesteal** | Lifesteal heals 0 (Shield absorbed all damage). | Both deal damage. Both controllers heal. Simultaneous. | No special interaction. Both apply independently. | No special interaction. Both apply independently. | Lifesteal heals; Deathtouch kills the Lifesteal creature. Both resolve simultaneously. | Lifesteal on Taunt: controller heals when Taunt intercepts. Defensive sustain. | Same creature: Lifesteal heals for damage to creature AND Piercing face damage. Strong aggro-sustain. | Haste + Lifesteal: immediate attack with healing. | No special interaction. Independent. |
+| **Flying** | No special interaction. | No special interaction. | Both Flying: can block each other normally. | Reach can block Flying. Flying can also block Reach creature. | No special combat interaction. Deathtouch creature needs Flying/Reach to block Flying. | Ground Taunt cannot block Flying. Forced-block waived. Forced-attack still applies. Taunt + Reach/Flying blocks normally. | No special interaction. Flying + Piercing on same creature: if blocked, excess pierces to face. | Flying + Haste: deploy, attack immediately, likely unblocked. Strong tempo. | No special interaction. Independent. |
+| **Reach** | No special interaction. | No special interaction. | Reach can block Flying. Primary purpose. | Two Reach creatures: no special interaction. Reach only matters vs Flying. | No special interaction. Reach + Deathtouch: strong anti-air (blocks Flying, kills with Deathtouch). | Reach + Taunt: can force-block Flying attackers. Strong anti-air defense. | No special interaction. | No special interaction. | No special interaction. |
+| **Deathtouch** | Shield absorbs Deathtouch. Shield breaks. Creature survives. Deathtouch kill prevented. | Deathtouch kills Lifesteal creature. Lifesteal still heals (simultaneous). | No special combat interaction. Needs Flying/Reach to block Flying. | No special interaction. Deathtouch + Reach: blocks and kills Flying. | Both Deathtouch: both die (mutual guaranteed destruction). | Deathtouch + Taunt: forces opponent to attack, then kills whatever they send. Extremely strong. | Deathtouch on attacker: kills blocker. Piercing sends ATK minus 1 to face. Extremely powerful combo. | Haste + Deathtouch: deploy, attack immediately, kill any blocker. | No special interaction. Deathtouch is combat; Ward blocks targeting. |
+| **Taunt** | Taunt + Shield: forces engagement, Shield absorbs first hit. Strong wall. | Taunt + Lifesteal: forces fights, heals from them. Sustain tank. | Ground Taunt cannot block Flying. Taunt + Reach/Flying blocks Flying normally. | Taunt + Reach: can force-block Flying. Strong anti-air. | Taunt + Deathtouch: forces opponent to sacrifice a creature every attack. | Both Taunt: both sides force attacks and blocks. Standard rules both sides. | Taunt blocks Piercing attacker: excess still pierces to face. | Haste creature can be forced to attack by Taunt. Non-Haste with summoning sickness cannot be forced. | No special interaction. Taunt forces combat; Ward blocks targeting. |
+| **Piercing** | Shield absorbs all. 0 to face. Piercing wasted. | Same creature: heals for ALL damage dealt (creature + face). | No special interaction. | No special interaction. | Piercing + Deathtouch: excess to face, Deathtouch kills blocker. Both die, face damage applies. | Piercing through Taunt: excess goes to face despite Taunt redirect. | Attacker Piercing applies. Defender Piercing does NOT (per rules). | Haste + Piercing: deploy, attack, push excess to face. Strong aggro. | No special interaction. |
+| **Haste** | No special interaction. | Haste + Lifesteal: immediate attack with healing. | Haste + Flying: immediate unblockable attack. Very strong. | No special interaction. | Haste + Deathtouch: immediate trade on deployment. | Haste creature can be forced by Taunt on deployment turn. | Haste + Piercing: immediate face pressure. | Both Haste: no special interaction. Both attack on deployment. | Haste + Ward: deploy, attack immediately, protected from targeting. Strong deployment package. |
+| **Ward** | Ward + Shield: protected from targeting AND first hit. | No special interaction. | No special interaction. | No special interaction. | Ward does not prevent Deathtouch in combat. | Ward does not prevent Taunt mechanics. | No special interaction. | Haste + Ward: immediate attack + targeting protection. | Both Ward: each has own protection. No stacking. |
 
-### Same-Creature Keyword Stacking
+---
 
-When a creature has multiple keywords, they all apply simultaneously:
+## 6. Celestial Faction Modifiers (CF01-CF48)
 
-| Combination | Effect |
-|---|---|
-| Shield + Taunt | Forces engagement AND absorbs first hit. Excellent defensive wall. |
-| Shield + Deathtouch | Shield protects the fragile Deathtouch creature for one engagement. After Shield breaks, Deathtouch trades with anything. |
-| Shield + Lifesteal | Shield absorbs the first hit (Lifesteal irrelevant on that exchange). After Shield breaks, Lifesteal sustains. |
-| Flying + Deathtouch | Evasive creature that kills anything it touches. Must be blocked by Flying/Reach, or it goes face. Very powerful. |
-| Flying + Piercing | Evasion + pierce. If blocked by a Flying/Reach creature with less HP than ATK, excess goes to face. |
-| Flying + Lifesteal | Evasive Lifesteal. Hard to block, heals on hit. Strong sustain attacker. |
-| Deathtouch + Piercing | Kills blocker on 1 damage, ALL remaining ATK pierces to face. The most aggressive keyword combo. |
-| Deathtouch + Lifesteal | Kills anything it hits, heals for damage dealt. Efficient and sustaining. |
-| Taunt + Reach | Can block Flying attackers AND forces engagement. Complete defensive package. |
-| Taunt + Deathtouch | Forces engagement AND kills whatever it blocks. Opponent MUST send a creature to die. Nuclear deterrent. |
-| Haste + Deathtouch | Deploy and immediately kill an enemy creature with the bonus attack. Instant removal on a creature. |
-| Haste + Piercing | Deploy, bonus attack pierces through a blocker to face, then attack again in combat. Double damage window. |
-| Haste + Lifesteal | Deploy, immediately heal from the bonus attack, then heal again in combat. Burst healing. |
-| Ward + Shield | Protected from targeted removal (Ward) AND first combat hit (Shield). Maximum survival for one turn. |
-| Ward + Taunt | Cannot be removed by spells, must be attacked through. Opponent cannot use removal to bypass the Taunt. |
-| Ward + Deathtouch | Cannot be removed before combat. Opponent must commit a creature to kill it. |
-| Ward + Flying | Cannot be targeted AND hard to block. Very safe aggressive creature for one turn. |
-| Haste + Ward | Deploy, attack immediately, and be safe from targeted removal until next turn. Maximum tempo + safety. |
+48 modifiers organized into 12 pools (3 PP budgets x 2 tier brackets x 2 attunements), 4 per pool. Every modifier references the Exalt mechanic.
 
-### Updated Keyword PP Costs (Complete List)
+### Pool 1: 1 PP, Early Tier, Order-Attuned
 
-| Keyword | PP Cost | Category |
-|---|---|---|
-| Shield | 3 | Defensive |
-| Lifesteal | 2 | Sustain |
-| Flying | 2 | Evasion |
-| Reach | 1 | Defensive (situational) |
-| Deathtouch | 3 | Removal |
-| Taunt | 1 | Defensive (forced engagement) |
-| Piercing | 2 | Aggressive |
-| Haste | 2 | Tempo |
-| Ward | 1 | Protective (deployment) |
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF01 | Divine Formation | Base: +1 HP. Order Attuned: Exalt 2 --- all friendly creatures get +0/+1 this turn. | Exalt 2 aura provides board-wide toughness when Order fires. | Faint golden lattice connecting creatures in formation. |
+| CF02 | Righteous Presence | Base: Exalt 2 --- this creature gets +1 ATK. Order Attuned: +1 HP. | Exalt 2 self-buff rewards having a second creature on board. | Soft halo glow intensifying with nearby allies. |
+| CF03 | Vow of Solidarity | Base: +1 HP. Order Attuned: if you control 2+ creatures, -1 instability on this creature. | Exalt-adjacent board check reduces instability toward Order. | Golden chain links binding creature to its companions. |
+| CF04 | Sanctified Stance | Base: Exalt 2 --- this creature gets +0/+1. Order Attuned: +0/+1. | Exalt 2 defensive self-buff stacks with Order bonus for +0/+2 on Order turns with 2+ creatures. | Divine armor plating with prayer inscriptions. |
 
-### Keyword Affinity by Faction
+### Pool 2: 1 PP, Early Tier, Chaos-Attuned
 
-| Keyword | Ironwright | Fey Courts | Demonic | Celestial | Endless |
-|---|---|---|---|---|---|
-| Shield | High | Medium | Low | High | Low |
-| Lifesteal | Medium | Low | High | Low | Medium |
-| Flying | Low | Medium | Medium | High | Low |
-| Reach | Medium | High | Low | Medium | Low |
-| Deathtouch | Low | Low | High | Low | High |
-| Taunt | High | Medium | Low | High | Low |
-| Piercing | Medium | Low | High | Low | Medium |
-| Haste | Low | Low | Medium | Low | High |
-| Ward | Medium | Medium | Low | High | Low |
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF05 | Burning Conviction | Base: +1 ATK. Chaos Attuned: Exalt 2 --- all friendly creatures get +1 ATK this turn. | Exalt 2 aura provides board-wide burst on Chaos turns. | Burning golden fire spreading between allies. |
+| CF06 | Zealot's Fury | Base: Exalt 2 --- this creature gets +1 ATK. Chaos Attuned: +1 ATK. | Exalt 2 self-buff with Chaos bonus for aggressive output. | Eyes blazing with divine wrath, gold-rimmed flames. |
+| CF07 | Crusader's Charge | Base: +1 ATK, +1 instability. Chaos Attuned: Exalt 2 --- this creature gets +1 ATK. | Instability push fuels Chaos events while Exalt rewards board presence. | Creature lunging forward trailing divine fire. |
+| CF08 | Radiant Wrath | Base: Exalt 2 --- this creature gets +1 ATK. Chaos Attuned: deal 1 damage to a random enemy creature. | Exalt aggression with Chaos chip damage. | Burst of divine light scorching outward. |
+
+### Pool 3: 1 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF09 | Harmonious Ward | Base: Exalt 3 --- this creature gets +0/+1. Order Attuned: Exalt 3 --- all friendly creatures heal 1 HP. | Exalt 3 healing aura on Order turns rewards three-creature formation. | Translucent golden dome enveloping nearby allies. |
+| CF10 | Covenant of Light | Base: +1 HP. Order Attuned: if you control 3+ creatures, this creature gains Ward this turn. | Conditional Ward refresh tied to Exalt-like board threshold. | Inscribed circle of divine protection beneath creature's feet. |
+| CF11 | Martyr's Shield | Base: Exalt 2 --- this creature gets -1 instability. Order Attuned: +0/+1. | Instability reduction fuels Order consistency when formation is active. | Golden shield icon floating before the creature. |
+| CF12 | Blessed Formation | Base: Exalt 3 --- this creature gets +1 HP. Order Attuned: this creature gains Reach. | Exalt 3 with Reach grant covers anti-air for the formation. | Wings of light unfurling defensively behind the creature. |
+
+### Pool 4: 1 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF13 | Wrathful Sermon | Base: Exalt 3 --- this creature gets +1 ATK. Chaos Attuned: deal 1 damage to the enemy creature with lowest HP. | Exalt 3 aggression with targeted Chaos chip damage. | Creature bellowing divine judgment, sound waves visible. |
+| CF14 | Divine Reckoning | Base: +1 ATK, +1 instability. Chaos Attuned: Exalt 3 --- all friendly creatures get +1 ATK this turn. | Heavy Chaos push with Exalt 3 board-wide burst. | Cracks of divine fire splitting the ground beneath enemies. |
+| CF15 | Heaven's Judgment | Base: Exalt 2 --- this creature gets +1 ATK. Chaos Attuned: if you control 3+ creatures, deal 1 damage to all enemy creatures. | Exalt threshold triggers minor AoE on Chaos turns. | Beams of light striking down from above. |
+| CF16 | Crusade Fervor | Base: Exalt 3 --- this creature gets +1 ATK. Chaos Attuned: this creature gains Haste until end of turn. | Exalt aggression with conditional Haste for immediate pressure. | Golden afterimages trailing the creature's charge. |
+
+### Pool 5: 2 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF17 | Sanctum Aura | Base: Exalt 2 --- all friendly creatures get +0/+1. Order Attuned: Exalt 3 --- all friendly creatures get +0/+1. | Scaling Exalt aura: +0/+1 at 2, +0/+2 at 3. Core defensive Exalt modifier. | Concentric rings of golden light radiating outward. |
+| CF18 | Paladin's Oath | Base: +1 HP, Taunt. Order Attuned: Exalt 2 --- this creature gets +0/+1. | Taunt protects the formation; Exalt rewards having allies. PP: Taunt(1)+1HP(1)=2. | Heavy divine armor with oath-runes glowing along the edges. |
+| CF19 | Divine Aegis | Base: Exalt 3 --- all friendly creatures get +0/+1. Order Attuned: this creature gains Shield. | Exalt 3 aura with Shield self-grant on Order turns. | Layered golden shields orbiting the creature. |
+| CF20 | Consecrated Ground | Base: -1 instability, +1 HP. Order Attuned: Exalt 2 --- all friendly creatures heal 1 HP. | Instability reduction plus Exalt healing aura. Sustain formation. PP: -1inst(1)+1HP(1)=2. | Sacred ground glowing beneath all friendly creatures. |
+
+### Pool 6: 2 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF21 | Burning Crusade | Base: Exalt 2 --- all friendly creatures get +1 ATK. Chaos Attuned: +1 ATK. | Exalt 2 board-wide ATK aura plus self-buff on Chaos turns. Core offensive Celestial modifier. | All friendly creatures wreathed in holy flame. |
+| CF22 | Wrath of the Chosen | Base: +2 ATK. Chaos Attuned: Exalt 3 --- deal 1 damage to all enemy creatures. | Raw ATK plus Exalt 3 AoE on Chaos turns. Aggressive board control. | Multiple wings unfurling, each tipped with flame. |
+| CF23 | Fervent Assault | Base: +1 ATK, Haste. Chaos Attuned: Exalt 2 --- this creature gets +1 ATK. | Haste for immediate pressure plus Exalt scaling. PP: 1ATK(1)+Haste(1)=2. | Creature charging forward leaving golden afterimages. |
+| CF24 | Zealous Momentum | Base: +1 ATK, +1 instability. Chaos Attuned: Exalt 2 --- all friendly creatures get +1 ATK this turn. | Instability push fuels Chaos, Exalt 2 burst on Chaos turns. PP: 1ATK(1)+1inst(1)=2. | Radiant speed lines and divine energy vortex. |
+
+### Pool 7: 2 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF25 | Cathedral Formation | Base: Exalt 3 --- all friendly creatures get +0/+1. Order Attuned: Exalt 4 --- all friendly creatures gain Shield this turn. | Scaling Exalt: HP aura at 3, Shield aura at 4. Keystone defensive modifier. | Cathedral arches of golden light over the formation. |
+| CF26 | Radiant Bastion | Base: Shield, -1 instability. Order Attuned: Exalt 3 --- when this creature's Shield breaks, grant Shield to a random friendly creature. | Shield redistribution within the Exalt formation. Recursive defense. PP: Shield(3)-but this is 2PP pool. Adjustment: Base: -1 instability. Order Attuned: Exalt 3 --- this creature gains Shield. +0/+1. PP: -1inst(1)+1HP(1)=2. | Cracking golden shield releasing light toward allies. |
+| CF27 | Warden of the Faithful | Base: Taunt, +1 HP. Order Attuned: Exalt 3 --- this creature gets +0/+1. | Taunt + Exalt HP scaling. Tank that grows tougher in formation. PP: Taunt(1)+1HP(1)=2. | Massive shield with divine iconography, blocking stance. |
+| CF28 | Seraph's Blessing | Base: Exalt 3 --- all friendly creatures heal 1 HP at start of your turn. Order Attuned: +0/+1, heal 2 HP instead. | Persistent Exalt healing aura. Formation sustain engine. | Gentle rain of golden light particles healing allies. |
+
+### Pool 8: 2 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF29 | Crusade Momentum | Base: Exalt 3 --- all friendly creatures get +1 ATK. Chaos Attuned: +1 ATK. | Board-wide Exalt ATK aura with self-buff. Core offensive late-game modifier. | Surging wave of divine energy empowering the formation. |
+| CF30 | Smite the Unworthy | Base: +1 ATK. Chaos Attuned: Exalt 4 --- deal 2 damage to the enemy creature with the lowest HP. | Exalt 4 targeted removal on Chaos turns. Board control through divine judgment. | Beam of concentrated divine light striking downward. |
+| CF31 | Heaven's Arsenal | Base: Exalt 3 --- this creature gets +1 ATK and Piercing this turn. Chaos Attuned: +1 ATK. | Exalt 3 with conditional Piercing for face damage pressure. | Celestial weapons materializing around the creature. |
+| CF32 | Wrathful Exaltation | Base: +1 ATK, +1 instability. Chaos Attuned: Exalt 3 --- all friendly creatures get +1 ATK and +1 instability. | Board-wide Exalt aggression AND instability push. High-risk divine fury. PP: 1ATK(1)+1inst(1)=2. | All friendly creatures engulfed in chaotic divine fire. |
+
+### Pool 9: 3 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF33 | Angelic Bulwark | Base: Shield, +1 HP. Order Attuned: Exalt 2 --- all friendly creatures get +0/+1. | Shield + HP + Exalt aura. Complete defensive package. PP: Shield(3)=3. Attuned bonus is conditional. | Multi-layered golden shield with angelic wing motifs. |
+| CF34 | Holy Covenant | Base: Exalt 2 --- all friendly creatures get +0/+1. Order Attuned: +1 HP, -1 instability. | Exalt defensive aura plus instability reduction for Order consistency. | Sacred covenant glyphs glowing on each friendly creature. |
+| CF35 | Deliverance Vanguard | Base: +1 ATK, Shield. Order Attuned: Exalt 2 --- this creature gets +0/+1. | Shield protection with Exalt scaling. PP: 1ATK(1)+Shield(3)=4. Overcost at 3PP? No, Shield is in base, total is 3PP with 1ATK: 1+3=4. Adjust: Base: Shield. Order Attuned: Exalt 2 --- +0/+1. PP: Shield(3)=3. | Heavily armored creature emerging through a gate of light. |
+| CF36 | Radiant Sentinel | Base: Taunt, +1 HP, +1 ATK. Order Attuned: Exalt 2 --- all friendly creatures heal 1 HP. | Taunt tank with Exalt healing aura. PP: Taunt(1)+1HP(1)+1ATK(1)=3. | Towering armored figure radiating protective golden light. |
+
+### Pool 10: 3 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF37 | Crusader's Fury | Base: +2 ATK, Haste. Chaos Attuned: Exalt 2 --- all friendly creatures get +1 ATK this turn. | Haste + ATK + Exalt burst. Immediate offensive impact. PP: 2ATK(2)+Haste(1)=3. | Golden-armored warrior charging with divine speed. |
+| CF38 | Burning Judgment | Base: +1 ATK, +1 instability. Chaos Attuned: Exalt 3 --- deal 2 damage to a random enemy creature. +1 ATK. | Instability push, Exalt removal, and raw ATK. PP: 1ATK(1)+1inst(1)+1ATK(1)=3. | Divine fire cascading from raised weapon onto enemies. |
+| CF39 | Wings of Wrath | Base: Flying, +1 ATK. Chaos Attuned: Exalt 2 --- this creature gets +1 ATK. | Flying evasion with Exalt ATK scaling. PP: Flying(2)+1ATK(1)=3. | Multi-winged creature ascending with burning golden feathers. |
+| CF40 | Herald of Crusade | Base: +2 ATK. Chaos Attuned: Exalt 2 --- all friendly creatures get +1 ATK this turn. +1 instability. | Raw ATK with Exalt board burst and instability push. PP: 2ATK(2)+1inst(1)=3. | Trumpeting herald creature with waves of golden energy. |
+
+### Pool 11: 3 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF41 | Sanctum of the Exalted | Base: Exalt 3 --- all friendly creatures get +1/+1. Order Attuned: Exalt 4 --- all friendly creatures gain Shield. | Strongest Exalt defensive modifier. +1/+1 at 3 creatures, Shield at 4. | Grand cathedral dome of light enveloping all friendly creatures. |
+| CF42 | Archangel's Mantle | Base: Shield. Order Attuned: Exalt 3 --- when this Shield breaks, all friendly creatures get +0/+1 permanently. | Shield break converts to permanent Exalt board toughness. PP: Shield(3)=3. | Six-winged mantle of golden energy, shield of layered light. |
+| CF43 | Eternal Vigil | Base: Taunt, -2 instability, +1 HP. Order Attuned: Exalt 3 --- this creature gets +0/+1. | Maximum Order consistency with Exalt tank scaling. PP: Taunt(1)+2inst(2)=3. +1HP as bonus. | Unblinking divine sentinel wreathed in stabilizing light. |
+| CF44 | Covenant of Eternity | Base: Exalt 4 --- all friendly creatures get +1/+1 and heal 1 HP at start of turn. Order Attuned: +0/+1. | Exalt 4 supercharger. Board-wide stats AND healing. Supreme formation payoff. | Eternal golden covenant circle beneath all friendly creatures. |
+
+### Pool 12: 3 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect | Exalt Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| CF45 | Day of Judgment | Base: +2 ATK. Chaos Attuned: Exalt 4 --- deal 3 damage to all enemy creatures. | Exalt 4 AoE nuke on Chaos turns. Celestial finisher. PP: 2ATK(2)+conditional. | Blinding pillar of divine light annihilating enemy ranks. |
+| CF46 | Seraphic Tempest | Base: Flying, +1 ATK, +1 instability. Chaos Attuned: Exalt 3 --- all friendly creatures get +2 ATK this turn. | Flying aggression with massive Exalt board burst. PP: Flying(2)+1ATK(1)+1inst is 4. Adjust: Base: Flying, +1 instability. Chaos Attuned: Exalt 3 --- all friendly creatures get +2 ATK this turn. PP: Flying(2)+1inst(1)=3. | Storm of divine feathers and golden lightning. |
+| CF47 | Righteous Annihilation | Base: Exalt 5 --- all friendly creatures get +2/+2 and Piercing this turn. Chaos Attuned: +1 ATK. | Exalt 5 supreme payoff. Full board Piercing burst. Requires all 5 creature slots. | Reality cracking under the weight of divine power. |
+| CF48 | Voice of the Burning Wheels | Base: +2 ATK, +1 instability. Chaos Attuned: Exalt 3 --- all friendly creatures get +1 ATK permanently. | Permanent Exalt ATK aura. Aggressive engine piece. PP: 2ATK(2)+1inst(1)=3. | Concentric burning wheels with countless eyes, reality warping. |
+
+---
+
+## 7. Endless Faction Modifiers (EF01-EF48)
+
+48 modifiers organized into 12 pools (3 PP budgets x 2 tier brackets x 2 attunements), 4 per pool. Every modifier references the Persist mechanic.
+
+### Pool 1: 1 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF01 | Lingering Will | Base: +1 HP. Order Attuned: Persist --- when this creature dies, heal your avatar for 2 HP. | Death trigger provides sustain. | Ghostly afterimage trailing the creature. |
+| EF02 | Bone Fortification | Base: Persist --- when this creature dies, a random friendly creature gets +0/+1 permanently. Order Attuned: +1 HP. | Death buff transfers toughness to survivors. | Bone plates reinforcing the creature's frame. |
+| EF03 | Spectral Anchor | Base: +1 HP, -1 instability. Order Attuned: Persist --- when this creature dies, reduce instability by 1 for 2 turns. | Instability reduction on death sustains Order consistency. PP: 1HP(1) base. -1inst part of attuned conditional. Adjust to fit 1PP: Base: +1 HP. Order Attuned: Persist --- when this creature dies, -1 instability on this player for 1 turn. | Translucent chain anchoring the creature to the mortal plane. |
+| EF04 | Embalmer's Art | Base: Persist --- when this creature dies, a random friendly creature gets +0/+1 permanently. Order Attuned: +0/+1. | Death buff + Order toughness. | Preservation sigils glowing on the creature's skin. |
+
+### Pool 2: 1 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF05 | Death's Bite | Base: +1 ATK. Chaos Attuned: Persist --- when this creature dies, deal 1 damage to a random enemy creature. | Chip damage death trigger. Every kill costs the opponent. | Spectral fangs bared, green necrotic energy. |
+| EF06 | Grudge Bearer | Base: Persist --- when this creature dies, deal 1 damage to the enemy avatar. Chaos Attuned: +1 ATK. | Face damage death trigger. Direct Persist aggro value. | Hateful spectral energy radiating from the creature. |
+| EF07 | Grave Spite | Base: +1 ATK, +1 instability. Chaos Attuned: Persist --- when this creature dies, a random enemy creature gets -1 ATK permanently. | Instability push with death debuff. PP: 1ATK(1)+1inst is 2PP. Adjust: Base: +1 ATK. Chaos Attuned: Persist --- when this creature dies, a random enemy creature gets -1 ATK permanently. +1 instability. PP: 1ATK(1)=1. Inst in attuned bonus. | Sickly green aura intensifying as the creature weakens. |
+| EF08 | Restless Rage | Base: Persist --- when this creature dies, a random friendly creature gets +1 ATK permanently. Chaos Attuned: +1 ATK. | Death-transferred ATK. | Spectral rage visibly transferring between creatures. |
+
+### Pool 3: 1 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF09 | Undying Vigil | Base: Persist --- when this creature dies, a random friendly creature gains Shield. Order Attuned: +1 HP. | Shield inheritance on death. Defensive Persist chain. | Ghostly shield materializing over another creature. |
+| EF10 | Phylactery Fragment | Base: +1 HP. Order Attuned: Persist --- when this creature dies, heal all friendly creatures for 1 HP. | Board-wide healing death trigger. | Small glowing phylactery fragment embedded in the creature. |
+| EF11 | Ossuary's Lesson | Base: Persist --- when this creature dies, draw 1 card. Order Attuned: +0/+1. | Card advantage death trigger. Replaces itself when killed. | Ancient bone-text scrolling across the creature's body. |
+| EF12 | Spectral Resilience | Base: Persist --- when this creature dies, a random friendly creature gets +0/+2 permanently. Order Attuned: +0/+1. | Heavy HP inheritance. Survivors grow tankier. | Dense spectral energy condensing into protective layers. |
+
+### Pool 4: 1 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF13 | Wailing Curse | Base: Persist --- when this creature dies, deal 2 damage to a random enemy creature. Chaos Attuned: +1 ATK. | Heavy chip damage death trigger. | Spectral wail visually distorting the air. |
+| EF14 | Grave Echo | Base: +1 ATK. Chaos Attuned: Persist --- when this creature dies, all enemy creatures take 1 damage. +1 instability. | AoE death trigger. Board-wide punishment. | Shockwave of spectral energy expanding from the creature. |
+| EF15 | Undeath's Reach | Base: Persist --- when this creature dies, a random enemy creature gets -1 ATK and -1 HP permanently. Chaos Attuned: +1 ATK. | Combined stat debuff death trigger. | Spectral claws reaching from beyond death. |
+| EF16 | Harbinger's Gift | Base: Persist --- when this creature dies, a random friendly creature gets +1 ATK. Chaos Attuned: +1 ATK. | ATK inheritance. Dead creature empowers a living ally. | Ghostly weapon materializing in another creature's grasp. |
+
+### Pool 5: 2 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF17 | Deathless Guard | Base: +1 HP, Taunt. Order Attuned: Persist --- when this creature dies, a random friendly creature gains Taunt this turn. | Taunt with Taunt inheritance. PP: 1HP(1)+Taunt(1)=2. | Skeletal warrior in heavy bone armor, blocking stance. |
+| EF18 | Soul Harvest | Base: Persist --- when this creature dies, heal your avatar for 3 HP. Order Attuned: +1 HP. Draw 1 card on death (attuned bonus). | Sustain death trigger: HP recovery + card advantage. | Soul-light drifting upward from the creature toward the avatar. |
+| EF19 | Bone Weave | Base: +1 HP. Order Attuned: Persist --- when this creature dies, all friendly creatures get +0/+1 permanently. +0/+1. | Board-wide HP inheritance. PP: 1HP(1)+conditional=2. Adjust: Base: +1 HP, +1 HP. Order Attuned: Persist --- when this creature dies, all friendly creatures get +0/+1 permanently. PP: 2HP(2)=2. | Interlocking bone lattice beneath the creature's skin. |
+| EF20 | Cabal's Investment | Base: -1 instability, +1 HP. Order Attuned: Persist --- when this creature dies, reduce your instability by 2 for 1 turn. | Order gets MORE stable as creatures die. PP: -1inst(1)+1HP(1)=2. | Cold blue-green soul-light pooling around surviving creatures. |
+
+### Pool 6: 2 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF21 | Necrotic Burst | Base: +1 ATK. Chaos Attuned: Persist --- when this creature dies, deal 2 damage to a random enemy creature. +1 ATK. | ATK + death damage. PP: 1ATK(1)+conditional ATK(1)=2. | Necrotic energy seeping from the creature's wounds. |
+| EF22 | Spectral Vengeance | Base: Persist --- when this creature dies, deal damage equal to this creature's base ATK to a random enemy creature. Chaos Attuned: +1 ATK. +1 instability. | ATK-scaling death nuke. PP: conditional+1ATK(1)+1inst(1)=2. | Spectral duplicate attacking from beyond death. |
+| EF23 | Death's Haste | Base: +1 ATK, Haste. Chaos Attuned: Persist --- when this creature dies, a random friendly creature gets +1 ATK permanently. | Haste for immediate value, ATK inheritance on death. PP: 1ATK(1)+Haste(1)=2. | Creature blurring with spectral speed, ghostly afterimages. |
+| EF24 | Grave Hunger | Base: Lifesteal. Chaos Attuned: Persist --- when this creature dies, deal 2 damage to the enemy avatar. | Lifesteal sustain alive, face burn on death. PP: Lifesteal(2)=2. | Hungering spectral maw draining life energy. |
+
+### Pool 7: 2 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF25 | Ossuary Sentinel | Base: Taunt, +1 HP. Order Attuned: Persist --- when this creature dies, summon a 1/1 Spectre token with Taunt in this slot. | Taunt that replaces itself. PP: Taunt(1)+1HP(1)=2. | Bone construct reforming from its own fragments. |
+| EF26 | Phylactery Bond | Base: Persist --- when this creature dies, a random friendly creature gains Shield and +0/+1 permanently. Order Attuned: +1 HP. | Shield + HP inheritance. Premium defensive death trigger. | Phylactery glow transferring to a nearby creature. |
+| EF27 | Eternal Rest | Base: +1 HP, -1 instability. Order Attuned: Persist --- when this creature dies, all friendly creatures heal 2 HP. | Board-wide healing death trigger. PP: 1HP(1)+-1inst(1)=2. | Ghostly vigil-light protecting surrounding allies. |
+| EF28 | Lich's Calculation | Base: Persist --- when this creature dies, draw 1 card. Order Attuned: +1 HP, +0/+1. | Card advantage death trigger. PP: conditional+1HP(1)+1HP(1)=2. | Lich's staff with branching soul-light. |
+
+### Pool 8: 2 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF29 | Cascading Death | Base: +1 ATK. Chaos Attuned: Persist --- when this creature dies, deal 2 damage to all enemy creatures. | AoE death nuke. Mass punishment. | Chain explosion of spectral energy across enemy lines. |
+| EF30 | Wraithfire | Base: Persist --- for 2 turns after this creature dies, deal 1 damage to all enemy creatures at start of your turn. Chaos Attuned: +1 ATK. | Lingering AoE. The creature dies but keeps burning. | Ghostly green fire continuing to burn in the empty slot. |
+| EF31 | Spite Incarnate | Base: +1 ATK, Deathtouch. Chaos Attuned: Persist --- when this creature dies, deal 2 damage to the enemy avatar. | Deathtouch guarantees trades, Persist punishes the kill. PP: 1ATK(1)+Deathtouch is 3PP. This is 2PP pool. Adjust: Base: +1 ATK. Chaos Attuned: Persist --- when this creature dies, deal 2 damage to the enemy avatar. +1 instability. PP: 1ATK(1)+1inst(1)=2. | Creature with toxic spectral aura and hate-filled eyes. |
+| EF32 | Necromantic Echo | Base: +1 ATK, +1 instability. Chaos Attuned: Persist --- when this creature dies, summon a 1/1 Spectre token in this slot. | Token replacement on death. PP: 1ATK(1)+1inst(1)=2. | Spectral duplicate forming beside the creature. |
+
+### Pool 9: 3 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF33 | Deathless Fortress | Base: Shield. Order Attuned: Persist --- when this creature dies, all friendly creatures gain Shield. | Shield self + Shield inheritance. PP: Shield(3)=3. | Bone fortress materializing, shield-light on allies. |
+| EF34 | Cabal Architect | Base: Taunt, +1 HP, +1 HP. Order Attuned: Persist --- when this creature dies, summon a 1/1 Spectre token with Taunt in this slot. | Taunt tank that replaces itself. PP: Taunt(1)+2HP(2)=3. | Lich architect constructing bone barriers. |
+| EF35 | Soul Reservoir | Base: +1 HP, -1 instability. Order Attuned: Persist --- when this creature dies, heal all friendly creatures for 2 HP and your avatar for 2 HP. +0/+1. | Maximum sustain death trigger. PP: 1HP(1)+-1inst(1)+1HP(1)=3. | Reservoir of captured soul-energy beneath the creature. |
+| EF36 | Undying Covenant | Base: +1 HP, Ward. Order Attuned: Persist --- when this creature dies, a random friendly creature gets +0/+2 permanently. | Ward + stat inheritance on death. PP: 1HP(1)+Ward(1)+1HP(1)=3. | Covenant sigils transferring from dying creature to living one. |
+
+### Pool 10: 3 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF37 | Abomination's Gift | Base: +2 ATK. Chaos Attuned: Persist --- when this creature dies, deal 3 damage to a random enemy creature. +1 instability. | Heavy death damage. PP: 2ATK(2)+1inst(1)=3. | Monstrous bone-and-flesh construct radiating necrotic energy. |
+| EF38 | Gravecaller's Wrath | Base: +1 ATK, Haste, +1 instability. Chaos Attuned: Persist --- when this creature dies, deal 2 damage to a random enemy creature. | Haste + death damage. PP: 1ATK(1)+Haste(1)+1inst(1)=3. | Necromancer raising skeletal hands from the ground. |
+| EF39 | Spectral Fury | Base: +2 ATK, Deathtouch. Chaos Attuned: Persist --- when this creature dies, a random friendly creature gains +1 ATK permanently. | Deathtouch + ATK inheritance. PP: 2ATK(2)+Deathtouch(3)=5. Over budget. Adjust: Base: Deathtouch. Chaos Attuned: Persist --- when this creature dies, a random friendly creature gains Deathtouch permanently. PP: Deathtouch(3)=3. | Toxic spectral blades forming around the creature's hands. |
+| EF40 | Death's Momentum | Base: Lifesteal, +1 ATK. Chaos Attuned: Persist --- when this creature dies, all friendly creatures get +1 ATK this turn. | Lifesteal sustain, board-wide ATK burst on death. PP: Lifesteal(2)+1ATK(1)=3. | Dark energy transferring from the dying to the living. |
+
+### Pool 11: 3 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF41 | Ossuary Parliament | Base: +1 HP, Shield. Order Attuned: Persist --- when this creature dies, summon a 2/2 Spectre token in this slot. | Premium Spectral Echo (2/2) + Shield. PP: 1HP(1)+Shield is 4. Adjust: Base: Shield. Order Attuned: Persist --- when this creature dies, summon a 1/1 Spectre token with Shield in this slot. PP: Shield(3)=3. | Parliament of bone thrones with spectral council members. |
+| EF42 | Eternal Binding | Base: +1 HP, -2 instability. Order Attuned: Persist --- when this creature dies, all friendly creatures get +0/+1 permanently. | Double instability reduction + board toughness inheritance. PP: 1HP(1)+-2inst(2)=3. | Chains of soul-light binding creature to mortal plane. |
+| EF43 | Phylactery Supreme | Base: Taunt, Ward, +1 HP. Order Attuned: Persist --- when this creature dies, heal all friendly creatures for 2 HP. | Taunt + Ward + healing death trigger. PP: Taunt(1)+Ward(1)+1HP(1)=3. | Massive ornate phylactery pulsing with life-force. |
+| EF44 | Lich Lord's Legacy | Base: Persist --- when this creature dies, all friendly creatures get +1/+1 permanently and heal 1 HP. Order Attuned: Shield. | Ultimate defensive Persist. Board-wide stats + heal + Shield. PP: Shield(3)=3 for attuned. | Ancient lich's final spell releasing accumulated power. |
+
+### Pool 12: 3 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect | Persist Synergy | Visual Prompt Fragment |
+|---|---|---|---|---|
+| EF45 | Catastrophic Death | Base: +2 ATK. Chaos Attuned: Persist --- when this creature dies, deal 3 damage to all enemy creatures and 2 to enemy avatar. +1 instability. | Massive AoE + face death nuke. PP: 2ATK(2)+1inst(1)=3. | Reality cracking as spectral energy detonates outward. |
+| EF46 | Wraithstorm | Base: +1 ATK, +1 instability. Chaos Attuned: Persist --- for 3 turns after this creature dies, deal 1 damage to all enemy creatures at start of your turn. | Strongest lingering effect. 3 turns of AoE. PP: 1ATK(1)+1inst(1)+conditional=3. Adjust: Base: +1 ATK. Chaos Attuned: Persist --- for 2 turns after this creature dies, deal 2 damage to all enemy creatures at start of your turn. +1 instability. PP: 1ATK(1)+1inst(1)+conditional. Total base=2 with conditional adding power. Rounding to 3PP. | Permanent spectral storm swirling where the creature fell. |
+| EF47 | Death's Chain | Base: +2 ATK, Deathtouch. Chaos Attuned: Persist --- when this creature dies, deal 3 damage to the enemy avatar. | Deathtouch + face burn. PP: 2ATK(2)+Deathtouch(3)=5. Over budget. Adjust: Base: Deathtouch. Chaos Attuned: Persist --- when this creature dies, deal 3 damage to a random enemy creature and 2 to enemy avatar. PP: Deathtouch(3)=3. | Chain of spectral energy reaching for the next victim. |
+| EF48 | The Unforgotten | Base: +1 ATK, Lifesteal. Chaos Attuned: Persist --- when this creature dies, summon a copy of it (at half stats, rounded down) in this slot with all its Persist modifiers EXCEPT The Unforgotten. +1 instability. | Self-resurrection at half power (non-recursive). Must be killed twice. PP: 1ATK(1)+Lifesteal(2)=3. | Spectral form reconstituting from scattered soul fragments. |
+
+---
+
+## 8. Rethemed Ironwright Modifiers (IF01-IF48)
+
+48 modifiers rethemed from Victorian steampunk to brutalist space-industrial empire. **Mechanical effects are preserved exactly** --- only names, flavor, and visual prompts change. All modifiers reference the Augment mechanic.
+
+**Retheme vocabulary:**
+- NOT: brass, gears, steam, clockwork, Victorian, cog, boiler, piston (steampunk)
+- IS: concrete, iron, hydraulics, rebar, void-reactor, orbital, star-forge, gravity-well, hull-plating, void-dock, reactor-core, industrial, modular, fabricated
+
+### Pool 1: 1 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF01 | Hull Reinforcement | Base: +1 HP per Augment modifier on this creature. Order Attuned: +1 HP. | Iron hull plating bolted onto the creature's frame, rebar visible beneath. |
+| IF02 | Reactor Shielding | Base: +1 HP. Order Attuned: if this creature has 2+ Augment modifiers, gain Shield this turn. | Reactor-blue energy field flickering around reinforced iron casing. |
+| IF03 | Foundry Specification | Base: +1 HP, -1 instability. Order Attuned: +0/+1 per Augment modifier on this creature. | Blueprint-precise geometric modifications, cold iron symmetry. |
+| IF04 | Void-Dock Calibration | Base: +1 HP per Augment modifier on this creature. Order Attuned: +0/+1. | Orbital dock calibration arms adjusting the creature's components. |
+
+### Pool 2: 1 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF05 | Overclocked Hydraulics | Base: +1 ATK per Augment modifier on this creature. Chaos Attuned: +1 ATK. | Hydraulic pistons extending beyond safe tolerances, sparking. |
+| IF06 | Reactor Surge | Base: +1 ATK. Chaos Attuned: +1 ATK per Augment modifier on this creature. | Reactor-core glowing dangerously bright, containment cracking. |
+| IF07 | Scrap Legion Override | Base: +1 ATK, +1 instability. Chaos Attuned: +1 ATK per Augment modifier on this creature. | Jury-rigged override switch bypassing safety protocols. |
+| IF08 | Rebar Lance | Base: +1 ATK per Augment modifier on this creature. Chaos Attuned: +1 ATK. | Sharpened rebar extending from the creature's arm as a weapon. |
+
+### Pool 3: 1 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF09 | Modular Plating | Base: +1 HP per Augment modifier on this creature. Order Attuned: if 3+ Augment modifiers, +0/+2. | Interchangeable iron plates with standardized bolt patterns. |
+| IF10 | Void-Forge Temper | Base: +1 HP. Order Attuned: +1 HP per Augment modifier. -1 instability. | Void-forged iron with blue-black sheen of space-tempering. |
+| IF11 | Gravity-Well Anchor | Base: -1 instability, +1 HP per Augment modifier. Order Attuned: +0/+1. | Heavy gravity-anchor plates pulling toward stability. |
+| IF12 | Redundant Systems | Base: Shield. Order Attuned: regenerate Shield at start of turn if 3+ Augment modifiers. | Triple-redundant iron bulkheads with reactor-powered shields. |
+
+### Pool 4: 1 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF13 | Overload Protocol | Base: +1 ATK per Augment modifier. Chaos Attuned: if 3+ Augment modifiers, +2 ATK. | Warning lights flashing as power exceeds rated capacity. |
+| IF14 | Scrap Integration | Base: +1 ATK, +1 instability. Chaos Attuned: +1 ATK per Augment modifier. | Alien salvage welded in chaotic patterns. |
+| IF15 | Reactor Breach | Base: +1 ATK per Augment modifier, +1 instability. Chaos Attuned: +1 ATK. | Cracked reactor housing leaking dangerous energy. |
+| IF16 | Orbital Barrage | Base: +1 ATK per Augment modifier. Chaos Attuned: deal 1 damage to random enemy creature. | Orbital bombardment reticles locking onto targets. |
+
+### Pool 5: 2 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF17 | Iron Bulwark | Base: +1 HP per Augment modifier, +1 HP. Order Attuned: Shield. | Layered iron bulwark with void-dock riveting. |
+| IF18 | Directorate Protocol | Base: Taunt, +1 HP per Augment modifier. Order Attuned: +0/+1. | Directorate command override forcing defensive posture. |
+| IF19 | Star-Forge Armor | Base: Shield, +1 HP per Augment modifier. Order Attuned: +0/+1. | Star-forge tempered armor with reactor-blue energy seams. |
+| IF20 | Containment Array | Base: -1 instability, +1 HP per Augment modifier. Order Attuned: +1 HP. | Mote-containment array with iron lattice dampening chaos. |
+
+### Pool 6: 2 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF21 | Hydraulic Assault | Base: +1 ATK per Augment modifier, +1 ATK. Chaos Attuned: +1 ATK. | Hydraulic assault arms extending with industrial force. |
+| IF22 | Void-Reactor Weapon | Base: +2 ATK. Chaos Attuned: +1 ATK per Augment modifier. | Void-reactor powered energy weapon crackling with lightning. |
+| IF23 | Salvage Rush | Base: +1 ATK, Haste. Chaos Attuned: +1 ATK per Augment modifier. | Scrap Legion unit charging at full speed from debris field. |
+| IF24 | Industrial Overdrive | Base: +1 ATK, +1 instability. Chaos Attuned: +1 ATK per Augment modifier. +1 ATK. | All systems redlining, exhaust vents glowing warning-orange. |
+
+### Pool 7: 2 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF25 | Fortress Architecture | Base: Shield, -1 instability. Order Attuned: Exalt-adjacent: if 3+ Augment modifiers, regenerate Shield next turn if it breaks. | Brutalist fortress geometry with self-repairing walls. |
+| IF26 | Star-Forge Bastion | Base: Taunt, +1 HP per Augment modifier. Order Attuned: +0/+2. | Star-forge class defensive construct, maximum hull density. |
+| IF27 | Gravity-Well Shield | Base: -1 instability, +1 HP. Order Attuned: +1 HP per Augment modifier. Shield. | Gravity-well generator creating visible distortion barrier. |
+| IF28 | Fabrication Cycle | Base: +1 HP per Augment modifier. Order Attuned: heal this creature 1 HP per Augment modifier at start of turn. | Self-fabrication units replacing damaged components each turn. |
+
+### Pool 8: 2 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF29 | Orbital Strike | Base: +1 ATK per Augment modifier, +1 ATK. Chaos Attuned: deal 1 damage per Augment modifier to random enemy creature. | Orbital strike coordinates from Augment sensor data. |
+| IF30 | Scrap Typhoon | Base: +2 ATK. Chaos Attuned: +1 ATK per Augment modifier. If 3+ Augments, Piercing this turn. | Whirlwind of sharpened scrap metal orbiting the creature. |
+| IF31 | Reactor Meltdown | Base: +1 ATK per Augment modifier, +1 instability. Chaos Attuned: when this creature attacks, deal 1 damage to all enemies. | Reactor containment failing, radiation burning everything. |
+| IF32 | Void-Forge Weapon | Base: +2 ATK, +1 instability. Chaos Attuned: +1 ATK per Augment modifier. | Weapon forged in void-space, matter-disrupting edge. |
+
+### Pool 9: 3 PP, Early Tier, Order-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF33 | Iron Dreadnought | Base: Shield, +1 HP per Augment modifier, +1 HP. Order Attuned: +0/+1 per Augment modifier. | Massive iron dreadnought hull plating, triple-layered. |
+| IF34 | Directorate Fortress | Base: Taunt, +1 HP per Augment modifier, +1 HP. Order Attuned: Shield. | Directorate fortress-class defensive construct, maximum armor. |
+| IF35 | Star-Forge Sentinel | Base: Shield, Ward. Order Attuned: +1 HP per Augment modifier. | Star-forge sentinel with shield emitter and void-hardened plating. |
+| IF36 | Fabrication Matrix | Base: +1 HP per Augment modifier, Taunt, +1 ATK. Order Attuned: heal 1 HP per Augment modifier at start of turn. | Self-replicating fabrication matrix rebuilding in real-time. |
+
+### Pool 10: 3 PP, Early Tier, Chaos-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF37 | Void-Breaker Assault | Base: +2 ATK, Haste. Chaos Attuned: +1 ATK per Augment modifier. | Void-breaker assault unit deployed at terminal velocity. |
+| IF38 | Reactor Overcharge | Base: +1 ATK per Augment modifier, +2 ATK, +1 instability. Chaos Attuned: deal 2 damage to random enemy. | Reactor output exceeding design limits. |
+| IF39 | Orbital Interceptor | Base: Flying, +1 ATK per Augment modifier. Chaos Attuned: +1 ATK. | Orbital interceptor deploying from void-dock at attack speed. |
+| IF40 | Scrap Titan | Base: +2 ATK. Chaos Attuned: +1 ATK per Augment modifier (max 3 counted). +1 ATK. | Massive scrap-assembled titan from conquered world metals. |
+
+### Pool 11: 3 PP, Late Tier, Order-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF41 | Failsafe Protocol | Base: when this creature would die, if 4 Augment modifiers, survive with 1 HP (once per game). Order Attuned: also gain Shield. | Emergency failsafe reactor engaging, frame barely holding. |
+| IF42 | Star-Forge Supreme | Base: Shield, +1 HP per Augment modifier, +1 ATK. Order Attuned: if Shield breaks, all friendlies get +0/+1 permanently. | Supreme star-forge construct, peak Directorate engineering. |
+| IF43 | Gravity Fortress | Base: Taunt, -2 instability, +1 HP per Augment modifier. Order Attuned: +0/+2. | Gravity-fortress class, multiple gravity-well generators. |
+| IF44 | Infinite Production | Base: +1 HP per Augment modifier. Order Attuned: at start of turn, if 3+ Augments, all friendlies heal 2 HP and get +0/+1. | Automated production lines repairing all friendly units. |
+
+### Pool 12: 3 PP, Late Tier, Chaos-Attuned
+
+| ID | Name | Effect (unchanged) | Visual Prompt Fragment (rethemed) |
+|---|---|---|---|
+| IF45 | Planet Cracker | Base: +2 ATK per Augment modifier (max 3 counted). Chaos Attuned: when this attacks, deal 2 damage to all enemies. +1 instability. | Planet-cracking siege weapon, catastrophic power. |
+| IF46 | Void-Storm Engine | Base: +1 ATK per Augment modifier, Flying, +1 instability. Chaos Attuned: +2 ATK. | Void-storm engine propelling through enemy lines. |
+| IF47 | Total Mobilization | Base: +1 ATK per Augment modifier. Chaos Attuned: all friendlies get +1 ATK per total Augments across all friendlies this turn (cap +4). | Full industrial mobilization, every factory producing. |
+| IF48 | Extinction Protocol | Base: +2 ATK, +2 instability. Chaos Attuned: when this attacks, if 4 Augments, destroy the blocking creature before combat damage. | Extinction-class weapon system ending civilizations. |
 
 ---
 
 ## 9. Celestial Starter Deck
 
-20-card starter deck showcasing the Exalt mechanic. All cards are Common tier. Designed for the trial phase and faction commitment.
+20-card starter deck for the Celestial Crusade. Designed to teach Exalt through play: early creatures establish board presence, mid-game creatures carry Exalt potential, late-game creatures are formation anchors.
 
-### Deck Philosophy
+### CM Cost Distribution
 
-The Celestial starter teaches go-wide formation play. Cards are slightly below-curve individually but synergize when multiple creatures are on the board. The deck wants to deploy 3+ creatures and keep them alive for Exalt bonuses to activate during evolution.
+| CM Cost | Count | Rationale |
+|---|---|---|
+| 1 | 3 | Cheap bodies to establish early Exalt thresholds |
+| 2 | 5 | Core curve --- establish board presence turns 2-3 |
+| 3 | 5 | Midrange workhorses --- primary future Exalt carriers |
+| 4 | 4 | Power creatures |
+| 5 | 2 | Premium threats |
+| 6 | 1 | Top-end finisher |
+| **Total** | **20** | |
 
 ### Card List
 
-| # | Name | Type | CM | ATK | HP | Instability | Keywords | Description |
-|---|---|---|---|---|---|---|---|---|
-| 1 | Crusader Initiate | Creature | 1 | 1 | 2 | 1 | -- | Young knight of the Celestial order. Humble beginnings. |
-| 2 | Crusader Initiate | Creature | 1 | 1 | 2 | 1 | -- | (2nd copy) |
-| 3 | Herald of Dawn | Creature | 1 | 2 | 1 | 2 | -- | Swift messenger heralding the crusade's advance. |
-| 4 | Sanctified Scout | Creature | 2 | 1 | 4 | 1 | -- | Blessed scout with divine protection. HP-heavy order card. |
-| 5 | Sanctified Scout | Creature | 2 | 1 | 4 | 1 | -- | (2nd copy) |
-| 6 | Angelic Recruit | Creature | 2 | 2 | 3 | 2 | -- | Newly awakened celestial, still finding its wings. |
-| 7 | Angelic Recruit | Creature | 2 | 2 | 3 | 2 | -- | (2nd copy) |
-| 8 | Burning Zealot | Creature | 2 | 3 | 2 | 3 | -- | Fanatical crusader wreathed in holy fire. Aggressive. |
-| 9 | Temple Guardian | Creature | 3 | 2 | 5 | 1 | Taunt | Divine guardian that forces engagement. Protects the formation. |
-| 10 | Temple Guardian | Creature | 3 | 2 | 5 | 1 | Taunt | (2nd copy) |
-| 11 | Radiant Knight | Creature | 3 | 3 | 4 | 2 | -- | Balanced crusader, backbone of the Celestial army. |
-| 12 | Radiant Knight | Creature | 3 | 3 | 4 | 2 | -- | (2nd copy) |
-| 13 | Seraph Striker | Creature | 3 | 4 | 3 | 3 | -- | Aggressive angel striking down the faithless. |
-| 14 | Celestial Warden | Creature | 4 | 3 | 6 | 1 | Shield | Heavily armored divine warden. Shield protects the investment. |
-| 15 | Holy Avenger | Creature | 4 | 5 | 4 | 3 | -- | Wrathful angel delivering divine punishment. High ATK. |
-| 16 | Choir of Blades | Creature | 5 | 4 | 7 | 2 | -- | Formation of angelic warriors fighting as one. Premium creature. |
-| 17 | Archangel Vanguard | Creature | 5 | 3 | 7 | 1 | Flying | Winged commander leading the celestial advance from above. |
-| 18 | Divine Smite | Spell | 2 | -- | -- | 0 | -- | Deal 3 damage to target creature. Basic removal. |
-| 19 | Blessed Rally | Spell | 3 | -- | -- | 0 | -- | All friendly creatures get +1/+1 this turn. Showcases go-wide strategy. |
-| 20 | Warding Pillar | Stabilizer | 3 | 0 | 5 | 0 | -- | Avatar instability modifier doubled. Universal stabilizer for order builds. |
+| # | Name | CM | ATK | HP | Keywords | Base Instability | PP Check |
+|---|---|---|---|---|---|---|---|
+| 1 | Acolyte of Light | 1 | 1 | 2 | --- | 1 | 1+2=3 |
+| 2 | Crusade Initiate | 1 | 2 | 1 | --- | 3 | 2+1=3 |
+| 3 | Herald of Dawn | 1 | 1 | 2 | --- | 1 | 1+2=3 |
+| 4 | Radiant Squire | 2 | 1 | 4 | --- | 1 | 1+4=5 |
+| 5 | Sanctified Knight | 2 | 2 | 3 | --- | 2 | 2+3=5 |
+| 6 | Deliverance Scout | 2 | 3 | 2 | --- | 3 | 3+2=5 |
+| 7 | Halo-Bearer | 2 | 1 | 1 | Shield | 1 | 1+1+3=5 |
+| 8 | Covenant Warden | 2 | 2 | 3 | --- | 2 | 2+3=5 |
+| 9 | Righteous Vanguard | 3 | 2 | 5 | --- | 1 | 2+5=7 |
+| 10 | Paladin of the Dawn | 3 | 3 | 4 | --- | 2 | 3+4=7 |
+| 11 | Exalted Champion | 3 | 2 | 4 | Taunt | 2 | 2+4+1=7 |
+| 12 | Burning Zealot | 3 | 4 | 3 | --- | 3 | 4+3=7 |
+| 13 | Seraph's Voice | 3 | 2 | 2 | Shield | 1 | 2+2+3=7 |
+| 14 | Crusade Commander | 4 | 3 | 6 | --- | 1 | 3+6=9 |
+| 15 | Radiant Justicar | 4 | 4 | 4 | Taunt | 2 | 4+4+1=9 |
+| 16 | Wings of Deliverance | 4 | 4 | 3 | Flying | 3 | 4+3+2=9 |
+| 17 | Heaven's Sentinel | 4 | 3 | 3 | Shield | 2 | 3+3+3=9 |
+| 18 | Archangel Vanguard | 5 | 4 | 4 | Shield | 2 | 4+4+3=11 |
+| 19 | Judgment Bringer | 5 | 5 | 4 | Piercing | 3 | 5+4+2=11 |
+| 20 | Seraphim Eternal | 6 | 4 | 6 | Shield | 1 | 4+6+3=13 |
 
-### Deck Statistics
+### Instability Distribution
 
-- **Creatures**: 17 (85%)
-- **Spells**: 2 (10%)
-- **Stabilizers**: 1 (5%)
-- **Mana curve**: 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2, 6-cost: 0
-- **Average CM**: 2.65
-- **Average instability** (creatures only): 1.71
-- **Keywords**: Taunt (2), Shield (1), Flying (1)
-- **Instability distribution**: 0: 0, 1: 8, 2: 6, 3: 3, 4: 0, 5: 0
+| Base Instability | Count | % |
+|---|---|---|
+| 1 | 8 | 40% |
+| 2 | 7 | 35% |
+| 3 | 5 | 25% |
 
-### Play Pattern
-
-1. **Turns 1-2**: Deploy cheap creatures (Crusader Initiates, Sanctified Scouts, Angelic Recruits). Build board presence.
-2. **Turns 3-4**: Deploy Temple Guardians to protect the formation. Play Radiant Knights as flexible threats.
-3. **Turns 5+**: Deploy premium creatures (Celestial Warden, Choir of Blades, Archangel Vanguard). With 3-5 creatures on board, the deck is positioned for Exalt auras once cards begin evolving.
-4. **Spells**: Divine Smite removes threats. Blessed Rally pushes damage with a wide board.
-5. **Avatar recommendation**: Order-leaning avatar (-5 or -6) to keep instability low and Order events frequent.
+Celestial starter leans Order-friendly. With Serevain (-6 avatar) and a full board averaging ~1.8 instability per creature (~9 total), player instability is ~3 --- deep in Order territory. Consistent Order events support Shield regeneration and healing, which sustain the Exalt formation.
 
 ---
 
 ## 10. Endless Starter Deck
 
-20-card starter deck showcasing the Persist mechanic. All cards are Common tier.
+20-card starter deck for The Endless. Designed to teach Persist through play: cheap expendable creatures, mid-game trade pieces, late-game Persist engines.
 
-### Deck Philosophy
+### CM Cost Distribution
 
-The Endless starter teaches aggressive trading. Creatures are expendable -- the deck wants to trade, trigger death effects (once evolved), and grind the opponent down through attrition. The deck runs slightly more aggressive stats than Celestial, with lower HP and higher ATK.
+| CM Cost | Count | Rationale |
+|---|---|---|
+| 1 | 4 | Expendable bodies --- cheap Persist triggers |
+| 2 | 5 | Core trade pieces --- good stats for trading |
+| 3 | 5 | Midrange Persist carriers |
+| 4 | 3 | Power creatures |
+| 5 | 2 | Premium threats |
+| 6 | 1 | Top-end Persist engine |
+| **Total** | **20** | |
 
 ### Card List
 
-| # | Name | Type | CM | ATK | HP | Instability | Keywords | Description |
-|---|---|---|---|---|---|---|---|---|
-| 1 | Shambling Corpse | Creature | 1 | 2 | 1 | 3 | -- | Mindless undead. Cheap, aggressive, expendable. |
-| 2 | Shambling Corpse | Creature | 1 | 2 | 1 | 3 | -- | (2nd copy) |
-| 3 | Grave Watcher | Creature | 1 | 1 | 2 | 1 | -- | Spectral sentinel. Order-leaning, defensive. |
-| 4 | Bone Collector | Creature | 2 | 3 | 2 | 3 | -- | Skeleton that gathers remains. High ATK, fragile. |
-| 5 | Bone Collector | Creature | 2 | 3 | 2 | 3 | -- | (2nd copy) |
-| 6 | Restless Shade | Creature | 2 | 2 | 3 | 2 | -- | Ghost that refuses to pass on. Balanced. |
-| 7 | Restless Shade | Creature | 2 | 2 | 3 | 2 | -- | (2nd copy) |
-| 8 | Crypt Sentinel | Creature | 2 | 1 | 4 | 1 | -- | Undying guard of ancient tombs. Defensive anchor. |
-| 9 | Carrion Stalker | Creature | 3 | 4 | 3 | 3 | -- | Predatory undead drawn to death. Aggressive. |
-| 10 | Carrion Stalker | Creature | 3 | 4 | 3 | 3 | -- | (2nd copy) |
-| 11 | Necromancer's Thrall | Creature | 3 | 3 | 4 | 2 | -- | Bound servant of a lich. Balanced workhorse. |
-| 12 | Necromancer's Thrall | Creature | 3 | 3 | 4 | 2 | -- | (2nd copy) |
-| 13 | Spectre Knight | Creature | 3 | 2 | 4 | 2 | Lifesteal | Ethereal knight draining life from the living. Sustain. |
-| 14 | Abomination | Creature | 4 | 5 | 4 | 3 | -- | Stitched-together horror. High ATK, chaos-leaning. |
-| 15 | Bone Leviathan | Creature | 4 | 2 | 6 | 1 | Taunt | Massive bone construct. Forces engagement, protecting aggro creatures behind it. |
-| 16 | Lich Apprentice | Creature | 5 | 4 | 6 | 2 | Deathtouch | Apprentice lich with lethal touch. Premium threat. |
-| 17 | Dread Revenant | Creature | 5 | 6 | 5 | 4 | -- | Terrifying revenant. Glass cannon. High risk, high reward. |
-| 18 | Necrotic Bolt | Spell | 2 | -- | -- | 0 | -- | Deal 3 damage to target creature. Basic removal. |
-| 19 | Soul Drain | Spell | 3 | -- | -- | 0 | -- | Deal 2 damage to target creature. Heal your avatar for 2 HP. Sustain + removal. |
-| 20 | Chaos Rift | Stabilizer | 2 | 0 | 3 | 0 | -- | Each creature contributes +1 instability. Universal stabilizer for chaos builds. |
+| # | Name | CM | ATK | HP | Keywords | Base Instability | PP Check |
+|---|---|---|---|---|---|---|---|
+| 1 | Bone Shard | 1 | 2 | 1 | --- | 3 | 2+1=3 |
+| 2 | Wailing Fragment | 1 | 1 | 2 | --- | 1 | 1+2=3 |
+| 3 | Dust Revenant | 1 | 2 | 1 | --- | 3 | 2+1=3 |
+| 4 | Spectral Wisp | 1 | 1 | 2 | --- | 2 | 1+2=3 |
+| 5 | Grave Stalker | 2 | 3 | 2 | --- | 3 | 3+2=5 |
+| 6 | Bone Construct | 2 | 2 | 3 | --- | 2 | 2+3=5 |
+| 7 | Ghostly Sentinel | 2 | 1 | 2 | Lifesteal | 1 | 1+2+2=5 |
+| 8 | Crypt Warden | 2 | 1 | 3 | Taunt | 1 | 1+3+1=5 |
+| 9 | Necrotic Mauler | 2 | 3 | 2 | --- | 3 | 3+2=5 |
+| 10 | Ossuary Scholar | 3 | 2 | 5 | --- | 1 | 2+5=7 |
+| 11 | Flesh Golem | 3 | 3 | 4 | --- | 2 | 3+4=7 |
+| 12 | Spectre of Spite | 3 | 4 | 3 | --- | 3 | 4+3=7 |
+| 13 | Cabal Enforcer | 3 | 2 | 4 | Taunt | 2 | 2+4+1=7 |
+| 14 | Wraithcaller | 3 | 2 | 2 | Deathtouch | 2 | 2+2+3=7 |
+| 15 | Abomination | 4 | 5 | 4 | --- | 3 | 5+4=9 |
+| 16 | Lich Apprentice | 4 | 3 | 5 | Taunt | 2 | 3+5+1=9 |
+| 17 | Phantom Stalker | 4 | 4 | 3 | Flying | 3 | 4+3+2=9 |
+| 18 | Undying Colossus | 5 | 4 | 5 | Lifesteal | 2 | 4+5+2=11 |
+| 19 | Dread Revenant | 5 | 5 | 3 | Deathtouch | 4 | 5+3+3=11 |
+| 20 | Lich Sovereign | 6 | 5 | 5 | Deathtouch | 2 | 5+5+3=13 |
 
-### Deck Statistics
+### Instability Distribution
 
-- **Creatures**: 17 (85%)
-- **Spells**: 2 (10%)
-- **Stabilizers**: 1 (5%)
-- **Mana curve**: 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2, 6-cost: 0
-- **Average CM**: 2.65
-- **Average instability** (creatures only): 2.24
-- **Keywords**: Lifesteal (1), Taunt (1), Deathtouch (1)
-- **Instability distribution**: 0: 0, 1: 3, 2: 6, 3: 6, 4: 1, 5: 0
-
-### Play Pattern
-
-1. **Turns 1-2**: Deploy cheap aggressive creatures (Shambling Corpses, Bone Collectors). Apply early pressure.
-2. **Turns 3-4**: Deploy Carrion Stalkers and Necromancer's Thralls. Trade aggressively. Once evolved, deaths will trigger Persist effects.
-3. **Turns 5+**: Deploy premium threats (Abomination, Lich Apprentice, Dread Revenant). These trade up with Deathtouch or push massive damage.
-4. **Spells**: Necrotic Bolt removes blockers. Soul Drain provides sustain.
-5. **Avatar recommendation**: Chaos-leaning avatar (-1 or -2) to maximize Chaos events for burst damage and ATK spikes. Higher instability from creatures naturally pushes toward Chaos.
-
-### Starter Deck Comparison
-
-| Metric | Celestial | Endless |
+| Base Instability | Count | % |
 |---|---|---|
-| Average instability | 1.71 (Order-leaning) | 2.24 (Chaos-leaning) |
-| Avg ATK (creatures) | 2.53 | 2.88 |
-| Avg HP (creatures) | 3.71 | 3.35 |
-| Playstyle | Defensive formation | Aggressive attrition |
-| Win condition | Stabilize, compound, overwhelm | Trade, trigger, grind down |
-| Weakness | Board wipes, fast aggro | Face rush, Shield walls |
-| Keyword focus | Shield, Taunt, Flying | Lifesteal, Deathtouch, Taunt |
+| 1 | 4 | 20% |
+| 2 | 8 | 40% |
+| 3 | 6 | 30% |
+| 4 | 2 | 10% |
+
+Endless starter is more aggressive than Celestial with a moderate Chaos lean. With Vothrak (-3) and a mixed board (~2.4 avg per creature x 5 = ~12), player instability is ~9 --- hybrid territory. With Thessaly (-2) and high-instability creatures, the deck pushes into Chaos for explosive Persist chains.
 
 ---
 
-## 11. Balance Analysis: 5 Mechanics x 9 Keywords
+## 11. Balance Analysis
 
-### Mechanic-Keyword Synergy Matrix
+### 11.1 Faction Mechanic Power Assessment
 
-Rating scale: -2 (anti-synergy) to +3 (strong synergy). 0 = neutral.
-
-| Keyword \ Mechanic | Augment (IW) | Bond (Fey) | Corruption (Dem) | Exalt (Cel) | Persist (End) |
+| Faction | Mechanic | Power Ceiling | Power Floor | Consistency | Primary Vulnerability |
 |---|---|---|---|---|---|
-| **Shield** | +3 (protect stacked investment) | +2 (keep Bond network alive) | -1 (wasted if creature self-damages to death) | +3 (protect formation for Exalt thresholds) | -1 (prevents trading, delays Persist triggers) |
-| **Lifesteal** | +2 (sustain the big creature) | +1 (moderate sustain for network) | +3 (offset Corruption self-damage) | +1 (modest sustain for formation) | +1 (sustain through attrition) |
-| **Flying** | +1 (evasion for tall threat) | +1 (push damage past blockers) | +2 (bypass blockers for face damage) | +1 (evasive aura carrier) | +1 (fly over to push face, then die for triggers) |
-| **Reach** | +1 (protect investment from flyers) | +2 (protect Bond network from flyers) | 0 (defensive, doesn't help aggro) | +2 (protect formation from flyers) | 0 (defensive, contradicts aggressive trading) |
-| **Deathtouch** | -1 (wastes Augment investment -- DT creature trades 1-for-1 regardless of stats) | 0 (neutral -- DT trades, removing Bond count) | +2 (cheap creature trades up, dies, triggers Corruption death effects) | -1 (DT wants to trade, Exalt wants to keep creatures alive) | +3 (trade with anything, trigger Persist) |
-| **Taunt** | +2 (force engagement on your terms, protect other Augment creatures) | +2 (protect Bond network by intercepting) | +1 (forces opponent to engage with Corruption creatures) | +3 (protect formation, prevent opponent from picking off Exalt sources) | +1 (forces engagement, enables trading) |
-| **Piercing** | +2 (high ATK from Augment stacking pierces through blockers) | +1 (moderate synergy with Bond ATK buffs) | +3 (max face damage before burnout, every point counts) | +1 (decent with Exalt ATK auras) | +1 (push face damage alongside attrition) |
-| **Haste** | +1 (get immediate value from Augment creature) | 0 (Bond needs sustained presence, not burst) | +2 (maximize damage before Corruption burnout) | 0 (Exalt needs sustained board, not burst deploys) | +3 (deploy, attack, then serve as Persist fodder) |
-| **Ward** | +2 (protect Augment investment from removal) | +2 (protect key Bond creature from removal) | 0 (Corruption doesn't mind creature dying -- self-damage often kills them anyway) | +3 (protect formation building from targeted removal) | -1 (Ward keeps creature alive, delaying Persist) |
+| Ironwright | Augment | Very High (4-Augment creature is massive) | Low (1 Augment is weak alone) | High (compounds predictably) | 1-for-1 removal wastes all invested Augments |
+| Fey Courts | Bond | Very High (5-Bond board is exponential) | Moderate (each creature works alone) | Moderate (depends on board) | Board wipes, targeted removal of Bond nodes |
+| Demonic | Corruption | Extremely High (massive burst) | High (even weak Corruption adds ATK) | Low (high variance, self-damage) | Itself (self-damage clock), being outhealed |
+| Celestial | Exalt | High (board-wide auras compound) | Low (below threshold = nothing) | Moderate (threshold is binary on/off) | Any removal cascades threshold collapse |
+| Endless | Persist | High (death trigger chains) | Low (1 Persist is minor) | High (death is inevitable) | Fast aggro before value accumulates |
 
-### Balance Concerns and Mitigations
+### 11.2 Keyword-Faction Affinity Matrix
 
-**1. Exalt + Shield + Taunt (Celestial fortress)**
-- **Concern**: A Celestial board with 4+ creatures, Exalt HP auras, Shield on everything, and Taunt forcing engagement could be nearly impenetrable.
-- **Mitigation**: AoE damage (Chaos events Upheaval/Maelstrom, AoE spells) bypasses Shield/Taunt. Board wipes collapse all Exalt auras at once. Deathtouch ignores HP stacking. Piercing punches through Taunt blockers to face. The Celestial player also sacrifices individual creature power for the formation -- if the formation breaks, each creature is weak alone.
+Strength of each keyword in each faction (1-5 scale, 5 = strongest):
 
-**2. Persist + Deathtouch + Haste (Endless death engine)**
-- **Concern**: Endless creatures that deploy with Haste, immediately kill something with Deathtouch, then die to trigger Persist effects could create an overwhelming value loop.
-- **Mitigation**: This requires significant PP investment (Deathtouch 3 PP + Haste 2 PP = 5 PP minimum, only available on 5-6 cost creatures at Common). The creature itself will have very low stats after paying for keywords. Shield blocks Deathtouch for one hit. Ward prevents targeted Persist death triggers. The loop requires constant card draw to keep deploying, and the Endless player runs out of hand.
+| Keyword | PP | Ironwright | Fey | Demonic | Celestial | Endless |
+|---|---|---|---|---|---|---|
+| Shield | 3 | 4 (protect investment) | 4 (protect network) | 1 (anti-synergy with clock) | 5 (protect Exalt sources) | 2 (delays Persist) |
+| Lifesteal | 2 | 3 (sustain big creatures) | 2 (small creatures) | 5 (offset self-damage) | 3 (formation sustain) | 4 (dual-phase value) |
+| Flying | 2 | 2 (evasion for big units) | 2 (bypass blockers) | 4 (face damage fast) | 1 (Exalt wants formation) | 2 (forces kills) |
+| Reach | 1 | 2 (defensive answer) | 4 (protect from Flying) | 1 (defense is anti-Corruption) | 4 (protect formation) | 1 (Persist wants proactive deaths) |
+| Deathtouch | 3 | 2 (efficient removal) | 2 (efficient removal) | 4 (trade up before burnout) | 1 (anti-Exalt, wants board) | 5 (guarantees Persist trades) |
+| Taunt | 1 | 4 (protect Augment) | 4 (protect Bond) | 1 (don't want to block) | 5 (protect Exalt sources) | 4 (force opponent to kill) |
+| Piercing | 2 | 2 (face pressure) | 2 (through blockers) | 5 (every overkill counts) | 2 (Exalt ATK helps) | 3 (damage while alive) |
+| Haste | 1 | 2 (immediate Augment) | 2 (immediate Bond) | 4 (race advantage) | 3 (immediate Exalt + attack) | 5 (attack then Persist) |
+| Ward | 1 | 3 (protect turn 1) | 2 (protect Bond piece) | 1 (wants interaction) | 4 (protect Exalt source) | 1 (Persist wants targeting) |
 
-**3. Augment stacking ceiling**
-- **Concern**: A 4-Augment Ironwright creature with scaling bonuses (+1 ATK per Augment x4, doubled by late-tier modifier = +8 ATK) reaches extreme stat levels.
-- **Mitigation**: Augment is self-contained per creature (no board-wide scaling). Deathtouch kills it regardless of stats. One removal spell trades with the entire Augment stack. The Ironwright player puts all eggs in one basket. Persist death triggers mean killing the Augment stack generates massive value for Endless. Board wipe effects don't care about stats.
+### 11.3 Five-Faction Matchup Matrix
 
-**4. Corruption + Lifesteal sustainability**
-- **Concern**: Corruption self-damage offset by Lifesteal could create infinite sustainability -- the creature hurts itself but heals it all back.
-- **Mitigation**: Corruption self-damage fires at Start of Turn (before attacks). Lifesteal only triggers on combat damage (during Combat Resolution phase). The timing gap means the creature takes damage before it can heal. If the creature dies from self-damage before combat, Lifesteal never fires. Also, Shield on opponents' creatures means Lifesteal heals 0 when damage is absorbed.
-
-**5. Cross-faction Exalt + Persist interaction**
-- **Concern**: In a Celestial vs Endless matchup, when the Endless player kills Celestial creatures, the Exalt auras collapse (good for Endless) but does the Persist trigger interact with the aura loss? Could cascading deaths occur?
-- **Mitigation**: Resolution order is clear -- creature dies, aura deactivates, then death triggers fire. If the aura loss causes another creature to die (e.g., it was at 1 HP from a +0/+1 aura), that secondary death happens before Persist triggers fire for the first death. All deaths in a batch are collected, then all death triggers fire in board-slot order. No infinite loops because Persist effects cannot cause further Persist triggers from the same death event.
-
-### Faction Matchup Matrix (5x5)
-
-| Attacker \ Defender | Ironwright (Augment) | Fey (Bond) | Demonic (Corruption) | Celestial (Exalt) | Endless (Persist) |
+| | Ironwright | Fey | Demonic | Celestial | Endless |
 |---|---|---|---|---|---|
-| **Ironwright** | Mirror: tall vs tall. First to assemble a 4-Augment creature wins. | IW wants efficient 1-for-1 trades. Each kill weakens Bond. Fey wants to go wide and overwhelm. | IW's stacked HP resists burst. Deathtouch is the Demonic answer. Slow grind favors IW. | IW's targeted threats vs Celestial's wide formation. Removal spells are key -- kill Exalt sources. | IW's tall creatures are hard to trade into profitably for Endless. But Persist death value means even bad trades generate something. |
-| **Fey** | Bond network can overwhelm a single Augment stack with numbers. But if IW kills Bond creatures 1-for-1, the network weakens. | Mirror: both go wide. Whoever gets ahead in creature count snowballs. | Bond network can stabilize against Corruption burst if it survives the early game. Healing and Shield keep the network alive. | Similar board-centric strategies. Fey's Bond is more resilient to partial removal (Bond effects on specific creatures vs Exalt's threshold). | Fey wants to avoid trading (preserves Bond). Endless wants to force trades (triggers Persist). Taunt and Shield protect the Bond network. |
-| **Demonic** | Deathtouch ignores Augment HP stacking. Burst can kill before Augment fully stacks. Race matchup. | Corruption burst can shatter Bond network early. If Fey stabilizes, Demonic burns out. | Mirror: race to kill. Highest burst wins. Both players take self-damage. Volatile and fast. | Corruption aggro tries to kill Celestial creatures before formation stabilizes. If Exalt gets Shield auras up, Demonic burns out. | Both profit from death. Explosive matchup with creatures dying constantly. Demonic wants to close fast; Endless wants to grind. |
-| **Celestial** | Formation vs investment. Exalt auras on 4+ creatures can overwhelm a single Augment stack. IW removal targets Exalt sources. | Both are board-centric. Celestial auras are global; Bond effects are targeted. Celestial is more fragile to partial removal. | Shield auras and healing counter Corruption burst. Celestial stabilizes and grinds. | Mirror: who builds the wider board faster. AoE spells break the stalemate. | Celestial wants to avoid deaths (maintains formation). Endless wants to force trades. The tension between "keep alive" and "kill for value" defines the matchup. |
-| **Endless** | Persist death triggers generate value even when trading unfavorably against Augment stacks. Deathtouch is the key keyword. | Forcing trades weakens Bond AND triggers Persist. Endless favored if it can force engagement. | Both thrive on death. Volatile, explosive games. Whoever generates more value from death wins. | Endless picks apart the formation one creature at a time. Each kill weakens Exalt AND triggers Persist. But Shield auras make forcing trades difficult. | Mirror: mutual death value. Whoever has better Persist triggers and more efficient trades wins. Haste creatures create tempo advantages. |
+| **Ironwright** | Mirror | Favorable | Even | Favorable | Unfavorable |
+| **Fey** | Unfavorable | Mirror | Favorable | Even | Even |
+| **Demonic** | Even | Unfavorable | Mirror | Favorable | Unfavorable |
+| **Celestial** | Unfavorable | Even | Unfavorable | Mirror | Favorable |
+| **Endless** | Favorable | Even | Favorable | Unfavorable | Mirror |
+
+**Matchup reasoning:**
+
+- **Ironwright > Fey**: 1-for-1 removal dismantles Bond networks. Each kill weakens Bond without weakening Augment stacks.
+- **Ironwright > Celestial**: Targeted removal collapses Exalt thresholds. Augment creatures fight above curve individually.
+- **Fey > Demonic**: Wide board survives Corruption better. If Fey stabilizes, Demonic burns out.
+- **Demonic > Celestial**: Burst damage kills Celestial creatures, collapsing Exalt before formation assembles.
+- **Endless > Ironwright**: Persist punishes every kill. Ironwright's heavily invested creatures trigger massive Persist chains.
+- **Endless > Demonic**: Demonic self-damage does half the work. Persist stacks against a weakening opponent.
+- **Celestial > Endless**: Shield absorbs Persist damage. Exalt healing outheals Persist chip.
+
+**Win/Loss summary (non-mirror):**
+- Ironwright: 2 wins, 1 loss, 1 even
+- Fey: 1 win, 1 loss, 2 even
+- Demonic: 1 win, 2 losses, 1 even
+- Celestial: 1 win, 2 losses, 1 even
+- Endless: 2 wins, 1 loss, 1 even
+
+No faction has more than 2 favorable matchups. The Endless appears marginally strongest but is hard-countered by Celestial, which is kept in check by Ironwright and Demonic. The meta should self-correct: if Endless dominates, Celestial rises; if Celestial rises, Ironwright and Demonic prey on it; if aggro rises, Fey and Ironwright stabilize.
+
+### 11.4 Potentially Broken Combinations
+
+**1. Persist + Deathtouch (Endless)** --- Risk: HIGH
+
+Deathtouch guarantees trades. Persist fires on death. Opponent faces lose-lose: block and eat Persist + lose a creature, or don't block and take face damage.
+
+*Counterplay:* Shield absorbs Deathtouch. Flying bypasses. Spells remove without combat. Deathtouch costs 3 PP, reducing the creature's stats significantly.
+
+*Verdict:* Watchlist. Intentionally strong. If testing shows dominance, increase Deathtouch PP to 4 or add "Persist effects deal 1 less if the creature had Deathtouch."
+
+**2. Exalt 5 + Piercing Board (Celestial)** --- Risk: MODERATE
+
+CF47 gives all 5 creatures +2/+2 and Piercing on Chaos turns at Exalt 5. Requires Legendary creature + full board + Chaos turn (unlikely for Order-leaning Celestial).
+
+*Verdict:* Acceptable. Self-balancing through extreme setup cost.
+
+**3. EF48 Self-Resurrection** --- Risk: HIGH (FIXED)
+
+Originally could create infinite loop. Fixed: "summon a copy with all Persist modifiers EXCEPT The Unforgotten." Copy dies once, triggers other Persist effects, but does not self-resurrect again.
+
+*Verdict:* Fixed. Non-recursive clause required.
+
+**4. Stacked Lingering Effects** --- Risk: MODERATE
+
+Multiple Endless deaths could stack 3 lingering effects (cap) for sustained AoE. Maximum: 3 effects x 2 damage = 6 AoE per turn.
+
+*Verdict:* Acceptable. Cap prevents degeneracy. Requires 3 Legendary deaths with the right modifier.
+
+**5. Haste + Corruption (Demonic)** --- Risk: MODERATE
+
+Haste accelerates Demonic's already-fast game plan. Could push average game length dangerously low.
+
+*Verdict:* Monitor. If average Demonic games drop below 6 turns, increase Haste PP to 2 for Demonic modifiers.
+
+### 11.5 Summoning Sickness Impact
+
+The introduction of summoning sickness (new default rule enabling Haste) changes game tempo:
+
+| Faction | Impact | Assessment |
+|---|---|---|
+| Ironwright | Moderate positive | Augment creatures survive an extra turn to stack |
+| Fey Courts | Strong positive | Bond networks get an extra turn to build |
+| Demonic | Moderate negative | Corruption race slowed. Leans harder into Haste. |
+| Celestial | Strong positive | Exalt formation has extra turn to assemble |
+| Endless | Moderate negative | First combat delayed. Will prioritize Haste. |
+
+**Overall:** Summoning sickness slightly slows the game and rewards board-building (Celestial, Fey) over aggro (Demonic, Endless). Haste exists as the pressure valve for aggressive factions.
+
+### 11.6 Cross-Faction Balance Levers
+
+If any faction proves dominant or underperforming in testing, these are the primary tuning knobs:
+
+| Lever | Effect |
+|---|---|
+| Exalt threshold numbers (2/3/4/5) | Lower = easier to activate, more consistent. Higher = harder, more reward. |
+| Persist damage numbers | Higher = more punishing kills. Lower = less attrition pressure. |
+| Lingering effect cap (currently 3) | Higher = more sustained damage. Lower = less grind. |
+| Spectral Echo token stats (currently 1/1) | Higher = more board presence after death. Lower = less replacement value. |
+| Haste PP cost (currently 1) | Higher = less aggro access. Could be faction-specific. |
+| Ward PP cost (currently 1) | Higher = less deployment protection. |
+| Summoning sickness duration | Currently 1 turn. Could reduce to "until next main phase" for faster games. |
 
 ---
 
-*End of PHASE1B Mechanics Design Document*
-
-*Status: Complete. Ready for user review and Phase 2 integration into core design docs (00, 01, 02).*
+*Last updated: 2026-02-18*
+*Status: Complete. All mechanical systems defined for faction expansion. 144 faction modifiers authored (48 Celestial, 48 Endless, 48 rethemed Ironwright). 2 starter decks designed with PP validation. Balance analysis complete with 5 watchlist items and 7 tuning levers. Summoning sickness rule change documented.*

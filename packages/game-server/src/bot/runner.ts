@@ -140,8 +140,8 @@ export async function executeBotTurn(matchId: string): Promise<void> {
   });
 
   // ─── Declare Attackers ─────────────
-  const attackerIds = decideBotAttackers(stateBeforeAttack);
-  const attackResult = handleDeclareAttackersAction(stateBeforeAttack, attackerIds);
+  const { attackerIds, ruinTargets } = decideBotAttackers(stateBeforeAttack);
+  const attackResult = handleDeclareAttackersAction(stateBeforeAttack, attackerIds, ruinTargets);
 
   if (!attackResult.valid) {
     // If attack declaration fails, skip combat and end turn

@@ -1,9 +1,9 @@
 // Chaos Creatures Game Server — Event System
 // 8 Order events + 8 Chaos events from docs/design/01-battle-mechanics.md Sections 8-9
 
-import type { EventDefinition, GameState, BattlePlayer, EffectResult, EventResolutionResult, TriggerResult } from '../types/game-state';
+import type { EventDefinition, GameState, BattlePlayer, BattleCreature, EffectResult, EventResolutionResult, TriggerResult } from '../types/game-state';
 import type { EventType } from '../types/enums';
-import { resolveEffect, resolveTriggeredAbilities, processDeaths } from './effects';
+import { resolveEffect, resolveTriggeredAbilities, processDeaths, isBattleCreature } from './effects';
 import { recalculateInstability } from './instability';
 import { SeededRNG } from './rng';
 import { EVENT_POOL_SIZE } from './constants';
@@ -305,12 +305,12 @@ export function resolveEventPhase(
     if (effectResults.length > 0 && effectResults[0].target_ids.length > 0) {
       const targetId = effectResults[0].target_ids[0];
       // Find the creature that was damaged
-      const targetCreature = activePlayer.board.find(
+      const targetEntity = activePlayer.board.find(
         c => c && c.instance_id === targetId
       );
-      // Only buff if the creature survived the damage
-      if (targetCreature && targetCreature.is_alive) {
-        targetCreature.attack += 3;
+      // Only buff if the creature survived the damage and is a creature (not a ruin)
+      if (targetEntity && targetEntity.is_alive && isBattleCreature(targetEntity)) {
+        targetEntity.attack += 3;
         effectResults.push({
           effect_type: 'STAT_MODIFY_ATTACK',
           target_ids: [targetId],
@@ -325,14 +325,15 @@ export function resolveEventPhase(
   // the heal get +0/+1 permanent instead. Uses pre-heal snapshot to avoid
   // wrongly buffing creatures that were healed up to full by the event.
   if (selectedEvent.id === 'O8') {
-    for (const creature of activePlayer.board) {
-      if (creature && creature.is_alive && fullHpCreatureIds.has(creature.instance_id)) {
+    for (const entity of activePlayer.board) {
+      if (!entity || !entity.is_alive || !isBattleCreature(entity)) continue;
+      if (fullHpCreatureIds.has(entity.instance_id)) {
         // This creature was at full HP before the heal — give +0/+1 permanent
-        creature.max_health += 1;
-        creature.health = creature.max_health;
+        entity.max_health += 1;
+        entity.health = entity.max_health;
         effectResults.push({
           effect_type: 'STAT_MODIFY_HEALTH',
-          target_ids: [creature.instance_id],
+          target_ids: [entity.instance_id],
           value: 1,
           description: '+0/+1 permanent (was at full HP)',
         });
@@ -347,20 +348,20 @@ export function resolveEventPhase(
     // If so, we need to give +4 ATK total instead of +2 ATK + Piercing.
     if (effectResults.length > 0 && effectResults[0].target_ids.length > 0) {
       const targetId = effectResults[0].target_ids[0];
-      const targetCreature = activePlayer.board.find(
+      const targetEntity2 = activePlayer.board.find(
         c => c && c.instance_id === targetId
       );
-      if (targetCreature && targetCreature.is_alive) {
+      if (targetEntity2 && targetEntity2.is_alive && isBattleCreature(targetEntity2)) {
         // Check if Piercing appeared in innate_keywords (had it before the event)
-        const hadPiercingBefore = targetCreature.innate_keywords.includes('PIERCING') ||
-          targetCreature.modifiers.some(m =>
+        const hadPiercingBefore = targetEntity2.innate_keywords.includes('PIERCING') ||
+          targetEntity2.modifiers.some(m =>
             m.grants_keyword === 'PIERCING' &&
             (!m.keyword_is_attuned || m.is_attuned_active)
           );
 
         if (hadPiercingBefore) {
           // Already had Piercing: give additional +2 ATK (total +4)
-          targetCreature.attack += 2;
+          targetEntity2.attack += 2;
           effectResults.push({
             effect_type: 'STAT_MODIFY_ATTACK',
             target_ids: [targetId],
@@ -368,7 +369,7 @@ export function resolveEventPhase(
             description: '+2 bonus ATK (already had Piercing)',
           });
           // Add the +2 to temp_buffs so it expires at end of turn
-          targetCreature.temp_buffs.push({
+          targetEntity2.temp_buffs.push({
             effect: { effect_type: 'STAT_MODIFY_ATTACK', target: 'SELF', value: 2, duration: 'THIS_TURN' },
             expires_at: 'END_OF_TURN',
             source: 'C8_PIERCING_BONUS',
@@ -383,14 +384,15 @@ export function resolveEventPhase(
   const triggerResults: TriggerResult[] = [];
 
   for (let slot = 0; slot < 5; slot++) {
-    const creature = activePlayer.board[slot];
-    if (!creature || !creature.is_alive) continue;
+    const entity = activePlayer.board[slot];
+    if (!entity || !entity.is_alive) continue;
+    if (!isBattleCreature(entity)) continue;
 
-    const abilityResults = resolveTriggeredAbilities(state, creature, triggerType, activePlayer);
+    const abilityResults = resolveTriggeredAbilities(state, entity, triggerType, activePlayer);
     if (abilityResults.length > 0) {
       triggerResults.push({
-        creature_id: creature.instance_id,
-        ability_name: creature.triggered_abilities
+        creature_id: entity.instance_id,
+        ability_name: entity.triggered_abilities
           .filter(a => a.trigger === triggerType)
           .map(a => a.name)
           .join(', '),
@@ -451,8 +453,8 @@ export function resolveEventWithTarget(
 
   // Find the chosen target creature on the active player's board
   const targetCreature = activePlayer.board.find(
-    c => c && c.is_alive && c.instance_id === targetCreatureId
-  );
+    c => c && c.is_alive && c.instance_id === targetCreatureId && isBattleCreature(c)
+  ) as BattleCreature | undefined;
   if (!targetCreature) return null;
 
   // Resolve the event's effect with the specific target
@@ -467,19 +469,20 @@ export function resolveEventWithTarget(
   }
 
   // Fire triggered abilities (ON_ORDER or ON_CHAOS)
-  const triggerType = eventDef.event_type === 'ORDER' ? 'ON_ORDER' as const : 'ON_CHAOS' as const;
+  const triggerType2 = eventDef.event_type === 'ORDER' ? 'ON_ORDER' as const : 'ON_CHAOS' as const;
   const triggerResults: TriggerResult[] = [];
 
   for (let slot = 0; slot < 5; slot++) {
-    const creature = activePlayer.board[slot];
-    if (!creature || !creature.is_alive) continue;
+    const entity2 = activePlayer.board[slot];
+    if (!entity2 || !entity2.is_alive) continue;
+    if (!isBattleCreature(entity2)) continue;
 
-    const abilityResults = resolveTriggeredAbilities(state, creature, triggerType, activePlayer);
+    const abilityResults = resolveTriggeredAbilities(state, entity2, triggerType2, activePlayer);
     if (abilityResults.length > 0) {
       triggerResults.push({
-        creature_id: creature.instance_id,
-        ability_name: creature.triggered_abilities
-          .filter(a => a.trigger === triggerType)
+        creature_id: entity2.instance_id,
+        ability_name: entity2.triggered_abilities
+          .filter(a => a.trigger === triggerType2)
           .map(a => a.name)
           .join(', '),
         effect_results: abilityResults,
@@ -522,16 +525,16 @@ export function getValidEventTargets(
 
   if (eventId === 'O2') {
     // Planar Ward: friendly creature without Shield
-    for (const creature of activePlayer.board) {
-      if (creature && creature.is_alive && !creature.shield_active) {
-        validTargets.push(creature.instance_id);
+    for (const entity of activePlayer.board) {
+      if (entity && entity.is_alive && isBattleCreature(entity) && !entity.shield_active) {
+        validTargets.push(entity.instance_id);
       }
     }
   } else if (eventId === 'O5') {
     // Fortify: any friendly creature
-    for (const creature of activePlayer.board) {
-      if (creature && creature.is_alive) {
-        validTargets.push(creature.instance_id);
+    for (const entity of activePlayer.board) {
+      if (entity && entity.is_alive && isBattleCreature(entity)) {
+        validTargets.push(entity.instance_id);
       }
     }
   }

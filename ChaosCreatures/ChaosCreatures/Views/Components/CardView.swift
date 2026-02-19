@@ -69,7 +69,11 @@ struct CardListRowView: View {
                         .font(CardFont.body(size: 11))
                         .foregroundColor(.textTertiary)
 
-                    if let atk = card.currentAttack, let hp = card.currentHealth {
+                    if card.cardType == .planarRuin, let hp = card.currentHealth {
+                        Text("HP \(hp)")
+                            .font(CardFont.stats(size: 11))
+                            .foregroundColor(.textSecondary)
+                    } else if let atk = card.currentAttack, let hp = card.currentHealth {
                         Text("\(atk)/\(hp)")
                             .font(CardFont.stats(size: 11))
                             .foregroundColor(.textSecondary)

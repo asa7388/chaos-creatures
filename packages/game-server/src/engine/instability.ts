@@ -35,20 +35,31 @@ export function calculateCreatureInstability(creature: BattleCreature): number {
   return Math.max(CREATURE_INSTABILITY_MIN, instability);
 }
 
+/** Type guard: check if a board entity is a BattleCreature (has attack property) */
+function isCreatureEntity(entity: unknown): entity is BattleCreature {
+  return entity !== null && typeof entity === 'object' && 'attack' in (entity as any) && 'instability_value' in (entity as any);
+}
+
 /**
  * Calculate a player's total instability.
  *
  * player_instability = avatar_instability_modifier
  *   + sum(creature_instability for each creature on board)
+ *   + sum(ruin base_instability for each ruin on board)
  *
  * Clamped to [1, 20] (D20 range).
  */
 export function calculatePlayerInstability(player: BattlePlayer): number {
   let total = player.avatar_instability_modifier;
 
-  for (const creature of player.board) {
-    if (creature && creature.is_alive) {
-      total += calculateCreatureInstability(creature);
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+
+    if (isCreatureEntity(entity)) {
+      total += calculateCreatureInstability(entity);
+    } else {
+      // Ruins contribute their base_instability directly (no modifiers)
+      total += entity.base_instability;
     }
   }
 
@@ -61,9 +72,11 @@ export function calculatePlayerInstability(player: BattlePlayer): number {
  */
 export function recalculateInstability(player: BattlePlayer): number {
   // Update each creature's instability value
-  for (const creature of player.board) {
-    if (creature && creature.is_alive) {
-      creature.instability_value = calculateCreatureInstability(creature);
+  for (const entity of player.board) {
+    if (!entity || !entity.is_alive) continue;
+
+    if (isCreatureEntity(entity)) {
+      entity.instability_value = calculateCreatureInstability(entity);
     }
   }
 

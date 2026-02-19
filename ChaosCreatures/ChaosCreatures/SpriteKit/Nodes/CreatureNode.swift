@@ -157,11 +157,27 @@ final class CreatureNode: SKSpriteNode {
         addChild(cardArtNode)
         addChild(textPanel)
         addChild(nameLabel)
-        addChild(atkIcon)
-        addChild(atkLabel)
+
+        // Planar Ruins have HP but no ATK — hide ATK display for ruins
+        let isRuin = creature.cardType == .planarRuin
+        if !isRuin {
+            addChild(atkIcon)
+            addChild(atkLabel)
+        }
         addChild(hpIcon)
         addChild(hpLabel)
         addChild(manaBadge)
+
+        // Ruin visual overlay: subtle stone/ruin tint border
+        if isRuin {
+            let ruinOverlay = SKShapeNode(rectOf: cardSize, cornerRadius: SK.Board.slotCornerRadius)
+            ruinOverlay.fillColor = .clear
+            ruinOverlay.strokeColor = UIColor(hex: "#8B8680").withAlphaComponent(0.6)
+            ruinOverlay.lineWidth = 2.0
+            ruinOverlay.zPosition = 5
+            ruinOverlay.name = "ruin_overlay"
+            addChild(ruinOverlay)
+        }
 
         // Keyword icons above the text panel
         setupKeywordIcons(creature.activeKeywords)
