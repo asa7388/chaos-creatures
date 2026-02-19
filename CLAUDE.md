@@ -7,7 +7,7 @@ Chaos Creatures is a mobile-first collectible card game where every card's art i
 
 The entire Chaos Creatures project is built by a solo non-engineer using Claude Code. There is no engineering team. Every technical document is specific enough that Claude Code can implement directly from it — no ambiguity, no "the engineer should decide," no hand-waving.
 
-The codebase is functionally complete (80+ Swift files, 28 game server files, 30 Edge Functions, 14 DB migrations, admin dashboard). The project is now in the **polish and audit phase** — adding professional visual assets, fixing bugs, and preparing for App Store submission.
+The codebase is functionally complete (80+ Swift files, 28 game server files, 30 Edge Functions, 14 DB migrations, admin dashboard). The project is now in the **faction expansion overhaul** — expanding from 3 to 5 factions, adding Planar Ruins card type, retheme Ironwright, creating lore bible, then LoRA training and App Store submission. See `docs/design/PLAN-faction-expansion.md` for the full plan.
 
 All build-phase agents must produce code-ready output: actual files, actual commands, actual configs. Not recommendations.
 
@@ -68,12 +68,23 @@ What's done:
 - Game Server: Deployed on Railway, health check passing, match engine + bot AI + matchmaking poller running
 - Admin Dashboard: Deployed on Vercel, 8 pages (login, dashboard, cards, economy, analytics, batch generate, settings, generation jobs)
 - iOS App: Builds and runs in Simulator, all screens implemented, practice match mode working
-- Card Art: 9 test cards + 3 evolution variants generated locally (v3 style anchor). Prompt system upgraded to v4 (Ron Spencer/Pete Venters/Mark Poole artists, 25 compositions, 13 envs/faction, weather/time/scale dimensions).
+- Card Art: 35 base pool cards generated (13 Fey, 10 Demonic, 12 Ironwright-steampunk — Ironwright cards to be discarded after retheme). Prompt system v5.
+
+What's in progress (Faction Expansion Overhaul):
+- Expanding from 3 → 5 factions (adding Celestial Crusade, The Endless)
+- Retheme Ironwright from Victorian steampunk → brutalist space-industrial empire
+- Adding Planar Ruins card type (neutral → faction-evolved structures)
+- Adding 2 keywords (Haste, Ward) → 9 total
+- Creating lore bible (docs/design/11-lore-bible.md)
+- Trimming all factions to 2 sub-factions each (10 total)
+- Full plan: docs/design/PLAN-faction-expansion.md
 
 What's NOT done:
-- Card art at scale (Edge Function pipeline blocked by verifyServiceRole 403 auth bug; generation works via local scripts)
-- Professional card frames, fonts, icons, audio (0% custom assets — all placeholder)
+- Faction expansion code changes (database, server, iOS, admin — all pending)
+- Card art at scale (local scripts work; Edge Function auth bug bypassed)
+- Professional card frames, fonts, icons, audio (placeholder assets)
 - App Store submission (screenshots, legal pages, metadata)
+- LoRA training (moved to after faction expansion)
 
 Known bugs:
 - Edge Function `verifyServiceRole()` returns 403 consistently — `Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")` doesn't match deployed secret. Bypassed with local generation scripts.
@@ -133,7 +144,7 @@ This ships to the App Store only. Every doc must account for:
 
 Card art and visual quality must match Magic: The Gathering. Every card must look hand-painted by a professional fantasy illustrator. If a card looks AI-generated, smooth, generic, or "digital art"-looking, it is a failed generation and must be rejected/regenerated.
 
-The locked style anchor (v4) references actual 1990s MTG artists: Ron Spencer, Pete Venters, Mark Poole (base anchor), and faction-specific: Mark Tedin (Ironwright), Rebecca Guay and Quinton Hoover (Fey Courts), Anson Maddocks (Demonic). This produces traditional media aesthetics with visible brushstrokes, ink linework, sketchy atmospheric rendering, and muted earth tones. Removed "single creature portrait" constraint from v3 to allow group compositions.
+The locked style anchor (v5) references only public domain artists (all died pre-1953): Gustave Dore and N.C. Wyeth (base anchor), and faction-specific: Giovanni Battista Piranesi + John Martin (Ironwright), Arthur Rackham and Edmund Dulac (Fey Courts), Hieronymus Bosch (Demonic), Gustave Dore + William Blake (Celestial Crusade), Gustave Dore + Francisco Goya (The Endless). No copyrighted brand names or living artist references in any prompt. This produces traditional media aesthetics with heavy impasto brushstrokes, ink linework, crosshatching. Colors can be vivid and saturated within the palette knife oil painting aesthetic — faction identity is expressed through color.
 
 ## Art Consistency
 
@@ -149,9 +160,9 @@ Decided asset strategy for professional card appearance:
 
 - **Card Frames**: Full-art cards with no bordered frames. Art fills the entire card face. A translucent text panel at the bottom contains card name (Cinzel font), stat icons (chaos-motes, sword-atk, heart-hp), faction icon, and flavor text. Rarity treatment applied as a thin edge glow at the card border.
 - **Fonts**: Cinzel (card names, headers — classical display font) + Alegreya (body text, flavor text, stats — readable serif). Both from Google Fonts, free, OFL license.
-- **Keyword Icons**: 7 AI-generated icons (Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing). 256x256, transparent background.
-- **Faction Icons**: 3 AI-generated emblems (Ironwright gear-flower, Fey moon-tree, Demonic horned skull). 512x512.
-- **Card Backs**: 1 universal + 3 faction-specific, AI-generated.
+- **Keyword Icons**: 9 AI-generated icons (Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward). 256x256, transparent background.
+- **Faction Icons**: 5 AI-generated emblems (Ironwright, Fey, Demonic, Celestial, Endless). 512x512.
+- **Card Backs**: 1 universal + 5 faction-specific, AI-generated.
 - **Rarity Treatments**: Common (matte), Uncommon (metallic sheen), Rare (energy glow, SKAction pulse), Epic (purple shimmer, SKShader), Legendary (gold prismatic, particle emitter).
 
 ## Animation & Polish
@@ -187,14 +198,14 @@ These rules are absolute:
 
 ## Protected Files
 
-These design files are the source of truth for game design. They are READ-ONLY — no agent may modify them:
+These design files are the source of truth for game design. They are the authority — downstream docs (03-10) must conform to them:
 - docs/design/00-game-design-master.md
 - docs/design/01-battle-mechanics.md
 - docs/design/02-card-data-model.md
 
-If a downstream doc (03-10) contradicts a protected file, the downstream doc is wrong and must be fixed to match the protected file. Never the other way around.
+**Faction Expansion Authorization**: These files ARE authorized for edits during the faction expansion overhaul (adding Celestial Crusade, The Endless, Planar Ruins, Haste/Ward keywords, Ironwright retheme). All edits must include a Revision Log entry. After expansion is complete, they return to read-only status.
 
-CLAUDE.md may be updated for deployment state, infrastructure changes, and build status updates. Game design decisions in CLAUDE.md (Key Design Decisions section) remain locked.
+If a downstream doc (03-10) contradicts a protected file, the downstream doc is wrong and must be fixed to match the protected file. Never the other way around.
 
 ## Repository Structure
 ```
@@ -218,27 +229,35 @@ docs/design/
   08-audio-design.md            — Music, SFX, per-faction audio
   09-monetization-details.md    — Subscription tiers, pricing, conversion funnels
   10-prd.md                     — Formal PRD for engineering handoff
+  11-lore-bible.md              — Universe lore, faction histories, avatars, sub-factions (NEW)
+  12-art-direction.md           — App-wide art plan, asset inventory (NEW)
+  PLAN-faction-expansion.md     — Master plan for faction expansion overhaul
+  faction-art-bible.md          — Per-faction art guide (sub-factions, envs, moods, textures)
 ```
 
 ## Key Design Decisions (Do Not Contradict)
-- 3 factions: Ironwright Collective (Augment), Fey Courts (Bond), Demonic Kingdoms (Corruption)
-- 7 keywords: Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing
+- 5 factions: Ironwright Collective (Augment), Fey Courts (Bond), Demonic Kingdoms (Corruption), The Celestial Crusade (Exalt), The Endless (Persist)
+- Ironwright identity: Brutalist space-industrial empire conquering stars through industry and war efficiency. NOT steampunk.
+- 2 sub-factions per faction (10 total): each with distinct visual identity, lore, and avatar
+- 9 keywords: Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward
+- Planar Ruins: New card type — ancient structures from Plane of Chaos. High HP, zero ATK, passive benefits, destruction penalties. Evolve neutral → faction-specific (one evolution, same subscription tier system). Max 1 on field, takes creature slot.
 - MTG-style combat: declare attackers → defender assigns blockers → simultaneous damage
 - Taunt = forced attack + forced block (two-part rule)
 - Main phase only spells — no instant-speed, no response windows
-- PP-based modifier pools: 12 pools × (8 universal + 4 per faction) = 240 modifiers
-- Subscription-tiered modifier selection: Free (2 options), Mid (3), Top (4)
+- PP-based modifier pools: 5 factions × 28 faction modifiers + 30 universal = 170 modifiers
+- Subscription-tiered modifier selection: Free (2 options), Mid (3), Top (4) — applies to both creature evolution and ruin evolution
 - Chaos Dust economy: no real money on individual cards
 - CM cost is fixed forever through evolution
 - Evolution energy thresholds: 15/30/50/75, earn 2/win 1/loss, all 20 deck cards earn simultaneously
 - Instability formula: avatar modifier + sum(creature base_instability + evolution changes + modifier adjustments), clamped 1-20
+- 10 avatars (1 per sub-faction) with lore, instability modifier, play style
 
 ## Agent Workflow
 This project uses orchestrator agents that delegate to specialized sub-agents. See `.claude/agents/` for all agent definitions.
 
 - **Doc pipeline:** Complete. Orchestrator coordinated doc agents for docs 03-10.
 - **Build pipeline:** Complete. Build-orchestrator coordinated build agents in waves with audit agents between waves.
-- **Current phase:** Audit and polish pipeline — comprehensive audit, visual asset generation, card rendering overhaul, audio integration, App Store prep.
+- **Current phase:** Faction expansion overhaul — 8-phase plan with ~22 task agents + 10 audit agents. See `docs/design/PLAN-faction-expansion.md` for the full plan with agent assignments, phase dependencies, and user gates.
 
 ## Build Phase Protocol — Context Resilience
 
