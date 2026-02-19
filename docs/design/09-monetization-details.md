@@ -45,6 +45,17 @@ Instead:
 - **Subscription value is evolution depth.** The core monetization lever is modifier selection breadth during evolution, which provides build precision without raw power advantage.
 - **Sustainable free experience.** Free players can build competitive decks, evolve cards to Legendary, and compete at all ranks.
 
+### Planar Ruins: Not Purchasable with Real Money
+
+Planar Ruins are a new card type (PLANAR_RUIN) that represent ancient battlefield locations. They are earned exclusively through gameplay:
+- Match win drops (15% chance), match loss drops (5% chance)
+- Quest reward drops
+- Season milestone rewards
+
+**Planar Ruins cannot be purchased with real money or Chaos Dust.** They are earned-only, reinforcing the "no real money on individual cards" principle. Ruin evolution (from neutral to faction-specific) is gated by familiarity (10 threshold, earned through ~7 battles) and costs zero Chaos Dust. Subscription tiers affect the number of faction-specific evolution options shown (Free: 2, Mid: 3, High: 4), matching the modifier selection depth monetization model.
+
+Ruin cosmetic skins (alternate visual treatments for evolved ruins) may be added as premium cosmetics in a future update. These would be purely visual, affecting only the ruin's appearance on the battlefield -- never its mechanical effect.
+
 ### Why Modifier Selection Depth Is the Right Monetization Lever
 
 Modifier selection depth (2 choices vs. 3 vs. 4 at evolution) is a correct F2P monetization mechanic because:
@@ -94,7 +105,7 @@ This makes every product ID self-documenting and matches App Store Connect requi
 | Card Back Bundle (3x) | `com.chaoscreatures.app.iap_cardback_bundle_499` | Non-consumable | $4.99 |
 | Board Skin — Standard | `com.chaoscreatures.app.iap_board_std_299` | Non-consumable | $2.99 |
 | Board Skin — Legendary | `com.chaoscreatures.app.iap_board_leg_399` | Non-consumable | $3.99 |
-| Board Bundle (3x faction) | `com.chaoscreatures.app.iap_board_bundle_799` | Non-consumable | $7.99 |
+| Board Bundle (5x faction) | `com.chaoscreatures.app.iap_board_bundle_1299` | Non-consumable | $12.99 |
 | Avatar Frame — Standard | `com.chaoscreatures.app.iap_frame_std_199` | Non-consumable | $1.99 |
 | Avatar Frame — Legendary | `com.chaoscreatures.app.iap_frame_leg_299` | Non-consumable | $2.99 |
 | Card Reveal — Fire | `com.chaoscreatures.app.iap_reveal_fire_199` | Non-consumable | $1.99 |
@@ -136,7 +147,7 @@ enum ProductID {
     static let cardBackBundle = "com.chaoscreatures.app.iap_cardback_bundle_499"
     static let boardStd       = "com.chaoscreatures.app.iap_board_std_299"
     static let boardLeg       = "com.chaoscreatures.app.iap_board_leg_399"
-    static let boardBundle    = "com.chaoscreatures.app.iap_board_bundle_799"
+    static let boardBundle    = "com.chaoscreatures.app.iap_board_bundle_1299"
     static let frameStd       = "com.chaoscreatures.app.iap_frame_std_199"
     static let frameLeg       = "com.chaoscreatures.app.iap_frame_leg_299"
     static let revealFire     = "com.chaoscreatures.app.iap_reveal_fire_199"
@@ -520,6 +531,7 @@ CREATE TABLE user_spending_controls (
 | **Price (US)** | $0 | $6.99/month | $12.99/month |
 | **Annual Price (US)** | $0 | $55.99/year (save $28) | $99.99/year (save $56) |
 | **Modifier Selection** | Pick 1 of 2 (1 universal + 1 faction) | Pick 1 of 3 (1 universal + 2 faction) | Pick 1 of 4 (2 universal + 2 faction) |
+| **Ruin Evolution Options** | Pick 1 of 2 faction effects | Pick 1 of 3 faction effects | Pick 1 of 4 faction effects |
 | **Shard Quality** | Planar Shard | Refined Planar Shard | Prismatic Planar Shard |
 | **AI Art Model** | FLUX Kontext Dev | FLUX Kontext Pro | FLUX Kontext Pro |
 | **AI Art Resolution** | 768x1024 | 1024x1024 | 1024x1024 |
@@ -553,17 +565,17 @@ The final prices are $6.99/month (Mid) and $12.99/month (High). These supersede 
 ### Value Proposition by Tier
 
 **Free Tier: "I want to try this game."**
-- What you get: Full mechanical access. 50 cards per faction is enough for 2-3 competitive decks. Reach Legendary rank. Evolve cards to Legendary tier. Play the full game.
-- What you miss: Forced curation at 50-card limit. Slower evolution (half the quest dust). Lower-resolution art. Fewer modifier choices.
+- What you get: Full mechanical access. 50 cards per faction across 5 factions is enough for 2-3 competitive decks. Reach Legendary rank. Evolve cards to Legendary tier. Evolve Planar Ruins with 2 faction options. Play the full game.
+- What you miss: Forced curation at 50-card limit. Slower evolution (half the quest dust). Lower-resolution art. Fewer modifier and ruin evolution choices.
 - Player feeling: "I am playing a complete game for free. If I really love this, I might subscribe."
 
 **Mid Tier: "I am committed to this game."**
-- What you get: 100 cards per faction (room for experimentation). 50% more quest dust (significantly faster evolution). 6 deck slots (maintain multiple archetypes simultaneously). Higher-resolution art with 25-30 dramatic visual modifiers. 3 modifier choices at each evolution.
+- What you get: 100 cards per faction across 5 factions (room for experimentation). 50% more quest dust (significantly faster evolution). 6 deck slots (maintain multiple archetypes simultaneously). Higher-resolution art with 25-30 dramatic visual modifiers. 3 modifier choices at each card evolution. 3 faction options at each ruin evolution.
 - What you miss: Highest-tier visual effects. Free monthly Legendary shard. Largest collection size.
 - Player feeling: "I am a serious player. My evolutions look great, my collection is growing steadily, and I have room to experiment."
 
 **High Tier: "I want the full collector experience."**
-- What you get: 200 cards per faction. Double quest dust. 10 deck slots. Best evolution art in the game — 2-pass refinement, 40+ exclusive visual modifiers, faction-specific ceremony effects. 4 modifier choices (maximum build precision). Free Legendary shard every month.
+- What you get: 200 cards per faction across 5 factions. Double quest dust. 10 deck slots. Best evolution art in the game — 2-pass refinement, 40+ exclusive visual modifiers, faction-specific ceremony effects. 4 modifier choices (maximum card build precision). 4 faction options at ruin evolution (maximum ruin build precision). Free Legendary shard every month.
 - What you miss: Nothing. This is the complete experience.
 - Player feeling: "I am a collector and build tinkerer. My cards are works of art, my collection is massive, and I can chase any build I want."
 
@@ -889,7 +901,7 @@ Apple Guidelines 3.1.2 governs subscriptions. Violations cause rejection:
 1. Player has finished 30+ games with a deck and wants to evolve multiple cards to Rare, but does not have enough shards. Mid-tier dust bonus would substantially increase shard acquisition.
 2. Player sees a subscriber's evolution art (shared in chat or on a profile showcase) and wants access to better visual modifiers.
 3. Player wants to maintain 2+ competitive decks simultaneously but has only 3 deck slots.
-4. Player wants to explore a second faction but does not want to delete main-faction cards to stay under the 50-card limit.
+4. Player wants to explore additional factions (from 5 available) but does not want to delete main-faction cards to stay under the 50-card limit.
 
 **Expected conversion rate:**
 - Industry benchmark for F2P mobile: 2-5% of DAU convert to paid.
@@ -904,13 +916,14 @@ Apple Guidelines 3.1.2 governs subscriptions. Violations cause rejection:
 | Player reaches 48/50 cards in any faction | Banner: "Your collection is almost full." | "Upgrade to Mid Tier for 100 card slots" |
 | Player tries to save a 4th deck | Sheet: "Free players have 3 deck slots." | "Upgrade to Mid Tier for 6 deck slots" |
 | Player is about to evolve a card to Epic | Evolution screen shows side-by-side: 2 options vs. 3 options | "Subscribe now to unlock this evolution with 3 choices — $2.99 first month" |
+| Player ruin reaches familiarity 10 (evolution ready) | Ruin evolution screen shows 2 faction options vs. 3/4 | "Subscribe for more faction evolution choices" |
 | Player tries to evolve but lacks shards (has energy) | "You need more Chaos Dust." prompt | "Mid Tier gives 50% more quest dust. You would have earned this already." |
 
 All conversion nudges respect a **30-day suppression window**: if the player dismissed a nudge in the last 30 days, do not show the same nudge type again. Track suppression in Supabase `user_nudge_suppression` table.
 
 ### Mid to High Conversion Triggers
 
-**Primary conversion moment:** Player has unlocked all 3 launch factions and is approaching the 100-card-per-faction limit.
+**Primary conversion moment:** Player has unlocked all 5 launch factions and is approaching the 100-card-per-faction limit.
 
 **Secondary conversion moments:**
 1. Player sees a High-tier evolution with 2-pass refinement and exclusive visual effects.
@@ -931,7 +944,7 @@ All conversion nudges respect a **30-day suppression window**: if the player dis
 4. **Deck slot utility.** Once 4-6 decks are built, losing half of them is painful.
 
 **For High Tier:**
-1. **Massive collection.** 150-200 cards per faction. Dropping to Mid (100 cards) means deleting 50-100 cards — a large psychological barrier.
+1. **Massive collection.** 150-200 cards per faction across 5 factions. Dropping to Mid (100 cards per faction) means deleting 50-100 cards per faction — a large psychological barrier.
 2. **Visual identity.** High-tier evolutions are visibly superior. Players do not want future evolutions to look worse.
 3. **Free Legendary shard.** 240 Dust per month is significant value. Losing this feels like leaving money on the table.
 
@@ -1082,8 +1095,8 @@ Card backs replace the default card back visual when cards are in hand or deck.
 
 **Launch inventory:**
 - 1 starter back: free (generic)
-- 3 faction-themed backs per faction (9 total): earned via Faction Mastery milestones, not purchasable
-- 6 premium backs per faction (18 total): direct purchase
+- 3 faction-themed backs per faction (15 total): earned via Faction Mastery milestones, not purchasable
+- 6 premium backs per faction (30 total): direct purchase
 
 **Pricing:**
 - Standard premium card back: $1.99
@@ -1095,18 +1108,20 @@ Card backs replace the default card back visual when cards are in hand or deck.
 The battlefield is the visual environment where battle takes place (background, creature slot frames, ambient particles).
 
 **Launch inventory:**
-- 1 default board per faction (free, tied to your deck's faction)
-- 3 premium boards per faction (9 total): purchasable
+- 1 default board per faction (free, tied to your deck's faction) -- 5 total
+- 3 premium boards per faction (15 total): purchasable
 
 **Premium board themes:**
 - Ironwright: Clockwork Foundry (rotating gears, steam vents), Crystal Manufactory (prismatic light), Warforge Arena (battle-scarred metal)
-- Fey: Moonlit Glade (bioluminescent flora), Thornwood Court (dark twisted trees), Celestial Grove (aurora sky)
+- Fey: Moonlit Glade (bioluminescent flora), Thornwood Court (dark twisted trees), Enchanted Hollow (drifting petals)
 - Demonic: Obsidian Throne Room (hellfire braziers), Blood Ritual Chamber (pulsing runes), Abyssal Rift (void energy)
+- Celestial: Radiant Sanctum (golden light columns), Hall of Judgment (marble and stained glass), Astral Observatory (rotating celestial spheres)
+- Endless: Void Nexus (shifting dimensional tears), Memory Archive (infinite library shelves), Temporal Rift (distorted time streams)
 
 **Pricing:**
 - Standard board: $2.99
 - Legendary board (advanced animations + ambient audio): $3.99
-- All 3 faction boards bundle: $7.99 (product ID `com.chaoscreatures.app.iap_board_bundle_799`)
+- All 5 faction boards bundle: $12.99 (product ID `com.chaoscreatures.app.iap_board_bundle_1299`)
 
 #### Avatar Frames and Effects
 
@@ -1114,8 +1129,8 @@ Avatar frames surround the player's avatar portrait during battle.
 
 **Launch inventory:**
 - 3 basic frames: free, earned via Player Level milestones
-- 6 ornate frames per faction (18 total): Mid-tier subscription exclusive (no direct purchase)
-- 6 Legendary frames per faction (18 total): High-tier subscription exclusive (no direct purchase)
+- 6 ornate frames per faction (30 total): Mid-tier subscription exclusive (no direct purchase)
+- 6 Legendary frames per faction (30 total): High-tier subscription exclusive (no direct purchase)
 - 12 premium standalone frames (holiday/event/achievement): direct purchase
 
 **Pricing:**
@@ -1149,7 +1164,7 @@ CREATE TABLE cosmetics (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name             text NOT NULL,
   category         text NOT NULL CHECK (category IN ('card_back', 'board', 'avatar_frame', 'reveal_animation')),
-  faction          text CHECK (faction IN ('ironwright', 'fey', 'demonic', 'universal')),
+  faction          text CHECK (faction IN ('ironwright', 'fey', 'demonic', 'celestial', 'endless', 'universal')),
   iap_product_id   text UNIQUE NOT NULL,
   price_usd        numeric(5,2) NOT NULL,
   preview_image_url text NOT NULL,
@@ -1477,6 +1492,8 @@ The iOS client must fire these PostHog events. Implement in the corresponding Sw
 | `nudge_shown` | A conversion nudge banner or sheet appears | `nudge_type`, `context` |
 | `nudge_dismissed` | User dismisses a nudge | `nudge_type` |
 | `spending_cap_warning_shown` | Spending cap threshold reached | `cap_type` (weekly/monthly), `amount_usd` |
+| `ruin_evolution_shown` | Ruin evolution option screen displayed | `player_ruin_id`, `num_options`, `current_tier` |
+| `ruin_evolution_completed` | Player selects a faction effect for ruin | `player_ruin_id`, `chosen_faction`, `current_tier` |
 | `restore_purchases_tapped` | User taps Restore Purchases | `current_tier` |
 
 **PostHog Swift implementation note:** Use the PostHog Swift SDK (`posthog-ios`). Call `PostHogSDK.shared.capture("event_name", properties: [...])` from the main thread. Initialize in `ChaosCreaturesApp` init alongside EntitlementManager.
@@ -1495,8 +1512,8 @@ With an expected 7-9% conversion rate, $1.20-$1.60 ARPU at maturity, and 63% mar
 
 ---
 
-**Document version:** 3.1
-**Last updated:** 2026-02-16
+**Document version:** 4.0
+**Last updated:** 2026-02-19
 **Owner:** Monetization and Economy Design
 
 ---
@@ -1655,3 +1672,32 @@ This revision resolves WARN-06 from the audit review by adding a complete, code-
 ### v3.1 → v3.2 (2026-02-16)
 
 **Admin Dashboard technology: React → Next.js (TypeScript).** Updated cosmetics admin UI reference in Section 7 from "React app on Railway" to "Next.js app on Railway." Aligns with CLAUDE.md "Three Tools" model update.
+
+---
+
+### v3.2 → v4.0 (2026-02-19)
+
+This revision aligns the document with the faction expansion (3 → 5 factions) and Planar Ruins card type per PLAN-faction-expansion.md, PHASE1B-mechanics.md, and PHASE1C-planar-ruins.md.
+
+**Faction expansion (3 → 5 factions):**
+- Updated cosmetics `faction` CHECK constraint: added `'celestial'`, `'endless'` to the allowed values.
+- Updated "all 3 launch factions" → "all 5 launch factions" in Mid-to-High conversion trigger (Section 5).
+- Updated card backs per-faction totals: 9 → 15 faction-themed, 18 → 30 premium (Section 7).
+- Updated avatar frames per-faction totals: 18 → 30 ornate, 18 → 30 Legendary (Section 7).
+- Updated board skins: added Celestial faction themes (Radiant Sanctum, Hall of Judgment, Astral Observatory) and Endless faction themes (Void Nexus, Memory Archive, Temporal Rift).
+- Updated board inventory: 1 default × 5 factions, 3 premium × 5 factions = 15 total premium boards.
+- Renamed Fey "Celestial Grove" board to "Enchanted Hollow" to avoid naming conflict with Celestial faction.
+- Updated board bundle: "All 3 faction boards" → "All 5 faction boards" at $12.99 (product ID `com.chaoscreatures.app.iap_board_bundle_1299`).
+- Updated Swift `ProductCatalog.boardBundle` product ID to match.
+- Updated value proposition descriptions to reference "5 factions" where appropriate.
+- Updated churn prevention: "150-200 cards per faction" context now mentions "across 5 factions."
+
+**Planar Ruins monetization (NOT purchasable with real money):**
+- Added "Planar Ruins: Not Purchasable with Real Money" subsection in Section 1 (Monetization Philosophy). Ruins are earned-only through match drops (15% win / 5% loss), quest rewards, and season milestones. Evolution costs zero Chaos Dust. Future cosmetic skins noted as potential premium addition.
+- Added "Ruin Evolution Options" row to subscription tier comparison table: Free 2, Mid 3, High 4 options (matching modifier selection depth model).
+- Updated Free/Mid/High value propositions to mention ruin evolution options alongside modifier selection.
+- Added ruin evolution as a conversion nudge trigger in Section 5: when a ruin reaches familiarity 10, the evolution screen shows tier-gated options as a subscription upsell.
+
+**PostHog events:**
+- Added `ruin_evolution_shown` event (ruin evolution option screen displayed, with `player_ruin_id`, `num_options`, `current_tier`).
+- Added `ruin_evolution_completed` event (player selects a faction effect, with `player_ruin_id`, `chosen_faction`, `current_tier`).

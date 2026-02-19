@@ -4,13 +4,13 @@
 
 | Field | Value |
 |---|---|
-| **Document Version** | 3.3 |
-| **Date** | 2026-02-16 |
+| **Document Version** | 4.0 |
+| **Date** | 2026-02-19 |
 | **Status** | Final -- Ready for Build |
 | **Owner** | Solo non-engineer owner, building with Claude Code |
 | **Audience** | Claude Code (primary implementer), Owner (reviewer and decision-maker) |
 
-**Build context:** This entire product will be built by a solo non-engineer using Claude Code to vibe code the implementation. There is no engineering team. Every requirement is written so that Claude Code can build it without ambiguity. If a paragraph leaves a decision to "the engineer," it is a bug in this document. The project produces THREE separate tools: a native iOS game client, a web-based Admin Dashboard (Next.js on Railway), and the built-in Supabase Dashboard (for player data, match history, and auth management). Every requirement clearly identifies which tool it belongs to.
+**Build context:** This entire product will be built by a solo non-engineer using Claude Code to vibe code the implementation. There is no engineering team. Every requirement is written so that Claude Code can build it without ambiguity. If a paragraph leaves a decision to "the engineer," it is a bug in this document. The project produces THREE separate tools: a native iOS game client, a web-based Admin Dashboard (Next.js on Vercel), and the built-in Supabase Dashboard (for player data, match history, and auth management). Every requirement clearly identifies which tool it belongs to.
 
 ---
 
@@ -50,14 +50,14 @@ Chaos Creatures is a mobile collectible card game where every card's art is AI-g
 - **Primary:** Native iOS app built with Swift + SwiftUI + SpriteKit. Ships to the Apple App Store only.
 - **Minimum target:** iOS 17+, iPhone 11 and newer.
 - **No Android.** No React Native. No Unity. No Expo. No cross-platform framework.
-- **Admin Dashboard:** Separate web application (Next.js, TypeScript) deployed on Railway. Used by the owner only. Lightweight 4-5 screens: card generation batch trigger + review gallery, balance simulation, PostHog analytics embed, App Store screenshot preview, economy config editor.
+- **Admin Dashboard:** Separate web application (Next.js, TypeScript) deployed on Vercel. Used by the owner only. Lightweight 4-5 screens: card generation batch trigger + review gallery, balance simulation, PostHog analytics embed, App Store screenshot preview, economy config editor.
 - **Supabase Dashboard:** Built-in, free. Used for: viewing/searching player accounts, match history, managing auth (ban/unban), viewing Realtime connections, direct data fixes. No custom UI needed for these operations.
 
 ### 1.4 Core Differentiators
 
 1. **AI-Generated Art:** Every card's art is created by FLUX Kontext (via fal.ai), evolving visually at each tier. No two players' Legendary cards look the same.
 2. **Order/Chaos System:** The D20 Chaos Roll and instability system create a unique strategic axis where deck composition determines probability distributions for beneficial events.
-3. **Faction Mechanics:** Three factions (Ironwright/Augment, Fey Courts/Bond, Demonic Kingdoms/Corruption) each with an exclusive mechanic that fundamentally changes how cards interact.
+3. **Faction Mechanics:** Five factions (Ironwright Collective/Augment, Fey Courts/Bond, Demonic Kingdoms/Corruption, Celestial Crusade/Exalt, The Endless/Persist) each with an exclusive mechanic that fundamentally changes how cards interact.
 4. **No Pay-to-Win:** All cards are earned through gameplay. Subscriptions provide evolution quality and collection breadth, never exclusive power.
 5. **Living Cards:** Cards are not static collectibles. They evolve, gain abilities, change names, and accumulate a visible history of player decisions.
 
@@ -65,12 +65,13 @@ Chaos Creatures is a mobile collectible card game where every card's art is AI-g
 
 These decisions are finalized and must not be contradicted during implementation:
 
-- 3 factions at launch: Ironwright Collective (Augment), Fey Courts (Bond), Demonic Kingdoms (Corruption)
-- 7 keywords: Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing
+- 5 factions at launch: Ironwright Collective (Augment), Fey Courts (Bond), Demonic Kingdoms (Corruption), Celestial Crusade (Exalt), The Endless (Persist)
+- 9 keywords: Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward
 - MTG-style combat: declare attackers, defender assigns blockers, simultaneous damage
 - Taunt = forced attack + forced block (two-part rule)
 - Main phase only spells -- no instant-speed, no response windows
-- PP-based modifier pools: 12 pools x (8 universal + 4 per faction) = 240 modifiers
+- PP-based modifier pools: 12 pools x (8 universal + 4 per faction x 5 factions) = 336 modifiers
+- New card type: Planar Ruins (high HP, zero ATK, passive benefit, takes creature slot, max 2 per deck, max 1 on field, evolves neutral to faction-specific)
 - Subscription-tiered modifier selection: Free (2 options), Mid (3), High (4)
 - Chaos Dust economy: no real money on individual cards
 - CM cost is fixed forever through evolution
@@ -86,14 +87,14 @@ These decisions are finalized and must not be contradicted during implementation
 | Database | Supabase PostgreSQL | Row Level Security on all tables |
 | Serverless API | Supabase Edge Functions (Deno/TypeScript) | Collection, Economy, Evolution, Matchmaking |
 | Real-time | Supabase Realtime | WebSocket channels for match communication |
-| Game Server | Railway (Node.js/TypeScript) | Authoritative match engine, auto-scales |
+| Game Server | Railway (Node.js/TypeScript) | Authoritative match engine, auto-scales. Bot AI for 5 factions. |
 | AI Image | fal.ai (FLUX Kontext Dev and Pro) | Card art generation and evolution img2img |
 | AI Text | OpenAI GPT-4o Mini | Card names, flavor text |
 | Art CDN | Cloudflare R2 | Card art storage with built-in CDN |
 | Analytics | PostHog | Player behavior, retention, economy health |
 | Payments | StoreKit 2 (native Apple framework) | No RevenueCat. No Stripe. No third-party payment SDK. |
 | App Build | Xcode Cloud | iOS builds and TestFlight distribution |
-| Admin | Next.js (TypeScript) on Railway | Dashboard for owner operations (4-5 screens). Player lookup and match monitoring handled via built-in Supabase Dashboard. |
+| Admin | Next.js (TypeScript) on Vercel | Dashboard for owner operations (4-5 screens). Player lookup and match monitoring handled via built-in Supabase Dashboard. |
 | Legal Pages | Cloudflare Pages (free) | Privacy policy, Terms of Service |
 
 ### 1.7 Budget Constraint
@@ -104,7 +105,7 @@ Total build-to-launch budget: **$300 maximum**.
 |---|---|---|
 | Apple Developer | $99 | Mandatory for App Store distribution |
 | Supabase | $25 | Free tier for dev; Pro plan for launch |
-| Railway | $15 | Game server + admin dashboard |
+| Railway | $15 | Game server |
 | fal.ai | $80 | ~2000 image generations (base cards + testing + evolutions) |
 | OpenAI | $2 | ~2000 text generation calls |
 | Cloudflare R2 | $0 | Free tier (10 GB storage + 10M reads/mo) |
@@ -121,7 +122,7 @@ Total build-to-launch budget: **$300 maximum**.
 
 | ID | Story | Acceptance Criteria |
 |---|---|---|
-| US-001 | As a new player, I want to try all three factions before committing so I can find my playstyle. | Player receives 3 premade 20-card loaner decks during trial phase. Player must play at least 1 match before faction selection is enabled. Trial decks cannot be modified or evolved. |
+| US-001 | As a new player, I want to try all five factions before committing so I can find my playstyle. | Player receives 5 premade 20-card loaner decks (one per faction) during trial phase. Player must play at least 1 match before faction selection is enabled. Trial decks cannot be modified or evolved. |
 | US-002 | As a new player, I want a guided tutorial so I understand how combat, events, and evolution work. | Tutorial match runs with scripted rolls and AI opponent. SwiftUI overlays explain each phase. Tutorial can be skipped. First evolution is guided with explanatory overlays. |
 | US-003 | As a new player, I want to evolve my first card immediately after onboarding so I experience the core loop. | After faction selection, player receives 200 Chaos Dust, 3 Uncommon Shards, 1 Rare Shard, 1 Legendary Shard, and a starter avatar. One card is pre-loaded with 15 energy for immediate evolution. |
 | US-004 | As a new player, I want onboarding quests to guide my first week. | 8 onboarding quests auto-assigned (see `04-progression-economy.md` Section 6.5). Quests are separate from daily rotation and do not expire. Shown in a "Getting Started" UI tab. |
@@ -165,7 +166,7 @@ Total build-to-launch budget: **$300 maximum**.
 
 | ID | Feature | Description | App | Reference |
 |---|---|---|---|---|
-| P0-001 | Core Battle System | 9-phase turn structure, D20 chaos roll, event resolution, MTG-style combat with all 7 keywords, simultaneous damage, timer management | iOS | `01-battle-mechanics.md` Sections 1-9 |
+| P0-001 | Core Battle System | 9-phase turn structure, D20 chaos roll, event resolution, MTG-style combat with all 9 keywords (including Haste, Ward), Planar Ruins battlefield mechanics, simultaneous damage, timer management | iOS | `01-battle-mechanics.md` Sections 1-9, 11a |
 | P0-002 | Card Evolution | 4-tier evolution (Common through Legendary), energy accumulation, shard consumption, 70/30 channeling roll, modifier selection, triggered ability grant, stat growth, AI art generation via fal.ai | iOS | `01-battle-mechanics.md` Section 1, `02-card-data-model.md` Sections 2-5, 20 |
 | P0-003 | Card Collection | CardInstance CRUD, ownership tracking, collection browsing with filters/search, card detail view, card limit enforcement by subscription tier | iOS | `02-card-data-model.md` Sections 1-5, `07-ui-ux-specs.md` Section 5 |
 | P0-004 | Deck Building | 20-card deck construction, single-faction enforcement, copy limits (max 2 per template, max 2 Legendaries at 1 copy each), avatar selection, deck validation | iOS | `02-card-data-model.md` Section 11, `07-ui-ux-specs.md` Section 5.3 |
@@ -176,7 +177,7 @@ Total build-to-launch budget: **$300 maximum**.
 | P0-009 | AI Text Generation | OpenAI GPT-4o Mini for card names (2-3 candidates) and flavor text at each evolution | Backend | `03-prompt-templates.md`, `06-technical-architecture.md` Section 3 |
 | P0-010 | Battle UI | Battlefield layout (5 slots per side), hand display, mana crystals, HP bars, chaos roll animation, event overlay, turn phase indicator, timer bar, combat animations. SpriteKit `SKScene` for battlefield with SwiftUI overlay for HUD elements (opponent info, hand scroll, bottom controls). | iOS | `07-ui-ux-specs.md` Section 3 |
 | P0-011 | Core Navigation | 5-tab bottom bar (Home, Collection, Decks, Profile, Shop) via SwiftUI `TabView`, battle flow (mode select, matchmaking, battle via `.fullScreenCover`, post-match) via `NavigationStack` | iOS | `07-ui-ux-specs.md` Sections 1-2 |
-| P0-012 | Onboarding | Account creation via Supabase Auth (Apple Sign-In), faction trial (3 loaner decks), tutorial match (scripted), first evolution (guided), faction commitment | iOS | `07-ui-ux-specs.md` Section 7, `04-progression-economy.md` Section 6 |
+| P0-012 | Onboarding | Account creation via Supabase Auth (Apple Sign-In), faction trial (5 loaner decks, one per faction), 5-faction carousel picker, tutorial match (scripted), first evolution (guided), faction commitment | iOS | `07-ui-ux-specs.md` Section 7, `04-progression-economy.md` Section 6 |
 | P0-013 | Game Server | Server-authoritative game logic on Railway (Node.js/TypeScript), communicates via Supabase Realtime channels, reconnection handling, anti-cheat validation | Backend | `06-technical-architecture.md` Sections 4.6, 5.1-5.6 |
 | P0-014 | Real-Time Match Communication | Supabase Realtime channels (`match:{match_id}`), client-to-server actions via `player_action` broadcast, server-to-client state via `game_event` broadcast, match lifecycle. Swift client uses Supabase Swift SDK for Realtime subscription. | iOS + Backend | `06-technical-architecture.md` Section 5 |
 | P0-015 | Instability System | Player instability calculation (avatar + creature sum), clamped 1-20, recalculation on board changes, attunement state management | Backend | `01-battle-mechanics.md` Section 2 |
@@ -188,14 +189,14 @@ Total build-to-launch budget: **$300 maximum**.
 | P1-001 | Quest System | 3 daily quests (20 templates), 2 weekly quests (10 templates), quest generation algorithm, progress tracking, reward distribution, 1 free reroll/day | Backend + iOS | `04-progression-economy.md` Section 4 |
 | P1-002 | Rank Ladder | 17 tiers, points system (+25/-20 same tier), rank floors, season structure (8 weeks), season reset (drop 5 divisions), end-of-season rewards | Backend + iOS | `04-progression-economy.md` Section 5 |
 | P1-003 | Full Shop | Subscription tier display via StoreKit 2 paywall, card pack purchase (Dust), shard purchase (Dust), avatar unlock (Dust), subscription upgrade flow | iOS | `07-ui-ux-specs.md` Section 6, `09-monetization-details.md` Section 3 |
-| P1-004 | All 3 Factions Complete | 117 card templates per faction (100 creatures, 17 spells) + 7 universal stabilizers. 240 modifier definitions. **358 total cards across 8 batches.** | Backend (content pipeline) | `05-content-pipeline.md` Section 1 |
+| P1-004 | All 5 Factions Complete | 117 card templates per faction (100 creatures, 17 spells) + 7 universal stabilizers + 8 neutral ruins + 40 evolved ruins. 336 modifier definitions. **640 total cards across 13 batches.** | Backend (content pipeline) | `05-content-pipeline.md` Section 1 |
 | P1-005 | Cross-Faction Unlock | 150 Dust card pack unlocks new faction permanently | Backend | `04-progression-economy.md` Section 2.3 |
 | P1-006 | Post-Match Results | Victory/defeat display, chaos energy earned per card, Dust earned, quest progress, evolution-ready indicators, play again/evolve/home buttons | iOS | `07-ui-ux-specs.md` Section 15 |
 | P1-007 | Subscription Management | StoreKit 2 integration via `EntitlementManager` using `Transaction.currentEntitlements` and `Transaction.updates`. Server sync via Supabase Edge Function `/functions/v1/sync-entitlements`. App Store Server Notifications V2 webhook for subscription lifecycle events. Grace period on lapse. Restore Purchases button in Settings. | iOS + Backend | `09-monetization-details.md` Sections 2-5 |
-| P1-008 | Audio System | Faction-specific battle music, adaptive intensity system (4-stem architecture via `AVAudioEngine`), SFX via `SKAction.playSoundFileNamed` in SpriteKit, `AVAudioPlayer` for menus. Music CAF format, SFX CAF format, ambient AAC format. ~23 MB total. Volume controls in Settings. | iOS | `08-audio-design.md` |
+| P1-008 | Audio System | 5-faction-specific battle music, adaptive intensity system (8-stem architecture via `AVAudioEngine`), SFX via `SKAction.playSoundFileNamed` in SpriteKit, `AVAudioPlayer` for menus. Music CAF format, SFX CAF format, ambient AAC format. ~28 MB total. Ruin placement/destruction SFX. Keyword SFX (Haste Rush, Ward Shimmer). Volume controls in Settings. | iOS | `08-audio-design.md` |
 | P1-009 | Achievement System | Achievement definitions, progress tracking per player, one-time rewards, achievement display on profile | Backend + iOS | `02-card-data-model.md` Section 17 |
 | P1-010 | Settings Screen | Account, Audio (master/music/SFX volume), Visuals (reduced motion, colorblind mode, animation quality, screen shake), Gameplay (auto-end turn, timer extension for casual), Notifications, Privacy, **Restore Purchases** button | iOS | `07-ui-ux-specs.md` Section 14 |
-| P1-011 | Admin Dashboard | Web app on Railway (Next.js, TypeScript): economy config editor, batch card generation trigger, generation review/approve/reject gallery, PostHog analytics embedding, season management. Player lookup and match monitoring handled via built-in Supabase Dashboard (no custom UI). | Web (Admin) + Supabase Dashboard | `06-technical-architecture.md` Section 9, `07-ui-ux-specs.md` Part B |
+| P1-011 | Admin Dashboard | Web app on Vercel (Next.js, TypeScript): economy config editor, batch card generation trigger, generation review/approve/reject gallery, PostHog analytics embedding, season management. Player lookup and match monitoring handled via built-in Supabase Dashboard (no custom UI). | Web (Admin) + Supabase Dashboard | `06-technical-architecture.md` Section 9, `07-ui-ux-specs.md` Part B |
 
 ### 3.3 P2 -- Nice to Have (Post-Launch)
 
@@ -250,7 +251,7 @@ Total build-to-launch budget: **$300 maximum**.
 |---|---|---|
 | REQ-014 | The active player shall gain 1 chaos mote per turn (up to cap of 10). Unspent motes carry over. | Mana gain occurs in Phase 4 (Draw and Gain Mana). |
 | REQ-015 | The active player shall draw 1 card per turn from the top of their deck. | If deck is empty, no card is drawn and no penalty is applied. |
-| REQ-016 | Cards shall be playable during Main Phase only. | Creatures are placed on empty board slots. Spells resolve immediately and are discarded. Stabilizers occupy board slots. No summoning sickness -- creatures can attack the turn they are played. |
+| REQ-016 | Cards shall be playable during Main Phase only. | Creatures are placed on empty board slots. Spells resolve immediately and are discarded. Stabilizers occupy board slots. Planar Ruins occupy creature slots (max 1 on field at a time). No summoning sickness -- creatures can attack the turn they are played. |
 | REQ-017 | Chaos mote cost shall be fixed forever and never change through evolution. | `CardInstance.current_mana_cost` always equals `CardTemplate.mana_cost`. Enforced at the database level. |
 
 #### Combat
@@ -293,7 +294,7 @@ Total build-to-launch budget: **$300 maximum**.
 |---|---|---|
 | REQ-033 | Card collection shall enforce per-faction capacity limits based on subscription tier. | Free: 50 cards/faction. Mid: 100 cards/faction. High: 200 cards/faction. Enforced at the Supabase Edge Function level on card creation. |
 | REQ-034 | Card packs shall contain 3 random Commons from the target faction with duplicate protection. | If a pack would produce a 3rd+ copy of an owned Common, it rerolls to a different Common. Own-faction pack costs 100 Dust. Cross-faction pack costs 150 Dust and permanently unlocks the faction. |
-| REQ-035 | Deck validation shall enforce all construction rules before matchmaking. | Exactly 20 cards. Single faction (all cards share faction_id). Max 2 copies of any template. Max 2 Legendaries, max 1 copy of each Legendary. Avatar must match deck faction. At least 1 creature. |
+| REQ-035 | Deck validation shall enforce all construction rules before matchmaking. | Exactly 20 cards. Single faction (all cards share faction_id). Max 2 copies of any template. Max 2 Legendaries, max 1 copy of each Legendary. Avatar must match deck faction. At least 1 creature. Max 2 Planar Ruins per deck. Evolved ruins must match deck faction (neutral ruins allowed in any deck). Max 1 ruin on the battlefield at a time (enforced at play time, not deck building). |
 | REQ-036 | Players shall have deck slot limits based on subscription tier. | Free: 3 slots. Mid: 6 slots. High: 10 slots. Invalid (work-in-progress) decks can be saved but not used in matchmaking. |
 
 ### 4.4 Economy
@@ -325,8 +326,8 @@ Total build-to-launch budget: **$300 maximum**.
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-046 | New players shall receive 3 premade loaner decks (one per faction) during trial phase. | Loaner decks are 20 Commons each, fixed lists stored in `seed.sql`, cannot be evolved or modified. Player must play at least 1 match. |
-| REQ-047 | After trial phase, player selects one faction. That trial deck becomes their real collection. | 20 Commons become owned CardInstances. Other trial cards are removed. Player receives starter rewards: 200 Dust, 3 Uncommon Shards, 1 Rare Shard, 1 Legendary Shard, starter avatar. |
+| REQ-046 | New players shall receive 5 premade loaner decks (one per faction) during trial phase. | Loaner decks are 20 Commons each, fixed lists stored in `seed.sql`, cannot be evolved or modified. Player must play at least 1 match. |
+| REQ-047 | After trial phase, player selects one faction from a 5-faction carousel picker. That trial deck becomes their real collection. | 20 Commons become owned CardInstances. Other 4 trial decks' cards are removed. Player receives starter rewards: 200 Dust, 3 Uncommon Shards, 1 Rare Shard, 1 Legendary Shard, starter avatar. 5-faction picker shows faction name, mechanic, art preview, and lore snippet. |
 | REQ-048 | Tutorial match shall use scripted rolls and a guided AI opponent. | Forced actions guide player through each phase. Skip button always visible. No turn timer during tutorial. |
 
 ### 4.7 User Interface (iOS Game Client)
@@ -336,7 +337,7 @@ Total build-to-launch budget: **$300 maximum**.
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
 | REQ-049 | All interactive elements shall meet the 44x44pt minimum tap target (Apple HIG). | Small visual icons (mana crystals, keyword icons at 20-24pt) use invisible padding to reach 44x44pt tap area. |
-| REQ-050 | The battlefield shall display 5 creature slots per side, HP bars, mana crystals, instability values, timer bar, and a horizontally scrollable hand area. | Layout per `07-ui-ux-specs.md` Section 3.1. SpriteKit `SKScene` for the battlefield area with SwiftUI overlays for HUD (OpponentHUDView, PlayerHUDView, HandScrollView, BottomControlsView). Board slot dimensions ~60x85pt on phone. Hand card dimensions 90x130pt. |
+| REQ-050 | The battlefield shall display 5 creature/ruin slots per side, HP bars, mana crystals, instability values, timer bar, and a horizontally scrollable hand area. | Layout per `07-ui-ux-specs.md` Section 3.1. SpriteKit `SKScene` for the battlefield area with SwiftUI overlays for HUD (OpponentHUDView, PlayerHUDView, HandScrollView, BottomControlsView). Board slot dimensions ~60x85pt on phone. Hand card dimensions 90x130pt. Ruins occupy creature slots and render via `BoardRuinNode` (SpriteKit) with passive effect icon overlay and HP bar (no ATK display). Max 1 ruin on board at a time. |
 | REQ-051 | The evolution flow shall follow the 9-step ceremony. | Steps: Card Presentation, Channel Selection, Evolution Animation (looping while AI generates), Art Reveal, Name Selection, Ability Reveal, Modifier Selection, Flavor Text Reveal, Final Presentation and Confirm. Minimum animation duration 2.5s even if AI finishes faster. Full step specs in `07-ui-ux-specs.md` Section 4. Built with SwiftUI views and animations. |
 | REQ-052 | The bottom tab bar shall be visible on all screens except during battle. | 5 tabs: Home, Collection, Decks, Profile, Shop. Battle is `.fullScreenCover` which hides the tab bar via `.toolbar(.hidden, for: .tabBar)`. Implemented via SwiftUI `TabView`. |
 | REQ-053 | Blocker assignment shall use drag interaction. | Drag defending creature onto attacking creature. Valid targets glow green (#4CAF50) via SpriteKit glow effect. Invalid zones flash red and creature snaps back with spring animation. Connection line drawn between assigned blocker and attacker using SpriteKit `SKShapeNode`. |
@@ -348,9 +349,30 @@ Total build-to-launch budget: **$300 maximum**.
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-055 | Each faction shall have an exclusive mechanic referenced by its faction modifiers. | Ironwright: Augment (stacking self-referencing effects). Fey Courts: Bond (cross-creature synergies). Demonic Kingdoms: Corruption (self-damage for power). |
-| REQ-056 | Faction modifiers shall always reference their exclusive mechanic keyword. | A modifier in the Ironwright pool that does not reference Augment count or Augment-related conditions is invalid. Universal modifiers shall not reference any faction mechanic. |
-| REQ-057 | Each faction shall have 2 avatars at launch (1 starter + 1 unlockable). | Avatars have instability modifiers: Order-leaning (-5 to -6), Balanced (-3 to -4), Chaos-leaning (-1 to -2). 6 avatar rows in `seed.sql`. |
+| REQ-055 | Each faction shall have an exclusive mechanic referenced by its faction modifiers. | Ironwright: Augment (stacking self-referencing effects). Fey Courts: Bond (cross-creature synergies). Demonic Kingdoms: Corruption (self-damage for power). Celestial Crusade: Exalt (aura effects benefiting all creatures when board conditions met -- go-wide formation play). The Endless: Persist (death triggers and lingering effects -- every kill is pyrrhic). |
+| REQ-056 | Faction modifiers shall always reference their exclusive mechanic keyword. | A modifier in the Ironwright pool that does not reference Augment count or Augment-related conditions is invalid. A modifier in the Celestial pool that does not reference Exalt conditions is invalid. A modifier in the Endless pool that does not reference Persist death triggers is invalid. Universal modifiers shall not reference any faction mechanic. |
+| REQ-057 | Each faction shall have 2 avatars at launch (1 starter + 1 unlockable). | Avatars have instability modifiers: Order-leaning (-5 to -6), Balanced (-3 to -4), Chaos-leaning (-1 to -2). 10 avatar rows in `seed.sql` (2 per faction x 5 factions). Each avatar maps to one of the faction's 2 sub-factions. |
+
+### 4.8a Planar Ruins
+
+**Reference:** `01-battle-mechanics.md` Section 11a, `PHASE1C-planar-ruins.md`
+
+| REQ | Requirement | Acceptance Criteria |
+|---|---|---|
+| REQ-192 | Planar Ruins shall be a distinct card type occupying creature slots on the battlefield. | Ruins have high HP, zero ATK, and provide a passive benefit to the controlling player's creatures while on the field. Ruins cannot attack or block. Ruins can be attacked and destroyed by opponent creatures. |
+| REQ-193 | Destroyed ruins shall inflict a destruction penalty on the controlling player for 1 turn. | Neutral ruins: generic penalty (all creatures lose 1 HP / skip next draw / -1 ATK for 1 turn). Evolved ruins: faction-specific penalty (Ironwright: Augment stacks reduced by 1, Fey: Bond connections severed, Demonic: 3 direct player damage, Celestial: Exalt auras suppressed, Endless: Persist effects silenced). |
+| REQ-194 | Neutral ruins shall evolve into faction-specific ruins after accumulating sufficient evolution energy. | Uses same evolution energy thresholds and subscription-tiered effect selection (Free: 2 options, Mid: 3, High: 4). Once evolved, the ruin is faction-locked and can only be played in that faction's deck. Evolved ruins have stronger, faction-complementary effects. |
+| REQ-195 | Deck building shall enforce ruin construction limits. | Max 2 Planar Ruins per deck. Max 1 ruin on the battlefield at a time (enforced at play time). Neutral ruins allowed in any single-faction deck. Evolved ruins must match deck faction. |
+| REQ-196 | Ruin passive effects shall activate during Phase 1 (Start of Turn) alongside other start-of-turn effects. | Ruin passive effects fire after stabilizer auras and before modifier triggers. Left-to-right by board slot order. |
+
+### 4.8b Keywords (Expanded)
+
+**Reference:** `01-battle-mechanics.md` Section 4
+
+| REQ | Requirement | Acceptance Criteria |
+|---|---|---|
+| REQ-197 | Haste shall allow a creature to attack the turn it is played. | Normal creatures can already attack the turn they are played (no summoning sickness in base rules). Haste specifically allows creatures to bypass any effects that would prevent attacking on the deployment turn (e.g., certain Chaos events, opponent modifier effects that impose a "wait" condition). |
+| REQ-198 | Ward shall prevent a creature from being targeted by opponent modifier effects for 1 turn after deployment. | Ward expires at the end of the turn following deployment. Ward does not protect against combat damage, AoE effects, or untargeted damage. Ward is consumed after its 1-turn duration expires (not on first targeting attempt). Visual: shimmering shield overlay via SpriteKit SKAction. |
 
 ### 4.9 Subscription Management (iOS Game Client)
 
@@ -369,10 +391,10 @@ Total build-to-launch budget: **$300 maximum**.
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-062 | Battle music shall use an adaptive 4-stem architecture via `AVAudioEngine`. | Stems: (1) Foundation (bass + minimal percussion, always full volume), (2) Player faction layer, (3) Opponent faction layer, (4) Intensity layer with Order.caf and Chaos.caf crossfaded by instability (1-6 = Order, 7-13 = neutral mix, 14-20 = Chaos). All stems at 95 BPM, 2:00 loops, CAF format. |
-| REQ-063 | Battle SFX shall use `SKAction.playSoundFileNamed` within SpriteKit. | Faction-specific variations for card play, creature attack, creature death. Universal SFX for card draw, mana gain/spend, avatar damage, heal, turn transition, timer warning, surrender. CAF format. Latency target: <20ms. |
+| REQ-062 | Battle music shall use an adaptive 8-stem architecture via `AVAudioEngine`. | Stems: (1) Foundation (bass + minimal percussion, always full volume), (2) Player faction layer (one of 5 factions), (3) Opponent faction layer (one of 5 factions), (4) Intensity layer with Order.caf and Chaos.caf crossfaded by instability (1-6 = Order, 7-13 = neutral mix, 14-20 = Chaos), (5-8) reserved for dynamic layering (combat escalation, ruin ambience, event stingers, low HP tension). All stems at 95 BPM, 2:00 loops, CAF format. 5 faction stems: Ironwright (hydraulic percussion, reactor drones), Fey Courts (harp arpeggios, nature ambience), Demonic (distorted brass, hellfire percussion), Celestial Crusade (choral pads, organ), The Endless (hollow bone percussion, ghostly whispers). |
+| REQ-063 | Battle SFX shall use `SKAction.playSoundFileNamed` within SpriteKit. | 5 faction-specific variations for card play, creature attack, creature death (5x each). Universal SFX for card draw, mana gain/spend, avatar damage, heal, turn transition, timer warning, surrender. Ruin SFX: placement, passive hum, destruction. Keyword SFX: Haste Rush (speed whoosh), Ward Shimmer (energy shield). Mechanic SFX: Exalt Activate (divine choir swell), Persist Trigger (ghostly echo). CAF format. Latency target: <20ms. |
 | REQ-064 | Menu/ambient music shall use `AVAudioPlayer`. | Non-looping one-shot for evolution ceremony (1:10). Looping for main menu theme (2:30 loop, 75 BPM) and shop/collection ambient (3:00 loop, 60 BPM, AAC format). |
-| REQ-065 | Total audio asset size shall not exceed 25 MB. | Music: ~18 MB (CAF). SFX: ~3 MB (CAF, ~40 files). Ambient: ~2 MB (AAC). Total ~23 MB. |
+| REQ-065 | Total audio asset size shall not exceed 30 MB. | Music: ~20 MB (CAF, 5 faction stems + foundation + intensity layers). SFX: ~5 MB (CAF, ~60 files including 5x faction variations, ruin SFX, keyword SFX, mechanic SFX). Ambient: ~3 MB (AAC). Total ~28 MB. |
 | REQ-066 | Volume defaults shall be: Master 100%, Music 60%, SFX 80%. Max 16 concurrent audio channels. | Stored in UserDefaults. Adjustable in Settings screen. Priority: SFX > Music > Ambient. |
 
 ### 4.11 Ranked Ladder
@@ -389,19 +411,19 @@ Total build-to-launch budget: **$300 maximum**.
 
 ### 4.12 Admin Dashboard
 
-**Application:** Web (Admin Dashboard on Railway). **Not** part of the iOS game client.
+**Application:** Web (Admin Dashboard on Vercel). **Not** part of the iOS game client.
 
 **Reference:** `06-technical-architecture.md` Section 9, CLAUDE.md ("Three Tools" section)
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-179 | Admin Dashboard shall require authentication separate from game auth. | Railway-hosted web app (Next.js, TypeScript). Auth via a single admin password stored as a Railway environment variable `ADMIN_PASSWORD`. No Supabase Auth integration for admin. Session expires after 8 hours. |
+| REQ-179 | Admin Dashboard shall require authentication separate from game auth. | Vercel-hosted web app (Next.js, TypeScript). Auth via a single admin password stored as a Vercel environment variable `ADMIN_PASSWORD`. No Supabase Auth integration for admin. Session expires after 8 hours. |
 | REQ-180 | Admin Dashboard shall provide an Economy Config editor. | Read/write interface for all rows in `economy_config` table. Changes take effect immediately (no app update required). Audit log of all changes with timestamp and previous value. |
-| REQ-181 | Admin Dashboard shall provide a batch generation trigger. | "Start Batch" button calls `POST /api/admin/batch/start` on the Railway server. Progress bar shows completed/total/failed counts updated every 5 seconds via polling. |
+| REQ-181 | Admin Dashboard shall provide a batch generation trigger. | "Start Batch" button calls `POST /api/admin/batch/start` on the game server (Railway). Progress bar shows completed/total/failed counts updated every 5 seconds via polling. |
 | REQ-182 | Admin Dashboard shall provide a card review gallery. | Grid of generated cards with art preview, name, stats, and status (pending/approved/rejected). Approve/reject buttons per card. "Approve All Visible" bulk action. Filter by faction, rarity, status. |
 | REQ-183 | Player data shall be viewable via the built-in Supabase Dashboard table explorer. No custom admin UI required. | Owner uses Supabase Dashboard to search the `players` table by ID or username, view subscription tier, Chaos Dust balance, card count per faction, match history (via `match_records` table), active decks, and rank. Read-only browsing via Supabase's built-in table view and search. |
 | REQ-184 | Active match data shall be viewable via the built-in Supabase Dashboard table explorer. No custom admin UI required. | Owner uses Supabase Dashboard to view the `active_matches` table, which shows match ID, player names, turn number, duration, and status. Game state snapshots viewable via the `match_snapshots` table. Supabase Dashboard provides real-time table refresh and search. |
-| REQ-185 | Admin Dashboard shall embed PostHog dashboards. | Iframe embed of PostHog project dashboard for DAU, retention, economy health, and match metrics. PostHog project API key configured as Railway environment variable. |
+| REQ-185 | Admin Dashboard shall embed PostHog dashboards. | Iframe embed of PostHog project dashboard for DAU, retention, economy health, and match metrics. PostHog project API key configured as Vercel environment variable. |
 | REQ-186 | Admin Dashboard shall provide a season management interface. | Create new season (name, start date, end date, battle pass tier count). Activate/deactivate seasons. View current season stats (player count, battle pass purchases, rank distribution). |
 | REQ-187 | Achievement progress shall be evaluated server-side at match completion and evolution completion. | Railway game server calls `evaluate-achievements` Edge Function after match resolution and after evolution resolution. Edge Function checks all achievement conditions against `player_achievements` table. No client-side achievement logic. |
 | REQ-188 | Achievement rewards shall be granted automatically on unlock with no claim button. | On unlock: insert `player_achievements` row, grant reward (Chaos Dust or Evolution Shards) via atomic transaction, send push notification (APNs), display in-app toast on next client sync. One-time `granted` flag prevents double-grant. |
@@ -477,9 +499,9 @@ Total build-to-launch budget: **$300 maximum**.
 
 | Entity | Storage | Description |
 |---|---|---|
-| CardTemplate | Supabase PostgreSQL (immutable after approval) | Base card definition: name, faction, type, stats, keywords, art prompt, art URL. ~358 rows at launch. |
+| CardTemplate | Supabase PostgreSQL (immutable after approval) | Base card definition: name, faction, type, stats, keywords, art prompt, art URL. ~592 rows at launch (585 faction cards + 7 universal stabilizers). |
 | CardInstance | Supabase PostgreSQL (JSONB for evolution_history, modifiers, triggered_abilities) | Player-owned card: tier, current stats, instability, chaos energy, modifiers, abilities, art URL. High write frequency on evolution; moderate on energy gain. |
-| ModifierDefinition | Supabase PostgreSQL (global content) | Modifier pool entry: effects, attunement, PP cost, faction. 240 rows at launch. |
+| ModifierDefinition | Supabase PostgreSQL (global content) | Modifier pool entry: effects, attunement, PP cost, faction. 336 rows at launch (96 universal + 48 per faction x 5 factions). |
 | Deck / DeckEntry | Supabase PostgreSQL | Player's deck: 20 card entries, faction, avatar. Validated on save and queue entry. |
 | Player | Supabase PostgreSQL (row-level locking for currency) | Account, subscription tier, Chaos Dust balance, shard inventory, rank, settings, faction mastery. |
 | UserSubscription | Supabase PostgreSQL | Subscription state: tier (FREE/MID/HIGH), cancel_at_period_end, grace_period_until, current_period_end. |
@@ -487,8 +509,11 @@ Total build-to-launch budget: **$300 maximum**.
 | MatchRecord | Supabase PostgreSQL | Completed match: players, result, duration, turns, compressed game log. |
 | Mission | Supabase PostgreSQL (TTL-indexed) | Active quests: type, target, progress, reward, expiry. |
 | EventDefinition | Supabase PostgreSQL (global content, seed data) | 16 rows (8 Order + 8 Chaos). Static game data in `seed.sql`. |
-| Avatar | Supabase PostgreSQL (global content, seed data) | 6 rows at launch (2 per faction). In `seed.sql`. |
-| Faction | Supabase PostgreSQL (global content, seed data) | 3 rows at launch. In `seed.sql`. |
+| Avatar | Supabase PostgreSQL (global content, seed data) | 10 rows at launch (2 per faction x 5 factions). In `seed.sql`. |
+| Faction | Supabase PostgreSQL (global content, seed data) | 5 rows at launch (Ironwright, Fey Courts, Demonic, Celestial Crusade, The Endless). In `seed.sql`. |
+| RuinTemplate | Supabase PostgreSQL (global content) | Planar Ruin definition: name, neutral_effect, HP, CM cost, art_url. 8 neutral archetypes at launch. |
+| RuinEffect | Supabase PostgreSQL (global content) | Ruin effect definition: effect_description, destruction_penalty, faction_id (NULL for neutral). 8 neutral + 40 evolved = 48 rows at launch. |
+| PlayerRuin | Supabase PostgreSQL | Player-owned ruin: is_evolved, faction_id, chosen_effect_id, evolution_energy. |
 | EconomyConfig | Supabase PostgreSQL | Key-value pairs for all tunable economy values. Editable via Admin Dashboard. |
 | GenerationJob | Supabase PostgreSQL | AI generation job tracking: status, priority, input/output data, timestamps. |
 | MatchmakingQueue | Supabase PostgreSQL | Queue entries: player_id, deck_id, mode, rank, mmr, queued_at. |
@@ -506,8 +531,12 @@ Player        1 <--> 1 UserSubscription
 Deck          * <--> * CardInstance (via DeckEntry)
 Faction       1 <--> * CardTemplate
 Faction       1 <--> * Avatar
+Faction       1 <--> * RuinEffect (NULL faction_id = neutral)
 Avatar        1 <--> * Deck
+Player        1 <--> * PlayerRuin
 Player        1 <--> * Mission
+RuinTemplate  1 <--> * RuinEffect (1 neutral + up to 5 faction-evolved)
+RuinTemplate  1 <--> * PlayerRuin
 ```
 
 ### 6.3 JSONB Denormalization
@@ -535,7 +564,7 @@ CardInstance stores `evolution_history`, `modifiers`, and `triggered_abilities` 
 | Store | Launch Estimate | 1-Year Estimate |
 |---|---|---|
 | Supabase PostgreSQL | ~5 GB | ~50 GB |
-| Cloudflare R2 (card art) | ~5 GB (base art for ~358 templates) | ~500 GB - 2 TB (evolution art for all players) |
+| Cloudflare R2 (card art) | ~8 GB (base art for ~640 cards including ruins) | ~500 GB - 2 TB (evolution art for all players) |
 
 ### 6.6 Data Retention
 
@@ -762,7 +791,7 @@ Full faction art prefixes, evolution direction instructions, and modifier pool d
 |---|---|---|
 | Evolution Rate | Evolutions per engaged player per week | 1-2 |
 | Time to First Legendary | Days from account creation to first Legendary evolution | Free Regular ~6 weeks, High Regular ~3 weeks. |
-| Faction Popularity | % of active decks per faction | Each faction 25-40% (no faction below 20%). |
+| Faction Popularity | % of active decks per faction | Each faction 15-30% (no faction below 10%, with 5 factions). |
 | Card Tier Distribution | % of all CardInstances at each evolution tier | Healthy: majority at Uncommon/Rare in month 1-3. |
 
 #### Economy
@@ -814,6 +843,9 @@ Full event table with event names, trigger conditions, and required properties i
 | `app_cold_start` | App launches | `load_time_ms` | iOS client |
 | `ai_generation_completed` | AI generation job finishes | `model`, `resolution`, `cost_estimate`, `success` | Edge Function |
 | `card_pack_opened` | Player opens card pack | `faction_id`, `dust_spent`, `cards_received` | Edge Function |
+| `ruin_placed` | Ruin played on battlefield | `ruin_template_id`, `is_evolved`, `faction_id` | Game server (Railway) |
+| `ruin_destroyed` | Ruin destroyed in combat | `ruin_template_id`, `is_evolved`, `destruction_penalty` | Game server (Railway) |
+| `ruin_evolved` | Ruin evolved to faction-specific | `ruin_template_id`, `faction_id`, `effect_chosen` | Edge Function |
 
 ---
 
@@ -823,16 +855,17 @@ Full event table with event names, trigger conditions, and required properties i
 
 | REQ | Category | Minimum | Target |
 |---|---|---|---|
-| REQ-146 | Card templates (total) | 300 (100/faction) | 358 (8 batches of ~45) |
+| REQ-146 | Card templates (total, excluding ruins) | 500 (100/faction) | 592 (585 faction + 7 universal stabilizers) |
 | REQ-147 | Creatures per faction | 80 | 100 |
 | REQ-148 | Spells per faction | 15 | 17 |
 | REQ-149 | Universal stabilizers | 7 | 7 |
-| REQ-150 | _(removed — no faction-specific stabilizers at launch)_ | — | — |
-| REQ-151 | Modifier definitions | 240 (per PP pool structure) | 240 |
+| REQ-150 | Neutral Planar Ruin archetypes | 6 | 8 |
+| REQ-150a | Evolved Planar Ruin variants | 30 (6 neutral x 5 factions) | 40 (8 neutral x 5 factions) |
+| REQ-151 | Modifier definitions | 336 (per PP pool structure: 12 pools x (8 universal + 4 per faction x 5 factions)) | 336 |
 | REQ-152 | Order events | 8 | 8 |
 | REQ-153 | Chaos events | 8 | 8 |
-| REQ-154 | Avatars | 6 (2 per faction) | 6 |
-| REQ-155 | Starter decks | 3 (1 per faction, 20 cards each) | 3 |
+| REQ-154 | Avatars | 10 (2 per faction x 5 factions) | 10 |
+| REQ-155 | Starter decks | 5 (1 per faction, 20 cards each) | 5 |
 
 ### 10.2 Feature Completeness
 
@@ -852,11 +885,11 @@ Full event table with event names, trigger conditions, and required properties i
 
 | REQ | Requirement | Acceptance Criteria |
 |---|---|---|
-| REQ-160 | Full combat resolution test suite shall cover all keyword interaction pairs. | Per `01-battle-mechanics.md` Section 4 keyword interaction matrix: Shield/Piercing, Shield/Deathtouch, Shield/Lifesteal, Flying/Taunt, Flying/Reach, Deathtouch/Piercing, Deathtouch/Lifesteal, Taunt forced-attack and forced-block scenarios. Automated tests in game server test suite. |
+| REQ-160 | Full combat resolution test suite shall cover all keyword interaction pairs. | Per `01-battle-mechanics.md` Section 4 keyword interaction matrix (9x9): Shield/Piercing, Shield/Deathtouch, Shield/Lifesteal, Shield/Ward, Flying/Taunt, Flying/Reach, Deathtouch/Piercing, Deathtouch/Lifesteal, Taunt forced-attack and forced-block scenarios, Haste (attack on play turn), Ward (immune to targeted modifier effects for 1 turn after deployment, vulnerable to combat damage and AoE). Automated tests in game server test suite. |
 | REQ-161 | Evolution flow shall be tested end-to-end for every tier transition and both outcomes. | 4 tier transitions x 2 outcomes = 8 paths. Each path verifies: shard deduction, stat changes, instability change, modifier pool correctness, ability generation, AI art generation (or fallback), EvolutionRecord creation, CardInstance update. Automated tests in Edge Function test suite. |
 | REQ-162 | Economy test suite shall validate all currency operations are transactionally safe. | Double-spend prevention under concurrent requests. Shard deduction atomic with evolution. Dust deduction atomic with pack opening. Negative balance prevention. Automated tests using parallel requests to Edge Functions. |
 | REQ-163 | Reconnection shall restore full game state within 3 seconds. | Player reconnects to Supabase Realtime channel (via Supabase Swift SDK), receives `match:state` snapshot, rebuilds board in SpriteKit, resumes play. Timer continues from where it was. Opponent sees "Opponent reconnected." |
-| REQ-164 | Deck validation shall reject all invalid configurations. | Test: 19 cards, 21 cards, mixed factions, 3 copies of a template, 3 Legendaries, 2 copies of one Legendary, wrong-faction avatar. Each must produce a specific error message. |
+| REQ-164 | Deck validation shall reject all invalid configurations. | Test: 19 cards, 21 cards, mixed factions, 3 copies of a template, 3 Legendaries, 2 copies of one Legendary, wrong-faction avatar, 3+ Planar Ruins in deck, evolved ruin from wrong faction. Each must produce a specific error message. |
 | REQ-165 | Balance validation suite shall run against all card templates. | Automated checks per `01-battle-mechanics.md` Section 14: PP budget validation (tolerance +/- 1), instability/stat profile consistency, keyword limits, modifier PP cost matching. Run as `npm run validate-balance` script in game server project. Also available via Admin Dashboard "Validate Cards" button (calls `POST /api/admin/validate-balance`). |
 
 ### 10.5 App Store Launch Requirements
@@ -897,7 +930,7 @@ Full event table with event names, trigger conditions, and required properties i
 | **AI art quality inconsistency** | Medium | Medium -- player dissatisfaction with evolution art | Quality pipeline (NSFW filter + negative prompt). Prompt engineering with curated modifiers only (no free-form text). Evolution art uses img2img (preserves visual DNA). Owner reviews base card art in batch pipeline Admin Dashboard. |
 | **Mobile performance on older devices** | Medium | High -- poor retention | SpriteKit is hardware-accelerated on all iOS devices. Animation quality tiered by device capability (FULL / REDUCED / MINIMAL setting). Reduced Motion mode. 200MB local art cache. Delta-based Realtime updates (not full state on every action). Xcode Instruments profiling on iPhone 11 required before launch. |
 | **Game balance issues at launch** | High | Medium -- player frustration | Economy values in `economy_config` table (changeable via Admin Dashboard, no deploy needed). Automated balance validation suite. PostHog telemetry on win rates by faction, card, modifier. |
-| **Content volume insufficient for launch** | Medium | High -- repetitive experience | Batch generation pipeline targets 358 cards. Lower bound of 300 cards (100/faction) still provides viable deckbuilding. 240 modifiers provide evolution variety. Total batch generation cost: ~$71 in fal.ai + OpenAI API calls. |
+| **Content volume insufficient for launch** | Medium | High -- repetitive experience | Batch generation pipeline targets 640 cards (592 creature/spell/stabilizer + 48 ruins). Lower bound of 500 cards (100/faction) still provides viable deckbuilding. 336 modifiers provide evolution variety. Total batch generation cost: ~$18 in fal.ai + OpenAI API calls. |
 | **Supabase Realtime reliability on mobile** | Medium | Medium -- disconnects during matches | Client reconnection via Supabase Swift SDK with exponential backoff per `06-technical-architecture.md` Section 5.4. Game state snapshotted to PostgreSQL on each phase transition. 3-turn grace period before auto-forfeit. Full state snapshot on reconnect. |
 | **Economy inflation/deflation** | Medium | Medium -- progression feels wrong | PostHog dashboard tracks Dust bank distribution, quest completion, evolution rate. Tunable via `economy_config` table through Admin Dashboard. See red flags in Section 9.2. |
 
@@ -915,7 +948,7 @@ Full event table with event names, trigger conditions, and required properties i
 
 ## 12. Owner's Operational Workflow
 
-This section describes how the owner manages the live game. Every operation is through the Admin Dashboard (Next.js web app on Railway), the built-in Supabase Dashboard, or a single terminal command. No code changes, no infrastructure configuration.
+This section describes how the owner manages the live game. Every operation is through the Admin Dashboard (Next.js web app on Vercel), the built-in Supabase Dashboard, or a single terminal command. No code changes, no infrastructure configuration.
 
 ### 12.1 Typical Week (Post-Launch)
 
@@ -964,7 +997,7 @@ This section describes how the owner manages the live game. Every operation is t
 All deployments use a single script:
 
 ```bash
-./deploy.sh          # Deploys: Supabase migrations, Edge Functions, Railway game server + admin dashboard
+./deploy.sh          # Deploys: Supabase migrations, Edge Functions, Railway game server. Admin dashboard auto-deploys via Vercel on git push.
 ```
 
 For iOS app updates, submit via Xcode Cloud to TestFlight, then promote to App Store.
@@ -1001,9 +1034,9 @@ No other configuration needed.
 |---|---|---|
 | Apple Developer | $99 | Mandatory. Includes Xcode Cloud free tier. |
 | Supabase (Pro, 1 month) | $25 | Free tier during dev; Pro for launch. |
-| Railway (game server + admin, 1 month) | $15 | Dev environment minimal. |
-| fal.ai (content generation) | $80 | 358 base cards (~$14.30) + testing 3x (~$44) + evolution testing (~$10) + app icon/assets (~$2) + buffer (~$9) |
-| OpenAI (text generation) | $2 | 358 cards text + testing. Batch API for >100 cards (50% cheaper). |
+| Railway (game server, 1 month) | $15 | Dev environment minimal. Admin dashboard on Vercel free tier ($0). |
+| fal.ai (content generation) | $80 | 640 base cards + ruins (~$18) + testing 3x (~$44) + evolution testing (~$10) + app icon/assets (~$2) + buffer (~$6) |
+| OpenAI (text generation) | $2 | 640 cards text + testing. Batch API for >100 cards (50% cheaper). |
 | Cloudflare R2 | $0 | Free tier covers launch. |
 | PostHog | $0 | Free tier covers launch (1M events/mo). |
 | Cloudflare Pages | $0 | Free tier for legal pages. |
@@ -1015,7 +1048,7 @@ No other configuration needed.
 | Service | At 1K DAU | At 10K DAU | At 50K DAU |
 |---|---|---|---|
 | Supabase (Pro) | $25 | $25 | $25-$599 |
-| Railway (game server + admin) | $20 | $50-100 | $200-400 |
+| Railway (game server) | $20 | $50-100 | $200-400 |
 | fal.ai (image generation) | $100 | $3,900 | $19,500 |
 | OpenAI (text generation) | $5 | $20 | $100 |
 | Cloudflare R2 | $0 | $5 | $25 |
@@ -1046,17 +1079,19 @@ All design documents are located in `docs/design/` and form the complete specifi
 
 | Document | Path | Summary |
 |---|---|---|
-| **00 - Game Design Master** | `docs/design/00-game-design-master.md` | Complete game design overview. Faction system, card economy, evolution system, modifier system, progression, monetization, battle system, chaos roll mechanics. The foundational document that all others expand upon. **Protected file -- read-only.** |
-| **01 - Battle Mechanics** | `docs/design/01-battle-mechanics.md` | PP budget system, instability math, turn structure (9 phases), combat resolution algorithm, 7 keyword definitions and interaction matrix, 3 faction mechanics (Augment/Bond/Corruption), modifier pool structure (240 modifiers across 12 pools), 8 Order events (O1-O8), 8 Chaos events (C1-C8), triggered ability framework, spell and stabilizer design, balance validation rules. **Protected file -- read-only.** |
-| **02 - Card Data Model** | `docs/design/02-card-data-model.md` | Complete TypeScript-style entity definitions. CardTemplate, CardInstance, EvolutionRecord, ModifierDefinition, ModifierInstance, TriggeredAbility, SpellEffect, Effect, EventDefinition, Avatar, Faction, Deck, Player, GameState (runtime), MatchRecord, Mission, Achievement. All enums exhaustively defined. Entity relationships. Key indexes. Data flow diagrams. **Protected file -- read-only.** |
+| **00 - Game Design Master** | `docs/design/00-game-design-master.md` | Complete game design overview. 5-faction system (Ironwright/Augment, Fey/Bond, Demonic/Corruption, Celestial/Exalt, Endless/Persist), card economy, evolution system, 336-modifier pool system, 9 keywords, Planar Ruins card type, progression, monetization, battle system, chaos roll mechanics. The foundational document that all others expand upon. **Protected file -- read-only.** |
+| **01 - Battle Mechanics** | `docs/design/01-battle-mechanics.md` | PP budget system, instability math, turn structure (9 phases), combat resolution algorithm, 9 keyword definitions and interaction matrix (including Haste, Ward), 5 faction mechanics (Augment/Bond/Corruption/Exalt/Persist), modifier pool structure (336 modifiers across 12 pools), 8 Order events (O1-O8), 8 Chaos events (C1-C8), Planar Ruins battlefield mechanics (Section 11a), triggered ability framework, spell and stabilizer design, balance validation rules. **Protected file -- read-only.** |
+| **02 - Card Data Model** | `docs/design/02-card-data-model.md` | Complete TypeScript-style entity definitions. CardTemplate, CardInstance, EvolutionRecord, ModifierDefinition, ModifierInstance, TriggeredAbility, SpellEffect, Effect, EventDefinition, Avatar, Faction, Deck, Player, GameState (runtime), MatchRecord, Mission, Achievement, RuinTemplate, RuinEffect, PlayerRuin. All enums exhaustively defined (5 factions, 9 keywords, 5 mechanics, PLANAR_RUIN card type). Entity relationships. Key indexes. Data flow diagrams. **Protected file -- read-only.** |
 | **03 - Prompt Templates** | `docs/design/03-prompt-templates.md` | Exact fal.ai API integration (endpoints, request/response JSON). Faction art style prefixes (exact strings). STYLE_ANCHOR (locked string). Evolution prompt templates (Order and Chaos). Denoising strength table by evolution step. Visual prompt modifier tables: 30 universal, 28 per faction. GPT-4o Mini text generation prompts. Complete TypeScript prompt construction algorithm. Batch generation spec with CSV format. |
 | **04 - Progression Economy** | `docs/design/04-progression-economy.md` | Chaos energy thresholds (15/30/50/75) and earning rates (2/win, 1/loss). Full Chaos Dust economy mathematical model with daily/weekly income tables. Quest system: 20 daily templates, 10 weekly templates with exact rewards (Easy: 20, Medium: 30, Hard: 45 Dust). Rank ladder: 17 tiers, 8-week seasons. New player economy and onboarding flow. `economy.config.json` full schema with all tunable values. |
-| **05 - Content Pipeline** | `docs/design/05-content-pipeline.md` | Launch content: 358 cards (300 creatures + 51 spells + 7 universal stabilizers, no faction-specific stabilizers at launch). Batch generation pipeline with Admin Dashboard review gallery. Exact fal.ai and OpenAI API calls. Cloudflare R2 upload code with AWS SDK v3. Automated QA checks. Full launch plan: 4 days, 8 batches. Total launch content API cost: ~$71. App Store asset generation (icon, screenshots, description, privacy policy, nutrition labels). |
+| **05 - Content Pipeline** | `docs/design/05-content-pipeline.md` | Launch content: 640 cards (500 creatures + 85 spells + 7 universal stabilizers + 8 neutral ruins + 40 evolved ruins across 5 factions). Batch generation pipeline with Admin Dashboard review gallery. Exact fal.ai and OpenAI API calls. Cloudflare R2 upload code with AWS SDK v3. Automated QA checks. Full launch plan: 6-7 days, 13 batches. Total launch content API cost: ~$18. App Store asset generation (icon, screenshots, description, privacy policy, nutrition labels). |
 | **06 - Technical Architecture** | `docs/design/06-technical-architecture.md` | Complete Supabase database schema with SQL CREATE TABLE statements, constraints, indexes, and Row Level Security policies. Service architecture for Swift/SwiftUI/SpriteKit client + Supabase + Railway. Full game server deep dive: state machine, turn resolution (TypeScript), combat resolution (TypeScript), timer management, anti-cheat, reconnection handling. AI pipeline code. Full REST API endpoint definitions. Full Supabase Realtime message type definitions. StoreKit 2 integration code (EntitlementManager, sync-entitlements Edge Function, apple-notifications webhook). Xcode project structure. Environment variables. Budget breakdown. Deploy script. |
-| **07 - UI/UX Specs** | `docs/design/07-ui-ux-specs.md` | Technology stack (Swift/SwiftUI/SpriteKit). Screen inventory with navigation map. Battlefield layout with SpriteKit scene + SwiftUI overlay architecture. Component specs (HPBarView, TimerBarView, EndTurnButton, etc.) with exact dimensions, colors, and animations. Evolution screen 9-step ceremony. Collection screen. Deck builder. Shop screen. Onboarding flow. Dark theme color palette. Settings screen. Post-match results. Admin Dashboard specs (Part B). |
-| **08 - Audio Design** | `docs/design/08-audio-design.md` | AVAudioEngine adaptive music system (4-stem architecture). Faction audio identities. SFX via SKAction.playSoundFileNamed in SpriteKit. Complete SFX inventory (~40 files, ~3 MB CAF). Music tracks (~18 MB CAF). Evolution ceremony audio (1:10 one-shot). Priority system (SFX > Music > Ambient). Audio sourcing via Suno AI. Total ~23 MB. |
+| **07 - UI/UX Specs** | `docs/design/07-ui-ux-specs.md` | Technology stack (Swift/SwiftUI/SpriteKit). Screen inventory with navigation map. Battlefield layout with SpriteKit scene + SwiftUI overlay architecture. Component specs (HPBarView, TimerBarView, EndTurnButton, etc.) with exact dimensions, colors, and animations. Evolution screen 9-step ceremony. Planar Ruins UI (RuinCardView, BoardRuinNode, ruin evolution flow, ruin collection). Keyword visual indicators (Haste speed-lines, Ward shield overlay). Faction mechanic visuals (Exalt aura, Persist afterimage). 5-faction picker onboarding. Collection screen. Deck builder with ruins. Shop screen. Onboarding flow. Dark theme color palette (5 factions). Settings screen. Post-match results. Admin Dashboard specs (Part B). |
+| **08 - Audio Design** | `docs/design/08-audio-design.md` | AVAudioEngine adaptive music system (8-stem architecture). 5 faction sonic identities (Ironwright brutalist space-industrial, Fey Courts enchanted forest, Demonic hellfire, Celestial Crusade divine choral, The Endless spectral bone). SFX via SKAction.playSoundFileNamed in SpriteKit. Complete SFX inventory (~60 files, ~5 MB CAF). Ruin SFX (placement, hum, destruction). Keyword SFX (Haste, Ward). Mechanic SFX (Exalt, Persist). Music tracks (~20 MB CAF). Evolution ceremony audio (1:10 one-shot). Priority system (SFX > Music > Ambient). Audio sourcing via Suno AI + purchasable assets. Total ~28 MB. |
 | **09 - Monetization Details** | `docs/design/09-monetization-details.md` | StoreKit 2 implementation (EntitlementManager, Transaction.currentEntitlements, Transaction.updates). Subscription tiers: Free/$6.99/$12.99 with exact feature matrix. All IAP product identifiers. App Store Server API v2 receipt validation. App Store Server Notifications V2 webhook. Conversion funnel analysis. Battle pass design ($9.99, 50 tiers). Cosmetics catalog. Revenue projections. Anti-predatory design. |
 | **10 - PRD** | `docs/design/10-prd.md` | This document. |
+| **11 - Lore Bible** | `docs/design/11-lore-bible.md` | Universe history (The Great Fracture), Ancient Builders civilization, 5 faction histories with origins/philosophy/war goals, 10 sub-faction profiles (2 per faction), 10 avatar profiles with backstory/instability modifier/art prompts, inter-faction 5x5 relationship matrix, flavor text voice guide per faction, GPT-4o Mini prompt templates for names/flavor/evolution narratives. |
+| **12 - Art Direction** | `docs/design/12-art-direction.md` | Complete art inventory (backgrounds, banners, loading screens, card backs, ruin art, avatars). AI-generated vs purchased decision matrix. App background art prompts per screen. Planar Ruins art direction (neutral aesthetic + 5 faction transformations). Season visual identity. Asset purchase research (itch.io, Sonniss, Freesound). Curated purchasable asset list with links/prices/licenses (~$100 budget). |
 
 ---
 
@@ -1084,19 +1119,42 @@ The v2.0 PRD correctly resolved this as "3 Commons for 100 Dust." This remains c
 
 ### Gap 4: Modifier Pool Count
 
-CLAUDE.md states "12 pools x (8 universal + 4 per faction) = 240 modifiers." This is the canonical figure from the protected design documents.
+Updated with faction expansion: 12 pools x (8 universal + 4 per faction x 5 factions) = **336 modifiers**. This reflects the expansion from 3 to 5 factions (adding Celestial Crusade and The Endless).
 
-**Resolution:** Implement **240 modifier definitions** across 12 PP-based pools (8 universal + 4 per faction per pool). This matches the protected source-of-truth in CLAUDE.md. Follow the pool structure defined in `01-battle-mechanics.md` and specific definitions in `03-prompt-templates.md` Section 1.6.
+**Resolution:** Implement **336 modifier definitions** across 12 PP-based pools (8 universal + 4 per faction x 5 factions per pool). Follow the pool structure defined in `01-battle-mechanics.md` and specific definitions in `03-prompt-templates.md` Section 1.6. Celestial (CF01-CF48), Endless (EF01-EF48), rethemed Ironwright (IF01-IF48) defined in `PHASE1B-mechanics.md`.
 
-### Gap 5: Content Target -- 358 cards
+### Gap 5: Content Target -- 640 cards
 
-Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 51 spells (17/faction) + 7 universal stabilizers = **358 total cards**. No faction-specific stabilizers at launch — all 7 stabilizers are universal. Generation runs in 8 batches of ~45.
+Per `05-content-pipeline.md` (canonical source): 500 creatures (100/faction x 5) + 85 spells (17/faction x 5) + 7 universal stabilizers + 8 neutral ruins + 40 evolved ruins = **640 total cards**. No faction-specific stabilizers at launch — all 7 stabilizers are universal. Generation runs in 13 batches of ~50.
 
-**Resolution:** Implement **358 card templates**. Minimum viable is 300 (100/faction creatures only). The pipeline may produce more if retries are needed; surplus is acceptable.
+**Resolution:** Implement **640 card templates** (including ruins). Minimum viable is 500 (100/faction creatures only). The pipeline may produce more if retries are needed; surplus is acceptable.
 
 ---
 
 ## Revision Log
+
+### v4.0 Changes (from v3.4) -- 2026-02-19
+
+**Faction Expansion Overhaul:** 3 factions to 5, 7 keywords to 9, new Planar Ruins card type, Ironwright retheme, expanded content targets.
+
+| Change | Old | New | Reason |
+|---|---|---|---|
+| **Factions (Sections 1.4, 1.5, 4.8)** | 3 factions (Ironwright/Fey/Demonic) | 5 factions (+Celestial Crusade with Exalt, +The Endless with Persist) | Faction expansion per `PLAN-faction-expansion.md`. |
+| **Keywords (Section 1.5, REQ-160)** | 7 keywords | 9 keywords (+Haste, +Ward). New REQ-197 (Haste), REQ-198 (Ward). | Faction expansion. Haste enables tempo play, Ward provides deployment protection. |
+| **Planar Ruins (new Section 4.8a)** | No ruins card type | Planar Ruins: high HP, zero ATK, passive benefit, takes creature slot, max 2/deck, max 1 on field, evolves neutral to faction-specific. REQ-192 through REQ-196. | New card type per `PLAN-faction-expansion.md` and `PHASE1C-planar-ruins.md`. |
+| **Modifier pool (Section 1.5, REQ-151, Gap 4)** | 240 modifiers (12 pools x (8 universal + 4 per faction x 3)) | 336 modifiers (12 pools x (8 universal + 4 per faction x 5)). Celestial (CF01-CF48), Endless (EF01-EF48), rethemed Ironwright (IF01-IF48). | 5 factions require 5 faction modifier sets. |
+| **Content target (REQ-146, Gap 5)** | 358 cards (300 creatures + 51 spells + 7 stabilizers), 8 batches | 640 cards (500 creatures + 85 spells + 7 stabilizers + 8 neutral ruins + 40 evolved ruins), 13 batches | 5 factions x 117 cards + ruins. |
+| **Avatars (REQ-057, REQ-154)** | 6 avatars (2 per faction x 3) | 10 avatars (2 per faction x 5). Each maps to a sub-faction. | 5 factions require 10 avatars. |
+| **Starter decks (REQ-046, REQ-155, US-001)** | 3 loaner decks | 5 loaner decks (one per faction). 5-faction carousel picker for onboarding. | 5 factions. |
+| **Faction mechanics (REQ-055)** | Augment, Bond, Corruption | +Exalt (Celestial: aura effects on board conditions), +Persist (Endless: death triggers and lingering effects) | New faction mechanics. |
+| **Audio system (REQ-062, REQ-063, REQ-065, P1-008)** | 4-stem music, ~40 SFX files, ~23 MB | 8-stem music, ~60 SFX files (5x faction variations, ruin SFX, keyword SFX, mechanic SFX), ~28 MB. 5 faction sonic identities. | 5 factions with distinct audio. Ruin/keyword/mechanic SFX added. |
+| **Deck validation (REQ-035, REQ-164)** | No ruin validation | Max 2 ruins/deck, max 1 on field, evolved ruins must match faction. Test cases added. | Planar Ruins deck rules. |
+| **Battlefield UI (REQ-050)** | 5 creature slots | 5 creature/ruin slots. BoardRuinNode for ruin rendering. | Ruins occupy creature slots. |
+| **Analytics (Section 9.4)** | No ruin events | `ruin_placed`, `ruin_destroyed`, `ruin_evolved` PostHog events added. | Track ruin gameplay metrics. |
+| **Faction popularity target** | 25-40% per faction (min 20%) | 15-30% per faction (min 10%) | 5 factions = lower per-faction share. |
+| **Document index (Section 14)** | 10 design documents | 12 design documents (+11-lore-bible.md, +12-art-direction.md). Updated descriptions for docs 00-08. | New creative foundation docs from faction expansion. |
+| **Admin Dashboard hosting** | Railway | Vercel (free tier) | Matches actual deployment per CLAUDE.md. |
+| **REQ numbering** | REQ-001 through REQ-191 | REQ-001 through REQ-198 | 7 new requirements (5 ruins + 2 keywords). |
 
 ### v3.4 Changes (from v3.3) -- 2026-02-16
 
@@ -1111,7 +1169,7 @@ Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 5
 
 | Change | Old | New | Reason |
 |---|---|---|---|
-| **Admin Dashboard technology** | React + Vite (TypeScript) | Next.js (TypeScript) | CLAUDE.md updated. |
+| **Admin Dashboard technology** | React + Vite (TypeScript) | Next.js (TypeScript) on Vercel | CLAUDE.md updated. |
 | **Three Tools model** | Two Applications (iOS + Admin) | Three Tools (iOS + Admin Dashboard + Supabase Dashboard) | CLAUDE.md "Three Tools" section. Supabase Dashboard handles player lookup, match monitoring, auth management natively. |
 | **REQ-183 (Player Lookup)** | Custom admin UI | Supabase Dashboard (built-in table explorer) | Don't build custom UI for native Supabase features. |
 | **REQ-184 (Match Monitor)** | Custom admin UI | Supabase Dashboard (built-in table view) | Don't build custom UI for native Supabase features. |
@@ -1169,6 +1227,6 @@ Per `05-content-pipeline.md` (canonical source): 300 creatures (100/faction) + 5
 
 ---
 
-*Last updated: 2026-02-16*
-*Version: 3.4 -- v3.4 added achievement REQs (187-190), faction mastery REQ (191), Admin Dashboard validate-balance button (REQ-165). v3.3 updated Admin Dashboard to Next.js, introduced Three Tools model (iOS + Admin Dashboard + Supabase Dashboard), moved player lookup and match monitoring to Supabase Dashboard. v3.2 fixed 367→358 card count, admin infra table, stale "Top" references, cross-doc section references. v3.1 added ranked ladder + admin dashboard REQs + instability floor. v3.0 full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot.*
+*Last updated: 2026-02-19*
+*Version: 4.0 -- v4.0 faction expansion overhaul: 3→5 factions (added Celestial Crusade/Exalt, The Endless/Persist), 7→9 keywords (added Haste, Ward), new Planar Ruins card type (REQ-192 through REQ-196), Ironwright retheme to brutalist space-industrial, 240→336 modifiers, 358→640 content target, 6→10 avatars, 3→5 starter decks, 8-stem audio architecture, ~28 MB total audio. Admin Dashboard hosting corrected to Vercel. v3.4 added achievement REQs (187-190), faction mastery REQ (191), Admin Dashboard validate-balance button (REQ-165). v3.3 updated Admin Dashboard to Next.js, introduced Three Tools model. v3.0 full rewrite for native iOS (Swift/SwiftUI/SpriteKit) platform pivot.*
 *All infrastructure decisions final per CLAUDE.md. All schemas, API contracts, message formats, and deployment configs are code-ready and defined in the referenced design documents.*

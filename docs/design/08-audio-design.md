@@ -46,29 +46,29 @@ This document defines the music, SFX, and adaptive audio systems for Chaos Creat
 
 Each faction has a unique sonic signature built from instrument palettes, rhythmic patterns, and timbral choices. These signatures appear in faction-specific battle music, UI accents, and SFX variations.
 
-### The Ironwright Collective (Steampunk)
+### The Ironwright Collective (Brutalist Space-Industrial)
 
-**Sonic Identity:** Industrial, mechanical, brass-heavy, rhythmic precision.
+**Sonic Identity:** Brutalist, massive, hydraulic, void-industrial. A machine empire conquering stars through industry and efficiency of war. NOT steampunk — no brass, no gears, no clockwork, no Victorian whimsy.
 
 **Instrument Palette:**
-- **Lead:** Brass instruments (trumpet, trombone, French horn), processed through light distortion for a "steam-powered" quality
-- **Rhythm:** Mechanical percussion — anvil strikes, steam hisses (rhythmic), clockwork ticking (subtle hi-hat layer), metal-on-metal clangs
-- **Harmony:** Low brass pads, factory drones, gear grinding (tonal bass)
-- **Accents:** Steam release bursts, pressure valve releases, piston movements (synced to tempo)
+- **Lead:** Processed low brass (tuba, bass trombone) through heavy distortion and reverb for "void-forged" quality, industrial synthesizers
+- **Rhythm:** Hydraulic percussion — piston slams, rebar impacts, pressurized releases, deep metallic thuds, industrial hammering
+- **Harmony:** Reactor drones (sustained low-frequency hum), metal stress groans (tonal bass), void ambience (vast empty reverb)
+- **Accents:** Hydraulic hiss (pressurized releases), reactor startup whine, metal stress creaks, distant orbital machinery, electromagnetic interference pulses
 
 **Musical Style:**
-- **Tempo:** 90-110 BPM (steady, march-like)
-- **Key/Mode:** Minor keys with industrial harmonics (dystopian steampunk, not bright Victorian)
-- **Rhythm:** 4/4 time signature, strong downbeat emphasis, syncopated mechanical loops
+- **Tempo:** 90-110 BPM (steady, march-like, mechanized advance)
+- **Key/Mode:** Minor keys with dissonant industrial harmonics (dystopian brutalism)
+- **Rhythm:** 4/4 time signature, strong downbeat emphasis, mechanized loops with hydraulic syncopation
 
 **SFX Flavor:**
-- Card play: Metallic click + gear turn
-- Creature attack: Piston thrust + brass stab
-- Creature death: Metallic collapse + steam release
-- Augment modifier trigger: Clockwork wind-up
-- Evolution: Steam buildup → pressure release → brass fanfare
+- Card play: Heavy metallic thud + hydraulic hiss
+- Creature attack: Piston slam + reactor surge
+- Creature death: Metal stress groan + structural collapse + void whistle
+- Augment modifier trigger: Hydraulic wind-up + pressurized lock
+- Evolution: Reactor buildup → pressure overload → industrial fanfare + void resonance
 
-**Reference Vibe:** Dishonored soundtrack (industrial dark fantasy), Machinarium (whimsical mechanical), Frostpunk (grim industrial brass)
+**Reference Vibe:** Frostpunk (grim industrial weight), Dead Space (void-industrial horror), Blade Runner 2049 (brutalist synth drones)
 
 ---
 
@@ -124,6 +124,58 @@ Each faction has a unique sonic signature built from instrument palettes, rhythm
 
 ---
 
+### The Celestial Crusade (Divine / Holy War)
+
+**Sonic Identity:** Choral, organ-driven, bells, divine authority. Self-righteous magnificence masking zealotry. Grand and imposing — cathedral-scale reverb.
+
+**Instrument Palette:**
+- **Lead:** Pipe organ (full cathedral registration), choir (mixed voices, Latin-esque hymns), brass fanfares (trumpets, horns — heraldic, not industrial)
+- **Rhythm:** Church bells (tolling, marking phases), timpani (punctuating declarations), metallic chime percussion (celestial)
+- **Harmony:** Choir pads (sustained vowels, reverb-heavy), organ drones (low pedal tones), string section (legato, majestic)
+- **Accents:** Bell strikes (single, resonant), angelic vocal runs (melismatic soprano), divine light shimmer (high-frequency sparkle), judgment horn (shofar-like)
+
+**Musical Style:**
+- **Tempo:** 80-100 BPM (stately, processional, commanding)
+- **Key/Mode:** Mixolydian mode (bright but with authority), occasional Lydian lifts (transcendent moments)
+- **Rhythm:** 4/4 with hymnal cadence, strong first and third beats, occasional 3/4 waltz for angelic passages
+
+**SFX Flavor:**
+- Card play: Bell chime + choir "ah" accent
+- Creature attack: Trumpet fanfare + metallic ring
+- Creature death: Dissolving halo chime + fading choir sigh (divine_radiance particles)
+- Exalt modifier trigger: Organ swell + multi-voice choir crescendo
+- Evolution: Bell tolling → choir buildup → organ blast → divine light shimmer
+
+**Reference Vibe:** Elden Ring (Godfrey theme — divine authority), Halo (choir + orchestral majesty), Civilization VI "Atomic Era" theme (pipe organ grandeur)
+
+---
+
+### The Endless (Undead / Necrotic)
+
+**Sonic Identity:** Hollow, bone-resonant, ghostly, melancholic. The sound of things that should not exist but refuse to stop. Emptiness given voice.
+
+**Instrument Palette:**
+- **Lead:** Bowed glass (singing glass, eerie overtones), distant detuned strings (cello, viola — played sul ponticello for ghostly timbre), spectral vocal samples (whispered, reversed)
+- **Rhythm:** Bone percussion (skull taps, rib cage strikes, dry rattles), spectral footsteps (distant, rhythmic), hollow wood knocks
+- **Harmony:** Ghostly wind drones (processed wind recordings, tonal), sub-bass void hum, reversed reverb tails (creating "sucking" ambience), sickly string tremolos
+- **Accents:** Bone crack (sharp transient), ghostly whisper phrases (unintelligible, breathy), spectral wail (distant, mournful), phylactery pulse (heartbeat-like sub-bass)
+
+**Musical Style:**
+- **Tempo:** 60-80 BPM (slow, dragging, relentless crawl)
+- **Key/Mode:** Locrian mode (most dissonant, unstable, unresolved), Phrygian for more structured passages
+- **Rhythm:** Irregular, shambling rhythms — notes land slightly off-grid (humanized but "wrong"), occasional 5/4 or 7/8 time to feel unnatural
+
+**SFX Flavor:**
+- Card play: Bone clatter + hollow wind gust
+- Creature attack: Spectral wail + bone weapon impact
+- Creature death: Ghostly exhale + bone scatter + lingering whisper (spectral_mist particles)
+- Persist modifier trigger: Reversed audio swell (death sound played backwards) + ghostly echo
+- Evolution: Bone rattle buildup → spectral chorus → void collapse → whispered rebirth
+
+**Reference Vibe:** Dark Souls III (Irithyll — hollow melancholy), Darkest Dungeon (oppressive dread), Hollow Knight "City of Tears" (ghostly beauty in decay)
+
+---
+
 ## 3. Music Design
 
 ### 3.1 Main Menu Theme
@@ -154,7 +206,7 @@ Battle music is **faction-responsive** and **instability-adaptive**. The system 
 Each battle track has **4 stems** that play simultaneously via separate `AVAudioPlayerNode` instances attached to a single `AVAudioEngine`. Stem volumes are adjusted in real time without stopping or reloading audio.
 
 1. **Foundation layer** (always at full volume): Bass + minimal percussion. Faction-neutral.
-2. **Player faction layer**: Adds player's faction instrumentation (brass for Ironwright, woodwinds for Fey, war drums for Demonic).
+2. **Player faction layer**: Adds player's faction instrumentation (industrial synth for Ironwright, woodwinds for Fey, war drums for Demonic, organ/choir for Celestial, bowed glass/bone percussion for Endless).
 3. **Opponent faction layer**: Adds opponent's faction instrumentation.
 4. **Intensity layer**: Percussion + harmonic tension. Volume scales with board complexity.
 
@@ -162,11 +214,17 @@ The intensity layer is split into **two files**: `MUS_Battle_Intensity_Order.caf
 
 **Example — Ironwright (player) vs. Fey Courts (opponent):**
 - Foundation: Tonal bass drone + soft kick drum
-- Ironwright layer: Brass melody + clockwork ticking
+- Ironwright layer: Industrial synth drone + hydraulic percussion
 - Fey layer: Harp counter-melody + string pads
 - Intensity layer: War drums + dissonant strings (fades in as creatures accumulate)
 
-The result is a unique sonic blend for each faction matchup.
+**Example — Celestial Crusade (player) vs. The Endless (opponent):**
+- Foundation: Tonal bass drone + soft kick drum
+- Celestial layer: Pipe organ pads + choir swell
+- Endless layer: Bowed glass overtones + bone rattles
+- Intensity layer: Escalating timpani + dissonant harmonics
+
+The result is a unique sonic blend for each of the 25 possible faction matchups (5 x 5).
 
 #### Adaptive Triggers
 
@@ -184,18 +242,18 @@ The result is a unique sonic blend for each faction matchup.
 This is achieved via volume crossfading between `MUS_Battle_Intensity_Order.caf` and `MUS_Battle_Intensity_Chaos.caf` using `AVAudioPlayerNode.volume`. No real-time DSP processing occurs on device — just volume adjustments on pre-processed pre-mixed stems.
 
 **Combat Phase Kick:**
-- When attackers are declared, a **percussion hit** fires as a `SKAction.playSoundFileNamed` call (faction-specific: anvil for Ironwright, war drum for Demonic, frame drum for Fey).
+- When attackers are declared, a **percussion hit** fires as a `SKAction.playSoundFileNamed` call (faction-specific: hydraulic slam for Ironwright, war drum for Demonic, frame drum for Fey, bell strike for Celestial, bone impact for Endless).
 - The intensity layer volume briefly spikes +20% for the duration of combat resolution (Phases 6-8), then returns to baseline after End of Turn.
 
 #### Track Count
 
 **Launch Content:**
-- 3 faction-specific stems (Ironwright, Fey, Demonic) × 1 layer each = 3 stems
+- 5 faction-specific stems (Ironwright, Fey, Demonic, Celestial, Endless) x 1 layer each = 5 stems
 - 1 foundation layer (universal) = 1 stem
 - 2 intensity layer stems (Order and Chaos versions) = 2 stems
-- **Total: 6 battle music stems** (~10-12 MB as CAF)
+- **Total: 8 battle music stems** (~14-16 MB as CAF)
 
-Each match dynamically combines 4 of these 6 stems based on matchup (foundation + player faction + opponent faction + one of the two intensity stems, with the other intensity stem running in parallel for crossfading).
+Each match dynamically combines 4 of these 8 stems based on matchup (foundation + player faction + opponent faction + one of the two intensity stems, with the other intensity stem running in parallel for crossfading).
 
 **Tempo:** 95 BPM (battle-ready but not frantic). All stems locked to the same BPM for seamless layering.
 
@@ -218,7 +276,7 @@ Each match dynamically combines 4 of these 6 stems based on matchup (foundation 
 2. **Transformation (0:20–0:40)**
    - Planar Shard cracks. Particles flow through. AI generation happening.
    - **Audio:** Shard crack SFX (crystalline explosion), massive energy whoosh (sweeping filter), rhythmic pulses (synced to particle flow), choir swell (no lyrics, just "ahh" vocal), rising pitch bend (tension).
-   - **Faction flavor injection:** Brass stabs (Ironwright), harp glissando (Fey), war drum roll (Demonic) layer in faintly based on card's faction.
+   - **Faction flavor injection:** Industrial synth stab (Ironwright), harp glissando (Fey), war drum roll (Demonic), organ chord (Celestial), bone rattle (Endless) layer in faintly based on card's faction.
 
 3. **Reveal (0:40–1:10)**
    - New card art appears. New name, stats, modifiers revealed step by step.
@@ -260,10 +318,10 @@ Each match dynamically combines 4 of these 6 stems based on matchup (foundation 
 | Context | Track | Tempo | Length | Adaptive? | Format | File Size (est.) |
 |---|---|---|---|---|---|---|
 | Main Menu / Home | Planes of Chaos Theme | 75 BPM | 2:30 loop | No | CAF | ~2.5 MB |
-| Battle | Faction Stem Layers (6 stems) | 95 BPM | 2:00 loop each | Yes (AVAudioEngine mix) | CAF | ~12 MB |
+| Battle | Faction Stem Layers (8 stems) | 95 BPM | 2:00 loop each | Yes (AVAudioEngine mix) | CAF | ~16 MB |
 | Evolution Ceremony | Transformation Ritual | Variable | 1:10 (one-shot) | Faction + outcome coloring | CAF | ~1.5 MB |
 | Shop / Collection | Calm Ambient | 60 BPM | 3:00 loop | No | AAC 128 kbps | ~2 MB |
-| **TOTAL** | | | | | | **~18 MB** |
+| **TOTAL** | | | | | | **~22 MB** |
 
 ---
 
@@ -275,15 +333,15 @@ All SFX are designed to be **clear, punchy, mobile-friendly** (work on small spe
 
 | Event | SFX Description | Faction Variation? | Estimated File Size |
 |---|---|---|---|
-| **Card Play (Creature)** | Card whoosh + thud (card hitting board) + faction accent | Yes (Ironwright: gear click, Fey: leaf rustle, Demonic: bone crack) | 3 × 20 KB = 60 KB |
+| **Card Play (Creature)** | Card whoosh + thud (card hitting board) + faction accent | Yes (Ironwright: hydraulic thud, Fey: leaf rustle, Demonic: bone crack, Celestial: bell chime, Endless: bone clatter) | 5 x 20 KB = 100 KB |
 | **Card Play (Spell)** | Magical hum + casting whoosh | No (universal) | 15 KB |
 | **Card Draw** | Soft card flip + paper slide | No | 10 KB |
 | **Deck Shuffle** | Rapid card fluttering (startup only) | No | 20 KB |
 | **Mana Gain** | Crystalline chime (ascending pitch) | No | 10 KB |
 | **Mana Spend** | Soft glass clink (descending pitch) | No | 10 KB |
-| **Creature Attack (Declare)** | War cry + movement whoosh | Yes (Ironwright: piston thrust, Fey: wind gust, Demonic: guttural roar) | 3 × 25 KB = 75 KB |
+| **Creature Attack (Declare)** | War cry + movement whoosh | Yes (Ironwright: piston slam, Fey: wind gust, Demonic: guttural roar, Celestial: trumpet fanfare, Endless: spectral wail) | 5 x 25 KB = 125 KB |
 | **Creature Hit (Damage Dealt)** | Impact thud + damage number pop | No | 15 KB |
-| **Creature Death** | Destruction sound + fading echo | Yes (Ironwright: metal collapse, Fey: nature sigh, Demonic: bone shatter) | 3 × 30 KB = 90 KB |
+| **Creature Death** | Destruction sound + fading echo | Yes (Ironwright: metal stress collapse, Fey: nature sigh, Demonic: bone shatter, Celestial: dissolving halo chime, Endless: ghostly exhale) | 5 x 30 KB = 150 KB |
 | **Damage to Avatar (Face)** | Heavy thud + screen shake rumble | No | 20 KB |
 | **Heal (Creature or Avatar)** | Soft sparkle + uplifting chime | No | 15 KB |
 | **Turn Transition** | Gentle "whoosh" + subtle UI transition sound | No | 10 KB |
@@ -291,7 +349,11 @@ All SFX are designed to be **clear, punchy, mobile-friendly** (work on small spe
 | **Turn Auto-End (Timer Expire)** | Abrupt stop + error tone | No | 15 KB |
 | **Surrender Confirmation** | Somber low tone + fade | No | 20 KB |
 
-**Subtotal: ~400 KB**
+| **Ruin Placement** | Stone thud + ambient hum activation | No (universal) | 20 KB |
+| **Ruin Passive Hum** | Subtle low-frequency drone (loops while ruin on field) | No (universal, 2s loop) | 30 KB |
+| **Ruin Destruction** | Stone crumble + deep rumble + penalty tone | No (universal) | 30 KB |
+
+**Subtotal: ~560 KB**
 
 ---
 
@@ -308,8 +370,12 @@ Triggered when keyword abilities activate during combat.
 | **Deathtouch Kill** | Venom hiss + instant collapse | 20 KB |
 | **Taunt Lock-On** | Aggro roar + forced movement sound | 20 KB |
 | **Piercing Through** | Impact + secondary pierce whoosh + splash | 20 KB |
+| **Haste Rush** | Rapid whoosh + speed burst (streaking air) | 15 KB |
+| **Ward Shimmer** | Crystalline barrier activation (shimmering, protective) | 15 KB |
+| **Exalt Activate** | Organ swell + choir accent (divine authority) | 20 KB |
+| **Persist Trigger** | Reversed death sound + ghostly echo | 20 KB |
 
-**Subtotal: ~135 KB**
+**Subtotal: ~205 KB**
 
 ---
 
@@ -492,6 +558,8 @@ func setInstabilityWeight(_ instability: Int) {
   - **Ironwright:** `SFX_CombatKick_Ironwright.caf` (anvil strike — metallic clang)
   - **Fey Courts:** `SFX_CombatKick_Fey.caf` (frame drum hit — organic thud)
   - **Demonic Kingdoms:** `SFX_CombatKick_Demonic.caf` (war drum — deep bass boom)
+  - **Celestial Crusade:** `SFX_CombatKick_Celestial.caf` (bell strike — resonant cathedral bell)
+  - **The Endless:** `SFX_CombatKick_Endless.caf` (bone impact — hollow skull drum)
 - The intensity layer volume on the `AVAudioPlayerNode` briefly spikes +20% during combat resolution phases, then returns to baseline at End of Turn.
 
 **Feel:** Combat feels punctuated, weighty. The percussion hit is a "now we fight" moment. Music surges during combat, recedes during planning.
@@ -545,7 +613,7 @@ afconvert -f caff -d LEI16 input.wav output.caf
 afconvert -f m4af -d aac -b 128000 input.wav output.m4a
 ```
 
-**Total file size budget: ~23 MB** (18 MB music + 3 MB SFX + 2 MB ambient). Fits within App Store app bundle without requiring on-demand resources.
+**Total file size budget: ~28 MB** (22 MB music + 4 MB SFX + 2 MB ambient). Fits within App Store app bundle without requiring on-demand resources.
 
 ---
 
@@ -564,6 +632,8 @@ ChaosCreatures (Xcode Project)
         │   ├── MUS_Battle_Ironwright_FactionLayer.caf
         │   ├── MUS_Battle_Fey_FactionLayer.caf
         │   ├── MUS_Battle_Demonic_FactionLayer.caf
+        │   ├── MUS_Battle_Celestial_FactionLayer.caf
+        │   ├── MUS_Battle_Endless_FactionLayer.caf
         │   ├── MUS_Battle_Intensity_Order.caf
         │   ├── MUS_Battle_Intensity_Chaos.caf
         │   ├── MUS_Evolution_Transformation.caf
@@ -572,6 +642,8 @@ ChaosCreatures (Xcode Project)
             ├── SFX_Battle_CardPlay_Ironwright.caf
             ├── SFX_Battle_CardPlay_Fey.caf
             ├── SFX_Battle_CardPlay_Demonic.caf
+            ├── SFX_Battle_CardPlay_Celestial.caf
+            ├── SFX_Battle_CardPlay_Endless.caf
             ├── SFX_Battle_CardPlay_Spell.caf
             ├── SFX_Battle_CardDraw.caf
             ├── SFX_Battle_DeckShuffle.caf
@@ -580,10 +652,14 @@ ChaosCreatures (Xcode Project)
             ├── SFX_Battle_CreatureAttack_Ironwright.caf
             ├── SFX_Battle_CreatureAttack_Fey.caf
             ├── SFX_Battle_CreatureAttack_Demonic.caf
+            ├── SFX_Battle_CreatureAttack_Celestial.caf
+            ├── SFX_Battle_CreatureAttack_Endless.caf
             ├── SFX_Battle_CreatureHit.caf
             ├── SFX_Battle_CreatureDeath_Ironwright.caf
             ├── SFX_Battle_CreatureDeath_Fey.caf
             ├── SFX_Battle_CreatureDeath_Demonic.caf
+            ├── SFX_Battle_CreatureDeath_Celestial.caf
+            ├── SFX_Battle_CreatureDeath_Endless.caf
             ├── SFX_Battle_AvatarDamage.caf
             ├── SFX_Battle_Heal.caf
             ├── SFX_Battle_TurnTransition.caf
@@ -597,6 +673,10 @@ ChaosCreatures (Xcode Project)
             ├── SFX_Keyword_Deathtouch.caf
             ├── SFX_Keyword_TauntLockOn.caf
             ├── SFX_Keyword_Piercing.caf
+            ├── SFX_Keyword_HasteRush.caf
+            ├── SFX_Keyword_WardShimmer.caf
+            ├── SFX_Keyword_ExaltActivate.caf
+            ├── SFX_Keyword_PersistTrigger.caf
             ├── SFX_ChaosRoll_D20Tumble.caf
             ├── SFX_ChaosRoll_OrderResult.caf
             ├── SFX_ChaosRoll_ChaosResult.caf
@@ -628,6 +708,11 @@ ChaosCreatures (Xcode Project)
             ├── SFX_CombatKick_Ironwright.caf
             ├── SFX_CombatKick_Fey.caf
             ├── SFX_CombatKick_Demonic.caf
+            ├── SFX_CombatKick_Celestial.caf
+            ├── SFX_CombatKick_Endless.caf
+            ├── SFX_Battle_RuinPlacement.caf
+            ├── SFX_Battle_RuinPassiveHum.caf
+            ├── SFX_Battle_RuinDestruction.caf
             ├── SFX_UI_ButtonTap.caf
             ├── SFX_UI_ButtonTapPrimary.caf
             ├── SFX_UI_TabSwitch.caf
@@ -757,7 +842,7 @@ import SpriteKit
 // MARK: - Types
 
 enum FactionId: String {
-    case ironwright, fey, demonic
+    case ironwright, fey, demonic, celestialCrusade, endless
 }
 
 struct AudioPrefs {
@@ -935,9 +1020,11 @@ final class AudioManager {
     /// Called from BattleScene via SKAction, not directly from this manager.
     func combatKickFilename(for faction: FactionId) -> String {
         switch faction {
-        case .ironwright: return "SFX_CombatKick_Ironwright"
-        case .fey:        return "SFX_CombatKick_Fey"
-        case .demonic:    return "SFX_CombatKick_Demonic"
+        case .ironwright:      return "SFX_CombatKick_Ironwright"
+        case .fey:             return "SFX_CombatKick_Fey"
+        case .demonic:         return "SFX_CombatKick_Demonic"
+        case .celestialCrusade: return "SFX_CombatKick_Celestial"
+        case .endless:          return "SFX_CombatKick_Endless"
         }
     }
 
@@ -1033,15 +1120,20 @@ final class AudioManager {
         // This is a static list — Swift bundler requires static filenames here.
         let sfxFilenames: [String] = [
             "SFX_Battle_CardPlay_Ironwright", "SFX_Battle_CardPlay_Fey", "SFX_Battle_CardPlay_Demonic",
+            "SFX_Battle_CardPlay_Celestial", "SFX_Battle_CardPlay_Endless",
             "SFX_Battle_CardPlay_Spell", "SFX_Battle_CardDraw", "SFX_Battle_DeckShuffle",
             "SFX_Battle_ManaGain", "SFX_Battle_ManaSpend",
             "SFX_Battle_CreatureAttack_Ironwright", "SFX_Battle_CreatureAttack_Fey", "SFX_Battle_CreatureAttack_Demonic",
+            "SFX_Battle_CreatureAttack_Celestial", "SFX_Battle_CreatureAttack_Endless",
             "SFX_Battle_CreatureHit",
             "SFX_Battle_CreatureDeath_Ironwright", "SFX_Battle_CreatureDeath_Fey", "SFX_Battle_CreatureDeath_Demonic",
+            "SFX_Battle_CreatureDeath_Celestial", "SFX_Battle_CreatureDeath_Endless",
             "SFX_Battle_AvatarDamage", "SFX_Battle_Heal", "SFX_Battle_TurnTransition",
             "SFX_Battle_TimerWarning", "SFX_Battle_TurnAutoEnd", "SFX_Battle_Surrender",
             "SFX_Keyword_ShieldBreak", "SFX_Keyword_Lifesteal", "SFX_Keyword_FlyingSwoop",
             "SFX_Keyword_ReachBlock", "SFX_Keyword_Deathtouch", "SFX_Keyword_TauntLockOn", "SFX_Keyword_Piercing",
+            "SFX_Keyword_HasteRush", "SFX_Keyword_WardShimmer",
+            "SFX_Keyword_ExaltActivate", "SFX_Keyword_PersistTrigger",
             "SFX_ChaosRoll_D20Tumble", "SFX_ChaosRoll_OrderResult", "SFX_ChaosRoll_ChaosResult",
             "SFX_ChaosRoll_Nothing", "SFX_ChaosRoll_InstabilityUpdate",
             "SFX_Event_O1_MendingLight", "SFX_Event_O2_PlanarWard", "SFX_Event_O3_SteadyGrowth",
@@ -1054,6 +1146,8 @@ final class AudioManager {
             "SFX_Evolution_RevealFanfare", "SFX_Evolution_OrderAccent", "SFX_Evolution_ChaosAccent",
             "SFX_Evolution_ModifierSelect",
             "SFX_CombatKick_Ironwright", "SFX_CombatKick_Fey", "SFX_CombatKick_Demonic",
+            "SFX_CombatKick_Celestial", "SFX_CombatKick_Endless",
+            "SFX_Battle_RuinPlacement", "SFX_Battle_RuinPassiveHum", "SFX_Battle_RuinDestruction",
             "SFX_UI_ButtonTap", "SFX_UI_ButtonTapPrimary", "SFX_UI_TabSwitch",
             "SFX_UI_CardFlip", "SFX_UI_Scroll", "SFX_UI_DeckSelect",
             "SFX_UI_MissionComplete", "SFX_UI_LevelUp", "SFX_UI_Error", "SFX_UI_Notification"
@@ -1165,9 +1259,11 @@ SFX that fire during battle are triggered directly from `BattleScene` (a `SKScen
 func playCardPlaySFX(faction: FactionId) {
     let filename: String
     switch faction {
-    case .ironwright: filename = "SFX_Battle_CardPlay_Ironwright.caf"
-    case .fey:        filename = "SFX_Battle_CardPlay_Fey.caf"
-    case .demonic:    filename = "SFX_Battle_CardPlay_Demonic.caf"
+    case .ironwright:      filename = "SFX_Battle_CardPlay_Ironwright.caf"
+    case .fey:             filename = "SFX_Battle_CardPlay_Fey.caf"
+    case .demonic:         filename = "SFX_Battle_CardPlay_Demonic.caf"
+    case .celestialCrusade: filename = "SFX_Battle_CardPlay_Celestial.caf"
+    case .endless:          filename = "SFX_Battle_CardPlay_Endless.caf"
     }
     run(SKAction.playSoundFileNamed(filename, waitForCompletion: false))
 }
@@ -1301,9 +1397,11 @@ The $300 total project budget is not consumed by audio — all tools listed here
 |---|---|---|
 | Main Menu | `dark orchestral, electronic, epic, mysterious, cinematic` | `Planes of Chaos theme, 75 BPM, D minor, hybrid orchestral and electronic, strings and distorted synths, 2.5 minutes, loopable, no vocals, tension and release` |
 | Battle Foundation | `minimal, cinematic, bass, percussion, dark ambient` | `Battle foundation layer, 95 BPM, bass drone and minimal kick drum, faction neutral, 2 minutes, loopable` |
-| Ironwright Faction Layer | `steampunk, brass, industrial, mechanical, dark fantasy` | `Steampunk battle music, 95 BPM, brass melody with clockwork ticking, anvil accents, industrial percussion, 2 minutes, loopable, no vocals` |
+| Ironwright Faction Layer | `industrial, brutalist, synth, hydraulic, dark sci-fi` | `Brutalist space-industrial battle music, 95 BPM, heavy synth drones with hydraulic percussion, reactor hum, piston impacts, mechanical march, 2 minutes, loopable, no vocals` |
 | Fey Faction Layer | `celtic, harp, mystical, orchestral, nature, ethereal` | `Fey Courts battle music, 95 BPM feel in 6/8, harp counter-melody, string pads, whispered choir, 2 minutes, loopable` |
 | Demonic Faction Layer | `dark, war drums, choral, brutal, epic, Phrygian` | `Demonic Kingdoms battle music, 95 BPM, war drums and taiko, guttural throat singing, low brass, 2 minutes, loopable` |
+| Celestial Faction Layer | `choral, organ, church, angelic, hymnal, epic` | `Divine crusade battle music, 95 BPM, pipe organ pads with choir swell, bell tolling, heraldic trumpet, stately processional feel, 2 minutes, loopable, no lyrics` |
+| Endless Faction Layer | `ghostly, hollow, bone percussion, spectral, melancholic` | `Undead necromantic battle music, 95 BPM with shambling irregular feel, bowed glass, bone rattles, spectral whispers, ghostly wind drones, 2 minutes, loopable, no vocals` |
 | Intensity Order | `orchestral, tense, percussion, cinematic, rising` | `Battle intensity layer Order version, 95 BPM, clean percussion and consonant strings, building but structured, 2 minutes, loopable` |
 | Intensity Chaos | `distorted, aggressive, atonal, industrial, chaotic` | `Battle intensity layer Chaos version, 95 BPM, distorted percussion, tremolo strings, atonal stabs, dissonant, 2 minutes, loopable` |
 | Evolution Ceremony | `orchestral, epic, transformation, choir, fantasy, dramatic` | `Evolution ritual music, slow build 0-20 seconds then dramatic 20-40 seconds then triumphant 40-70 seconds, no loop, 70 seconds total, choir swell, orchestral hit at end` |
@@ -1338,9 +1436,17 @@ The $300 total project budget is not consumed by audio — all tools listed here
 | Shield Break | `"Glass shield shattering, crystalline cascade of high-pitched fragments, sharp impact at start"` |
 | Shard Crack | `"Large crystal shard cracking and exploding, multiple glass layers, magical energy release"` |
 | Upheaval | `"Board-wide explosion, deep bass rumble, debris scatter, dust and stone impact, 1 second"` |
-| Creature Death (Ironwright) | `"Metal armor collapsing, steam venting, gear grinding to a stop, industrial machine shutdown"` |
+| Creature Death (Ironwright) | `"Heavy metal stress groan, hydraulic pressure release, structural collapse of industrial machinery, reactor powering down"` |
 | Creature Death (Fey) | `"Harp chord fading, wind sigh, leaves rustling and dissipating, gentle organic death"` |
 | Creature Death (Demonic) | `"Bone shattering, obsidian breaking, dark chant fading, hellfire extinguishing"` |
+| Creature Death (Celestial) | `"Dissolving halo chime, fading choir sigh, golden light dimming, angelic sorrow tone"` |
+| Creature Death (Endless) | `"Ghostly exhale, bone scatter on stone floor, lingering spectral whisper, hollow wind"` |
+| Ruin Placement | `"Heavy ancient stone thud hitting ground, deep bass resonance, subtle ambient hum activation"` |
+| Ruin Destruction | `"Stone crumbling and collapsing, deep rumble, debris scatter, warning penalty tone"` |
+| Haste Rush | `"Rapid whoosh of speed, air streaking, quick burst of kinetic energy"` |
+| Ward Shimmer | `"Crystalline magical barrier activating, shimmering protective aura, glass-like resonance"` |
+| Exalt Activate | `"Pipe organ chord swell, brief angelic choir accent, divine authority"` |
+| Persist Trigger | `"Reversed death sound played backwards, ghostly echo, spectral reformation"` |
 
 **Option B: Freesound.org (Human-recorded, royalty-free)**
 
@@ -1350,11 +1456,14 @@ The $300 total project budget is not consumed by audio — all tools listed here
 
 **Best categories to search:**
 - `dice rolling` — D20 tumble
-- `metal impact` — Ironwright attacks and deaths
+- `metal impact`, `hydraulic` — Ironwright attacks and deaths
 - `glass breaking` — Shield break, shard crack
 - `wood hit`, `forest ambience` — Fey SFX
 - `explosion`, `thunder` — Chaos events
 - `fire crackling` — Demonic ambient texture
+- `church organ`, `bells`, `choir` — Celestial SFX
+- `bone rattle`, `ghost`, `wind howl` — Endless SFX
+- `stone crumble`, `rubble` — Ruin destruction SFX
 - `UI click`, `button tap`, `notification chime` — UI SFX
 
 **Workflow:** Download WAV files, import into Audacity, normalize to -3 dBFS peak, trim to correct length, export as WAV, then convert to CAF using `afconvert`.
@@ -1437,10 +1546,10 @@ Audio implementation is phased across development milestones to ensure core game
 
 **Adds emotional depth and faction differentiation.**
 
-- **Full `AVAudioEngine` battle music system:** All 6 stems loaded. `startBattleMusic(playerFaction:opponentFaction:)` working with 4-node stem mixing.
+- **Full `AVAudioEngine` battle music system:** All 8 stems loaded (5 faction + 1 foundation + 2 intensity). `startBattleMusic(playerFaction:opponentFaction:)` working with 4-node stem mixing.
 - **`setBoardIntensity(_:)`** and **`setInstabilityWeight(_:)`** implemented.
 - **Event SFX:** All 16 events wired via SKAction in `BattleScene`.
-- **Keyword SFX:** All 7 keyword triggers wired.
+- **Keyword SFX:** All 9 keyword triggers wired (including Haste, Ward) + Exalt and Persist mechanic SFX.
 - **Evolution SFX:** All 7 evolution sounds wired to evolution view phases.
 - **Faction SFX Variations:** `playCardPlay(faction:)`, `playCreatureAttack(faction:)`, `playCreatureDeath(faction:)` dispatching to the correct faction CAF file.
 - **Main Menu Music:** `playMainMenuMusic()` working with `AVAudioPlayer`.
@@ -1504,7 +1613,7 @@ Audio implementation is phased across development milestones to ensure core game
 
 - [ ] All audio sounds clear on iPhone internal speaker (no harshness, no mud)
 - [ ] All audio sounds clear on AirPods
-- [ ] Faction music is clearly distinguishable (compare Ironwright vs. Fey vs. Demonic battle music back-to-back)
+- [ ] Faction music is clearly distinguishable (compare all 5 faction battle stems back-to-back: Ironwright vs. Fey vs. Demonic vs. Celestial vs. Endless)
 - [ ] Event SFX are recognizable after 2-3 listens
 - [ ] Music does not cause fatigue after 30-minute play session
 - [ ] No unintentional harsh frequencies (except intentional Chaos SFX)
@@ -1514,7 +1623,7 @@ Audio implementation is phased across development milestones to ensure core game
 
 ## 11. Future Expansion: New Factions
 
-When a new faction is added (post-launch), the following audio must be produced:
+All 5 launch factions (Ironwright, Fey Courts, Demonic Kingdoms, Celestial Crusade, The Endless) are included in this document with full audio specs. When adding factions post-launch, the following audio must be produced:
 
 **Per New Faction:**
 - 1 battle music faction stem (foundation shared, intensity layers shared) — generate in Suno AI
@@ -1556,10 +1665,10 @@ For players sensitive to audio intensity:
 
 **Study these for tone, instrumentation, and emotional pacing when writing Suno prompts:**
 
-### For Ironwright Collective:
-- Dishonored (Daniel Licht) — Industrial dark fantasy, mechanical ambience
-- Frostpunk (Piotr Musiał) — Grim industrial brass, emotional weight
-- Machinarium (Tomáš Dvořák) — Whimsical mechanical, quirky clockwork
+### For Ironwright Collective (Brutalist Space-Industrial):
+- Frostpunk (Piotr Musiał) — Grim industrial weight, emotional machinery
+- Dead Space (Jason Graves) — Void-industrial horror, metallic stress
+- Blade Runner 2049 (Hans Zimmer, Benjamin Wallfisch) — Brutalist synth drones, massive scale
 
 ### For Fey Courts:
 - Ori and the Blind Forest (Gareth Coker) — Mystical, emotional, natural beauty
@@ -1570,6 +1679,16 @@ For players sensitive to audio intensity:
 - DOOM (2016) (Mick Gordon) — Visceral aggression, distorted brutality
 - God of War (2018) (Bear McCreary) — Epic war drums + choir, dark mythology
 - Diablo II (Matt Uelmen) — Dark ritualistic ambience, oppressive atmosphere
+
+### For Celestial Crusade:
+- Elden Ring — Godfrey theme (divine authority, pipe organ, choir)
+- Halo (Martin O'Donnell) — Choir + orchestral majesty, heraldic trumpets
+- Civilization VI "Atomic Era" (Geoff Knorr) — Pipe organ grandeur
+
+### For The Endless:
+- Dark Souls III — Irithyll of the Boreal Valley (hollow melancholy, ghostly beauty)
+- Darkest Dungeon (Stuart Chatwood) — Oppressive dread, bone percussion, spectral ambience
+- Hollow Knight "City of Tears" (Christopher Larkin) — Ghostly beauty in decay
 
 ### For Chaos vs. Order Dynamics:
 - Slay the Spire (Clark Aboud) — Adaptive music per act, tension/release
@@ -1610,7 +1729,7 @@ SFX_[Category]_[Action]_[Variation].caf
   - `SFX_UI_ButtonTap.caf`
   - `SFX_CombatKick_Ironwright.caf`
 
-**Total file count at 1.0 launch:** ~82 audio files (9 music files + 62 SFX + 3 combat kick SFX variants, all as CAF except `MUS_Shop_Ambient.m4a`).
+**Total file count at 1.0 launch:** ~104 audio files (11 music files + 80 SFX + 5 combat kick SFX variants + 3 ruin SFX + 4 mechanic SFX + 1 ambient, all as CAF except `MUS_Shop_Ambient.m4a`).
 
 ---
 
@@ -1618,7 +1737,7 @@ SFX_[Category]_[Action]_[Variation].caf
 
 Audio is a core pillar of Chaos Creatures' identity. The Chaos Roll, faction aesthetics, and evolution moments all depend on audio to deliver emotional impact. This design prioritizes:
 
-1. **Faction differentiation** through distinct sonic palettes (brass vs. woodwinds vs. war drums)
+1. **Faction differentiation** through distinct sonic palettes across 5 factions (industrial synth vs. woodwinds vs. war drums vs. organ/choir vs. bowed glass/bone)
 2. **Adaptive music** that responds to board state (instability, creature count, combat phase) via `AVAudioEngine`
 3. **Memorable event SFX** that players learn to anticipate and recognize
 4. **iOS-native audio** using CAF format, `AVAudioEngine` for adaptive mixing, `AVAudioPlayer` for simple playback, and `SKAction.playSoundFileNamed` for in-scene SFX
@@ -1626,6 +1745,8 @@ Audio is a core pillar of Chaos Creatures' identity. The Chaos Roll, faction aes
 6. **Zero cost for audio assets** — all assets sourced from Suno AI (free tier or $10 for one month of commercial-license Pro), ElevenLabs (free tier), Freesound.org (CC0), Audacity (free), and `afconvert` (built into macOS)
 
 By the 1.0 launch, Chaos Creatures will have a complete, polished, and emotionally resonant audio package generated entirely without a professional audio team and without spending any of the $300 project budget on audio tooling beyond Suno Pro ($10 one-time).
+
+**Purchasable Asset Alternative:** If AI-generated audio quality is insufficient for any category, see `12-art-direction.md` Section 10 for vetted purchasable asset recommendations within the ~$100 polish budget: BLACKMID battle themes ($15, itch.io), olexmazur card game SFX (free/$5, itch.io), 3rdEchoSounds UI sounds ($12, itch.io).
 
 ---
 
@@ -1636,6 +1757,42 @@ By the 1.0 launch, Chaos Creatures will have a complete, polished, and emotional
 ---
 
 ## Revision Log
+
+### Revision 3 (2026-02-19) — Faction expansion (3 → 5 factions)
+
+**Trigger:** Project expanded from 3 to 5 factions (added Celestial Crusade, The Endless), Ironwright rethemed from Victorian steampunk to brutalist space-industrial, 7 → 9 keywords (added Haste, Ward), new card type Planar Ruins, new faction mechanics Exalt/Persist. All audio specs updated to match.
+
+1. **Rethemed Ironwright sonic identity** from steampunk (brass, clockwork, steam) to brutalist space-industrial (hydraulic percussion, reactor drones, void ambience, metal stress). Updated instrument palette, SFX flavor, reference soundtracks (Dishonored/Machinarium → Frostpunk/Dead Space/Blade Runner 2049).
+
+2. **Added Celestial Crusade sonic identity** (Section 2). Choral, organ, bells, divine authority. Pipe organ lead, choir pads, bell percussion, heraldic trumpet accents. 80-100 BPM, Mixolydian/Lydian modes.
+
+3. **Added The Endless sonic identity** (Section 2). Hollow, bone-resonant, ghostly, melancholic. Bowed glass lead, bone percussion, ghostly wind drones, spectral whispers. 60-80 BPM, Locrian/Phrygian modes, irregular rhythms.
+
+4. **Updated battle music stem count** from 6 to 8 (added Celestial and Endless faction layers). Music summary table and file size updated (~18 MB → ~22 MB).
+
+5. **Added Suno AI prompts** for Celestial and Endless faction layers. Updated Ironwright prompt from steampunk to brutalist space-industrial.
+
+6. **Updated SFX inventory**: Faction-specific SFX expanded from 3 to 5 variations each (card play, creature attack, creature death, combat kick). Added 3 Planar Ruin SFX (placement, passive hum, destruction). Added 4 mechanic SFX (Haste Rush, Ward Shimmer, Exalt Activate, Persist Trigger). SFX subtotals updated.
+
+7. **Updated `FactionId` enum** from 3 cases to 5 (added `celestialCrusade`, `endless`). Updated `combatKickFilename` switch to 5 cases.
+
+8. **Updated `preloadAllSFX()` array** with all new filenames (Celestial/Endless variations, Haste/Ward/Exalt/Persist, Ruin SFX).
+
+9. **Updated SpriteKit `playCardPlaySFX` switch** from 3 cases to 5.
+
+10. **Updated folder structure** (Section 6.2) with all new music stems and SFX files.
+
+11. **Updated total file count** from ~82 to ~104. Total file size budget from ~23 MB to ~28 MB.
+
+12. **Added reference soundtracks** for Celestial Crusade and The Endless. Updated Ironwright references.
+
+13. **Updated ElevenLabs SFX descriptions** table with Celestial/Endless creature deaths, Ruin SFX, Haste/Ward/Exalt/Persist SFX descriptions.
+
+14. **Added purchasable asset reference** pointing to `12-art-direction.md` Section 10 for vetted audio asset alternatives within budget.
+
+15. **Updated QA checklist** to reference 5 factions for distinguishability testing.
+
+---
 
 ### Revision 1 (2026-02-16) — Initial production pass
 

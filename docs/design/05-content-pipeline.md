@@ -16,15 +16,17 @@ This document is the owner's operating manual for generating, reviewing, and pub
 
 ### 1a. Target Card Counts
 
-| Type | Count Per Faction | Total (3 Factions) |
+| Type | Count Per Faction | Total (5 Factions) |
 |---|---|---|
-| Creatures | 100 | 300 |
-| Spells | 17 | 51 |
-| **Faction total** | **117** | **351** |
+| Creatures | 100 | 500 |
+| Spells | 17 | 85 |
+| **Faction total** | **117** | **585** |
 | Universal stabilizer cards | — | 7 (already designed in `01-battle-mechanics.md` Section 11; universal only — no faction-specific stabilizers at launch) |
-| **Grand total** | | **358 card templates** |
+| Planar Ruins (neutral base) | — | 8 (neutral archetypes, faction-agnostic) |
+| Planar Ruins (faction-evolved) | 8 per faction | 40 (8 ruins × 5 factions, generated via img2img) |
+| **Grand total** | | **640 card templates** |
 
-**Practical launch target:** 351 faction cards + 7 universal = **358 cards.** Generation runs in batches of 50. The full launch run is 8 batches.
+**Practical launch target:** 585 faction cards + 7 universal + 8 neutral ruins + 40 evolved ruins = **640 cards.** Generation runs in batches of 50. The full launch run is 13 batches (12 faction + 1 ruins).
 
 ### 1b. Per-Card Requirements
 
@@ -61,7 +63,7 @@ Every card template needs all six of the following before it can be inserted int
 | 5 | 15 | 11 | 3-6 | 3-7 |
 | 6 | 5 | 13 | 4-7 | 4-8 |
 
-**Keyword distribution (creatures):** approximately 40% of creatures have one keyword; 60% are vanilla. Keywords are distributed by instability: Shield/Taunt/Reach on instability 0-2, Flying/Piercing on instability 3-5, Deathtouch on any with ATK 1-2.
+**Keyword distribution (creatures):** approximately 40% of creatures have one keyword; 60% are vanilla. Keywords are distributed by instability: Shield/Taunt/Reach on instability 0-2, Flying/Piercing on instability 3-5, Deathtouch on any with ATK 1-2, Haste on instability 3-5 (aggressive), Ward on instability 0-2 (defensive).
 
 **Spells per faction (17 cards):**
 
@@ -233,7 +235,7 @@ Claude Code builds the scripts. The owner only sets the `.env` values.
 
 ```json
 {
-  "prompt": "steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses, clockwork wolf, sleek predatory design, articulated brass leg joints with visible pistons, mechanical jaw with copper fangs, glowing amber optical sensors, mid-prowl stance, portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view, industrial workshop background soft focus, clear distinct silhouette, card game art composition, eyes visible and facing viewer, dramatic directional lighting, fantasy card game art, high detail, professional digital illustration, sharp focus, vibrant warm metallic tones, Magic: The Gathering style composition, clean edges",
+  "prompt": "1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar skeleton and hydraulic pistons, void-reactor glow and orbital debris, gunmetal and slag-orange palette, oppressive industrial scale, painted like a Piranesi impossible architecture or John Martin apocalyptic industrial scale, rebar golem, massive humanoid construct of poured concrete and cold-rolled iron, exposed rebar skeleton visible through cracked hull plating, hydraulic piston arms, void-reactor glow from chest cavity, heavy planted stance, portrait orientation, centered creature filling 70 percent of frame, dramatic three-quarter view, orbital shipyard background soft focus, clear distinct silhouette, card game art composition, 3:4 portrait ratio, no text no borders no watermarks",
   "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects, extra limbs, fused body parts, speech bubbles, comic panels, grid layout",
   "image_size": "portrait_4_3",
   "num_inference_steps": 35,
@@ -272,7 +274,7 @@ Claude Code builds the scripts. The owner only sets the `.env` values.
   },
   "seed": 1234567890,
   "has_nsfw_concepts": [false],
-  "prompt": "steampunk mechanical creature..."
+  "prompt": "1990s Magic: The Gathering illustration, brutalist space-industrial construct..."
 }
 ```
 
@@ -317,7 +319,7 @@ These are the exact same constants defined in `03-prompt-templates.md` Sections 
     },
     {
       "role": "user",
-      "content": "Generate a card name and flavor text for this card.\n\nFACTION: The Ironwright Collective\nFACTION VOICE: Industrial, pragmatic, precise. Names use mechanical compound words and references to metals, gears, and steam. Flavor text emphasizes function, craftsmanship, and the fusion of magic and machinery.\nCREATURE ARCHETYPE: clockwork wolf\nSTATS: 3 ATK / 4 HP, 3 chaos mote cost\nINSTABILITY: 2 (balanced)\nKEYWORDS: none\nVISUAL DESCRIPTION: balanced and composed, dynamic neutral stance, moderate steampunk detail\n\nGenerate:\n1. Card name: 2-4 words, faction-appropriate, memorable\n2. Flavor text: 1-2 sentences, under 120 characters, faction voice\n\nRespond ONLY with this JSON:\n{\"name\": \"...\", \"flavor_text\": \"...\"}"
+      "content": "Generate a card name and flavor text for this card.\n\nFACTION: The Ironwright Collective\nFACTION VOICE: Industrial, pragmatic, precise. Names use brutalist space-industrial compound words and references to concrete, iron, reactors, and void. Flavor text emphasizes function, endurance, and containment.\nCREATURE ARCHETYPE: rebar golem\nSTATS: 3 ATK / 4 HP, 3 chaos mote cost\nINSTABILITY: 2 (balanced)\nKEYWORDS: none\nVISUAL DESCRIPTION: balanced and composed, heavy planted stance, brutalist industrial scale\n\nGenerate:\n1. Card name: 2-4 words, faction-appropriate, memorable\n2. Flavor text: 1-2 sentences, under 120 characters, faction voice\n\nRespond ONLY with this JSON:\n{\"name\": \"...\", \"flavor_text\": \"...\"}"
     }
   ]
 }
@@ -335,7 +337,7 @@ These are the exact same constants defined in `03-prompt-templates.md` Sections 
       "index": 0,
       "message": {
         "role": "assistant",
-        "content": "{\"name\": \"Cogfang Stalker\", \"flavor_text\": \"Designed for pursuit, refined through conflict. Its tolerances are tighter than its prey's nerves.\"}"
+        "content": "{\"name\": \"Rebar Warden\", \"flavor_text\": \"Poured to endure. Reinforced to hold. Redundant by design.\"}"
       },
       "finish_reason": "stop"
     }
@@ -359,18 +361,24 @@ These are the exact same constants defined in `03-prompt-templates.md` Sections 
 
 ```
 Ironwright Collective:
-"Industrial, pragmatic, precise. Names use mechanical compound words and references to metals, gears, and steam. Flavor text emphasizes function, craftsmanship, and the fusion of magic and machinery. Order tone = perfected engineering. Chaos tone = pushed beyond limits."
+"Industrial, pragmatic, precise. Names use brutalist space-industrial compound words and references to concrete, iron, reactors, and void. Flavor text emphasizes function, endurance, and containment. Order tone = perfected systems, redundant architecture. Chaos tone = reactor overload, containment failure. NOT steampunk."
 
 The Fey Courts:
 "Ethereal, ancient, organic. Names use nature terms (Thorn, Root, Bloom, Grove) and fey titles (Warden, Huntress, Speaker). Flavor text is lyrical, timeless, referencing cycles and wildness. Order tone = harmony with nature, eternal patience. Chaos tone = wild hunt, primal fury."
 
 The Demonic Kingdoms:
 "Visceral, corrupted, direct. Names use dark materials (Ash, Bone, Blood, Shadow) and violent verbs (Reaver, Ripper, Render). Flavor text is ominous and foreboding. Order tone = controlled fury, dark pacts. Chaos tone = unbound carnage, apocalyptic."
+
+The Celestial Crusade:
+"Declarative, absolute, divine. Names use holy terminology (Radiant, Exalted, Sanctified, Burning) and crusade titles (Marshal, Justicar, Crusader, Herald). Flavor text is formal and scriptural — no hedging, no doubt. Order tone = formation discipline, divine law. Chaos tone = overwhelming divine intervention."
+
+The Endless:
+"Deathly, persistent, academic. Names use undead terminology (Bone, Spectral, Phylactery, Ossuary, Wailing) and undead titles (Revenant, Wraith, Lich, Remnant). Flavor text is dry and matter-of-fact for Cabals, mournful and raw for Spectres. Order tone = death as a system, methodical necromancy. Chaos tone = wild spectral energy, grief given form."
 ```
 
-**Cost:** GPT-4o Mini charges $0.15 per 1M input tokens and $0.60 per 1M output tokens. At roughly 200 input tokens and 40 output tokens per card: approximately $0.000054 per card, or $0.02 for all 358 cards. Text generation cost is effectively negligible.
+**Cost:** GPT-4o Mini charges $0.15 per 1M input tokens and $0.60 per 1M output tokens. At roughly 200 input tokens and 40 output tokens per card: approximately $0.000054 per card, or $0.035 for all 640 cards. Text generation cost is effectively negligible.
 
-**Using OpenAI Batch API for launch generation:** For the full 358-card launch run, use the OpenAI Batch API instead of real-time calls. This reduces cost by 50% (already negligible) and removes rate-limit concerns. The batch pipeline script automatically chooses Batch API for runs over 100 cards.
+**Using OpenAI Batch API for launch generation:** For the full 640-card launch run, use the OpenAI Batch API instead of real-time calls. This reduces cost by 50% (already negligible) and removes rate-limit concerns. The batch pipeline script automatically chooses Batch API for runs over 100 cards.
 
 **Batch API request format:** Submit a `.jsonl` file where each line is one request:
 
@@ -443,7 +451,7 @@ const { data, error } = await supabase
   .from("card_templates")
   .insert({
     id: crypto.randomUUID(),
-    name: "Cogfang Stalker",
+    name: "Rebar Warden",
     faction_id: "ironwright",
     card_type: "CREATURE",
     cm_cost: 3,
@@ -454,8 +462,8 @@ const { data, error } = await supabase
     spell_effect: null,
     stabilizer_type: null,
     art_url: "https://pub-XXXXXXXX.r2.dev/cards/ironwright/abc123.webp",
-    art_prompt: "steampunk mechanical creature...(full prompt stored here)",
-    flavor_text: "Designed for pursuit, refined through conflict. Its tolerances are tighter than its prey's nerves.",
+    art_prompt: "1990s Magic: The Gathering illustration, brutalist space-industrial construct...(full prompt stored here)",
+    flavor_text: "Poured to endure. Reinforced to hold. Redundant by design.",
     batch_id: "batch_2026_02_launch_ironwright_001",
     approved_at: new Date().toISOString(),
     approved_by: "owner"
@@ -475,7 +483,7 @@ create table card_templates (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   faction_id text not null references factions(id),
-  card_type text not null check (card_type in ('CREATURE', 'SPELL', 'STABILIZER')),
+  card_type text not null check (card_type in ('CREATURE', 'SPELL', 'STABILIZER', 'PLANAR_RUIN')),
   cm_cost integer not null check (cm_cost between 1 and 6),
   base_instability integer check (base_instability between 0 and 5),
   base_attack integer check (base_attack >= 0),
@@ -541,7 +549,7 @@ Run after stat assignment from the card spec CSV (before generation), and again 
 PP budget check:
   required: (base_attack + base_health + keyword_pp_cost) == (cm_cost * 2 + 1)
   tolerance: ±1 PP allowed
-  keyword PP costs: Shield=3, Lifesteal=2, Flying=2, Reach=1, Deathtouch=3, Taunt=1, Piercing=2
+  keyword PP costs: Shield=3, Lifesteal=2, Flying=2, Reach=1, Deathtouch=3, Taunt=1, Piercing=2, Haste=2, Ward=2
 
 Stat range check (from 01-battle-mechanics.md Section 12):
   CM 1: ATK 1-2, HP 1-2
@@ -677,12 +685,14 @@ Claude Code creates these as `ts-node` scripts in the `scripts/` directory. Ther
 npx ts-node scripts/generate-batch.ts --faction=ironwright --count=50
 npx ts-node scripts/generate-batch.ts --faction=fey --count=50
 npx ts-node scripts/generate-batch.ts --faction=demonic --count=50
+npx ts-node scripts/generate-batch.ts --faction=celestial --count=50
+npx ts-node scripts/generate-batch.ts --faction=endless --count=50
 ```
 
 Options:
-- `--faction`: `ironwright`, `fey`, or `demonic`
+- `--faction`: `ironwright`, `fey`, `demonic`, `celestial`, or `endless`
 - `--count`: number of cards to generate (default 50, max 100)
-- `--type`: `creature`, `spell`, `stabilizer`, or `all` (default `all`)
+- `--type`: `creature`, `spell`, `stabilizer`, `planar_ruin`, or `all` (default `all`)
 - `--offset`: start from row N in the spec CSV (for generating a second batch from the same faction)
 - `--dry-run`: validate all specs and build all prompts but make no API calls; outputs a cost estimate
 
@@ -735,14 +745,14 @@ id,faction_id,card_type,cm_cost,base_instability,base_attack,base_health,keyword
 | Column | Type | Required | Description |
 |---|---|---|---|
 | `id` | string | yes | Unique ID for this card spec. e.g. `ironwright-001`. Used as filename prefix for art. |
-| `faction_id` | string | yes | `ironwright`, `fey`, or `demonic` |
-| `card_type` | string | yes | `CREATURE`, `SPELL`, or `STABILIZER` |
+| `faction_id` | string | yes | `ironwright`, `fey`, `demonic`, `celestial`, or `endless` |
+| `card_type` | string | yes | `CREATURE`, `SPELL`, `STABILIZER`, or `PLANAR_RUIN` |
 | `cm_cost` | integer 1-6 | yes | Chaos mote cost |
 | `base_instability` | integer 0-5 | creatures only | Instability value. Leave blank for spells/stabilizers. |
 | `base_attack` | integer | creatures only | ATK stat. Leave blank for spells/stabilizers. |
 | `base_health` | integer | creatures only | HP stat |
 | `keywords` | string | no | Pipe-separated keywords. e.g. `Shield` or `Flying|Reach` or empty |
-| `creature_archetype` | string | creatures only | Short description for prompt. e.g. `clockwork wolf`, `mycelial guardian`, `infernal ravager` |
+| `creature_archetype` | string | creatures only | Short description for prompt. e.g. `rebar golem`, `mycelial guardian`, `infernal ravager`, `radiant squire`, `bone-stitched soldier` |
 | `spell_effect_type` | string | spells only | `DEAL_DAMAGE`, `BUFF_ATK`, `BUFF_HP`, `HEAL`, `DRAW_CARD`, `DESTROY_CREATURE` |
 | `spell_effect_value` | integer | spells only | Numeric value of effect (damage amount, buff amount, etc.) |
 | `spell_effect_target` | string | spells only | `ANY_CREATURE`, `ENEMY_CREATURE`, `FRIENDLY_CREATURE`, `ENEMY_AVATAR`, `OWN_AVATAR` |
@@ -751,11 +761,14 @@ id,faction_id,card_type,cm_cost,base_instability,base_attack,base_health,keyword
 ### 7b. Example CSV Rows
 
 ```csv
-ironwright-001,ironwright,CREATURE,3,2,3,4,,clockwork wolf,,,
-ironwright-002,ironwright,CREATURE,1,3,2,1,Piercing,steam-driven dart,,,
-ironwright-003,ironwright,CREATURE,4,1,2,6,Shield,armored war golem,,,
+ironwright-001,ironwright,CREATURE,3,2,3,4,,rebar golem,,,
+ironwright-002,ironwright,CREATURE,1,3,2,1,Piercing,hydraulic bolt-drone,,,
+ironwright-003,ironwright,CREATURE,4,1,2,6,Shield,hull-plate sentinel,,,
 ironwright-004,ironwright,SPELL,2,,,,,DEAL_DAMAGE,3,ENEMY_CREATURE,
 ironwright-005,ironwright,STABILIZER,3,,,,2 hp,,,,While on field: each of your creatures contributes -1 instability (minimum 0)
+celestial-001,celestial,CREATURE,2,1,2,3,,radiant squire,,,
+endless-001,endless,CREATURE,2,1,2,3,,bone-stitched soldier,,,
+ruin-001,,PLANAR_RUIN,0,0,0,3,,resonance spire,,,
 ```
 
 **PP budget check on ironwright-001:** ATK 3 + HP 4 + keywords 0 = 7 PP. CM cost 3 → budget = (3×2)+1 = 7. Passes.
@@ -768,18 +781,24 @@ The pipeline validates all specs before making any API calls. It outputs a valid
 
 ### 7c. Pre-Built Spec Files
 
-Claude Code generates the starter spec CSV files for all three factions based on the distribution tables in Section 1c. The owner reviews these for any obvious archetype gaps before running generation. The archetypes in these files are placeholders — the owner can rename them to anything that fits the faction's theme.
+Claude Code generates the starter spec CSV files for all five factions based on the distribution tables in Section 1c. The owner reviews these for any obvious archetype gaps before running generation. The archetypes in these files are placeholders — the owner can rename them to anything that fits the faction's theme.
 
 **Starter archetypes by faction:**
 
 **Ironwright (creature archetypes):**
-clockwork wolf, steam-powered golem, brass sentinel, cogwork spider, iron guardian, mechanical war hound, piston ram, gear wyrm, steam knight, copper automaton, clockwork raven, forge construct, valve titan, riveted warden, pressure golem, arc lightning drake, brass dragonling, hydraulic crusher, cogwork archer, industrial behemoth, steam juggernaut, tempered blade-arm, furnace elemental, clockwork assassin, wrought-iron colossus (plus 75 more following the same pattern)
+rebar golem, hull-plate sentinel, void-dock predator, reactor-core colossus, maintenance drone, orbital enforcer, strip-mine crawler, gravity-tether walker, hydraulic crusher, concrete warden, iron dreadnought, piston ram, void-reactor guardian, slag-forge elemental, arc-welder construct, shipyard sentinel, iron-hull behemoth, containment breach horror, void-dock crane, star-forge overseer, directorate patrol, bulkhead breaker, ferrocrete juggernaut, orbital debris swarm, zero-gravity interceptor (plus 75 more following the same pattern)
 
 **Fey Courts (creature archetypes):**
 mycelial guardian, thornwood stalker, ancient treant, moonpetal sprite, wild hunt hound, fey lord, dryad warrior, living root serpent, glowing mushroom spirit, starborn protector, antlered fey knight, sporecloud elemental, bioluminescent jellyfish, vine construct, grove warden, autumn herald, moonlit huntress, wildbloom creature, rootcaller spirit, crystal moss golem (plus 80 more)
 
 **Demonic Kingdoms (creature archetypes):**
 corrupted demon, infernal warlord, hellfire elemental, bone construct, shadow fiend, ashclaw fiend, bonebreaker imp, emberhound, blood ritualist, infernal ravager, skeletal warlord, lava wyrm, shadow stalker, corrupted knight, flesh horror, charnel beast, abyssal servant, hellgate guardian, sin manifestation, doom herald (plus 80 more)
+
+**Celestial Crusade (creature archetypes):**
+radiant squire, burning wheel acolyte, sanctum guardian, divine lancer, consecrated knight, golden herald, exalted seraph, formation crusader, holy arbiter, righteous marshal, prayer-ward sentinel, stained-glass golem, incense elemental, bastion paladin, celestial hound, dawn crusader, judgment angel, cathedral guardian, divine inscription construct, heaven's chosen manifest (plus 80 more)
+
+**Endless (creature archetypes):**
+bone-stitched soldier, wailing remnant, phylactery guardian, ossuary warden, spectral scout, dust-choked revenant, cabal necromancer, ghost swarm, lich apprentice, bone colossus, soul-chained wraith, tomb sentinel, necrotic construct, spectral hunter, grave-mold elemental, death-scholar, bone-forged titan, wailing fury, persistence engine, forgotten champion (plus 80 more)
 
 ---
 
@@ -796,7 +815,7 @@ corrupted demon, infernal warlord, hellfire elemental, bone construct, shadow fi
 
 ### 8b. Step-by-Step Generation Sequence
 
-The full launch run is 8 batches of 50 cards each. Run one batch at a time. Each batch takes about 30 minutes to generate and 30-60 minutes to review.
+The full launch run is 13 batches. Run one batch at a time. Each batch takes about 30 minutes to generate and 30-60 minutes to review.
 
 **Day 1 — Ironwright Collective:**
 
@@ -822,15 +841,26 @@ npx ts-node scripts/generate-batch.ts --faction=ironwright --type=spell --count=
 
 **Day 3 — The Demonic Kingdoms:** (same sequence as Day 1, faction=demonic)
 
-**Day 4 — Universal Stabilizers (7 cards):**
+**Day 4 — The Celestial Crusade:** (same sequence as Day 1, faction=celestial)
+
+**Day 5 — The Endless:** (same sequence as Day 1, faction=endless)
+
+**Day 6 — Universal Stabilizers + Planar Ruins:**
 
 The 7 universal stabilizer cards from `01-battle-mechanics.md` Section 11 are already fully designed with effects, HP, and CM costs. They need art and text generation only.
 
 ```bash
+# Universal stabilizers (7 cards)
 npx ts-node scripts/generate-batch.ts --faction=universal --type=stabilizer --count=7
+
+# Neutral Planar Ruins base art (8 archetypes, txt2img)
+npx ts-node scripts/generate-batch.ts --type=planar_ruin --count=8
+
+# Faction-evolved Planar Ruins (8 ruins × 5 factions = 40 cards, img2img)
+npx ts-node scripts/generate-ruins-evolved.ts --count=40
 ```
 
-A `card-specs/universal.csv` file pre-populated with these 7 cards' specs is created by Claude Code.
+A `card-specs/universal.csv` file pre-populated with the 7 stabilizer specs and a `card-specs/planar-ruins.csv` with the 8 neutral ruin specs are created by Claude Code. The evolved ruin pipeline uses FLUX Kontext img2img to transform each neutral ruin base art into 5 faction-specific variants using the faction ruin transformation prompts from `03-prompt-templates.md` Section 1.8.
 
 ### 8c. What to Do When You Reject a Card
 
@@ -864,7 +894,7 @@ All App Store submission assets are generated as part of the launch checklist. N
 **App icon prompt:**
 
 ```
-Chaos Creatures game logo, fantasy collectible card game icon, dramatic D20 die at center radiating Order and Chaos energy simultaneously, blue-white crystalline Order energy on one side, red-purple crackling Chaos energy on the other side, three small creature silhouettes — steampunk mechanical, ethereal fey, dark demonic — arranged around the die, dark atmospheric background, vibrant contrast, centered composition, professional game icon design, no text, bold and striking, square format, high detail, digital illustration
+Chaos Creatures game logo, fantasy collectible card game icon, dramatic D20 die at center radiating Order and Chaos energy simultaneously, blue-white crystalline Order energy on one side, red-purple crackling Chaos energy on the other side, five small creature silhouettes — brutalist iron construct, ethereal fey, dark demonic, radiant divine angel, spectral undead — arranged around the die, dark atmospheric background, vibrant contrast, centered composition, professional game icon design, no text, bold and striking, square format, high detail, digital illustration
 ```
 
 **fal.ai request for app icon:**
@@ -1047,15 +1077,17 @@ Claude Code generates the App Store description text. It is stored in `app-store
 Chaos Creatures is a collectible card game where every card's art evolves through play.
 
 CORE GAMEPLAY
-Build a 20-card deck from three factions: the industrial Ironwright Collective, the ancient Fey Courts, or the infernal Demonic Kingdoms. Each turn opens with a D20 Chaos Roll — your instability rating determines whether you trigger Order events (healing, shielding, buffing) or Chaos events (damage bursts, random effects). Master the tension between stability and power.
+Build a 20-card deck from five factions: the industrial Ironwright Collective, the ancient Fey Courts, the infernal Demonic Kingdoms, the divine Celestial Crusade, or the undying Endless. Each turn opens with a D20 Chaos Roll — your instability rating determines whether you trigger Order events (healing, shielding, buffing) or Chaos events (damage bursts, random effects). Master the tension between stability and power.
 
 LIVING CARD ART
 Every card you play earns evolution energy. When a card evolves, its art is redrawn by AI — changing with the energy you've channeled into it. Order evolutions refine and crystallize. Chaos evolutions fracture and empower. No two cards evolve the same way.
 
-THREE FACTIONS
-- Ironwright Collective: Precision and industry. Augment mechanics boost your own creatures.
+FIVE FACTIONS
+- Ironwright Collective: Endurance and industry. Augment mechanics boost your own creatures.
 - Fey Courts: Ancient and wild. Bond mechanics link creatures for shared benefits.
 - Demonic Kingdoms: Power at any cost. Corruption mechanics trade HP for overwhelming strength.
+- Celestial Crusade: Divine authority. Exalt mechanics reward formation discipline with escalating power.
+- The Endless: Undying persistence. Persist mechanics return defeated creatures to the fight.
 
 COLLECT AND EVOLVE
 Cards evolve through five tiers: Common, Uncommon, Rare, Epic, Legendary. Each evolution changes the art and upgrades the stats. Your Legendary card is unlike anyone else's in the world.
@@ -1121,7 +1153,7 @@ App Store Connect Metadata
 [ ] Version number matches Xcode build (e.g., 1.0.0, build 1)
 
 Content
-[ ] All 358 card templates published to Supabase
+[ ] All 640 card templates published to Supabase
 [ ] All card art URLs reachable on Cloudflare R2 (run: npx ts-node scripts/pre-release-check.ts)
 [ ] Regression tests passing (see Section 11c)
 [ ] Balance simulation run on full card pool (Section 11a)
@@ -1149,26 +1181,28 @@ Legal
 
 | Item | Count | Cost per Image | Total |
 |---|---|---|---|
-| Faction creatures (3 × 100) | 300 | $0.025 | $7.50 |
-| Faction spells (3 × 17) | 51 | $0.025 | $1.28 |
+| Faction creatures (5 × 100) | 500 | $0.025 | $12.50 |
+| Faction spells (5 × 17) | 85 | $0.025 | $2.13 |
 | Universal stabilizers | 7 | $0.025 | $0.18 |
-| Regenerations (~20% of 358) | ~72 | $0.025 | $1.80 |
+| Neutral Planar Ruins (txt2img) | 8 | $0.025 | $0.20 |
+| Evolved Planar Ruins (img2img, 8 × 5 factions) | 40 | $0.035 | $1.40 |
+| Regenerations (~20% of 640) | ~128 | $0.025 | $3.20 |
 | App icon candidates | 5 | $0.025 | $0.13 |
-| **Art total** | **435** | | **$10.89** |
+| **Art total** | **773** | | **$19.74** |
 
 **Text generation (OpenAI GPT-4o Mini Batch API):**
 
 | Item | Count | Cost per Card | Total |
 |---|---|---|---|
-| All 358 cards (name + flavor text) | 358 | ~$0.000054 | $0.02 |
-| Regenerations | ~30 | ~$0.000054 | <$0.01 |
-| **Text total** | | | **~$0.02** |
+| All 640 cards (name + flavor text) | 640 | ~$0.000054 | $0.035 |
+| Regenerations | ~50 | ~$0.000054 | <$0.01 |
+| **Text total** | | | **~$0.04** |
 
 **Storage (Cloudflare R2):**
 
 | Item | Size | Cost |
 |---|---|---|
-| 358 WebPs × ~300KB avg | ~107MB | $0.00/month (R2 free: 10GB storage) |
+| 640 WebPs × ~300KB avg | ~192MB | $0.00/month (R2 free: 10GB storage) |
 | CDN egress (R2 is free) | — | $0.00 |
 
 **App Store assets:**
@@ -1191,13 +1225,13 @@ Legal
 | Apple Developer Program | Annual | $99.00 |
 | PostHog | Free tier (1M events/month) | $0.00 |
 
-**Total one-time launch content cost: approximately $10.91**
+**Total one-time launch content cost: approximately $19.78**
 
 **Total first-month infrastructure: approximately $5.00 (Railway) + $99.00 (Apple) = $104.00**
 
-**Total spend to launch: approximately $114.91**
+**Total spend to launch: approximately $123.78**
 
-This fits comfortably within the $300 budget. Remaining headroom (~$185) covers:
+This fits comfortably within the $300 budget. Remaining headroom (~$176) covers:
 - Supabase Pro upgrade if free tier is exceeded during development (~$25/month)
 - Additional fal.ai generation if rejection rates are higher than 20%
 - Domain name for custom URL (optional, ~$10/year)
@@ -1208,19 +1242,19 @@ This fits comfortably within the $300 budget. Remaining headroom (~$185) covers:
 | Phase | Duration | Notes |
 |---|---|---|
 | Review and adjust spec CSVs | 1-2 hours | One-time setup. Owner reviews archetypes, makes any changes. |
-| Text generation (Batch API for all 358 cards) | Submitted overnight, results in ~12 hours | Submit before bed, results ready in the morning |
+| Text generation (Batch API for all 640 cards) | Submitted overnight, results in ~12 hours | Submit before bed, results ready in the morning |
 | Art generation per batch of 50 (10 concurrent) | 5-7 minutes | fal.ai is fast |
 | Gallery review per batch of 50 | 30-45 minutes | Owner reviews and approves/rejects |
 | Regeneration wait per batch | 2-5 minutes | Auto-regenerates rejected cards |
 | Publish per batch | 2-3 minutes | Upload to R2 + Supabase insert |
 | **Per-batch total (generation + review + publish)** | **~45-60 minutes** | |
-| **Full launch (8 batches × 60 minutes)** | **~8 hours** | Spread over 3-4 days |
+| **Full launch (13 batches × 60 minutes)** | **~13 hours** | Spread over 6-7 days |
 | App icon generation and selection | 15 minutes | Generate 5, pick best |
 | Fastlane screenshot setup | 1-2 hours | One-time Claude Code task |
 | Fastlane snapshot run | 15 minutes | Automated |
 | App Store Connect metadata entry | 1-2 hours | Manual form filling |
 
-**Practical schedule:** Run one or two batches per day over 4 days. Each session is about 1-2 hours. Total calendar time: 4-5 days from first batch to all cards published.
+**Practical schedule:** Run one or two batches per day over 6-7 days. Each session is about 1-2 hours. Total calendar time: 6-7 days from first batch to all cards published.
 
 ---
 
@@ -1230,7 +1264,7 @@ This fits comfortably within the $300 budget. Remaining headroom (~$185) covers:
 
 | Release Type | Frequency | New Cards | Pipeline Run |
 |---|---|---|---|
-| Quarterly card packs | Every 3 months | 20-30 creatures per faction (60-90 total) | Same batch pipeline, smaller count |
+| Quarterly card packs | Every 3 months | 15-20 creatures per faction (75-100 total) | Same batch pipeline, smaller count |
 | Balance patches | Monthly | 0 new cards (stat edits only) | Direct Supabase edit via admin UI |
 | Seasonal events | Every 6 weeks | 1-3 avatar portraits | Single batch of 3 |
 | New faction | Once per year | ~120 cards + 5 avatars | Full launch pipeline run |
@@ -1320,7 +1354,7 @@ This runs 1,000 simulated games using the production battle engine (the Railway 
 
 **Cost:** $0 (computation only, runs on Railway server)
 
-**Time:** About 5 minutes for 1,000 simulations of the full 358-card pool.
+**Time:** About 8 minutes for 1,000 simulations of the full 640-card pool.
 
 ### 12b. Art Quality Gates (Automated)
 
@@ -1347,7 +1381,7 @@ Claude Code builds and maintains a test suite at `tests/`. These run automatical
 | Suite | What It Tests | Run Time |
 |---|---|---|
 | `tests/balance/` | PP budget checks, stat ranges, keyword legality for all card templates in Supabase | ~30 seconds |
-| `tests/combat/` | Unit tests for all 7 keyword interactions (all combinations from `01-battle-mechanics.md` Section 4 interaction matrix) | ~10 seconds |
+| `tests/combat/` | Unit tests for all 9 keyword interactions (all combinations from `01-battle-mechanics.md` Section 4 interaction matrix) | ~10 seconds |
 | `tests/instability/` | Player instability calculation formula, clamping rules, evolution instability changes | ~5 seconds |
 | `tests/evolution/` | Evolution energy thresholds, shard tier assignments, PP growth calculations | ~5 seconds |
 | `tests/deck/` | Deck construction validation (20 cards, single faction, max 2 copies, Legendary limits) | ~5 seconds |
@@ -1380,12 +1414,12 @@ It runs:
 
 | Item | Cost |
 |---|---|
-| 358 card arts + 5 icon candidates (fal.ai, including ~20% regeneration) | ~$10.89 |
-| 358 card names + flavor texts (OpenAI Batch API) | ~$0.02 |
+| 640 card arts + 5 icon candidates (fal.ai, including ~20% regeneration) | ~$19.74 |
+| 640 card names + flavor texts (OpenAI Batch API) | ~$0.04 |
 | Cloudflare R2 storage and CDN (first year) | ~$0.00 (under free tier) |
 | App Store screenshots via Fastlane | ~$0.00 |
 | Privacy policy + ToS on Cloudflare Pages | ~$0.00 |
-| **Total launch content generation** | **~$11.54** |
+| **Total launch content generation** | **~$19.78** |
 
 ### 13b. First Month Infrastructure
 
@@ -1402,28 +1436,28 @@ It runs:
 
 | Item | Cost |
 |---|---|
-| Launch content generation | $11.54 |
+| Launch content generation | $19.78 |
 | First month infrastructure | $104.00 |
-| **Total** | **$115.54** |
-| **Budget remaining ($300 limit)** | **$184.46** |
+| **Total** | **$123.78** |
+| **Budget remaining ($300 limit)** | **$176.22** |
 
 ### 13d. Quarterly Content Releases
 
 | Item | Cost per Quarter |
 |---|---|
-| 60-90 new card arts (fal.ai) | ~$2.00-$2.75 |
+| 75-100 new card arts (fal.ai) | ~$2.50-$3.25 |
 | Text generation (OpenAI) | <$0.01 |
-| **Total per quarterly release** | **~$2-3** |
+| **Total per quarterly release** | **~$3-4** |
 
 ### 13e. Annual Content Costs
 
 | Item | Cost per Year |
 |---|---|
-| 4 quarterly card releases | ~$8-12 |
+| 4 quarterly card releases | ~$12-16 |
 | 1 new faction (120 cards, same as launch pipeline) | ~$3.75 |
 | 12 seasonal event avatars (~1-2 per event × 8 events) | ~$0.30 |
 | Balance patches | $0.00 (no AI calls, only Supabase edits) |
-| **Total annual content AI cost** | **~$12-16** |
+| **Total annual content AI cost** | **~$16-20** |
 
 ### 13f. Player-Driven Evolution Costs (Per-Player, Monthly)
 
@@ -1449,7 +1483,7 @@ Subscription revenue covers AI evolution costs at 8-20× margin. See `09-monetiz
 | Duplicate names across factions | The pre-release check catches duplicates. Within a faction, names must be unique. Cross-faction duplicates are acceptable. |
 | Cloudflare R2 upload failure | Pipeline retries 3 times with 5-second delays. If all 3 fail, the card is marked "UPLOAD_FAILED" in the manifest and gallery. Owner retries via "Retry Upload" button. |
 | App Store Review rejection | App Store Connect Metadata must be complete before submission. Age rating 9+ is appropriate for the game's content. No gambling mechanics (no randomized card packs). |
-| Budget overrun | Current estimate $115.54 against $300 limit leaves $184.46 headroom. The largest single cost is the Apple Developer Program ($99/year) which is unavoidable. Monitor fal.ai spend via dashboard during generation runs. |
+| Budget overrun | Current estimate $123.78 against $300 limit leaves $176.22 headroom. The largest single cost is the Apple Developer Program ($99/year) which is unavoidable. Monitor fal.ai spend via dashboard during generation runs. |
 
 ---
 
@@ -1475,7 +1509,7 @@ These are stored in the `factions` table in Supabase (`art_style_prefix` column)
 
 **The Ironwright Collective:**
 ```
-steampunk mechanical creature, brass and copper materials, exposed gears and clockwork mechanisms, riveted metal plating, steam vents, intricate precision engineering, industrial Victorian aesthetic, warm metallic tones with amber and rust highlights, glowing amber lenses
+brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar skeleton and hydraulic pistons, void-reactor glow and orbital debris, gunmetal and slag-orange palette, oppressive industrial scale, painted like a Piranesi impossible architecture or John Martin apocalyptic industrial scale
 ```
 
 **The Fey Courts:**
@@ -1486,6 +1520,16 @@ ethereal fey fantasy creature, ancient forest setting, bioluminescent flora and 
 **The Demonic Kingdoms:**
 ```
 demonic corrupted dark fantasy creature, hellfire and deep shadow, obsidian and bone construction, infernal glyphs and runes, corrupted flesh with visible strain, volcanic ash and floating embers, blood-red and deep purple-black tones, visceral menacing presence
+```
+
+**The Celestial Crusade:**
+```
+divine crusader entity, hammered gold plate and white marble veined with gold, sacred geometry and divine radiance from within, cathedral light and golden dust motes, holy gold and divine ivory palette, overwhelming and terrifying beauty, painted like a Gustave Dore biblical illustration or William Blake visionary painting
+```
+
+**The Endless:**
+```
+undead spectral entity, bone and tattered cloth and ectoplasmic residue, fog-choked and ghostly teal glow, necrotic purple energy and silence of tombs, necrotic purple and bone white palette, eerie and persistent, painted like a Gustave Dore Inferno etching or Francisco Goya Black Painting
 ```
 
 ---
@@ -1536,7 +1580,7 @@ function buildArtPrompt(
 **Text prompt assembly function signature:**
 ```typescript
 function buildTextPrompt(
-  factionId: string,            // 'ironwright' | 'fey' | 'demonic'
+  factionId: string,            // 'ironwright' | 'fey' | 'demonic' | 'celestial' | 'endless'
   creatureArchetype: string,
   cmCost: number,
   baseAttack: number,
@@ -1622,3 +1666,25 @@ This section records every change made to the document.
 
 1. **Admin Dashboard technology: Express/HTML → Next.js (TypeScript).** Updated header, pipeline diagram (Section 1), and Section 5b gallery description. Review gallery is now a Next.js web app, not a Node.js Express server with server-rendered HTML.
 2. **Added Supabase Dashboard note.** Header now clarifies that player lookup, match history, and auth management are handled via built-in Supabase Dashboard — no custom admin UI needed for those tasks.
+
+---
+
+### Changes Made in Version 4.0 (2026-02-19)
+
+1. **Faction expansion: 3 → 5 factions throughout.** All card counts, cost estimates, time estimates, batch commands, CSV specs, archetype lists, and faction voice strings updated from 3 factions (Ironwright, Fey Courts, Demonic Kingdoms) to 5 factions (+ Celestial Crusade, The Endless). Grand total cards: 358 → 640. Launch batches: 8 → 13. Generation time: 4-5 days → 6-7 days.
+
+2. **Ironwright rethemed: steampunk → brutalist space-industrial.** All Ironwright prompt examples, archetype lists, faction voice strings, and Appendix A prefix updated. No brass, gears, steam, or clockwork. New references: poured concrete, cold-rolled iron, rebar, hydraulic pistons, void-reactor glow, orbital debris, Piranesi and John Martin art references.
+
+3. **Keyword expansion: 7 → 9 keywords.** Added Haste (PP cost 2) and Ward (PP cost 2) to keyword distribution rules, balance check PP costs, and test suite references.
+
+4. **Planar Ruins generation pipeline added.** Section 1a now includes 8 neutral ruin archetypes + 40 faction-evolved ruins. Section 8b Day 6 includes dedicated ruin generation commands using txt2img for neutral bases and img2img (FLUX Kontext) for faction evolution. New script: `scripts/generate-ruins-evolved.ts`. Card type PLANAR_RUIN added to schema check constraint and CSV format.
+
+5. **Celestial Crusade faction added.** Creature archetypes (radiant squire, burning wheel acolyte, sanctum guardian, etc.), faction voice string (declarative, absolute, divine), and art prefix (hammered gold, white marble, sacred geometry, Dore/Blake references) added throughout.
+
+6. **Endless faction added.** Creature archetypes (bone-stitched soldier, wailing remnant, phylactery guardian, etc.), faction voice string (deathly, persistent, academic/mournful), and art prefix (bone, ectoplasm, tattered cloth, Dore Inferno/Goya references) added throughout.
+
+7. **Cost projections updated.** Launch content: $11.54 → $19.78. Total to launch: $115.54 → $123.78. Budget remaining: $184.46 → $176.22. Quarterly releases: $2-3 → $3-4. Annual content: $12-16 → $16-20. All within $300 budget.
+
+8. **App Store description updated for 5 factions.** "THREE FACTIONS" → "FIVE FACTIONS" with Celestial Crusade (Exalt) and Endless (Persist) descriptions added.
+
+9. **App icon prompt updated.** Three creature silhouettes → five (brutalist iron construct, ethereal fey, dark demonic, radiant divine angel, spectral undead).

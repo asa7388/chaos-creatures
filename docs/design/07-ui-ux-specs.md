@@ -675,9 +675,11 @@ func animateCreatureDeath(_ cardNode: BoardCardNode) {
     // 3. Faction-specific particles (SKEmitterNode)
     let emitterName: String
     switch faction {
-    case .ironwright: emitterName = "DeathEmitter_Ironwright"  // gear/spark particles
-    case .feyCourts:  emitterName = "DeathEmitter_FeyCourts"   // leaf/petal burst
-    case .demonic:    emitterName = "DeathEmitter_Demonic"     // ember/smoke
+    case .ironwright:      emitterName = "DeathEmitter_Ironwright"      // gear/spark particles, reactor flare
+    case .feyCourts:       emitterName = "DeathEmitter_FeyCourts"       // leaf/petal burst
+    case .demonic:         emitterName = "DeathEmitter_Demonic"         // ember/smoke
+    case .celestialCrusade: emitterName = "DeathEmitter_Celestial"      // divine_radiance — golden light motes, dissolving halo
+    case .endless:          emitterName = "DeathEmitter_Endless"        // spectral_mist — ghostly teal wisps, bone fragment scatter
     }
     if let emitter = SKEmitterNode(fileNamed: emitterName) {
         emitter.position = cardNode.position
@@ -1507,6 +1509,454 @@ Buttons:
 
 ---
 
+## 4A. Planar Ruins UI
+
+Planar Ruins are a new card type — ancient structures from the Plane of Chaos. They take a creature slot on the battlefield, provide passive benefits, and can be attacked/destroyed. See `00-game-design-master.md` Section 11a for full mechanics. See `PHASE1D-ui-ux.md` Section 4 for detailed SwiftUI/SpriteKit implementation specs.
+
+### 4A.1 Ruin Card Visual (Collection / Hand)
+
+Ruin cards are visually distinct from creature cards:
+- **Stone-textured translucent panel** at the bottom (instead of the standard dark gradient overlay) — uses `Material.ultraThinMaterial` tinted with `Color(hex: "#2A2318").opacity(0.85)`
+- **Double-line separator** between art and stats panel (horizontal `Divider` pair)
+- **No ATK stat** — stat row shows only HP, CM, and a ruin-specific passive effect icon
+- **Ruin pillar icon** badge in the top-left corner (overlay on art)
+- **Stone border** instead of tier-colored border: `Color(hex: "#8B7D6B")` 3pt stroke
+
+```swift
+struct RuinCardView: View {
+    let ruin: RuinInstance
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            AsyncImage(url: ruin.artURL) { image in
+                image.resizable().aspectRatio(5/7, contentMode: .fill)
+            } placeholder: { CardArtPlaceholder() }
+
+            // Stone-textured stats panel
+            VStack(spacing: 4) {
+                Divider().background(Color(hex: "#8B7D6B"))
+                Divider().background(Color(hex: "#8B7D6B"))
+
+                HStack(spacing: 16) {
+                    StatBadge(label: "HP", value: "\(ruin.hp)")
+                    StatBadge(label: "CM", value: "\(ruin.manaCost)")
+                }
+
+                Text(ruin.passiveEffectDescription)
+                    .font(.custom("Alegreya", size: 11))
+                    .foregroundColor(Color(hex: "#E8DCC8"))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+
+                if ruin.isEvolved {
+                    HStack(spacing: 4) {
+                        Image(factionEmblemName(ruin.faction!))
+                            .resizable().frame(width: 14, height: 14)
+                        Text(ruin.faction!.displayName)
+                            .font(.system(size: 10))
+                            .foregroundColor(FactionColor.accent(ruin.faction!))
+                    }
+                } else {
+                    Text("Neutral Ruin")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color(hex: "#888888"))
+                }
+            }
+            .padding(8)
+            .background(.ultraThinMaterial)
+        }
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(ruin.isEvolved ? FactionColor.accent(ruin.faction!) : Color(hex: "#8B7D6B"), lineWidth: 3)
+        )
+        .overlay(
+            Image("icon_ruin_pillar")
+                .resizable().frame(width: 20, height: 20)
+                .padding(4)
+                .background(Color.black.opacity(0.6))
+                .cornerRadius(4)
+                .padding(4)
+            , alignment: .topLeading
+        )
+    }
+}
+```
+
+### 4A.2 Ruin on Battlefield (SpriteKit)
+
+`BoardRuinNode : SKSpriteNode` — a SpriteKit node for ruins placed on the battlefield. Occupies a creature slot.
+
+```swift
+class BoardRuinNode: SKSpriteNode {
+    let ruinData: RuinInstance
+    private var hpLabel: SKLabelNode!
+    private var passiveAuraEmitter: SKEmitterNode?
+    private var stoneFrame: SKShapeNode!
+
+    init(ruin: RuinInstance) {
+        self.ruinData = ruin
+        super.init(texture: nil, color: .clear, size: CardSize.boardSKSize)
+
+        // Art sprite
+        let artSprite = SKSpriteNode(texture: SKTexture(imageNamed: ruin.artKey))
+        artSprite.size = self.size
+        addChild(artSprite)
+
+        // Stone frame border
+        stoneFrame = SKShapeNode(rectOf: self.size, cornerRadius: 6)
+        stoneFrame.strokeColor = ruin.isEvolved ?
+            FactionColor.skColor(ruin.faction!) : SKColor(hex: "#8B7D6B")
+        stoneFrame.lineWidth = 2
+        stoneFrame.fillColor = .clear
+        addChild(stoneFrame)
+
+        // HP label (bottom-center)
+        hpLabel = SKLabelNode(text: "\(ruin.hp)")
+        hpLabel.fontSize = 12
+        hpLabel.fontColor = .white
+        hpLabel.position = CGPoint(x: 0, y: -self.size.height / 2 + 10)
+        addChild(hpLabel)
+
+        // Ruin pillar icon (top-left)
+        let pillarIcon = SKSpriteNode(imageNamed: "icon_ruin_pillar")
+        pillarIcon.size = CGSize(width: 14, height: 14)
+        pillarIcon.position = CGPoint(x: -self.size.width / 2 + 12, y: self.size.height / 2 - 12)
+        addChild(pillarIcon)
+
+        // Passive aura pulse (subtle glow around ruin)
+        startPassiveAura()
+    }
+
+    func startPassiveAura() {
+        let auraNode = SKShapeNode(ellipseOf: CGSize(width: size.width + 16, height: size.height + 16))
+        auraNode.strokeColor = ruinData.isEvolved ?
+            FactionColor.skColor(ruinData.faction!).withAlphaComponent(0.3) :
+            SKColor(hex: "#8B7D6B").withAlphaComponent(0.3)
+        auraNode.lineWidth = 2
+        auraNode.fillColor = .clear
+        auraNode.alpha = 0.5
+        addChild(auraNode)
+
+        let pulse = SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.8, duration: 1.2),
+            SKAction.fadeAlpha(to: 0.3, duration: 1.2)
+        ])
+        auraNode.run(SKAction.repeatForever(pulse))
+    }
+
+    func updateHP(_ newHP: Int) {
+        hpLabel.text = "\(newHP)"
+        // Damage flash
+        let flash = SKAction.sequence([
+            SKAction.colorize(with: .red, colorBlendFactor: 0.6, duration: 0.1),
+            SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.2)
+        ])
+        run(flash)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
+}
+```
+
+### 4A.3 Ruin Destruction Animation
+
+When a ruin's HP reaches 0:
+
+```swift
+func animateRuinDestruction(ruinNode: BoardRuinNode) {
+    // 1. Screen rumble (subtle shake)
+    let rumble = SKAction.sequence([
+        SKAction.moveBy(x: 3, y: 0, duration: 0.05),
+        SKAction.moveBy(x: -6, y: 0, duration: 0.05),
+        SKAction.moveBy(x: 6, y: 0, duration: 0.05),
+        SKAction.moveBy(x: -3, y: 0, duration: 0.05)
+    ])
+    scene?.run(rumble)
+
+    // 2. Crumble: scale down + fade + stone fragment particles
+    let crumble = SKAction.group([
+        SKAction.scaleX(to: 1.2, y: 0.5, duration: 0.4),
+        SKAction.fadeOut(withDuration: 0.5),
+        SKAction.moveBy(x: 0, y: -20, duration: 0.5)
+    ])
+    ruinNode.run(SKAction.sequence([crumble, SKAction.removeFromParent()]))
+
+    // 3. Stone fragment emitter
+    if let emitter = SKEmitterNode(fileNamed: "RuinCrumbleEmitter") {
+        emitter.position = ruinNode.position
+        emitter.zPosition = 99
+        addChild(emitter)
+        emitter.run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.5),
+            SKAction.removeFromParent()
+        ]))
+    }
+
+    // 4. Destruction penalty banner
+    let penaltyBanner = SKLabelNode(text: ruinNode.ruinData.destructionPenaltyText)
+    penaltyBanner.fontSize = 14
+    penaltyBanner.fontColor = SKColor(hex: "#F44336")
+    penaltyBanner.position = CGPoint(x: ruinNode.position.x, y: ruinNode.position.y + 40)
+    penaltyBanner.alpha = 0
+    addChild(penaltyBanner)
+    penaltyBanner.run(SKAction.sequence([
+        SKAction.fadeIn(withDuration: 0.2),
+        SKAction.wait(forDuration: 1.5),
+        SKAction.group([
+            SKAction.fadeOut(withDuration: 0.3),
+            SKAction.moveBy(x: 0, y: 20, duration: 0.3)
+        ]),
+        SKAction.removeFromParent()
+    ]))
+}
+```
+
+### 4A.4 Ruin Evolution Flow (SwiftUI)
+
+Ruin evolution differs from creature evolution: instead of choosing Order/Chaos channel, the player selects which **faction** to evolve the neutral ruin into. Uses the same subscription tier system for how many options appear: Free (2 options), Mid (3), Top (4).
+
+```swift
+struct RuinEvolutionFlowView: View {
+    let ruin: RuinInstance
+    @StateObject var vm = RuinEvolutionViewModel()
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            switch vm.step {
+            case .presentation:
+                RuinPresentationStep(ruin: ruin, onContinue: { vm.step = .factionSelection })
+            case .factionSelection:
+                RuinFactionSelectionStep(
+                    options: vm.availableFactions,  // 2, 3, or 4 based on subscription
+                    selected: $vm.selectedFaction,
+                    onConfirm: { vm.startEvolution(ruin: ruin) }
+                )
+            case .evolving:
+                RuinEvolutionAnimationView(faction: vm.selectedFaction!)
+            case .reveal(let evolvedRuin):
+                RuinRevealStep(evolvedRuin: evolvedRuin, onConfirm: { dismiss() })
+            }
+        }
+    }
+}
+```
+
+`RuinFactionSelectionStep` shows faction cards the player can choose from. Each option card displays: faction emblem, faction name, evolved effect preview text, and destruction penalty preview. Selected card highlights with faction accent color border.
+
+### 4A.5 Ruin Collection Screen
+
+Ruins appear in the collection alongside creature cards but are visually distinct (see 4A.1). The `FilterPanelView` includes "Planar Ruin" as a `CardType` option. The `FactionTabBar` "All" tab shows ruins mixed with creatures. When a specific faction is selected, only evolved ruins of that faction appear (neutral ruins appear under "All" only).
+
+```swift
+// Add to FilterPanelView Section "Card Type"
+Section("Card Type") {
+    MultiToggleRow(options: [.creature, .spell, .stabilizer, .planarRuin],
+                   selected: $vm.filterCardTypes)
+}
+```
+
+Ruin detail view (`RuinDetailView`) shows: full ruin art, HP/CM stats, passive effect description, destruction penalty text, evolution energy progress (if not yet evolved), and an "Evolve" button if energy threshold is met.
+
+---
+
+## 4B. Keyword Visual Indicators (Haste, Ward)
+
+Two new keywords require visual treatment on the battlefield:
+
+### 4B.1 Haste Visual
+
+When a creature with Haste is played, it gets a **speed-line trail effect** during its card play animation:
+
+```swift
+// In BattleScene: after card play animation for a Haste creature
+func applyHasteVisual(to cardNode: BoardCardNode) {
+    // Speed streaks behind the card during play animation
+    for i in 0..<3 {
+        let streak = SKShapeNode(rectOf: CGSize(width: 2, height: 20))
+        streak.fillColor = SKColor(hex: "#FFD700").withAlphaComponent(0.6)
+        streak.strokeColor = .clear
+        streak.position = CGPoint(
+            x: cardNode.position.x - CGFloat(i * 8) - 20,
+            y: cardNode.position.y + CGFloat.random(in: -10...10)
+        )
+        streak.alpha = 0.8
+        streak.zPosition = cardNode.zPosition - 1
+        addChild(streak)
+        streak.run(SKAction.sequence([
+            SKAction.fadeOut(withDuration: 0.4),
+            SKAction.removeFromParent()
+        ]))
+    }
+
+    // Haste icon badge — lightning bolt, top-right of card
+    let hasteIcon = SKSpriteNode(imageNamed: "icon_keyword_haste")
+    hasteIcon.size = CGSize(width: 16, height: 16)
+    hasteIcon.position = CGPoint(x: cardNode.size.width / 2 - 10, y: cardNode.size.height / 2 - 10)
+    cardNode.addChild(hasteIcon)
+
+    // Flash: indicates creature can attack this turn
+    let flash = SKAction.sequence([
+        SKAction.fadeAlpha(to: 1.0, duration: 0.15),
+        SKAction.fadeAlpha(to: 0.5, duration: 0.15)
+    ])
+    hasteIcon.run(SKAction.repeat(flash, count: 3))
+}
+```
+
+Haste icon: Lightning bolt icon (`icon_keyword_haste`), 16x16pt, shown as a temporary badge on the card for 1 turn. Removed at end of the turn the creature is played.
+
+### 4B.2 Ward Visual
+
+When a creature with Ward is deployed, it gets a **shimmering translucent shield overlay** for 1 turn:
+
+```swift
+func applyWardVisual(to cardNode: BoardCardNode) {
+    // Shield overlay — translucent magical barrier
+    let wardShield = SKShapeNode(rectOf: CGSize(
+        width: cardNode.size.width + 4,
+        height: cardNode.size.height + 4
+    ), cornerRadius: 8)
+    wardShield.fillColor = SKColor(hex: "#5BC0EB").withAlphaComponent(0.15)
+    wardShield.strokeColor = SKColor(hex: "#5BC0EB").withAlphaComponent(0.5)
+    wardShield.lineWidth = 2
+    wardShield.glowWidth = 3
+    wardShield.name = "wardShield"
+    cardNode.addChild(wardShield)
+
+    // Shimmer animation
+    let shimmer = SKAction.sequence([
+        SKAction.fadeAlpha(to: 0.6, duration: 0.8),
+        SKAction.fadeAlpha(to: 0.3, duration: 0.8)
+    ])
+    wardShield.run(SKAction.repeatForever(shimmer))
+
+    // Ward icon badge — magic shield, top-right
+    let wardIcon = SKSpriteNode(imageNamed: "icon_keyword_ward")
+    wardIcon.size = CGSize(width: 16, height: 16)
+    wardIcon.position = CGPoint(x: cardNode.size.width / 2 - 10, y: cardNode.size.height / 2 - 10)
+    wardIcon.name = "wardIcon"
+    cardNode.addChild(wardIcon)
+}
+
+func removeWardVisual(from cardNode: BoardCardNode) {
+    cardNode.childNode(withName: "wardShield")?.run(SKAction.sequence([
+        SKAction.fadeOut(withDuration: 0.3),
+        SKAction.removeFromParent()
+    ]))
+    cardNode.childNode(withName: "wardIcon")?.run(SKAction.sequence([
+        SKAction.fadeOut(withDuration: 0.3),
+        SKAction.removeFromParent()
+    ]))
+}
+```
+
+Ward shield is removed at the start of the creature's controller's next turn, or when Ward is broken by AoE/combat damage.
+
+---
+
+## 4C. Faction Mechanic Visuals (Exalt, Persist)
+
+### 4C.1 Exalt Aura (Celestial Crusade)
+
+When an Exalt condition is met (board conditions satisfied), all benefiting creatures receive a **brief golden pulse aura**:
+
+```swift
+func applyExaltAura(to creatures: [BoardCardNode]) {
+    for creature in creatures {
+        // Golden glow pulse
+        let aura = SKShapeNode(rectOf: CGSize(
+            width: creature.size.width + 6,
+            height: creature.size.height + 6
+        ), cornerRadius: 8)
+        aura.fillColor = .clear
+        aura.strokeColor = SKColor(hex: "#DAA520").withAlphaComponent(0.7)
+        aura.lineWidth = 2
+        aura.glowWidth = 4
+        aura.name = "exaltAura"
+        creature.addChild(aura)
+
+        // Pulsing glow
+        let pulse = SKAction.sequence([
+            SKAction.fadeAlpha(to: 1.0, duration: 0.5),
+            SKAction.fadeAlpha(to: 0.4, duration: 0.5)
+        ])
+        aura.run(SKAction.repeatForever(pulse))
+    }
+}
+
+func removeExaltAura(from creatures: [BoardCardNode]) {
+    for creature in creatures {
+        creature.childNode(withName: "exaltAura")?.run(SKAction.sequence([
+            SKAction.fadeOut(withDuration: 0.3),
+            SKAction.removeFromParent()
+        ]))
+    }
+}
+```
+
+Exalt icon: A radiant sun/halo icon, shown in the keyword bar on cards that are receiving Exalt benefits.
+
+### 4C.2 Persist Death Trigger (The Endless)
+
+When a creature with Persist dies, a **ghostly afterimage** lingers for 500ms before the death trigger effect activates:
+
+```swift
+func animatePersistDeath(cardNode: BoardCardNode) {
+    // 1. Normal death animation plays (shatter + faction emitter)
+    animateCreatureDeath(cardNode: cardNode, faction: .endless)
+
+    // 2. Ghostly afterimage lingers at the death position
+    let afterimage = SKSpriteNode(texture: cardNode.texture)
+    afterimage.size = cardNode.size
+    afterimage.position = cardNode.position
+    afterimage.alpha = 0.5
+    afterimage.zPosition = cardNode.zPosition
+    afterimage.color = SKColor(hex: "#5F9EA0")  // ghostly teal
+    afterimage.colorBlendFactor = 0.4
+    addChild(afterimage)
+
+    // Ghostly pulse before death trigger
+    let ghostPulse = SKAction.sequence([
+        SKAction.fadeAlpha(to: 0.7, duration: 0.15),
+        SKAction.fadeAlpha(to: 0.3, duration: 0.15)
+    ])
+    afterimage.run(SKAction.sequence([
+        SKAction.repeat(ghostPulse, count: 2),  // 500ms total
+        SKAction.run { [weak self] in
+            // Persist death trigger effect fires here
+            self?.showPersistTriggerBanner(at: afterimage.position)
+        },
+        SKAction.fadeOut(withDuration: 0.3),
+        SKAction.removeFromParent()
+    ]))
+}
+
+func showPersistTriggerBanner(at position: CGPoint) {
+    let banner = SKLabelNode(text: "PERSIST")
+    banner.fontSize = 14
+    banner.fontColor = SKColor(hex: "#6B3FA0")  // Endless purple
+    banner.fontName = "Cinzel-Bold"
+    banner.position = CGPoint(x: position.x, y: position.y + 30)
+    banner.alpha = 0
+    addChild(banner)
+    banner.run(SKAction.sequence([
+        SKAction.fadeIn(withDuration: 0.15),
+        SKAction.wait(forDuration: 1.0),
+        SKAction.group([
+            SKAction.fadeOut(withDuration: 0.3),
+            SKAction.moveBy(x: 0, y: 15, duration: 0.3)
+        ]),
+        SKAction.removeFromParent()
+    ]))
+}
+```
+
+---
+
 ## 5. Collection & Deck Builder
 
 ### 5.1 Collection Screen
@@ -1555,7 +2005,7 @@ struct CollectionView: View {
 ```swift
 struct FactionTabBar: View {
     @Binding var selected: FactionFilter
-    let factions: [FactionFilter] = [.all, .ironwright, .feyCourts, .demonic]
+    let factions: [FactionFilter] = [.all, .ironwright, .feyCourts, .demonic, .celestialCrusade, .endless]
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -1681,6 +2131,7 @@ struct FilterPanelView: View {
             Form {
                 Section("Card Type") {
                     MultiToggleRow(options: CardType.allCases, selected: $vm.filterCardTypes)
+                    // CardType.allCases includes: .creature, .spell, .stabilizer, .planarRuin
                 }
                 Section("Evolution Tier") {
                     MultiToggleRow(options: EvolutionTier.allCases, selected: $vm.filterTiers)
@@ -1699,6 +2150,7 @@ struct FilterPanelView: View {
                 }
                 Section("Keywords") {
                     KeywordToggleGrid(selected: $vm.filterKeywords)
+                    // 9 keywords: Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward
                 }
                 Section("Special") {
                     Toggle("Evolution Ready", isOn: $vm.filterEvolutionReady)
@@ -1954,14 +2406,15 @@ struct DeckBuilderPhoneLayout: View {
 ```
 
 `DeckStatsSummaryBar`:
-- Mana curve: `HStack` of 10 `Rectangle` bars, each height = `max(4, count * 8)` pt, colored by dominant tier in that slot.
+- Mana curve: `HStack` of 10 `Rectangle` bars, each height = `max(4, count * 8)` pt, colored by dominant tier in that slot. Ruin CM costs included in the curve.
 - Attunement bar: `GeometryReader` with two `Rectangle` layers proportional to Order/Chaos counts.
 - Avg instability `Text` color-coded.
 - Card count: green if 20, amber if 15-19, red if <15.
+- **Ruin count indicator** (new): `Image("icon_ruin_pillar")` 14x14pt + `Text("\(ruinCount)/2")` — red if >2, gray otherwise.
 
-`DeckContentsPanel`: `List` of `DeckCardRow` items. Each row 44pt height minimum. Card thumbnail `AsyncImage` 40x56pt. Card name. Mana cost. ATK/HP. `.swipeActions(edge: .trailing) { Button("Remove", role: .destructive) { vm.removeCard(card) } }`.
+`DeckContentsPanel`: `List` with **two sections**: a "Planar Ruins" section (if any ruins in deck, showing `ruin.count`/2 header) and a "Creatures" section. Ruins section uses `RuinDeckRow` (ruin thumbnail, name, HP, CM, passive effect). Creature section uses `DeckCardRow` items (each row 44pt height minimum, card thumbnail `AsyncImage` 40x56pt, card name, mana cost, ATK/HP). Both sections support `.swipeActions(edge: .trailing) { Button("Remove", role: .destructive) { ... } }`.
 
-`CardPoolPanel`: `LazyVGrid` same as collection grid showing only cards not already in the deck by default. Tap card to add. Validation: deck full = shake animation on the `DeckStatsSummaryBar` via:
+`CardPoolPanel`: `LazyVGrid` same as collection grid. Now includes a **type filter** `Picker` at the top: "All" / "Creatures" / "Ruins" (segmented control). Shows only cards not already in the deck by default. Tap card to add. Validation: deck full = shake animation on the `DeckStatsSummaryBar` via:
 
 ```swift
 withAnimation(.default) { shakeOffset = 10 }
@@ -1974,6 +2427,10 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 Max 2 copies per card enforced: card in pool shown with `.opacity(0.4)` and `allowsHitTesting(false)` if already at 2 copies.
 
 Max 2 Legendaries enforced: same treatment.
+
+**Max 2 Planar Ruins per deck**: ruins in pool shown at `.opacity(0.4)` if already at 2 ruins. Evolved ruins faction-locked — an evolved ruin of a different faction than the deck is shown with a red "Wrong Faction" overlay and `allowsHitTesting(false)`. Neutral ruins can go in any faction's deck.
+
+**Max 1 ruin on battlefield**: enforced server-side. If a player has a ruin on the field and tries to play another, the client shows a toast: "Only 1 ruin can be on the field at a time" (`.warning` type).
 
 #### DeckBuilderTabletLayout (iPad)
 
@@ -1996,7 +2453,7 @@ Header (deck name, faction, avatar, stats) spans full width above the `HStack`.
 
 #### Deck Validation
 
-Invalid deck: "Save" toolbar button is `.disabled(true)`. Below the stats bar: `Text` in `Color(hex: "#F44336")` describing the issue: "Need 6 more cards" or "Remove 1 Legendary".
+Invalid deck: "Save" toolbar button is `.disabled(true)`. Below the stats bar: `Text` in `Color(hex: "#F44336")` describing the issue: "Need 6 more cards", "Remove 1 Legendary", "Too many ruins (max 2)", or "Evolved ruin faction mismatch".
 
 WIP decks (< 20 cards) can be saved with a WIP badge via "Save WIP" button. Appear in deck list with `[WIP]` badge. Cannot be used in matchmaking (greyed out in mode selection).
 
@@ -2332,28 +2789,56 @@ Transition: `withAnimation(.easeInOut(duration: 0.5))` on `currentPanelIndex`. A
 
 Skip button: top-right, `Button` 44x44pt minimum. `Text("Skip", font: .system(size: 14))`. `foregroundColor(Color(hex: "#888888"))`. On tap: `withAnimation(.easeInOut(duration: 0.3)) { currentStep = .factionSelection }`.
 
-#### Step 2: Faction Selection
+#### Step 2: Faction Selection (5-Faction Carousel)
 
-Three `FactionCardView` components in a `TabView(.page)` (SwiftUI pager):
+Five `FactionShowcaseCard` components in a horizontally-scrolling carousel. Players swipe through all 5 factions. Each card fills ~75% of screen width so adjacent cards peek in from the edges, encouraging exploration.
 
 ```swift
-TabView(selection: $selectedFaction) {
-    ForEach(Faction.allCases) { faction in
-        FactionCardView(faction: faction) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                committedFaction = faction
-                currentStep = .tutorialMatch
+struct FactionPickerView: View {
+    @Binding var selectedFaction: Faction?
+    @State private var currentIndex: Int = 0
+    let onCommit: (Faction) -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Choose Your Path")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
+
+            TabView(selection: $currentIndex) {
+                ForEach(Array(Faction.allCases.enumerated()), id: \.offset) { index, faction in
+                    FactionShowcaseCard(faction: faction) {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                            selectedFaction = faction
+                            onCommit(faction)
+                        }
+                    }
+                    .tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .always))
+
+            // Dot indicator for 5 factions
+            HStack(spacing: 8) {
+                ForEach(Array(Faction.allCases.enumerated()), id: \.offset) { index, faction in
+                    Circle()
+                        .fill(index == currentIndex ?
+                            FactionColor.accent(faction) : Color(hex: "#3A3A3A"))
+                        .frame(width: 8, height: 8)
+                }
             }
         }
-        .tag(faction)
     }
 }
-.tabViewStyle(.page(indexDisplayMode: .always))
 ```
 
-Each `FactionCardView`: full screen height at 80%. Faction-themed `LinearGradient` background. Faction icon 80x80pt. Name 26pt bold. 2-line description. Sample card `AsyncImage` 180x252pt. "Choose [Faction]" `Button` 200x52pt faction accent color.
+Each `FactionShowcaseCard`: full screen height at 75%. Faction-themed `LinearGradient` background using faction colors (see Section 13.1). Faction emblem icon 80x80pt. Name 26pt bold (Cinzel font). Sub-headline with faction mechanic name (e.g., "Mechanic: Exalt"). 2-line description. Sample card `AsyncImage` 160x224pt. "Choose [Faction]" `Button` 200x52pt faction accent color.
+
+**Faction card order**: Ironwright, Fey Courts, Demonic Kingdoms, Celestial Crusade, The Endless. Default start position: index 0 (Ironwright).
 
 On tap: selected card expands via `withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) { selectedFaction = faction }`, others fade via `.opacity`. After 600ms, advance to Step 3.
+
+**Trial match behavior**: The tutorial match uses a loaner deck from the selected faction. All 5 factions have pre-built trial decks with pre-generated card art. If a faction is not yet unlocked, trial deck cards are temporary and vanish after onboarding unless the player commits to that faction.
 
 #### Step 3: Tutorial Match (Guided Battle)
 
@@ -2410,7 +2895,7 @@ Skip button always visible. On skip: award starter deck, mark tutorial complete,
 
 Or a custom sheet for richer visuals: faction illustration + "Keep [Faction] Deck" primary `Button` + "See Other Factions" secondary `Button`.
 
-On confirm: calls `player/commit-faction` Supabase Edge Function. On success: trial cards become owned `CardInstance` records. Advance to Step 5.
+On confirm: calls `player/commit-faction` Supabase Edge Function. On success: trial cards become owned `CardInstance` records. The player's starting faction is set. The other 4 factions are locked and can be unlocked later via cross-faction card packs (150 Dust). Advance to Step 5.
 
 #### Step 5: First Evolution (Guided)
 
@@ -2792,9 +3277,11 @@ enum AppColors {
     static let textMuted         = Color(hex: "#666666")
 
     // Factions
-    static let ironwright        = Color(hex: "#4A90E2")
+    static let ironwright        = Color(hex: "#6B7B8D")  // Steel blue-gray (brutalist space-industrial retheme)
     static let feyCourts         = Color(hex: "#7ED321")
     static let demonic           = Color(hex: "#D0021B")
+    static let celestialCrusade  = Color(hex: "#DAA520")  // Holy gold
+    static let endless           = Color(hex: "#6B3FA0")  // Necrotic purple
 
     // Events
     static let order             = Color(hex: "#5BC0EB")
@@ -3118,7 +3605,7 @@ Owner's entire workflow: open browser → two clicks → review grid → approve
 
 **Evolution Statistics:** Line chart of evolutions per day. Breakdown by tier and faction. Uses PostHog analytics API.
 
-**Modifier Pool Management:** Table of all 240 modifiers. Inline editable: name, PP cost, effect text. Cannot delete modifiers already granted to players — only deprecate (marks unavailable for new evolutions, remains on existing cards).
+**Modifier Pool Management:** Table of all 336 modifiers (12 pools x (8 universal + 4 per faction x 5 factions)). Inline editable: name, PP cost, effect text. Cannot delete modifiers already granted to players — only deprecate (marks unavailable for new evolutions, remains on existing cards).
 
 ### 16.5 Players Management — Handled via Supabase Dashboard
 
@@ -3268,6 +3755,7 @@ ChaosCreatures/
 │   │   ├── BattleViewModel.swift
 │   │   ├── BattleScene.swift            SKScene subclass
 │   │   ├── BoardCardNode.swift          SKSpriteNode subclass
+│   │   ├── BoardRuinNode.swift          SKSpriteNode subclass (Planar Ruins on battlefield)
 │   │   ├── D20Node.swift                SKShapeNode subclass
 │   │   ├── PhaseIndicatorNode.swift
 │   │   ├── EventOverlayNode.swift
@@ -3303,7 +3791,9 @@ ChaosCreatures/
 │   │   ├── AbilityRevealView.swift
 │   │   ├── ModifierSelectionView.swift
 │   │   ├── FlavorRevealView.swift
-│   │   └── EvolutionSummaryView.swift
+│   │   ├── EvolutionSummaryView.swift
+│   │   ├── RuinEvolutionFlowView.swift   Ruin-specific evolution (neutral → faction)
+│   │   └── RuinEvolutionViewModel.swift
 │   ├── Shop/
 │   │   ├── ShopView.swift
 │   │   ├── ShopViewModel.swift
@@ -3313,7 +3803,8 @@ ChaosCreatures/
 │   ├── Onboarding/
 │   │   ├── OnboardingFlowView.swift
 │   │   ├── IntroCinematicView.swift
-│   │   ├── FactionSelectionView.swift
+│   │   ├── FactionPickerView.swift          5-faction carousel picker
+│   │   ├── FactionShowcaseCard.swift
 │   │   ├── TutorialOverlayView.swift
 │   │   └── TutorialViewModel.swift
 │   ├── Profile/
@@ -3326,6 +3817,8 @@ ChaosCreatures/
 │   │   └── PostMatchViewModel.swift
 │   ├── Shared/
 │   │   ├── CardDetailView.swift
+│   │   ├── RuinCardView.swift               Ruin card rendering (collection/hand)
+│   │   ├── RuinDetailView.swift             Ruin detail screen
 │   │   ├── GraveyardSheet.swift
 │   │   ├── ToastView.swift
 │   │   ├── ToastViewModel.swift
@@ -3356,6 +3849,9 @@ ChaosCreatures/
 │   │   ├── DeathEmitter_Ironwright.sks
 │   │   ├── DeathEmitter_FeyCourts.sks
 │   │   ├── DeathEmitter_Demonic.sks
+│   │   ├── DeathEmitter_Celestial.sks      // divine_radiance: golden light motes, dissolving halo
+│   │   ├── DeathEmitter_Endless.sks        // spectral_mist: ghostly teal wisps, bone scatter
+│   │   ├── RuinCrumbleEmitter.sks          // stone fragments for ruin destruction
 │   │   └── VictoryConfetti.sks
 │   └── Sounds/
 │       ├── reveal.caf
@@ -3448,6 +3944,40 @@ Sound files: `.caf` format (Core Audio Format) — Apple's recommended format fo
 
 ## Revision Log
 
+### Version 4.0 — 2026-02-19
+
+**Faction Expansion: 3 → 5 factions, Planar Ruins, 9 keywords, mechanic visuals**
+
+This revision adds all UI/UX specifications for the faction expansion. Gameplay mechanics, screen inventory, and navigation structure remain unchanged. The expansion adds two new factions, a new card type, two new keywords, and updates all existing UI to support 5 factions.
+
+#### New Sections
+
+1. **Section 4A: Planar Ruins UI.** Complete spec for ruin card visual (stone-textured panel, no ATK, ruin pillar icon), `BoardRuinNode` SpriteKit implementation, ruin destruction animation (crumble + rumble + penalty banner), ruin evolution flow (neutral → faction-specific), ruin collection screen integration. Source: `PHASE1D-ui-ux.md`.
+
+2. **Section 4B: Keyword Visual Indicators (Haste, Ward).** Haste: speed-line trail effect + lightning bolt icon badge on play turn. Ward: shimmering translucent shield overlay + magic shield icon for 1 turn. Both include SpriteKit `SKAction` code.
+
+3. **Section 4C: Faction Mechanic Visuals (Exalt, Persist).** Exalt (Celestial): golden pulse aura on all benefiting creatures when board conditions met. Persist (Endless): ghostly teal afterimage lingers 500ms after death before trigger fires.
+
+#### Updated Sections
+
+4. **Death animation (Section 3):** Switch expanded from 3 cases to 5 — added `.celestialCrusade` (`DeathEmitter_Celestial` — divine_radiance, golden light motes, dissolving halo) and `.endless` (`DeathEmitter_Endless` — spectral_mist, ghostly teal wisps, bone scatter).
+
+5. **FactionTabBar (Section 5.1):** Expanded from `[.all, .ironwright, .feyCourts, .demonic]` to `[.all, .ironwright, .feyCourts, .demonic, .celestialCrusade, .endless]`.
+
+6. **AppColors (Section 13.1):** Ironwright updated from `#4A90E2` to `#6B7B8D` (brutalist space-industrial retheme). Added `celestialCrusade = #DAA520` (holy gold) and `endless = #6B3FA0` (necrotic purple).
+
+7. **Onboarding faction selection (Section 7.2 Step 2):** Redesigned from 3-card `TabView(.page)` to 5-faction carousel with `FactionPickerView` and `FactionShowcaseCard`. Dot indicators use faction accent colors. Trial match uses loaner decks from any of 5 factions.
+
+8. **Deck builder (Section 5.3):** `DeckContentsPanel` split into "Planar Ruins" and "Creatures" sections. `CardPoolPanel` adds type filter picker (All/Creatures/Ruins). `DeckStatsSummaryBar` adds ruin count indicator. Deck validation expanded: max 2 ruins, faction-lock for evolved ruins, max 1 on field.
+
+9. **Collection filter (Section 5.1):** `CardType.allCases` includes `.planarRuin`. `KeywordToggleGrid` includes 9 keywords (added Haste, Ward).
+
+10. **Modifier Pool Management (Section 16.4):** 240 → 336 modifiers.
+
+11. **Project file structure (Section 18.1):** Added `BoardRuinNode.swift`, `RuinEvolutionFlowView.swift`, `RuinEvolutionViewModel.swift`, `FactionPickerView.swift`, `FactionShowcaseCard.swift`, `RuinCardView.swift`, `RuinDetailView.swift`, `DeathEmitter_Celestial.sks`, `DeathEmitter_Endless.sks`, `RuinCrumbleEmitter.sks`.
+
+---
+
 ### Version 3.0 — 2026-02-16
 
 **Platform Migration: React Native/Expo/TypeScript → Native iOS Swift/SwiftUI/SpriteKit**
@@ -3480,7 +4010,7 @@ This revision is a full rewrite of the technology-specific sections of the docum
 
 11. **All combat animations rewritten as SKAction sequences.** Card play, attacker glow, blocker drag, damage numbers, death, spell cast, chaos roll, event overlay all specified as `SKAction.sequence`, `SKAction.group`, `SKAction.repeatForever` calls with explicit `timingMode` settings.
 
-12. **Death animation uses `SKEmitterNode` for faction-specific particles.** `.sks` particle files: `DeathEmitter_Ironwright`, `DeathEmitter_FeyCourts`, `DeathEmitter_Demonic`.
+12. **Death animation uses `SKEmitterNode` for faction-specific particles.** `.sks` particle files: `DeathEmitter_Ironwright`, `DeathEmitter_FeyCourts`, `DeathEmitter_Demonic`, `DeathEmitter_Celestial` (divine_radiance), `DeathEmitter_Endless` (spectral_mist).
 
 13. **Blocker assignment drag converted from RNGH `Gesture.Pan()` to SpriteKit `touchesMoved`.** `cardNode.frame.intersects(slotNode.frame)` for overlap detection.
 
@@ -3612,9 +4142,9 @@ This revision is a full rewrite of the technology-specific sections of the docum
 
 ---
 
-*Document Version: 3.1*
-*Last Updated: 2026-02-16*
-*Status: Revised — Native iOS Swift/SwiftUI/SpriteKit. StoreKit 2. App Store only. Admin dashboard as separate Next.js web application (4-5 screens). Player/data management via Supabase Dashboard. All React Native / Expo / TypeScript client references removed. All SpriteKit and SwiftUI animation types specified. Ready for Claude Code iOS implementation.*
+*Document Version: 4.0*
+*Last Updated: 2026-02-19*
+*Status: Revised — Faction expansion (3 → 5 factions), Ironwright retheme, Planar Ruins card type, 9 keywords (added Haste + Ward), Exalt/Persist mechanic visuals, 5-faction onboarding carousel, ruin UI throughout. Native iOS Swift/SwiftUI/SpriteKit. StoreKit 2. App Store only. Admin dashboard as separate Next.js web application (4-5 screens). Player/data management via Supabase Dashboard. Ready for Claude Code iOS implementation.*
 
 ---
 
@@ -3624,3 +4154,4 @@ This revision is a full rewrite of the technology-specific sections of the docum
 |---|---|---|
 | 2026-02-16 | Initial Version 3.0: full platform migration from React Native/Expo to Swift/SwiftUI/SpriteKit. Admin dashboard set as separate React + Vite web app. | All |
 | 2026-02-16 | Admin Dashboard technology: React + Vite → Next.js (TypeScript). Part B updated throughout. "Two Applications" → "Three Tools" (CLAUDE.md change). Player Lookup and Match Monitor reassigned to Supabase Dashboard. Admin Dashboard scoped to 4-5 custom screens. Project structure updated to Next.js conventions. | Part B (Sections 16-18) |
+| 2026-02-19 | **Version 4.0 — Faction Expansion**: 3 → 5 factions (added Celestial Crusade + The Endless). Ironwright retheme (steampunk → brutalist space-industrial). 7 → 9 keywords (added Haste, Ward). New card type: Planar Ruins. New sections 4A (Planar Ruins UI), 4B (Haste/Ward visuals), 4C (Exalt/Persist visuals). Death animation switch expanded to 5 factions. FactionTabBar expanded to 6 items (All + 5 factions). AppColors expanded with `celestialCrusade` and `endless`. Onboarding faction selection redesigned as 5-faction carousel. Deck builder updated for ruins (type filter, ruin section, ruin count indicator, max 2 ruins validation). Collection filter updated with Planar Ruin card type and 9 keywords. Modifier pool count 240 → 336. File structure updated with BoardRuinNode, RuinEvolutionFlowView, FactionPickerView, RuinCardView, RuinDetailView, new particle emitters (Celestial, Endless, RuinCrumble). | 3, 4A (new), 4B (new), 4C (new), 5, 7, 13, 16, 18 |

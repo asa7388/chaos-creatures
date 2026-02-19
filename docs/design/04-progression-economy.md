@@ -1,7 +1,7 @@
 # Chaos Creatures — Progression & Economy Design
 
-**Document Version:** 3.0
-**Last Updated:** 2026-02-16
+**Document Version:** 4.0
+**Last Updated:** 2026-02-19
 **Status:** Code-Ready
 **Infrastructure:** Supabase (Postgres + Edge Functions), Railway (Node.js game server), PostHog (analytics), Swift + SwiftUI + SpriteKit iOS client, StoreKit 2 payments
 
@@ -256,17 +256,17 @@ Average weekly quest value = (150 + 200) ÷ 2 = 175 Dust for FREE tier.
 
 ### 2.6 Cross-Faction Unlock Model
 
-A second faction costs 150 Dust (one card pack from that faction). Once purchased, the faction is fully unlocked.
+Additional factions cost 150 Dust each (one card pack from that faction). Once purchased, the faction is fully unlocked.
 
-| Player Type | Dust/Week | Days to Unlock 2nd Faction | Days to Unlock 3rd Faction |
-|---|---|---|---|
-| Free Casual | 1,120 | 150 ÷ 160/day = **0.94 days** | **1.88 days** |
-| Free Regular | 1,330 | 150 ÷ 190/day = **0.79 days** | **1.58 days** |
-| Free Hardcore | 1,680 | 150 ÷ 240/day = **0.63 days** | **1.25 days** |
-| Mid Regular | 1,820 | 150 ÷ 260/day = **0.58 days** | **1.15 days** |
-| Top Regular | 2,310 | 150 ÷ 330/day = **0.45 days** | **0.91 days** |
+| Player Type | Dust/Week | Days to Unlock 2nd Faction | Days to Unlock 3rd Faction | Days to Unlock 4th Faction | Days to Unlock 5th Faction |
+|---|---|---|---|---|---|
+| Free Casual | 1,120 | 150 ÷ 160/day = **0.94 days** | **1.88 days** | **2.81 days** | **3.75 days** |
+| Free Regular | 1,330 | 150 ÷ 190/day = **0.79 days** | **1.58 days** | **2.37 days** | **3.16 days** |
+| Free Hardcore | 1,680 | 150 ÷ 240/day = **0.63 days** | **1.25 days** | **1.88 days** | **2.50 days** |
+| Mid Regular | 1,820 | 150 ÷ 260/day = **0.58 days** | **1.15 days** | **1.73 days** | **2.31 days** |
+| Top Regular | 2,310 | 150 ÷ 330/day = **0.45 days** | **0.91 days** | **1.36 days** | **1.82 days** |
 
-**Conclusion:** Faction unlocking is never a meaningful gate. Any player can unlock all 3 factions within their first 2 days without slowing other progression. The 150 Dust cost is a commitment signal, not a barrier.
+**Conclusion:** Faction unlocking is never a meaningful gate. Any player can unlock all 5 factions within their first week without slowing other progression. The 150 Dust cost is a commitment signal, not a barrier.
 
 ### 2.7 Inflation Prevention and Dust Sinks
 
@@ -276,11 +276,11 @@ A second faction costs 150 Dust (one card pack from that faction). Once purchase
 
 1. **Shard ladder (exponential cost):** 30 → 60 → 120 → 240. Legendary shards cost 8× Uncommon shards. Even with 50 fully-evolved cards, a player can always sink dust into the next Legendary evolution.
 
-2. **Full Legendary deck target:** 20 cards × 450 Dust = 9,000 Dust per deck. At 1,330 Dust/week (Free Regular), this is 6.8 weeks of pure shard spending. There are 3 factions. Total Legendary completion across all factions: 150 cards × 450 = 67,500 Dust = 50 weeks.
+2. **Full Legendary deck target:** 20 cards × 450 Dust = 9,000 Dust per deck. At 1,330 Dust/week (Free Regular), this is 6.8 weeks of pure shard spending. There are 5 factions. Total Legendary completion across all factions: 250 cards × 450 = 112,500 Dust = 85 weeks.
 
 3. **Multi-path evolution value:** Because evolution outcomes are probabilistic (70/30), players may evolve the same base card multiple times to get a preferred modifier/attunement combination. Duplicate Commons in a collection are spending opportunities.
 
-4. **Avatar cosmetics:** 300 Dust each. At launch: 6 avatars available beyond starters. 6 × 300 = 1,800 Dust of permanent cosmetic sinks.
+4. **Avatar cosmetics:** 300 Dust each. At launch: 10 avatars available beyond starters (2 per faction). 10 × 300 = 3,000 Dust of permanent cosmetic sinks.
 
 5. **Seasonal content:** New cosmetics every 8 weeks. See Section 7.4.
 
@@ -313,7 +313,7 @@ At this distribution, the Free Regular player never accumulates a problematic du
 | Cards at Rare+ | 5–8 | 15–18 | 20 | 20 |
 | Cards at Epic+ | 0–2 | 4–7 | 12–16 | 20 |
 | Cards at Legendary | 0 | 1–2 | 5–8 | 15–20 |
-| Factions unlocked | 1–2 | 2–3 | 3 | 3 |
+| Factions unlocked | 1–2 | 2–3 | 3–4 | 5 |
 | Competitive rank | Bronze/Silver | Silver/Gold | Gold/Platinum | Platinum/Diamond |
 
 **Mid-Tier Subscriber (5 games/day, 1,820 Dust/week):**
@@ -323,7 +323,7 @@ At this distribution, the Free Regular player never accumulates a problematic du
 | Lifetime Dust earned | ~7,880 | ~23,640 | ~47,280 | ~94,560 |
 | Commons owned | 60–70 | 90–100 (cap) | 100 (cap) | 100 (cap) |
 | Cards at Legendary | 0–1 | 3–5 | 10–15 | 25–35 |
-| Factions unlocked | 2 | 3 | 3 | 3 |
+| Factions unlocked | 2 | 3–4 | 5 | 5 |
 | Bonus Commons received | 3 | 9 | 18 | 36 |
 
 **High-Tier Subscriber (5 games/day, 2,310 Dust/week + 1 free Legendary shard/month):**
@@ -528,7 +528,7 @@ All MissionType values map to in-game events produced by the Railway game server
 | `WIN_GAMES` | `GAME_END` with `winner_id == player_id` | MatchRecord |
 | `PLAY_GAMES` | `GAME_END` (any result) | MatchRecord |
 | `PLAY_CREATURES` | `CARD_PLAYED` where card_type == CREATURE | GameLogEntry |
-| `PLAY_SPELLS` | `CARD_PLAYED` where card_type == SPELL or STABILIZER | GameLogEntry |
+| `PLAY_SPELLS` | `CARD_PLAYED` where card_type == SPELL or STABILIZER or PLANAR_RUIN | GameLogEntry |
 | `PLAY_CARDS` | `CARD_PLAYED` (any type) | GameLogEntry |
 | `EVOLVE_CARD` | Evolution event (Supabase, post-game) | CardInstance update |
 | `TRIGGER_CHAOS_EVENTS` | `EVENT_TRIGGERED` where event_type == CHAOS | GameLogEntry |
@@ -734,14 +734,14 @@ This is 5–15% of weekly Dust income. Meaningful, but quests dominate income at
 - Quick faction lore overview (SwiftUI `TabView` pager — skippable)
 
 **Step 2 — Trial phase** (10–20 minutes):
-- Receive 3 loaner decks (20 Commons each, one per faction, premade fixed lists, cannot be evolved or kept)
+- Receive 5 loaner decks (20 Commons each, one per faction, premade fixed lists, cannot be evolved or kept)
 - Play 1 mandatory tutorial match vs AI (Ironwright tutorial deck)
 - Option to play 1–2 additional matches per faction vs AI
 
 **Step 3 — Faction commitment** (permanent choice):
-- Select starting faction from a SwiftUI picker screen showing faction art, lore, and mechanic summary
+- Select starting faction from a SwiftUI picker screen showing faction art, lore, and mechanic summary (5 factions: Ironwright Collective, Fey Courts, Demonic Kingdoms, Celestial Crusade, The Endless)
 - The 20 Commons from that trial deck become owned `CardInstance` records, fully evolvable
-- Other 40 trial cards are deleted from player account
+- Other 80 trial cards are deleted from player account
 
 **Step 4 — Starter reward grant** (automatic, no user action required):
 ```json
@@ -805,8 +805,8 @@ This grant executes via a Supabase Edge Function triggered on the `onboarding_co
 **Week 4 — Competitive viability:**
 - Full deck at Uncommon, 8–12 at Rare, 2–3 at Epic
 - Deck is competitive in Silver/Gold ranked
-- Decision point: Save 240 Dust for first Legendary Shard, or unlock 2nd faction (150 Dust)?
-- Most players: unlock 2nd faction first (faster and emotionally rewarding)
+- Decision point: Save 240 Dust for first Legendary Shard, or unlock additional factions (150 Dust each)?
+- Most players: unlock 2nd and 3rd factions first (faster and emotionally rewarding)
 
 **End of Month 1 expected state:**
 
@@ -820,7 +820,7 @@ This grant executes via a Supabase Edge Function triggered on the `onboarding_co
 | Epic+ cards | 0–1 | 2–4 |
 | Legendary cards | 0 | 0 |
 | Rank | Bronze/Silver | Silver/Gold |
-| Factions unlocked | 1 | 1–2 |
+| Factions unlocked | 1–2 | 2–3 |
 
 ### 6.4 Competitive Deck Timeline
 
@@ -873,6 +873,125 @@ Faction mastery tracks a player's experience with each faction independently. Ev
 
 **Implementation:** `mastery_level`, `mastery_xp`, and `games_played` fields already exist in the player-faction junction (per `02-card-data-model.md`). XP is granted server-side by the Railway game server at match completion alongside regular XP. Level-up check: `mastery_xp >= mastery_level * 100`. Unlock grants happen atomically with level-up.
 
+**Faction mastery applies to all 5 factions:** Ironwright Collective (Augment), Fey Courts (Bond), Demonic Kingdoms (Corruption), Celestial Crusade (Exalt), and The Endless (Persist). Each faction has its own independent mastery track. Players who explore all 5 factions have 5 independent mastery progressions.
+
+### 6.6 Planar Ruin Acquisition and Evolution Economy
+
+Planar Ruins are a distinct card type (see `02-card-data-model.md` for `PLANAR_RUIN` and `PHASE1C-planar-ruins.md` for full system design). They have their own acquisition and evolution economy that is deliberately separate from the creature card economy.
+
+**Core principle: Ruins are earned through gameplay only. No Chaos Dust cost for ruin evolution. No real money on ruins.**
+
+#### Ruin Acquisition Sources
+
+| Source | Ruin Type | Frequency | Notes |
+|---|---|---|---|
+| Match rewards (win) | Random neutral ruin | ~15% chance per win | Ruin drop pool: 8 neutral archetypes, equal weight |
+| Match rewards (loss) | Random neutral ruin | ~5% chance per loss | Lower drop rate incentivizes winning |
+| Quest completion (HARD daily) | Random neutral ruin | ~10% chance on completion | Bonus ruin on top of Dust/shard reward |
+| Weekly quest completion | Random neutral ruin | ~20% chance per weekly quest | Higher drop rate for weekly commitment |
+| Season milestone (Gold+) | Specific neutral ruin | 1 per season (guaranteed at Gold rank) | Guaranteed ruin for committed players |
+| Onboarding | 1 Resonance Spire (starter ruin) | One-time | Given during onboarding after first match |
+
+**Duplicate ruin handling:** If a player already owns a neutral ruin archetype and receives a duplicate, the duplicate is converted into **ruin familiarity energy** (+3 familiarity) applied to the existing copy. This prevents waste while feeding evolution progress.
+
+#### Ruin Familiarity (Evolution Energy)
+
+Unlike creature evolution (which uses chaos energy from battles), ruin evolution uses a **familiarity** system. A ruin gains familiarity by being included in a deck during battles.
+
+| Condition | Familiarity Gained |
+|---|---|
+| Battle completed with ruin in deck (win) | +2 familiarity |
+| Battle completed with ruin in deck (loss) | +1 familiarity |
+| Ruin survived the entire battle on the field | +1 bonus familiarity |
+
+**Evolution threshold:** A neutral ruin requires **10 familiarity** to be eligible for faction evolution. At 50% win rate with the ruin in every game, this takes approximately **7 battles** (7 × 1.5 avg = 10.5 familiarity).
+
+#### Ruin Evolution Cost
+
+**Ruin evolution costs zero Chaos Dust and zero shards.** The cost is familiarity (earned through play) plus the player's time investment. This makes ruins a pure gameplay reward.
+
+**Ruin evolution uses the same subscription tier system for choice breadth:**
+
+| Subscription Tier | Evolution Options Presented |
+|---|---|
+| Free (Planar Shard) | Pick 1 of 2 faction evolution paths |
+| Mid (Refined Shard) | Pick 1 of 3 faction evolution paths |
+| Top (Prismatic Shard) | Pick 1 of 4 faction evolution paths |
+
+**Important:** The options presented are faction-specific evolution variants, NOT modifier choices. Each option transforms the ruin into a different faction's version with that faction's specific effect and destruction penalty. Once evolved, the ruin is faction-locked.
+
+#### Ruin Deck Rules
+
+- **Max 2 ruins per deck** (to preserve creature-heavy deckbuilding as the norm)
+- **Max 1 ruin on the battlefield at a time** (takes a creature slot)
+- **Neutral ruins** can be included in any faction's deck
+- **Evolved ruins** can only be included in the matching faction's deck
+
+#### Ruin Collection Achievements
+
+| Achievement | Condition | Reward |
+|---|---|---|
+| Ruin Explorer | Collect first Planar Ruin | 50 Dust |
+| Archaeologist | Collect 4 distinct neutral ruin archetypes | 200 Dust + 1 Rare Shard |
+| Master Archaeologist | Collect all 8 neutral ruin archetypes | 500 Dust + 1 Legendary Shard |
+| Ruin Attunement | Evolve first ruin to a faction variant | 100 Dust |
+| Faction Ruin Master | Own 3+ evolved ruins in one faction | Faction-specific ruin card back |
+| Ruin Collector | Own 20+ total ruin variants (neutral + evolved) | "Ruin Scholar" title |
+
+### 6.7 Faction-Specific Quests (Celestial Crusade and The Endless)
+
+With the expansion to 5 factions, new daily and weekly quest templates are added for Celestial and Endless-specific mechanics.
+
+**Additional Daily Quest Templates:**
+
+| Quest ID | MissionType | Difficulty | Description | Target | Base Dust |
+|---|---|---|---|---|---|
+| D21 | `TRIGGER_EXALT` | MEDIUM | Activate 5 Exalt effects in battles | 5 | 30 |
+| D22 | `TRIGGER_PERSIST` | MEDIUM | Trigger 5 Persist death effects in battles | 5 | 30 |
+| D23 | `PLAY_RUINS` | EASY | Play 3 Planar Ruins in battles | 3 | 20 |
+| D24 | `DESTROY_RUINS` | MEDIUM | Destroy 2 enemy Planar Ruins in battles | 2 | 30 |
+| D25 | `TRIGGER_EXALT` | HARD | Activate 15 Exalt effects in battles | 15 | 45 |
+| D26 | `TRIGGER_PERSIST` | HARD | Trigger 15 Persist death effects in battles | 15 | 45 |
+| D27 | `HASTE_ATTACKS` | MEDIUM | Attack with 5 Haste creatures on their deployment turn | 5 | 30 |
+| D28 | `WARD_BLOCKS` | EASY | Have Ward absorb 3 targeting attempts | 3 | 20 |
+
+**Additional Weekly Quest Templates:**
+
+| Quest ID | MissionType | Description | Target | Base Dust (FREE) | Shard Reward |
+|---|---|---|---|---|---|
+| W11 | `TRIGGER_EXALT` | Activate 30 Exalt effects this week | 30 | 150 | 1 Rare |
+| W12 | `TRIGGER_PERSIST` | Trigger 30 Persist death effects this week | 30 | 150 | 1 Rare |
+| W13 | `PLAY_RUINS` | Play 10 Planar Ruins this week | 10 | 150 | 1 Rare |
+| W14 | `EVOLVE_RUIN` | Evolve 1 Planar Ruin to a faction variant | 1 | 200 | 1 Epic |
+
+**Quest tracking for new MissionTypes:**
+
+| MissionType | Tracking Event | Source |
+|---|---|---|
+| `TRIGGER_EXALT` | `EXALT_ACTIVATED` where Exalt threshold met | GameLogEntry |
+| `TRIGGER_PERSIST` | `PERSIST_TRIGGERED` where creature death fires Persist effect | GameLogEntry |
+| `PLAY_RUINS` | `CARD_PLAYED` where card_type == PLANAR_RUIN | GameLogEntry |
+| `DESTROY_RUINS` | `RUIN_DESTROYED` where destroyer is player's creature | GameLogEntry |
+| `HASTE_ATTACKS` | `ATTACK_DECLARED` where creature has Haste and was played this turn | GameLogEntry |
+| `WARD_BLOCKS` | `WARD_ABSORBED` where Ward negated a targeting effect | GameLogEntry |
+| `EVOLVE_RUIN` | Ruin evolution event (Supabase, post-familiarity threshold) | PlayerRuin update |
+
+### 6.8 Faction Mastery Achievements (Celestial and Endless)
+
+| Achievement | Condition | Reward |
+|---|---|---|
+| Celestial Initiate | Play 10 games with a Celestial Crusade deck | 50 Dust |
+| Celestial Commander | Reach Faction Mastery Level 5 with Celestial Crusade | Celestial avatar unlock |
+| Celestial Champion | Reach Faction Mastery Level 10 with Celestial Crusade | "Champion of the Crusade" title |
+| Exalt Master | Activate 100 Exalt effects across all games | 200 Dust |
+| Endless Initiate | Play 10 games with The Endless deck | 50 Dust |
+| Endless Commander | Reach Faction Mastery Level 5 with The Endless | Endless avatar unlock |
+| Endless Champion | Reach Faction Mastery Level 10 with The Endless | "Death's Herald" title |
+| Persist Master | Trigger 100 Persist death effects across all games | 200 Dust |
+| Five Factions | Reach Faction Mastery Level 3 in all 5 factions | 500 Dust + "Planar Wanderer" title |
+| Haste Blitz | Attack with 50 Haste creatures on their deployment turn | 100 Dust |
+| Ward Sentinel | Have Ward absorb 50 targeting attempts | 100 Dust |
+
 ---
 
 ## 7. Long-Term Economy Health
@@ -880,9 +999,9 @@ Faction mastery tracks a player's experience with each faction independently. Ev
 ### 7.1 When Does a Free Player "Catch Up"?
 
 **Card quantity:** Never. Card caps by tier:
-- Free: 50 per faction × 3 factions = 150 total
-- Mid: 100 per faction × 3 = 300 total
-- High: 200 per faction × 3 = 600 total
+- Free: 50 per faction × 5 factions = 250 total
+- Mid: 100 per faction × 5 = 500 total
+- High: 200 per faction × 5 = 1,000 total
 
 Free players curate; subscribers collect breadth. Both are valid playstyles.
 
@@ -924,9 +1043,9 @@ Free players curate; subscribers collect breadth. Both are valid playstyles.
 - Targeted card additions: 5–10 new Commons per faction to refresh draft possibilities
 
 **Every 6–8 months:**
-- **New faction release** (primary economy event): 60–80 new Commons, new exclusive mechanic, new modifier pool
-- Free players: unlock first faction pack (150 Dust), then grind new faction the same as launch experience
-- Subscribers: immediately build out the new faction with their higher card limits and extra monthly Commons
+- **New content release** (primary economy event): 30–50 new cards per faction, new Planar Ruin archetypes, new modifier additions
+- Free players: grind new cards the same as launch experience
+- Subscribers: build out new content faster with higher card limits and extra monthly Commons
 
 **Every 12 months:**
 - Major feature addition (e.g., PvE campaign mode, draft format, guild system)
@@ -1020,6 +1139,7 @@ For Free Regular: `max(113/35, 9000/798) = max(3.2, 11.3) = 11.3 weeks` of incom
 | Full Legendary deck (20 cards) | Week 52 | Week 38–42 | Week 28–32 | Week 23–27 |
 | 2nd Faction unlocked | Day 1–2 | Day 1 | Day 1 | Day 1 |
 | 3rd Faction unlocked | Day 2–4 | Day 2 | Day 1–2 | Day 1 |
+| 5th Faction unlocked | Day 4–7 | Day 3–4 | Day 2–3 | Day 2 |
 
 ### 8.3 Monthly Subscription Value Calculation
 
@@ -1057,9 +1177,9 @@ This JSON file is the single source of truth for all tunable economy parameters.
 
 ```json
 {
-  "_version": "3.0.0",
-  "_last_updated": "2026-02-16",
-  "_notes": "Edit this file to tune economy. Run balance dashboard to verify. Run 'railway up' to deploy.",
+  "_version": "4.0.0",
+  "_last_updated": "2026-02-19",
+  "_notes": "Edit this file to tune economy. Run balance dashboard to verify. Run 'railway up' to deploy. Updated for 5 factions + Planar Ruins.",
 
   "energy": {
     "win_energy_per_card": 2,
@@ -1184,6 +1304,20 @@ This JSON file is the single source of truth for all tunable economy parameters.
     "FREE": 3,
     "MID": 6,
     "HIGH": 10
+  },
+
+  "ruin_economy": {
+    "drop_chance_win": 0.15,
+    "drop_chance_loss": 0.05,
+    "drop_chance_hard_quest": 0.10,
+    "drop_chance_weekly_quest": 0.20,
+    "familiarity_per_win": 2,
+    "familiarity_per_loss": 1,
+    "familiarity_survival_bonus": 1,
+    "familiarity_duplicate_bonus": 3,
+    "evolution_threshold": 10,
+    "max_ruins_per_deck": 2,
+    "max_ruins_on_field": 1
   }
 }
 ```
@@ -1684,3 +1818,16 @@ These are the screens and components the iOS app must implement. All data is rec
 ### Changes Made in Version 3.2 (2026-02-16)
 
 1. **Added Section 6.5 Faction Mastery Progression.** New section defining mastery XP sources (+10/game, +5 win bonus), linear level curve (100 XP/level, max 10), and unlock milestones (level 3 card back, level 5 avatar, level 7 battlefield skin, level 10 title). Closes NEW-09 audit item.
+
+### Changes Made in Version 4.0 (2026-02-19) — Faction Expansion + Planar Ruins
+
+**Summary:** Updated for 5-faction expansion (Celestial Crusade, The Endless) and Planar Ruins card type. All economy systems now account for 5 factions instead of 3.
+
+1. **3 factions to 5 factions throughout.** All faction-count references updated: collection limits (150/300/600 total to 250/500/1,000), cross-faction unlock model (added 4th and 5th faction columns), onboarding (3 trial decks to 5, 40 trial cards deleted to 80), Legendary completion timeline (50 weeks to 85 weeks across all factions), content cadence.
+2. **Added Section 6.6: Planar Ruin Acquisition and Evolution Economy.** Complete ruin economy: acquisition sources (match drops 15%/5%, quest drops, season milestones, onboarding starter ruin), familiarity system (2/win, 1/loss, +1 survival bonus), evolution threshold (10 familiarity = ~7 battles), zero-Dust evolution cost, subscription tier choice breadth for ruin evolution, deck rules (max 2 per deck, max 1 on field), ruin collection achievements (6 achievement templates), duplicate ruin handling.
+3. **Added Section 6.7: Faction-Specific Quests (Celestial/Endless).** 8 new daily quest templates (D21-D28) for Exalt, Persist, Haste, Ward, and ruin mechanics. 4 new weekly quest templates (W11-W14). New MissionType tracking events for TRIGGER_EXALT, TRIGGER_PERSIST, PLAY_RUINS, DESTROY_RUINS, HASTE_ATTACKS, WARD_BLOCKS, EVOLVE_RUIN.
+4. **Added Section 6.8: Faction Mastery Achievements (Celestial/Endless).** 11 new achievement templates including faction initiate/commander/champion for both new factions, Exalt/Persist mastery, Five Factions achievement, Haste/Ward achievements.
+5. **Updated economy.config.json.** Added `ruin_economy` config block with all tunable ruin parameters (drop chances, familiarity rates, evolution threshold, deck limits).
+6. **Updated faction mastery (Section 6.5).** Added note that mastery applies to all 5 factions.
+7. **Updated avatar cosmetic sinks.** 6 avatars to 10 (2 per faction), 1,800 Dust to 3,000 Dust.
+8. **Updated quest tracking.** PLAY_SPELLS now includes PLANAR_RUIN card type.

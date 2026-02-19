@@ -195,6 +195,7 @@ ChaosCreatures/
       CollectionService.swift           # Card/deck CRUD via Edge Functions
       EconomyService.swift              # Dust, shards, purchases
       EvolutionService.swift            # Evolution flow + polling
+      RuinService.swift                 # Ruin collection, evolution, familiarity
       MatchmakingService.swift          # Queue join/leave + match found listener
       MatchService.swift                # Realtime channel for active match
       ImageCacheService.swift           # URLCache + disk cache for card art
@@ -206,6 +207,7 @@ ChaosCreatures/
       CardInstance.swift                # Codable struct
       Deck.swift                        # Codable struct
       BattleCard.swift                  # Runtime battle representation
+      PlayerRuin.swift                  # Codable struct for ruin collection
       GameState.swift                   # Client-side game state projection
       MatchEvent.swift                  # All server event types (Codable enums)
       PlayerAction.swift                # All client action types
@@ -234,6 +236,10 @@ ChaosCreatures/
         EvolutionFlowView.swift         # Multi-step evolution ceremony
         ModifierPickerView.swift        # Choose visual modifier
         EvolutionRevealView.swift       # Dramatic art reveal
+      Ruins/
+        RuinCollectionView.swift        # Ruin inventory grid
+        RuinDetailView.swift            # Ruin info + evolution button
+        RuinEvolutionView.swift         # Faction evolution choice UI
       Profile/
         ProfileView.swift               # Player stats, rank, settings
         SettingsView.swift
@@ -251,6 +257,7 @@ ChaosCreatures/
       Nodes/
         BoardNode.swift                 # 5-slot board layout (per player)
         CreatureNode.swift              # Card on board (art, stats, keywords)
+        RuinNode.swift                  # Planar Ruin on board (art, HP, effect)
         HandNode.swift                  # Fan of cards in hand
         HandCardNode.swift              # Individual hand card
         AvatarNode.swift                # Player avatar + HP bar
@@ -1089,8 +1096,8 @@ CREATE POLICY "Public profile read"
 CREATE TABLE factions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  short_name TEXT UNIQUE NOT NULL CHECK (short_name IN ('IRONWRIGHT', 'FEY_COURTS', 'DEMONIC_KINGDOMS')),
-  exclusive_mechanic TEXT NOT NULL CHECK (exclusive_mechanic IN ('AUGMENT', 'BOND', 'CORRUPTION')),
+  short_name TEXT UNIQUE NOT NULL CHECK (short_name IN ('IRONWRIGHT', 'FEY_COURTS', 'DEMONIC_KINGDOMS', 'CELESTIAL', 'ENDLESS')),
+  exclusive_mechanic TEXT NOT NULL CHECK (exclusive_mechanic IN ('AUGMENT', 'BOND', 'CORRUPTION', 'EXALT', 'PERSIST')),
   art_prompt_prefix TEXT NOT NULL,
   flavor_voice TEXT NOT NULL,
   name_voice TEXT NOT NULL,
@@ -1114,7 +1121,7 @@ CREATE POLICY "Anyone can read factions" ON factions FOR SELECT USING (true);
 CREATE TABLE card_templates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  card_type TEXT NOT NULL CHECK (card_type IN ('CREATURE', 'SPELL', 'STABILIZER')),
+  card_type TEXT NOT NULL CHECK (card_type IN ('CREATURE', 'SPELL', 'STABILIZER', 'PLANAR_RUIN')),
   faction_id UUID NOT NULL REFERENCES factions(id),
 
   -- Base stats
@@ -1296,7 +1303,7 @@ CREATE TABLE modifier_definitions (
   keyword_is_attuned BOOLEAN NOT NULL DEFAULT FALSE,
   instability_adjustment INTEGER NOT NULL DEFAULT 0,
   instability_is_attuned BOOLEAN NOT NULL DEFAULT FALSE,
-  faction_mechanic TEXT CHECK (faction_mechanic IN ('AUGMENT', 'BOND', 'CORRUPTION')),
+  faction_mechanic TEXT CHECK (faction_mechanic IN ('AUGMENT', 'BOND', 'CORRUPTION', 'EXALT', 'PERSIST')),
   power_rating INTEGER NOT NULL DEFAULT 5 CHECK (power_rating BETWEEN 1 AND 10)
 );
 
@@ -1477,6 +1484,98 @@ INSERT INTO economy_config (key, value, description) VALUES
 ALTER TABLE economy_config ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read config" ON economy_config FOR SELECT USING (true);
 CREATE POLICY "Service role manages config" ON economy_config FOR ALL USING (auth.role() = 'service_role');
+```
+
+#### `ruin_templates` (Planar Ruin archetypes)
+
+```sql
+CREATE TABLE ruin_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  cm_cost INTEGER NOT NULL CHECK (cm_cost BETWEEN 2 AND 6),
+  base_hp INTEGER NOT NULL CHECK (base_hp > 0),
+  base_instability INTEGER NOT NULL DEFAULT 0 CHECK (base_instability BETWEEN 0 AND 2),
+  neutral_effect_description TEXT NOT NULL,
+  destruction_penalty_description TEXT NOT NULL,
+  visual_description TEXT NOT NULL DEFAULT '',
+  discovery_lore TEXT NOT NULL DEFAULT '',
+  art_url TEXT NOT NULL DEFAULT '',
+  art_prompt TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE ruin_templates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read ruin templates" ON ruin_templates FOR SELECT USING (true);
+CREATE POLICY "Service role manages ruin templates" ON ruin_templates FOR ALL USING (auth.role() = 'service_role');
+```
+
+#### `ruin_effects` (faction-specific ruin evolution effects)
+
+```sql
+CREATE TABLE ruin_effects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ruin_template_id UUID NOT NULL REFERENCES ruin_templates(id),
+  faction_id UUID REFERENCES factions(id),  -- NULL = neutral effect
+  effect_description TEXT NOT NULL,
+  destruction_penalty TEXT NOT NULL,
+  evolution_flavor_text TEXT NOT NULL DEFAULT '',
+  art_url TEXT NOT NULL DEFAULT '',
+  art_prompt TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE ruin_effects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read ruin effects" ON ruin_effects FOR SELECT USING (true);
+CREATE POLICY "Service role manages ruin effects" ON ruin_effects FOR ALL USING (auth.role() = 'service_role');
+```
+
+#### `ruin_evolution_options` (subscription-tiered evolution choices)
+
+```sql
+CREATE TABLE ruin_evolution_options (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ruin_template_id UUID NOT NULL REFERENCES ruin_templates(id),
+  ruin_effect_id UUID NOT NULL REFERENCES ruin_effects(id),
+  faction_id UUID NOT NULL REFERENCES factions(id),
+  tier_required TEXT NOT NULL DEFAULT 'FREE' CHECK (tier_required IN ('FREE', 'MID', 'HIGH')),
+  -- FREE: always included in option pool
+  -- MID: included when player has MID+ subscription
+  -- HIGH: included only when player has HIGH subscription
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE ruin_evolution_options ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read ruin evolution options" ON ruin_evolution_options FOR SELECT USING (true);
+CREATE POLICY "Service role manages ruin evolution options" ON ruin_evolution_options FOR ALL USING (auth.role() = 'service_role');
+```
+
+#### `player_ruins` (player ruin collection)
+
+```sql
+CREATE TABLE player_ruins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  ruin_template_id UUID NOT NULL REFERENCES ruin_templates(id),
+  is_evolved BOOLEAN NOT NULL DEFAULT FALSE,
+  evolved_faction_id UUID REFERENCES factions(id),  -- NULL when neutral
+  chosen_effect_id UUID REFERENCES ruin_effects(id),  -- NULL when neutral
+  familiarity INTEGER NOT NULL DEFAULT 0,
+  games_played INTEGER NOT NULL DEFAULT 0,
+  art_url TEXT NOT NULL DEFAULT '',
+  in_deck_ids UUID[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  evolved_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_player_ruins_owner ON player_ruins(player_id);
+CREATE INDEX idx_player_ruins_template ON player_ruins(player_id, ruin_template_id);
+
+ALTER TABLE player_ruins ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Players read own ruins" ON player_ruins FOR SELECT
+  USING (auth.uid() = (SELECT auth_id FROM players WHERE id = player_id));
+CREATE POLICY "Service role full access" ON player_ruins FOR ALL
+  USING (auth.role() = 'service_role');
 ```
 
 #### `generation_jobs` (AI generation tracking)
@@ -1717,7 +1816,16 @@ Orchestrates the full evolution flow. The evolution is a multi-step async proces
 4. **Poll status** -- client polls until image and text are ready
 5. **Confirm choices** -- player picks modifier and name, server updates card
 
-### 4.5 Matchmaking Service (Supabase Edge Functions + Realtime)
+### 4.5 Ruin Service (Supabase Edge Functions)
+
+Manages Planar Ruin collection, familiarity tracking, and faction-specific evolution. All logic runs in Edge Functions.
+
+- **Ruin collection:** Players acquire ruins from match win drops (15%), match loss drops (5%), quest rewards, and season milestones. Managed via `player_ruins` table.
+- **Familiarity tracking:** After each match, all ruins in the player's deck gain familiarity: +2 per win, +1 per loss, +1 survival bonus if the ruin was on the field at match end. Familiarity threshold for evolution: 10 (~7 battles).
+- **Ruin evolution:** When familiarity reaches 10, the ruin can evolve from neutral into a faction-specific variant. The Edge Function fetches available `ruin_evolution_options` filtered by the player's subscription tier (Free: 2 options, Mid: 3, Top: 4). Evolution costs zero Chaos Dust. See Section 7.8 for REST endpoints.
+- **Deck validation:** Decks may contain max 2 Planar Ruins. Only 1 Planar Ruin can be on the battlefield at a time (enforced server-side).
+
+### 4.6 Matchmaking Service (Supabase Edge Functions + Realtime)
 
 Uses a Supabase table as the matchmaking queue:
 
@@ -1790,7 +1898,7 @@ setInterval(pollMatchmakingQueue, 2000);
 
 When a match is created, both players are notified via Supabase Realtime (they subscribe to `matchmaking:{player_id}` channel).
 
-### 4.6 Game Server (Railway -- Node.js/TypeScript)
+### 4.7 Game Server (Railway -- Node.js/TypeScript)
 
 The game server is the authoritative match engine. It runs on Railway as a Node.js process.
 
@@ -1836,7 +1944,7 @@ channel.subscribe();
 setInterval(pollMatchmakingQueue, 2000);
 ```
 
-### 4.7 AI Generation Pipeline (Edge Functions + fal.ai + OpenAI)
+### 4.8 AI Generation Pipeline (Edge Functions + fal.ai + OpenAI)
 
 AI generation runs inside Edge Functions. No separate worker infrastructure needed -- Edge Functions handle the async pattern.
 
@@ -2204,6 +2312,18 @@ function resolveStartOfTurn(state: GameState): void {
     const creature = activePlayer.board[slot];
     if (!creature || !creature.is_alive) continue;
 
+    // Planar Ruin passive effect fires each turn the ruin survives
+    if (creature.card_type === 'PLANAR_RUIN') {
+      resolveRuinPassiveEffect(state, creature, activePlayer);
+      continue; // Ruins have no modifiers or Corruption self-damage
+    }
+
+    // Clear summoning sickness (creatures that entered last turn can now attack)
+    // Haste keyword: creature can attack the turn it is played (skip sickness)
+    if (creature.entered_turn === state.current_turn - 1) {
+      creature.has_summoning_sickness = false;
+    }
+
     // Corruption self-damage from modifiers
     for (const modifier of creature.modifiers) {
       if (modifier.base_effect.effect_type === 'DAMAGE' &&
@@ -2212,6 +2332,9 @@ function resolveStartOfTurn(state: GameState): void {
       }
     }
   }
+
+  // Check ruin destruction from damage accumulated via opponent effects
+  processRuinDestructions(state, activePlayer);
 
   // Check deaths from start-of-turn effects
   processDeaths(state, activePlayer);
@@ -2341,7 +2464,9 @@ function handlePlayCard(state: GameState, action: {
   activePlayer.hand = activePlayer.hand.filter(c => c.instance_id !== action.card_id);
 
   if (card.card_type === 'CREATURE' || card.card_type === 'STABILIZER') {
-    const placed = createBattleCreature(card, action.target_slot!);
+    const placed = createBattleCreature(card, action.target_slot!, state.current_turn);
+    // Haste: creature can attack immediately (no summoning sickness)
+    placed.has_summoning_sickness = !placed.active_keywords.includes('HASTE');
     activePlayer.board[action.target_slot!] = placed;
 
     // Fire ON_PLAY triggered abilities
@@ -2354,6 +2479,22 @@ function handlePlayCard(state: GameState, action: {
   } else if (card.card_type === 'SPELL') {
     resolveSpellEffect(state, card, action.target_id);
     activePlayer.graveyard.push(card);
+  } else if (card.card_type === 'PLANAR_RUIN') {
+    // Planar Ruins occupy a board slot like creatures/stabilizers
+    if (action.target_slot === undefined) throw new GameError('NO_SLOT', 'Must specify board slot');
+    if (action.target_slot < 0 || action.target_slot > 4) throw new GameError('INVALID_SLOT', 'Slot must be 0-4');
+    if (activePlayer.board[action.target_slot] !== null) throw new GameError('SLOT_OCCUPIED', 'Slot is occupied');
+
+    // Enforce max 1 Planar Ruin on the field per player
+    const existingRuins = activePlayer.board.filter(c => c !== null && c.card_type === 'PLANAR_RUIN');
+    if (existingRuins.length >= 1) throw new GameError('RUIN_LIMIT', 'Max 1 Planar Ruin on field');
+
+    const placedRuin = createBattleRuin(card, action.target_slot!);
+    activePlayer.board[action.target_slot!] = placedRuin;
+
+    // Planar Ruins have passive effects that apply each turn (see resolveStartOfTurn)
+    // They do NOT have summoning sickness, cannot attack, cannot block
+    recalculateInstability(activePlayer);
   }
 
   return { card, slot: action.target_slot };
@@ -2378,6 +2519,8 @@ function handleDeclareAttackers(state: GameState, action: {
     const creature = findOnBoard(activePlayer, id);
     if (!creature || !creature.is_alive) throw new GameError('INVALID_ATTACKER', `Invalid attacker: ${id}`);
     if (creature.card_type === 'STABILIZER') throw new GameError('STABILIZER_CANNOT_ATTACK', 'Stabilizers cannot attack');
+    if (creature.card_type === 'PLANAR_RUIN') throw new GameError('RUIN_CANNOT_ATTACK', 'Planar Ruins cannot attack');
+    if (creature.has_summoning_sickness) throw new GameError('SUMMONING_SICKNESS', 'Creature has summoning sickness (Haste bypasses this)');
   }
 
   // Validate Taunt forced-attack minimum
@@ -2425,6 +2568,10 @@ function handleAssignBlockers(state: GameState, action: {
     if (usedBlockers.has(blocker.instance_id)) throw new GameError('BLOCKER_USED', 'Blocker already assigned');
     if (usedAttackers.has(attacker.instance_id)) throw new GameError('ATTACKER_BLOCKED', 'Attacker already blocked');
     if (blocker.card_type === 'STABILIZER') throw new GameError('STABILIZER_CANNOT_BLOCK', 'Stabilizers cannot block');
+    if (blocker.card_type === 'PLANAR_RUIN') throw new GameError('RUIN_CANNOT_BLOCK', 'Planar Ruins cannot block');
+
+    // Ward check: Ward prevents targeting for 1 turn after entering the field
+    // (Ward blocks assignment as a blocker target, not the blocker itself)
 
     // Flying check
     if (attacker.active_keywords.includes('FLYING')) {
@@ -2495,6 +2642,11 @@ function resolveCombat(state: GameState): CombatResult {
     let blockerDamageToAttacker = blocker.attack;
     let blockerShieldAbsorbed = false;
     let attackerShieldAbsorbed = false;
+
+    // STEP 0: WARD CHECK -- Ward prevents targeting for 1 turn after entering
+    // A creature with active Ward cannot be assigned as a blocker (validated in handleAssignBlockers)
+    // Ward also protects from spell targeting (validated in resolveSpellEffect)
+    // Ward expires at the start of the creature's controller's next turn
 
     // STEP 1: SHIELD CHECK
     if (blocker.shield_active) {
@@ -2625,6 +2777,99 @@ function resolveCombat(state: GameState): CombatResult {
 
   return { pairs: combatPairs, unblocked: unblockedResults, deaths: destroyedCreatures };
 }
+```
+
+**Planar Ruin Helpers:**
+```typescript
+// Resolve ruin passive effect at start of turn
+function resolveRuinPassiveEffect(state: GameState, ruin: BattleCreature, owner: BattlePlayer): void {
+  // Apply the ruin's effect based on its neutral or evolved effect_description
+  const effect = ruin.ruin_effect ?? ruin.neutral_effect;
+  if (effect) {
+    resolveEffect(state, effect, owner);
+  }
+  // Ruin survives -- increment survival counter for familiarity tracking
+  ruin.turns_survived = (ruin.turns_survived ?? 0) + 1;
+}
+
+// Process ruin destruction when HP reaches 0
+function processRuinDestructions(state: GameState, player: BattlePlayer): void {
+  for (let slot = 0; slot < 5; slot++) {
+    const entity = player.board[slot];
+    if (!entity || entity.card_type !== 'PLANAR_RUIN') continue;
+    if (entity.health > 0) continue;
+
+    // Apply destruction penalty to the ruin's controller
+    if (entity.destruction_penalty) {
+      resolveEffect(state, entity.destruction_penalty, player);
+    }
+
+    // Remove ruin from board
+    player.board[slot] = null;
+    player.graveyard.push(entity);
+
+    // Broadcast ruin_destroyed event
+    broadcastToMatch(state.match_id, 'ruin:destroyed', {
+      slot,
+      ruin_id: entity.instance_id,
+      ruin_name: entity.current_name,
+      destruction_penalty: entity.destruction_penalty?.description ?? '',
+      player_side: player.side,
+    });
+  }
+
+  recalculateInstability(player);
+}
+
+// Ruin HP formula: CM × 3 + 1 (per PHASE1C-planar-ruins.md)
+function calculateRuinHP(cmCost: number): number {
+  return cmCost * 3 + 1;
+}
+```
+
+**Haste and Ward Keyword Logic:**
+```typescript
+// Haste: bypasses summoning sickness. Set on createBattleCreature (see Phase 5).
+// Ward: prevents being targeted by spells or effects for 1 turn after entering.
+
+function resolveSpellEffect(state: GameState, card: BattleCard, targetId?: string): void {
+  // ... existing spell logic ...
+
+  // Ward check: if the target creature has active Ward, the spell fizzles
+  if (targetId) {
+    const target = findCreatureOnAnyBoard(state, targetId);
+    if (target?.ward_active) {
+      // Ward consumed -- spell has no effect
+      target.ward_active = false;
+      broadcastToMatch(state.match_id, 'keyword:ward_triggered', {
+        creature_id: target.instance_id,
+        creature_name: target.current_name,
+        spell_name: card.current_name,
+      });
+      return; // Spell fizzles
+    }
+  }
+
+  // ... rest of spell resolution ...
+}
+
+// Ward expires at the start of the creature's controller's next turn
+function expireWardOnTurnStart(player: BattlePlayer): void {
+  for (const creature of player.board) {
+    if (creature && creature.ward_active) {
+      creature.ward_active = false;
+    }
+  }
+}
+```
+
+**Persist Keyword (ON_DEATH trigger):**
+```typescript
+// Persist fires when a creature dies, producing a faction-specific effect.
+// Persist effects are defined as ON_DEATH triggered abilities on the creature's modifiers.
+// They fire during STEP 8 of combat resolution alongside other ON_DEATH triggers.
+// The Persist mechanic is exclusive to The Endless faction.
+// Example effects: summon a weaker token, apply a debuff to the killer, draw a card.
 ```
 
 ### 5.4 Timer Management
@@ -2983,9 +3228,54 @@ The game server broadcasts to the match channel. Each message has an `event_type
     "your_rank_change": 25,
     "chaos_energy_earned": 2,
     "dust_earned": 15,
+    "ruin_familiarity_gained": [{ "player_ruin_id": "uuid", "gained": 3, "new_total": 8, "survived": true }],
+    "ruin_drop": { "ruin_template_id": "uuid", "ruin_name": "Shattered Leyline" },
     "missions_progressed": [{ "mission_id": "uuid", "new_value": 3, "completed": false }]
   },
   "sequence": 60,
+  "timestamp": 1709312345678
+}
+
+// ruin:destroyed
+{
+  "event_type": "ruin:destroyed",
+  "data": {
+    "player_side": "PLAYER_1",
+    "slot": 2,
+    "ruin_id": "uuid",
+    "ruin_name": "Shattered Leyline",
+    "destruction_penalty": "Controller loses 3 HP",
+    "player_hp_after": 15
+  },
+  "sequence": 55,
+  "timestamp": 1709312345678
+}
+
+// ruin:passive_effect
+{
+  "event_type": "ruin:passive_effect",
+  "data": {
+    "player_side": "PLAYER_1",
+    "slot": 2,
+    "ruin_id": "uuid",
+    "ruin_name": "Shattered Leyline",
+    "effect_description": "All friendly creatures gain +1 ATK this turn",
+    "affected_creatures": ["uuid-1", "uuid-2"]
+  },
+  "sequence": 56,
+  "timestamp": 1709312345678
+}
+
+// keyword:ward_triggered
+{
+  "event_type": "keyword:ward_triggered",
+  "data": {
+    "creature_id": "uuid",
+    "creature_name": "Voidwarden Sentinel",
+    "spell_name": "Flame Bolt",
+    "player_side": "PLAYER_2"
+  },
+  "sequence": 57,
   "timestamp": 1709312345678
 }
 
@@ -3024,6 +3314,11 @@ The game server broadcasts to the match channel. Each message has an `event_type
 | `STABILIZER_CANNOT_ATTACK` | Stabilizers cannot attack | Stabilizer in attacker list |
 | `STABILIZER_CANNOT_BLOCK` | Stabilizers cannot block | Stabilizer in blocker list |
 | `P1_NO_ATTACK_TURN_1` | P1 cannot attack turn 1 | P1 attacks on turn 1 |
+| `RUIN_CANNOT_ATTACK` | Planar Ruins cannot attack | Ruin in attacker list |
+| `RUIN_CANNOT_BLOCK` | Planar Ruins cannot block | Ruin in blocker list |
+| `RUIN_LIMIT` | Max 1 Planar Ruin on field | Placing a 2nd ruin |
+| `SUMMONING_SICKNESS` | Creature has summoning sickness | Creature attacks on entry turn without Haste |
+| `WARD_PROTECTS` | Ward prevents targeting | Spell targets creature with active Ward |
 | `TIMER_EXPIRED` | Timer expired | Action after timer ran out |
 | `MATCH_NOT_FOUND` | Match not found | Reconnect to invalid match |
 
@@ -3096,6 +3391,27 @@ Status values: `PENDING` | `IMAGE_PROCESSING` | `TEXT_PROCESSING` | `COMPLETE` |
 | DELETE | `/matchmaking/queue` | -- | `204 No Content` |
 | GET | `/matchmaking/status` | -- | `{ status: "QUEUED" | "MATCHED" | "NOT_QUEUED", match_id? }` |
 
+### 7.8 Ruins
+
+| Method | Path | Request | Response |
+|---|---|---|---|
+| GET | `/ruins/collection` | `?is_evolved=&faction_id=&page=1&limit=20` | `{ ruins: PlayerRuin[], total: number, page: number }` |
+| GET | `/ruins/collection/{id}` | -- | `{ ruin: PlayerRuin, template: RuinTemplate, effect: RuinEffect? }` |
+| GET | `/ruins/templates` | -- | `{ templates: RuinTemplate[] }` |
+| POST | `/ruins/evolve` | `{ player_ruin_id: string, chosen_effect_id: string }` | `{ ruin: PlayerRuin, effect: RuinEffect }` |
+| GET | `/ruins/evolve/options` | `{ player_ruin_id: string }` | `{ options: RuinEvolutionOption[], familiarity: number, threshold: number }` |
+
+**Ruin evolution flow:**
+1. Client calls `GET /ruins/evolve/options` with the player_ruin_id
+2. Server checks familiarity >= 10 (threshold) and ruin is not already evolved
+3. Server returns available faction-aligned effects filtered by player's subscription tier:
+   - **FREE**: 2 options (both from the deck's faction)
+   - **MID**: 3 options (2 from deck's faction + 1 from any)
+   - **HIGH**: 4 options (2 from deck's faction + 2 from any)
+4. Client calls `POST /ruins/evolve` with the chosen effect
+5. Server updates `player_ruins` with `is_evolved = TRUE`, `evolved_faction_id`, `chosen_effect_id`
+6. Ruin evolution costs zero Chaos Dust -- familiarity is the only gate
+
 When a match is found, the client receives a Realtime broadcast on channel `matchmaking:{player_id}`:
 
 ```json
@@ -3130,6 +3446,12 @@ chaos-creatures-art/
         step-2.webp
         step-3.webp
         step-4.webp
+  ruins/                         # Planar Ruin art
+    neutral/                     # 8 neutral ruin archetypes
+      {ruin_template_id}.webp
+    evolved/                     # Faction-evolved ruin variants
+      {faction_short_name}/
+        {ruin_template_id}.webp
   avatars/
     {avatar_id}.webp
   fallback/                      # Programmatic fallback art
@@ -3809,7 +4131,10 @@ const AssignBlockersSchema = z.object({
 | Chaos Roll | Game Server | In-memory GameState -> Roll -> Event Selection -> Trigger Resolution -> Stat Recalc -> Broadcast (Realtime) -> iOS Client |
 | Card Pack Opening | Edge Function | iOS Client -> Edge Function (deduct dust) -> PostgreSQL (create CardInstances from random templates) -> iOS Client |
 | Match Lifecycle | Game Server + PostgreSQL | Queue (PostgreSQL) -> Match (in-memory) -> Turns -> MatchRecord (PostgreSQL) + chaos energy update -> iOS Client |
-| Deck Validation | Edge Function | iOS Client -> Edge Function (validate 20 cards, single faction, copy limits, Legendary limits) -> PostgreSQL (save) -> iOS Client |
+| Deck Validation | Edge Function | iOS Client -> Edge Function (validate 20 cards, single faction, copy limits, Legendary limits, max 2 ruins, max 1 on field) -> PostgreSQL (save) -> iOS Client |
+| Ruin Evolution | Edge Function | iOS Client -> Edge Function (validate familiarity >= 10, fetch tier-filtered options) -> Player chooses effect -> Edge Function (update player_ruins) -> iOS Client |
+| Ruin Passive Effect | Game Server | Start-of-turn -> resolveRuinPassiveEffect per ruin on board -> Broadcast ruin:passive_effect -> iOS Client |
+| Ruin Destruction | Game Server | Ruin HP <= 0 -> processRuinDestructions -> Apply destruction penalty -> Broadcast ruin:destroyed -> iOS Client |
 | Economy Config Change | Admin Dashboard | Admin UI form -> PUT /admin/economy-config -> PostgreSQL `economy_config` table -> Next API call reads new value |
 | Subscription Change | StoreKit 2 + Edge Function | StoreKit 2 (iOS) -> apple-webhook Edge Function -> PostgreSQL `players.subscription_tier` update |
 | App Store Review | Xcode Cloud | Git tag `release/*` -> Xcode Cloud archive -> App Store Connect -> Apple Review |
@@ -3850,8 +4175,21 @@ const AssignBlockersSchema = z.object({
 | **Seasons and battle pass tables (WARN-08)** | Missing from schema | Added `seasons` and `battle_pass_progress` tables with RLS, plus season-end processing logic (rank reset, dust rewards, battle pass expiry) | Audit WARN-08: Required for ranked play seasons and battle pass progression per doc 04. Migration files renumbered. |
 | **Base art resolution note (WARN-09)** | No explicit mention of resolution rationale | Added clarification that base batch art uses `portrait_4_3` (768x1024) as cost optimization ($0.025/image); evolution Mid/High tier uses `square_hd` (1024x1024). Canonical per doc 03. Budget line updated. | Audit WARN-09: Makes resolution choice and cost trade-off explicit. |
 | **Admin Dashboard technology + Three Tools model** | React + Vite (TypeScript); "Two Applications" model; Player Lookup and Match Monitor in custom Admin Dashboard | Next.js (TypeScript); "Three Tools" model (Game Client, Admin Dashboard, Supabase Dashboard); Player Lookup and Match Monitor reassigned to Supabase Dashboard (built-in table views); Admin Dashboard scoped to 4-5 custom screens: card generation + review gallery, economy config editor, PostHog analytics embed, season management, balance simulation | CLAUDE.md updated: "Two Applications" -> "Three Tools." Supabase Dashboard handles player/match lookup natively. Admin Dashboard reduced to purpose-built screens only. Sections 1.2 and 9 updated. |
+| **Faction expansion (v4.0)** | 3 factions (Ironwright, Fey Courts, Demonic Kingdoms), 7 keywords, 3 card types, 240 modifier pool | 5 factions (+Celestial Crusade/Exalt, The Endless/Persist), 9 keywords (+Haste, Ward), 4 card types (+PLANAR_RUIN), 336 modifier pool (12 pools x 28 per pool) | Faction expansion per PLAN-faction-expansion.md. CHECK constraints updated for factions, card_type, faction_mechanic. |
+| **Planar Ruins schema** | Not present | 4 new tables: `ruin_templates`, `ruin_effects`, `ruin_evolution_options`, `player_ruins` with full SQL, RLS, indexes | New card type per PHASE1C-planar-ruins.md. 8 neutral archetypes with HP formula CM x 3 + 1. |
+| **Ruin Service (Section 4.5)** | Not present | New service section for ruin collection, familiarity tracking, evolution flow | Manages ruin lifecycle: acquisition (match drops 15%/5%, quests, season), familiarity (+2/win, +1/loss, +1 survival), evolution (tier-filtered options, zero Dust). |
+| **Ruin REST API (Section 7.8)** | Not present | 5 new endpoints: GET collection, GET detail, GET templates, POST evolve, GET evolve options | Full ruin collection management and subscription-tiered evolution flow. |
+| **Ruin WebSocket events** | Not present | `ruin:destroyed`, `ruin:passive_effect`, `keyword:ward_triggered` events added to Section 6.2 | Client needs these events for ruin destruction animations, passive effect feedback, and Ward trigger feedback. |
+| **Ruin game engine logic** | Not present | PLANAR_RUIN handling in handlePlayCard, resolveRuinPassiveEffect, processRuinDestructions, ruin HP formula | Ruins occupy board slots, apply passive effects each turn, have destruction penalties, max 1 on field. |
+| **Haste keyword** | Not present | Summoning sickness system added; Haste bypasses it. Creature placement sets has_summoning_sickness based on Haste keyword. | Per PHASE1B-mechanics.md: Haste lets creatures attack the turn they are played. |
+| **Ward keyword** | Not present | Ward prevents targeting by spells/effects for 1 turn after entering. Expires at controller's next turn start. Spell fizzles on Ward trigger. | Per PHASE1B-mechanics.md: Ward provides 1-turn targeting protection. |
+| **Persist keyword** | Not present | Persist fires as ON_DEATH triggered ability. Exclusive to The Endless faction. | Per PHASE1B-mechanics.md: death triggers for The Endless faction mechanic. |
+| **New error codes** | 14 error codes | 19 error codes (+RUIN_CANNOT_ATTACK, RUIN_CANNOT_BLOCK, RUIN_LIMIT, SUMMONING_SICKNESS, WARD_PROTECTS) | Server-side validation for new card type and keyword mechanics. |
+| **R2 bucket: ruins directory** | Not present | `ruins/neutral/` and `ruins/evolved/{faction}/` directories | Storage paths for neutral and faction-evolved ruin art. |
+| **iOS project structure** | No ruin files | Added RuinService.swift, PlayerRuin.swift, RuinNode.swift, RuinCollectionView.swift, RuinDetailView.swift, RuinEvolutionView.swift | Client-side files for ruin collection, rendering, and evolution UI. |
+| **Data flow: ruin lifecycle** | Not present | Ruin Evolution, Ruin Passive Effect, Ruin Destruction flows added to Section 13 | Full data flow paths for ruin lifecycle in game and collection. |
 
 ---
 
-*Last updated: 2026-02-16*
-*Status: Complete revision for native iOS (Swift/SwiftUI/SpriteKit), iOS-only (App Store), StoreKit 2 payments, $300 budget cap. All fal.ai parameters match doc 03 Section 1.4 exactly. Admin Dashboard is a Next.js (TypeScript) web app on Railway. Player/match lookup handled by Supabase Dashboard (built-in). All schemas, API contracts, message formats, and deployment configs are code-ready.*
+*Last updated: 2026-02-19*
+*Status: v4.0 -- Faction expansion (5 factions), 9 keywords (Haste, Ward), Planar Ruins card type, ruin DB schema + API + game engine + WebSocket events. All schemas, API contracts, message formats, and deployment configs are code-ready.*

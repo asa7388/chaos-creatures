@@ -1,7 +1,7 @@
 # Chaos Creatures — Prompt Templates & AI Generation Pipeline
 
-**Version:** 4.0 (v4 style anchor, 25 compositions, 13 envs/faction, weather/time/scale variety dimensions)
-**Last Updated:** 2026-02-17
+**Version:** 5.0 (v5 — 5 factions, 9 keywords, Ironwright retheme, Celestial + Endless prompts, Planar Ruins art prompts, Haste/Ward visuals)
+**Last Updated:** 2026-02-19
 **Dependencies:** `00-game-design-master.md`, `01-battle-mechanics.md`, `02-card-data-model.md`
 
 ---
@@ -159,7 +159,7 @@ v4 prefixes use actual 1990s MTG artist references per faction. These replace th
 
 **IRONWRIGHT_PREFIX:**
 ```
-grimy industrial steampunk creature, corroded brass and blackened iron, oil-stained and soot-caked, dented riveted plates with weld scars, warm ochre and raw umber palette, smoky atmospheric background, painted like a Ron Spencer or Mark Tedin industrial horror
+brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar skeleton and hydraulic pistons, oil-stained and frost-rimed, heavy bolt patterns with weld scars, steel blue-gray and cold iron palette with reactor-blue conduit glow, void-dark atmospheric background, painted like a Piranesi impossible architecture or John Martin apocalyptic industrial scale
 ```
 
 **FEY_COURTS_PREFIX:**
@@ -170,6 +170,16 @@ dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, 
 **DEMONIC_KINGDOMS_PREFIX:**
 ```
 grotesque infernal creature, fused bone and volcanic rock and dried gore, lit from below by hellfire glow, deep shadow obscuring details, burnt crimson and charcoal black palette, oppressive and heavy, painted like a Pete Venters or Anson Maddocks grotesque dark fantasy
+```
+
+**CELESTIAL_CRUSADE_PREFIX:**
+```
+divine crusader entity, hammered gold plate and white marble veined with gold, divine blue silk and solidified light, overwhelming radiance from within, holy gold and ivory palette with celestial rose accents, cathedral-scale grandeur, painted like a Gustave Dore biblical illustration or William Blake visionary painting
+```
+
+**THE_ENDLESS_PREFIX:**
+```
+undead spectral entity, bone and tattered cloth and ectoplasmic residue, ghostly teal glow and necrotic purple energy, translucent ethereal forms flickering between solid and spectral, bone white and necrotic purple palette with sickly green accents, fog-choked atmospheric background, painted like a Gustave Dore Inferno etching or Francisco Goya Black Painting
 ```
 
 #### Composition Selection (v4 — 25 Templates)
@@ -264,19 +274,19 @@ Each faction now has 13 environments (original 5 preserved, 8 new). The `selectE
 
 | Environment String |
 |---|
-| `inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery` |
-| `atop a massive clockwork bridge spanning a canyon of interlocking gears` |
-| `in a brass and copper workshop littered with half-finished automata and blueprints` |
-| `on the observation deck of a towering industrial spire belching steam into orange skies` |
-| `inside a walking factory, mechanical legs visible through floor grates, landscape moving outside windows` |
-| `inside a collapsed mine shaft, sparking electrical cables and leaking hydraulic fluid, emergency red lighting` |
-| `on the deck of a massive iron warship, smokestacks belching, ocean of molten slag` |
-| `in a subterranean geothermal plant where pipes carry magma through brass conduits` |
-| `atop a rusted water tower overlooking an endless industrial sprawl of chimneys and rail yards` |
-| `inside an abandoned automaton graveyard, defunct mechanical bodies piled high, one eye still flickering` |
-| `in a pressurized boiler room, gauges redlining, steam jetting from failed seals` |
-| `on an elevated rail bridge during a thunderstorm, lightning striking copper rod arrays` |
-| `inside a crystal-powered computation engine room, spinning relay drums and clicking gears processing data` |
+| `inside an orbital shipyard, exposed rebar scaffolding against void-black space, arc-welding sparks cascading from above, half-assembled dreadnought hull in background` |
+| `on a planetary strip-mine surface, terraced excavation into red rock, massive bucket-wheel excavators, conveyor belts hauling ore into sky-piercing processing towers` |
+| `inside a void-reactor chamber, concentric rings of supercooled containment coils, reactor-blue glow at the core, concrete radiation shielding walls five meters thick` |
+| `on a gravity-tether supply line between orbital stations, open walkway with rebar railings over infinite void, cargo containers moving along magnetized rails` |
+| `inside a concrete command bunker, banks of analogue instruments and toggle switches, green-tinted tactical displays, reinforced blast doors` |
+| `on the hull of a void-forge dreadnought, exterior maintenance scaffolding, hull plating stretching to vanishing point, stars and distant nebulae beyond` |
+| `inside a mote-refinery, containment arrays of glass and iron holding swirling violet chaos energy, pipes routing refined motes into storage cylinders` |
+| `in a reclaimation sprawl, mountains of salvaged warship components, jury-rigged workshops under scrap-metal canopies, sparks from cutting torches` |
+| `on a re-entry corridor, heat-shield tiles glowing orange, atmospheric plasma streaming past reinforced viewports, cockpit instruments redlining` |
+| `inside a gravity-well factory, massive centrifuges spinning in concrete housings, artificial gravity generators humming, workers in pressure suits` |
+| `on a decommissioned star-harvester, dead solar collection arrays the size of cities, cooling towers venting last heat into space, abandoned but not empty` |
+| `inside a void-dock loading bay, magnetic crane arms swinging iron containers, exhaust vents cycling, warning klaxon lights flashing orange` |
+| `at a forward siege position, walking siege engines advancing across blasted terrain, concrete fortifications behind, reactor-blue targeting beams cutting through smoke` |
 
 **The Fey Courts (13 environments):**
 
@@ -314,6 +324,42 @@ Each faction now has 13 environments (original 5 preserved, 8 new). The `selectE
 | `in a blood-rain storm, the sky cracked open like a wound, crimson precipitation pooling on basalt` |
 | `inside a demonic war forge where weapons are hammered from cursed iron and quenched in ichor` |
 
+**The Celestial Crusade (13 environments):**
+
+| Environment String |
+|---|
+| `inside the Radiant Bastion, fortress-cathedral suspended above clouds on pillars of solidified light, stained glass casting colored patterns across marble floors` |
+| `on a cloud-field battlefield, divine light breaking through storm clouds in god-rays, golden armor reflecting radiance across an army in formation` |
+| `inside the Sanctum of Open Eyes, cathedral-plane where geometry follows divine mathematics, walls curving impossibly, surfaces covered in open eyes` |
+| `at a consecration site, divine energy descending in columns of golden light, stone altar glowing, angelic figures mid-ritual` |
+| `on the steps of a celestial ziggurat, each tier carved with divine scripture, golden domes reflecting impossible sunlight, clouds below the staircase` |
+| `inside a reliquary vault, crystal cases housing fragments of divine weapons, golden light from each relic, marble columns with gold inlay` |
+| `on the bridge of a celestial war-barge, translucent light-sails billowing, crew of armored paladins at navigation crystals, clouds streaming past` |
+| `in a judgment hall where accused stand before a throne of radiance, geometric light patterns scanning from above, divine law made visible` |
+| `at the edge of a purification zone, divine fire burning away corruption in a wave advancing across a blighted landscape, ash becoming marble` |
+| `inside a scriptorium where angelic scribes write divine law in light on sheets of crystal, the words rearranging themselves` |
+| `on a shattered stairway between planes, fragments of marble steps floating in golden void, divine light connecting the pieces` |
+| `at a celestial armory, divine weapons hanging in suspension fields of light, each weapon humming with contained power, angel-smiths at golden forges` |
+| `in a cathedral rose-window chamber, circular stained glass filtering divine light into prismatic patterns, geometric floor mosaics glowing where light touches` |
+
+**The Endless (13 environments):**
+
+| Environment String |
+|---|
+| `inside the Ossuary Parliament, subterranean cathedral built entirely from bones, spectral candles casting ghostly teal light, ancient liches convening` |
+| `in the Wailing Reach, fog-choked battlefield from an ancient war, thousands of spectral figures drifting, permanent storm of ghostly energy` |
+| `inside a necromancer's surgical theater, bone constructs in various stages of assembly on stone slabs, phylacteries glowing on shelves` |
+| `in a vast underground crypt, rows of sarcophagi stretching into darkness, some lids cracked open, ectoplasmic residue seeping from within` |
+| `at a spectral convergence, ghostly figures orbiting a central point of necrotic energy, translucent forms overlapping, the air thick with whispered names` |
+| `inside a lich's phylactery vault, crystalline containers of trapped souls glowing sickly green, rune-locked iron doors, bone-dust air` |
+| `on a bone-bridge spanning a chasm of spectral fog, skeletal pylons supporting the structure, ghostly hands reaching up from below` |
+| `in a plague city frozen in time, buildings intact but every surface coated in bone-dust, spectral residents repeating their final moments` |
+| `inside a reanimation forge, corpses being systematically processed into constructs, soul-energy flowing through copper tubes, lich overseers directing` |
+| `at the edge of a death-field, ground where nothing grows, soil saturated with necrotic energy, ghostly vegetation of spectral light instead of leaves` |
+| `inside a spectral library, books written by the dead containing memories of lives lived, pages turning themselves, ink that whispers` |
+| `on the walls of a fortress made of fused bones and spectral mortar, ghostly sentries patrolling, teal light emanating from within the walls` |
+| `in a forgotten mass grave where the dead have organized themselves, skeletal figures standing in formation, awaiting a commander who never came` |
+
 #### Negative Prompt (Used on Every Single Request — Never Omit)
 
 ```
@@ -326,30 +372,30 @@ text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, expl
 
 These are fully assembled prompts with the STYLE_ANCHOR prepended. The batch script concatenates the components from the CSV row plus the constants above. These examples are copy-paste ready.
 
-**Ironwright — 3-cost Clockwork Wolf (instability 2, 3ATK/4HP):**
+**Ironwright — 3-cost Rebar Golem (instability 2, 3ATK/4HP):**
 ```
 1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-grimy industrial steampunk creature, corroded brass and blackened iron, oil-stained and soot-caked, dented riveted plates with weld scars, warm ochre and raw umber palette, smoky atmospheric background, painted like a Ron Spencer or Mark Tedin industrial horror,
+brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar skeleton and hydraulic pistons, oil-stained and frost-rimed, heavy bolt patterns with weld scars, steel blue-gray and cold iron palette with reactor-blue conduit glow, void-dark atmospheric background, painted like a Piranesi impossible architecture or John Martin apocalyptic industrial scale,
 
-clockwork wolf, sleek predatory design, articulated brass leg joints with visible pistons, mechanical jaw with copper fangs, glowing amber optical sensors, mid-prowl stance,
+rebar golem, blocky geometric humanoid of poured concrete with exposed rebar skeleton, hydraulic piston joints, reactor-blue power conduit in chest cavity, heavy reinforced fists, industrial serial number stenciled on shoulder plate, mid-stride advancing stance,
 
 three-quarter view creature portrait, strong silhouette, atmospheric murky background, single harsh light source casting deep shadows, old master painting composition, rough textured brushwork throughout, NOT clean NOT smooth NOT digital,
 
-in a brass and copper workshop littered with half-finished automata and blueprints
+inside a void-reactor chamber, concentric rings of supercooled containment coils, reactor-blue glow at the core, concrete radiation shielding walls five meters thick
 ```
 
-**Ironwright — 1-cost Gear Sprite (instability 1, 1ATK/2HP) — scale: TINY, composition: PORTRAIT_EXTREME_WIDE:**
+**Ironwright — 1-cost Maintenance Drone (instability 1, 1ATK/2HP) — scale: TINY, composition: PORTRAIT_EXTREME_WIDE:**
 ```
 1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks,
 
-grimy industrial steampunk creature, corroded brass and blackened iron, oil-stained and soot-caked, dented riveted plates with weld scars, warm ochre and raw umber palette, smoky atmospheric background, painted like a Ron Spencer or Mark Tedin industrial horror,
+brutalist space-industrial construct, poured concrete and cold-rolled iron, exposed rebar skeleton and hydraulic pistons, oil-stained and frost-rimed, heavy bolt patterns with weld scars, steel blue-gray and cold iron palette with reactor-blue conduit glow, void-dark atmospheric background, painted like a Piranesi impossible architecture or John Martin apocalyptic industrial scale,
 
-tiny clockwork sprite, insect-like brass wings with visible gear joints, small rounded body of copper plating, spinning gear on back like a propeller, curious alert posture, diminutive but precise,
+tiny maintenance drone, insect-like iron body with folding tool-arms, small reactor-blue sensor eye, magnetic clamp feet, repair-torch appendage, hovering at a weld seam, diminutive and utilitarian,
 
 creature tiny in vast panoramic landscape, sense of scale and isolation, atmospheric perspective,
 
-inside a vast steam-powered foundry with molten metal rivers and chain-driven machinery,
+inside an orbital shipyard, exposed rebar scaffolding against void-black space, arc-welding sparks cascading from above, half-assembled dreadnought hull in background,
 
 the creature is very small, shown relative to normal-sized objects for scale contrast
 ```
@@ -445,9 +491,11 @@ Selected by the server based on the card's `evolution_history` record count and 
 
 | Faction | FACTION_SHORT_DESCRIPTION |
 |---|---|
-| Ironwright Collective | `steampunk industrial brass-and-gears` |
+| Ironwright Collective | `brutalist space-industrial concrete-and-iron` |
 | The Fey Courts | `ethereal fey nature bioluminescent` |
 | The Demonic Kingdoms | `dark infernal demonic hellfire` |
+| The Celestial Crusade | `divine radiant gold-and-marble celestial` |
+| The Endless | `necrotic spectral bone-and-ectoplasm undead` |
 
 #### Evolution Prompt Final Assembly
 
@@ -553,40 +601,40 @@ The iOS game client displays these options as a card-selection UI during the evo
 
 ---
 
-#### Ironwright Collective Faction Modifiers
+#### Ironwright Collective Faction Modifiers (Brutalist Space-Industrial)
 
 Free tier draws 1 from IF01–IF10. Mid draws 2 from IF01–IF18. High draws 2 from IF01–IF28.
 
 | ID | Display Name | Prompt Description String |
 |---|---|---|
-| IF01 | Reinforced Gears | `additional reinforced gear clusters installed at key joints, oversized and heavy-duty` |
-| IF02 | Steam Venting | `multiple high-pressure steam vents erupting from the chassis in dramatic plumes` |
-| IF03 | Hydraulic Pistons | `large visible hydraulic cylinders extending and contracting along the limbs` |
-| IF04 | Rotating Components | `gear assemblies and rings visibly spinning and rotating as if running at high speed` |
-| IF05 | Arc Lightning | `electrical arc discharges jumping between exposed metal components and conductors` |
-| IF06 | Chrome Polish | `surfaces polished to mirror-chrome perfection, every reflection crisp and metallic` |
-| IF07 | Overclocked State | `gears and components glowing red-hot from extreme overclocking, heat shimmer visible` |
-| IF08 | Weapon Mounts | `modular weapon systems bolted onto chassis — barrels, blades, or energy emitters` |
-| IF09 | Pressure Glow | `steam pressure vents glowing amber-orange from contained thermal energy about to release` |
-| IF10 | Gyroscopic Rings | `concentric gyroscopic stabilizer rings orbiting the main body, spinning counterrotating` |
-| IF11 | Copper Filigree | `decorative copper filigree scrollwork added to armor plates in intricate patterns` |
-| IF12 | Riveted Overlay | `additional heavy riveting over seams and plating, studded reinforcement pattern` |
-| IF13 | Exposed Internals | `a section of outer plating removed revealing complex internal clockwork mechanisms inside` |
-| IF14 | Brass Antennae | `tall brass antennae or sensory arrays extending from the head or shoulders` |
-| IF15 | Pneumatic Joints | `visible pneumatic tube connections between joint segments, pressurized and pulsing` |
-| IF16 | Signal Lights | `colored indicator lights across the chassis blinking in patterns, amber and red status arrays` |
-| IF17 | Armored Shell | `a secondary outer shell of thick iron plates adding bulk and imposing defensive mass` |
-| IF18 | Chain Drive | `heavy chains connecting major moving components, mechanical drive system visible externally` |
-| IF19 | Perpetual Motion Core | `a glowing core visible through the chest — a mechanism that runs without external power, impossibly` |
-| IF20 | Quantum Gears | `gears that phase in and out of visibility, existing in multiple positions simultaneously` |
+| IF01 | Rebar Reinforcement | `additional exposed rebar framework reinforcing key joints and structural points, raw iron grid pattern` |
+| IF02 | Reactor Venting | `reactor-blue coolant venting from exhaust ports in dramatic plumes, containment pressure releasing` |
+| IF03 | Hydraulic Pistons | `large visible hydraulic cylinders extending and contracting along the limbs, oil-sheen on rods` |
+| IF04 | Orbital Plating | `void-rated hull plating bolted over existing armor, heat-resistant tiles with re-entry scorch marks` |
+| IF05 | Arc Lightning | `electrical arc discharges jumping between exposed iron conduits and rebar conductors` |
+| IF06 | Cold Iron Polish | `surfaces ground to cold mirror finish on iron plate, every reflection crisp and industrial` |
+| IF07 | Reactor Overload | `reactor core glowing dangerously hot, containment coils redlining, warning indicators flashing orange` |
+| IF08 | Weapon Mounts | `modular weapon systems bolted onto chassis — magnetic accelerators, iron blades, or reactor-powered emitters` |
+| IF09 | Exhaust Glow | `exhaust ports glowing warning-orange from contained reactor energy about to release` |
+| IF10 | Gyroscopic Stabilizers | `concentric gyroscopic stabilizer rings of cold iron orbiting the main body, void-navigation arrays` |
+| IF11 | Concrete Cladding | `additional poured concrete armor cladding with visible aggregate and form marks, brutalist bulk` |
+| IF12 | Riveted Overlay | `additional heavy riveting over seams and hull plating, industrial bolt pattern rows` |
+| IF13 | Exposed Internals | `a section of outer plating removed revealing complex hydraulic mechanisms and reactor conduit routing` |
+| IF14 | Sensor Arrays | `tall iron sensor antennae or radar arrays extending from the head or shoulders, void-scanning` |
+| IF15 | Pneumatic Joints | `visible pneumatic tube connections between joint segments, pressurized hydraulic fluid pulsing` |
+| IF16 | Warning Indicators | `warning-orange indicator lights across the hull blinking in patterns, status arrays and hazard markings` |
+| IF17 | Siege Armor | `a secondary outer shell of thick iron-and-concrete plates adding massive bulk and siege-grade defense` |
+| IF18 | Chain Drive | `heavy industrial chains connecting major moving components, visible external drive system` |
+| IF19 | Void-Reactor Core | `a glowing void-reactor core visible through reinforced viewport in the chest, bending light around it` |
+| IF20 | Phase-Iron Plating | `hull plates that phase in and out of visibility, existing in multiple dimensional states simultaneously` |
 | IF21 | Dimension Pistons | `pistons that extend into a pocket dimension, disappearing and reappearing as they cycle` |
-| IF22 | Singularity Heart | `a miniature singularity visible behind a crystal viewport in the chest, bending space slightly` |
-| IF23 | Temporal Gears | `gears visibly running in reverse — counter-time mechanisms with timeline artifact trails` |
-| IF24 | Nanoswarm Integration | `a cloud of microscopic mechanical drones swarming around the creature as an extension of itself` |
-| IF25 | Antimatter Reactor | `a reactor core glowing with violent antimatter annihilation light, containment field visible` |
-| IF26 | Reality Anchor | `thick bolts of energy anchoring the creature to the physical plane as if it might otherwise transcend` |
-| IF27 | Tesseract Internals | `the creature's internals visible as a four-dimensional hypercube structure folding through itself` |
-| IF28 | Infinite Regress | `mechanisms that contain smaller versions of themselves in an infinite regression visible through transparent panels` |
+| IF22 | Singularity Heart | `a miniature singularity visible behind a crystal viewport in the chest, bending space around it` |
+| IF23 | Gravity Reversal | `gravity distortion visible around the construct — debris floating upward, light bending unnaturally` |
+| IF24 | Nanoswarm Integration | `a cloud of microscopic iron drones swarming around the construct as an extension of its systems` |
+| IF25 | Antimatter Reactor | `a reactor core glowing with violent antimatter annihilation light, containment field barely holding` |
+| IF26 | Reality Anchor | `thick bolts of void-energy anchoring the construct to the physical plane, dimensional tethers visible` |
+| IF27 | Tesseract Hull | `the construct's hull visible as a four-dimensional structure folding through itself, impossible geometry` |
+| IF28 | Infinite Regress | `mechanisms that contain smaller versions of themselves in an infinite regression visible through reinforced viewports` |
 
 ---
 
@@ -664,6 +712,139 @@ Free tier draws 1 from DF01–DF10. Mid draws 2 from DF01–DF18. High draws 2 f
 
 ---
 
+#### The Celestial Crusade Faction Modifiers
+
+Free tier draws 1 from CF01–CF10. Mid draws 2 from CF01–CF18. High draws 2 from CF01–CF28.
+
+| ID | Display Name | Prompt Description String |
+|---|---|---|
+| CF01 | Divine Halo | `a burning golden halo materializing behind or above the head, radiating divine light outward` |
+| CF02 | Angelic Wings | `large feathered wings of white-gold light extending from the back, each feather sharp as a blade` |
+| CF03 | Holy Armor | `divine gold plate armor appearing over the form, inscribed with scripture, glowing with inner light` |
+| CF04 | Radiant Eyes | `eyes blazing with pure white-gold divine radiance, light streaming from the sockets` |
+| CF05 | Formation Glow | `geometric divine light patterns connecting to nearby allies, formation lines of holy energy` |
+| CF06 | Marble Skin | `flesh transforming to white marble veined with gold, divine and inhuman, still living` |
+| CF07 | Burning Sword | `a weapon of solidified holy fire materializing in hand, trails of divine light following every movement` |
+| CF08 | Prayer Marks | `scripture and prayer text appearing on the skin and armor in golden light, sacred words as decoration` |
+| CF09 | Stained Glass | `portions of the form becoming translucent like stained glass, divine light filtering through colored sections` |
+| CF10 | Crusader Tabard | `a divine blue tabard with golden celestial emblem appearing over the armor, rippling with holy energy` |
+| CF11 | Multi-Wing | `additional pairs of wings extending in impossible angles, four or six wings total, overlapping and luminous` |
+| CF12 | Eye-Covered | `additional divine eyes appearing across wings and armor surfaces, each open and aware, blinking independently` |
+| CF13 | Cathedral Form | `the creature's silhouette incorporating cathedral architecture — arched shoulders, rose-window chest, spire crown` |
+| CF14 | Judgment Light | `a column of divine light descending from above onto the creature, illuminating everything around it` |
+| CF15 | Burning Wheels | `concentric rings of burning golden wheels orbiting around the creature, covered in eyes, spinning` |
+| CF16 | Divine Inscription | `sacred geometric patterns — vesica piscis, Flower of Life — glowing on the skin in gold` |
+| CF17 | Incense Aura | `holy incense smoke drifting from the creature in spirals, glowing faintly gold, purifying the air` |
+| CF18 | Solidified Light | `portions of the creature made of literal solidified light, weight-bearing crystalline radiance` |
+| CF19 | Rose Window Chest | `a circular stained-glass rose window embedded in the chest, divine light filtering through in prismatic patterns` |
+| CF20 | Seraphic Geometry | `the creature's form incorporating impossible divine geometry, angles that do not exist in mortal space` |
+| CF21 | Divine Mandorla | `a full-body almond-shaped aura of golden light surrounding the creature, the mandorla of sacred art` |
+| CF22 | Purification Fire | `white-gold divine fire burning across the surface, purifying rather than destroying, leaving gold beneath` |
+| CF23 | Throne Fragment | `a fragment of a divine throne materializing behind the creature, suggesting authority beyond mortal kingship` |
+| CF24 | Cosmic Halo | `the halo expands to show stars and nebulae within it, a window into the divine plane` |
+| CF25 | Cherubim Guard | `small cherubim entities orbiting the creature as guardians, each with multiple wings and fierce expressions` |
+| CF26 | Reliquary Heart | `the chest cavity visible as a crystal reliquary containing a fragment of divine fire, impossibly bright` |
+| CF27 | Absolute Radiance | `the creature becomes a source of overwhelming divine light, details barely visible through the radiance` |
+| CF28 | Apotheosis | `the creature mid-transformation into a higher divine form, mortal elements dissolving into pure celestial energy` |
+
+---
+
+#### The Endless Faction Modifiers
+
+Free tier draws 1 from EF01–EF10. Mid draws 2 from EF01–EF18. High draws 2 from EF01–EF28.
+
+| ID | Display Name | Prompt Description String |
+|---|---|---|
+| EF01 | Bone Growth | `additional bone structures growing from the exterior — spurs, plates, ridges of exposed yellowed bone` |
+| EF02 | Spectral Mist | `ghostly teal mist seeping from the creature's form, pooling at the feet, drifting upward unnaturally` |
+| EF03 | Phylactery Glow | `a phylactery or soul-container visible on the body, glowing with trapped spectral energy, chained to the form` |
+| EF04 | Ectoplasmic Drip | `translucent ectoplasmic fluid dripping from edges and joints, pooling in spectral puddles below` |
+| EF05 | Soul-Light Eyes | `eye sockets glowing with cold blue-green soul-light, piercing and ancient, seeing beyond the living world` |
+| EF06 | Grave Wrappings | `tattered burial wrappings wound around the form, some trailing, some tight, stained with age and earth` |
+| EF07 | Necrotic Veins | `necrotic purple veins visible through translucent or decayed skin, pulsing with death energy` |
+| EF08 | Ghostly Chains | `spectral chains trailing from wrists or body, some broken, some attached to nothing visible, rattling` |
+| EF09 | Death's Crown | `a crown of fused finger-bones or spectral energy materializing above the head, mark of undead authority` |
+| EF10 | Skeletal Exposure | `portions of flesh decayed or absent revealing clean bone structure beneath, functional and terrifying` |
+| EF11 | Ghost Swarm | `smaller spectral entities orbiting the creature — faces, hands, whispers given partial form` |
+| EF12 | Corpse Stitching | `visible surgical stitching holding disparate body parts together, the craftsmanship of a necromancer` |
+| EF13 | Soul Siphon | `wisps of soul-light being drawn from the surroundings into the creature, a visible drain on nearby life` |
+| EF14 | Ossuary Armor | `armor constructed from densely packed bones — ribcages as pauldrons, skulls as kneecaps, femurs as bracers` |
+| EF15 | Spectral Flame | `ghostly teal fire burning across the surface without heat, necrotic flame that illuminates but does not warm` |
+| EF16 | Death Mask | `a formal death mask appearing over the face — porcelain or bone, expressionless, ancient` |
+| EF17 | Wailing Aura | `a visible aura of sound waves rippling outward from the creature, the visualized scream of the dead` |
+| EF18 | Embalming Fluid | `preserved in supernatural embalming fluid, skin too smooth, too perfect, uncanny preservation` |
+| EF19 | Mass Grave Echo | `ghostly afterimages of dozens of figures overlapping the creature, all the dead it represents` |
+| EF20 | Phylactery Network | `multiple phylacteries visible — a network of soul-containers connected by threads of necrotic energy` |
+| EF21 | Entropy Field | `a visible field of accelerated decay around the creature — nearby surfaces aging, rusting, crumbling` |
+| EF22 | Spectral Reconstruction | `the creature mid-reassembly from scattered parts, bones and ectoplasm flowing together magnetically` |
+| EF23 | Death's Door | `a spectral doorway visible behind the creature — an archway of bone showing the realm of the dead beyond` |
+| EF24 | Plague Aura | `sickly green miasma surrounding the creature, visible disease energy, plants wilting in proximity` |
+| EF25 | Bone Cathedral | `bone structures growing outward from the creature into architectural forms — arches, buttresses, spires of bone` |
+| EF26 | Ghost King Crown | `a massive spectral crown of ghostly energy and bone, too large for any mortal head, ancient and terrible` |
+| EF27 | Undying Core | `a visible core of pure death energy at the center, the creature visibly regenerating around it from nothing` |
+| EF28 | Oblivion Touch | `hands and extremities dissolving into pure void-darkness, the touch of absolute ending made visible` |
+
+---
+
+### 1.7 Keyword Visual Effect Prompts
+
+These prompt fragments are appended to card art generation prompts when a creature has one of the 9 keywords. They provide visual cues that help players identify keywords at a glance.
+
+| Keyword | Prompt Fragment |
+|---|---|
+| Shield | `a visible barrier or deflection aura around the creature, protective energy shell, shield-glow` |
+| Lifesteal | `dark tendrils of absorbed life energy flowing into the creature, vitality drain visible as colored wisps` |
+| Flying | `creature airborne or clearly capable of flight, wings extended or hovering, ground distant below` |
+| Reach | `extended limbs, tentacles, or ranged appendages stretching beyond normal reach, threatening distant targets` |
+| Deathtouch | `a skull motif or death-aura on the creature's striking appendage, touch of guaranteed lethality` |
+| Taunt | `imposing threat display, aggressive forward stance demanding attention, impossible to ignore` |
+| Piercing | `weapon or claws visibly penetrating through armor or barriers, unstoppable forward momentum` |
+| Haste | `motion blur trails behind the creature, speed lines, afterimage echoes, explosive burst-of-movement energy` |
+| Ward | `a translucent shimmering protective barrier around the creature, deflecting incoming targeting energy, temporary divine/arcane ward visible as a thin force-field shell` |
+
+---
+
+### 1.8 Planar Ruins Art Prompts
+
+Planar Ruins are a distinct card type requiring a different art approach from creatures. All ruin art uses the global STYLE_ANCHOR but replaces faction prefixes with ruin-specific prefixes.
+
+#### Neutral Ruin Style Prefix
+
+```
+NEUTRAL_RUIN_PREFIX = "ancient alien ruin structure, fused stone and crystalline alloy of unknown origin, partially ruined but stable, pale otherworldly colors not belonging to any faction, geometric engravings in mathematical patterns, millennia-old architecture built at inhuman scale, dust motes defying gravity, the silence of a vanished civilization, painted like a Piranesi Carceri impossible architecture"
+```
+
+#### Faction-Evolved Ruin Transformation Prompts
+
+These prompts are used with FLUX Kontext img2img to transform neutral ruin art into faction-specific variants. The neutral ruin art is the input image.
+
+**IRONWRIGHT_RUIN_TRANSFORM:**
+```
+Transform this ancient ruin with Ironwright industrial additions. Weld iron plating and rebar reinforcement onto the stone. Add hydraulic repair arms, conduit pipes channeling reactor-blue energy, industrial scaffolding, radar dishes on pillar stumps. Overlay circuit-like schematics etched in acid over ancient engravings. Industrial coolant vents hissing from the base. Maintain the brutalist space-industrial aesthetic — concrete, iron, hydraulics, reactor-blue glow.
+```
+
+**FEY_RUIN_TRANSFORM:**
+```
+Transform this ancient ruin with living Fey growth. Overgrow the stone with flowering vines, bioluminescent blooms, moss, and root systems cracking through the foundation. Replace geometric engravings with flowing organic patterns. Add a canopy of living branches, fireflies, mycelial threads connecting to the ground. The ancient structure should be half-swallowed by vibrant forest, pulsing with green-gold life energy.
+```
+
+**DEMONIC_RUIN_TRANSFORM:**
+```
+Transform this ancient ruin with Demonic corruption. Darken the stone to deep crimson and scorched black. Add chains wrapping base to tip, blood-red runes burned into every surface. Replace geometric engravings with ritual markings. Add hellfire licking the base, obsidian growths, viscous red seepage from cracks. The structure should throb with dark heartbeat energy.
+```
+
+**CELESTIAL_RUIN_TRANSFORM:**
+```
+Transform this ancient ruin with Celestial purification. Clad the stone in white marble with gold inlay. Replace geometric engravings with divine script in golden light. Add angelic relief carvings, a halo of radiance crowning the top, divine dust motes replacing the original. The foundation should gleam with gold channels. A faint celestial chorus should feel implied by the light quality.
+```
+
+**ENDLESS_RUIN_TRANSFORM:**
+```
+Transform this ancient ruin with Endless death energy. Turn the crystal elements ghostly teal and translucent, flickering. Embed bone fragments in the foundation stones. Add spectral mist seeping from the base, necrotic purple glow in the engravings. Ghostly hands reach from the ground around the base. A faint sound of distant mourning should feel implied. The structure is haunted and cold beyond temperature.
+```
+
+---
+
 ## 2. Text Generation Pipeline (OpenAI GPT-4o Mini)
 
 All text generation uses `gpt-4o-mini` at the OpenAI API. Endpoint: `POST https://api.openai.com/v1/chat/completions`. Auth: `Authorization: Bearer ${OPENAI_API_KEY}`.
@@ -720,7 +901,7 @@ Return ONLY this JSON array, nothing else:
 
 **Ironwright Collective:**
 ```
-Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred. Examples: Brassbound Guardian, Steamforged Titan, Ironwrought Sentinel.
+Industrial and precise. Use brutalist space-industrial terminology: Reactor, Void-Forge, Rebar, Piston, Hull, Orbital, Iron, Concrete, Dreadnought. Use functional titles: Warden, Sentinel, Overseer, Architect, Directorate. Reference places of industry: Forge, Shipyard, Void-Dock, Strip-Mine, Star-Forge. Compound nouns preferred. NOT steampunk — no brass, gears, steam, clockwork. Examples: Reactor-Core Golem, Void-Dock Sentinel, Rebar Leviathan, Orbital Breaker.
 ```
 
 **The Fey Courts:**
@@ -733,6 +914,16 @@ Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, M
 Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Use concepts of sin: Wrath, Hunger, Ruin, Agony. Direct hard sounds preferred. Examples: Ashblade Lord of Ruin, Bloodrite Reaver, the Unbound Hunger.
 ```
 
+**The Celestial Crusade:**
+```
+Divine and absolute. Use divine terminology: Radiant, Sanctified, Judgment, Deliverance, Crusade, Exalted, Anointed, Ordained. Use divine titles: Justicar, Seraph, Marshal, Archon, Watcher, Herald. Use concepts of light: Halo, Radiance, Dawn, Burning, Purification. Formal register, scriptural cadence. Examples: Radiant Justicar, Halo-Crowned Seraph, Deliverance Knight, Burning Wheel Watcher.
+```
+
+**The Endless:**
+```
+Deathly and persistent. Use undead terminology: Bone, Spectral, Phylactery, Dust, Ossuary, Wailing, Lingering, Persist, Remnant. Use undead titles: Revenant, Wraith, Lich, Abomination, Remnant, the Forgotten, the Unforgotten. Use concepts of death and memory: Forgotten, Abandoned, Enduring, Eternal, Silence. Dry academic tone for Cabals, mournful raw tone for Spectres. Examples: Bone-Stitched Abomination, Wailing Remnant, Phylactery Guardian, Dust-Choked Revenant.
+```
+
 #### Concrete Naming Examples (Actual Input/Output)
 
 **Example 1 — Ironwright, Common → Uncommon, Chaos outcome:**
@@ -740,19 +931,19 @@ Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder
 User prompt (fields filled in):
 ```
 FACTION: Ironwright Collective
-FACTION VOICE: Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred. Examples: Brassbound Guardian, Steamforged Titan, Ironwrought Sentinel.
-BASE NAME: Cogwork Stalker
+FACTION VOICE: Industrial and precise. Use brutalist space-industrial terminology: Reactor, Void-Forge, Rebar, Piston, Hull, Orbital, Iron, Concrete, Dreadnought. Use functional titles: Warden, Sentinel, Overseer, Architect, Directorate. Reference places of industry: Forge, Shipyard, Void-Dock, Strip-Mine, Star-Forge. Compound nouns preferred. NOT steampunk — no brass, gears, steam, clockwork. Examples: Reactor-Core Golem, Void-Dock Sentinel, Rebar Leviathan.
+BASE NAME: Rebar Golem
 EVOLUTION TIER: UNCOMMON
 EVOLUTION DIRECTION: CHAOS
 EVOLUTION HISTORY: 0 Chaos evolutions, 0 Order evolutions before this one
-PREVIOUS NAMES: ["Cogwork Stalker"]
+PREVIOUS NAMES: ["Rebar Golem"]
 
 Generate exactly 3 card name candidates...
 ```
 
 Expected output:
 ```json
-["Overclocked Stalker", "Cogwork Fury", "Stalker Unbound"]
+["Reactor-Core Fury", "Rebar Unbound", "Void-Wrack Golem"]
 ```
 
 **Example 2 — Fey Courts, Rare → Epic, Order outcome:**
@@ -834,7 +1025,7 @@ Output only the flavor text, nothing else.
 
 **Ironwright Collective:**
 ```
-Technical reverence for craftsmanship. Emphasizes function, precision, and engineering. Order = perfected systems, harmonious mechanisms. Chaos = overloaded, screaming gears, design pushed beyond limits. Tone is clipped and declarative — short sentences that sound like engineer's notes.
+Technical reverence for function and endurance. Emphasizes weight, pressure, containment, and industrial scale. Order = perfected systems, redundant architecture, directorate-approved tolerances. Chaos = reactor overload, hull breach, containment failure, void exposure. Tone is clipped and declarative — short sentences that sound like structural engineering reports. NOT steampunk — no brass, gears, steam, clockwork.
 ```
 
 **The Fey Courts:**
@@ -847,20 +1038,30 @@ Ancient and lyrical. Emphasizes cycles, memory, wildness, and time. Order = harm
 Visceral and direct. Emphasizes power, sacrifice, consumption, and hunger. Order = controlled fury, pacts honored in blood, restrained corruption. Chaos = unbound carnage, self-immolation for power, apocalyptic hunger. Tone is declarative and ominous — short sentences like dark scripture.
 ```
 
+**The Celestial Crusade:**
+```
+Declarative and absolute. Emphasizes divine authority, righteous purpose, and overwhelming holy power. Order = formation discipline, geometric perfection, divine law made visible. Chaos = divine intervention, overwhelming unpredictable power, reality bending around celestial entities. Tone is formal and scriptural — no hedging, no doubt. The Celestial do not believe — they know.
+```
+
+**The Endless:**
+```
+Dry and academic for Cabals (scholarly, precise, mildly amused by the living). Mournful and raw for Spectres (fierce, empathetic, haunted). Emphasizes persistence, accumulation, patience, and the refusal to end. Order = death as a system, reanimation as an industry, cold methodical necromancy. Chaos = wild spectral energy, uncontrolled death triggers, grief and rage given form. Death is mundane. Eternity is boring.
+```
+
 #### Concrete Flavor Text Examples (Actual Input/Output)
 
 **Ironwright, Uncommon, Chaos:**
-Input uses FACTION TONE above, CARD NAME: "Overclocked Stalker", previous: "Built to hunt. Built to last."
+Input uses FACTION TONE above, CARD NAME: "Reactor-Core Fury", previous: "Poured to endure. Reinforced to hold."
 Output:
 ```
-The gears scream, but they hold. They always hold.
+The reactor screams, but the hull holds. It always holds.
 ```
 
 **Ironwright, Legendary, Order:**
-Input: CARD NAME: "Brassforge Colossus", Order direction.
+Input: CARD NAME: "Star-Forge Colossus, Perfected", Order direction.
 Output:
 ```
-Precision tolerances. Redundant systems. A masterpiece of function over flaw.
+Redundant systems. Zero-tolerance hull. A masterpiece of containment over entropy.
 ```
 
 **Fey Courts, Rare, Order:**
@@ -889,6 +1090,34 @@ Input: CARD NAME: "Bloodrite Warlord, the Bound".
 Output:
 ```
 The pact is written in blood. It will be paid in blood.
+```
+
+**Celestial Crusade, Uncommon, Order:**
+Input: CARD NAME: "Radiant Crusader".
+Output:
+```
+The light does not ask permission. It arrives.
+```
+
+**Celestial Crusade, Legendary, Chaos:**
+Input: CARD NAME: "Burning Wheel, Voice of the Divine".
+Output:
+```
+When the divine speaks, the world does not listen. It obeys.
+```
+
+**The Endless, Uncommon, Order:**
+Input: CARD NAME: "Bone-Forged Sentinel".
+Output:
+```
+The dead are patient. The dead have time.
+```
+
+**The Endless, Legendary, Chaos:**
+Input: CARD NAME: "Thessaly's Echo, the Unsilenced".
+Output:
+```
+She remembers everything. She forgives nothing.
 ```
 
 ---
@@ -985,37 +1214,37 @@ Event flavor text is NOT AI-generated. All 16 events have static prewritten stri
 
 Reference section for image prompt and text prompt construction. Every AI call referencing faction voice pulls from here.
 
-### 3.1 Ironwright Collective (Steampunk)
+### 3.1 Ironwright Collective (Brutalist Space-Industrial)
 
-**Core Identity:** Precision, engineering, industry, progress through invention.
+**Core Identity:** Brutalist efficiency, void industry, star conquest, overwhelming industrial force.
 
 **Visual Vocabulary:**
-- Materials: brass, copper, steel, bronze, iron
-- Components: gears, pistons, clockwork, hydraulics, rivets, vents, conduits, springs
-- Atmosphere: steam, pressure, heat, spark, forge, furnace
-- Palette: warm metallics — gold, amber, rust, orange, dark iron
-- Era: Victorian-industrial, not futuristic
+- Materials: concrete, iron, rebar, cold-rolled steel, hull plating
+- Components: hydraulic pistons, reactor conduits, magnetic rails, bolt patterns, exhaust ports
+- Atmosphere: void-dark, reactor-blue glow, warning-orange hazard lights, industrial frost
+- Palette: cold — steel blue-gray, cold iron, warning orange, reactor blue
+- Era: Brutalist space-industrial, NOT steampunk (no brass, gears, steam, clockwork, Victorian)
 
-**Image Generation Voice:** Industrial mechanical precision. Warm tones. Every detail should look like it was engineered with purpose. Nothing organic unless it has been mechanized.
+**Image Generation Voice:** Oppressive brutalist scale. Cold tones with reactor-blue and warning-orange accents. Every detail should look like it was manufactured for a purpose. Nothing organic. Nothing decorative. Function expressed as form.
 
-**Text Generation Voice:** Clipped declarative sentences. Engineering terminology. Reverence for function and design. Avoid flowery language.
+**Text Generation Voice:** Clipped declarative sentences. Industrial terminology. Reverence for function and efficiency. Avoid flowery language. Dry humor about optimization.
 
-**Order Aesthetic:** Perfect engineering, harmonious systems, redundant safeguards, polished to spec.
-**Chaos Aesthetic:** Overclock, strain, pushed beyond tolerances, glorious catastrophic malfunction.
+**Order Aesthetic:** Perfect engineering, harmonious systems, redundant safeguards, polished to spec, centralized command.
+**Chaos Aesthetic:** Jury-rigged, patchwork, salvaged from wreckage, pushed beyond tolerances, improvised but effective.
 
-**Full Name Progression Example (Clockwork Wolf, all-Chaos path):**
-- Common: Cogwork Stalker
-- Uncommon (Chaos): Overclocked Stalker
-- Rare (Chaos): Cogwork Fury, the Unshackled
-- Epic (Chaos): Steamforged Berserker
-- Legendary (Chaos): The Eternal Engine, Unbound
+**Full Name Progression Example (Rebar Golem, all-Chaos path):**
+- Common: Rebar Stalker
+- Uncommon (Chaos): Scrap-Forged Stalker
+- Rare (Chaos): Void-Wrack Fury
+- Epic (Chaos): Reclaimation Berserker
+- Legendary (Chaos): The Entropy Smith, Unbound
 
-**Full Name Progression Example (Clockwork Wolf, all-Order path):**
-- Common: Cogwork Stalker
+**Full Name Progression Example (Rebar Golem, all-Order path):**
+- Common: Rebar Stalker
 - Uncommon (Order): Tempered Stalker
 - Rare (Order): Ironwrought Warden
-- Epic (Order): Brassbound Sentinel
-- Legendary (Order): Brassforge Colossus, Perfected
+- Epic (Order): Directorate Sentinel
+- Legendary (Order): Star-Forge Colossus, Perfected
 
 ---
 
@@ -1073,6 +1302,74 @@ Reference section for image prompt and text prompt construction. Every AI call r
 
 ---
 
+### 3.4 The Celestial Crusade (Divine Radiance)
+
+**Core Identity:** Divine authority, righteous crusade, overwhelming holy power, terrifying beauty.
+
+**Visual Vocabulary:**
+- Materials: hammered gold plate, white marble veined with gold, divine blue silk, solidified light
+- Components: halos, wings (feathered and burning), sacred geometry, stained glass, divine inscriptions
+- Atmosphere: divine radiance from within, cathedral light, incense smoke, golden dust motes
+- Palette: warm divine — holy gold, divine ivory, righteous blue, celestial rose
+- Era: Timeless divine, biblical scale
+
+**Image Generation Voice:** Overwhelming divine beauty that verges on terrifying. Light comes from within Celestial beings. Knights are luminous and heavy. Chosen are geometrically impossible and beautiful. Everything should feel like a Gustave Dore biblical illustration or a William Blake vision.
+
+**Text Generation Voice:** Declarative and absolute. No hedging, no doubt. Formal register, scriptural cadence. The Celestial do not believe — they know.
+
+**Order Aesthetic:** Formation discipline, geometric perfection, divine law made visible, structured radiance.
+**Chaos Aesthetic:** Divine intervention, overwhelming unpredictable power, reality bending around celestial entities.
+
+**Full Name Progression Example (Radiant Knight, all-Order path):**
+- Common: Radiant Squire
+- Uncommon (Order): Radiant Crusader
+- Rare (Order): Radiant Justicar
+- Epic (Order): Radiant Marshal of the Bastion
+- Legendary (Order): Radiant, the Exalted
+
+**Full Name Progression Example (Burning Wheel, all-Chaos path):**
+- Common: Burning Wheel Acolyte
+- Uncommon (Chaos): Burning Wheel Manifest
+- Rare (Chaos): Burning Wheel, the Incomprehensible
+- Epic (Chaos): Burning Wheel Devourer of Light
+- Legendary (Chaos): Burning Wheel, Voice of the Divine
+
+---
+
+### 3.5 The Endless (Necrotic Spectral)
+
+**Core Identity:** Undead persistence, relentless attrition, death as an engineering problem, the refusal to end.
+
+**Visual Vocabulary:**
+- Materials: bone (polished, raw, fused), ectoplasm, tattered cloth, spectral energy, preserved flesh
+- Components: phylacteries, soul-containers, bone constructs, spectral chains, necrotic runes
+- Atmosphere: fog-choked, ghostly teal glow, necrotic purple energy, the silence of tombs
+- Palette: cold undead — necrotic purple, bone white, ghostly teal, sickly green
+- Era: Timeless death, ancient and accumulating
+
+**Image Generation Voice:** Eerie and persistent. Spectres should flicker between solid and translucent. Cabals should look academic and deliberate. Everything should feel like it has been dead a long time and will continue being dead forever. Gustave Dore Inferno for the Cabals, Francisco Goya Black Paintings for the Spectres.
+
+**Text Generation Voice:** Dry and academic for the Cabals (scholarly, precise, mildly amused by the living). Mournful and raw for the Spectres (fierce, empathetic, haunted). Death is mundane. Eternity is boring.
+
+**Order Aesthetic:** Death as a system, reanimation as an industry, cold methodical necromancy, calculated Persist.
+**Chaos Aesthetic:** Wild spectral energy, uncontrolled death triggers, grief and rage given form, chaining escalation.
+
+**Full Name Progression Example (Bone Construct, all-Order path):**
+- Common: Bone-Stitched Soldier
+- Uncommon (Order): Bone-Forged Sentinel
+- Rare (Order): Ossuary Warden
+- Epic (Order): Ossuary Architect
+- Legendary (Order): Ossuary Parliament, the Eternal
+
+**Full Name Progression Example (Lost Spectre, all-Chaos path):**
+- Common: Wailing Remnant
+- Uncommon (Chaos): Wailing Fury
+- Rare (Chaos): Wailing, the Unforgotten
+- Epic (Chaos): Spectral Maelstrom
+- Legendary (Chaos): Thessaly's Echo, the Unsilenced
+
+---
+
 ## 4. Prompt Construction Algorithm
 
 This is the exact server-side logic that assembles prompts. Claude Code implements this as TypeScript functions on the Railway game server (Node.js/TypeScript). The iOS game client does not assemble prompts — it sends evolution trigger requests to the server, which handles all generation.
@@ -1100,14 +1397,14 @@ const STYLE_ANCHOR =
   '3:4 portrait ratio, no text no borders no watermarks';
 ```
 
-**Step 2: Determine faction prefix (v4 artist references)**
+**Step 2: Determine faction prefix (v5 artist references)**
 ```typescript
 const FACTION_PREFIXES: Record<string, string> = {
   'IRONWRIGHT':
-    'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
-    'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
-    'warm ochre and raw umber palette, smoky atmospheric background, ' +
-    'painted like a Ron Spencer or Mark Tedin industrial horror',
+    'brutalist space-industrial construct, poured concrete and cold-rolled iron, ' +
+    'exposed rebar skeleton and hydraulic pistons, void-reactor glow and orbital debris, ' +
+    'gunmetal and slag-orange palette, oppressive industrial scale, ' +
+    'painted like a Piranesi impossible architecture or John Martin apocalyptic industrial scale',
   'FEY_COURTS':
     'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
     'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
@@ -1118,6 +1415,16 @@ const FACTION_PREFIXES: Record<string, string> = {
     'lit from below by hellfire glow, deep shadow obscuring details, ' +
     'burnt crimson and charcoal black palette, oppressive and heavy, ' +
     'painted like a Pete Venters or Anson Maddocks grotesque dark fantasy',
+  'CELESTIAL_CRUSADE':
+    'divine crusader entity, hammered gold plate and white marble veined with gold, ' +
+    'sacred geometry and divine radiance from within, cathedral light and golden dust motes, ' +
+    'holy gold and divine ivory palette, overwhelming and terrifying beauty, ' +
+    'painted like a Gustave Dore biblical illustration or William Blake visionary painting',
+  'THE_ENDLESS':
+    'undead spectral entity, bone and tattered cloth and ectoplasmic residue, ' +
+    'fog-choked and ghostly teal glow, necrotic purple energy and silence of tombs, ' +
+    'necrotic purple and bone white palette, eerie and persistent, ' +
+    'painted like a Gustave Dore Inferno etching or Francisco Goya Black Painting',
 };
 ```
 
@@ -1149,16 +1456,18 @@ const historyContext = getHistoryContext(cardInstance.evolution_history);
 **Step 5: Get modifier description**
 ```typescript
 // MODIFIER_PROMPT_DESCRIPTIONS is a Record<string, string> mapping modifier ID to prompt description string
-// See full table in Section 1.6 above. All IDs U01-U30, IF01-IF28, FF01-FF28, DF01-DF28 must be present.
+// See full table in Section 1.6 above. All IDs U01-U30, IF01-IF28, FF01-FF28, DF01-DF28, CF01-CF28, EF01-EF28 must be present.
 const modifierDescription = MODIFIER_PROMPT_DESCRIPTIONS[selectedModifierId];
 ```
 
 **Step 6: Assemble full prompt**
 ```typescript
 const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
-  'IRONWRIGHT':       'steampunk industrial brass-and-gears',
-  'FEY_COURTS':       'ethereal fey nature bioluminescent',
-  'DEMONIC_KINGDOMS': 'dark infernal demonic hellfire'
+  'IRONWRIGHT':        'brutalist space-industrial concrete-and-iron',
+  'FEY_COURTS':        'ethereal fey nature bioluminescent',
+  'DEMONIC_KINGDOMS':  'dark infernal demonic hellfire',
+  'CELESTIAL_CRUSADE': 'divine radiant gold-and-marble celestial',
+  'THE_ENDLESS':       'necrotic spectral bone-and-ectoplasm undead',
 };
 
 const prompt = [
@@ -1252,9 +1561,11 @@ function buildNamingPrompt(
 
 ```typescript
 const FACTION_NAME_VOICES: Record<string, string> = {
-  'IRONWRIGHT':       'Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred.',
-  'FEY_COURTS':       'Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, Moss. Use fey titles: Lord, Lady, Warden, Huntress, Speaker, Court. Use seasons and celestial: Spring, Autumn, Moon, Star, Dawn. Use mythic descriptors: Verdant, Eternal, Wild, Ancient. Poetic structures preferred.',
-  'DEMONIC_KINGDOMS': 'Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Direct hard sounds preferred.'
+  'IRONWRIGHT':        'Industrial and precise. Use brutalist space-industrial terminology: Reactor, Void-Forge, Rebar, Piston, Hull, Orbital, Iron, Concrete, Dreadnought. Use functional titles: Warden, Sentinel, Overseer, Architect, Directorate. Reference places of industry: Forge, Shipyard, Void-Dock, Strip-Mine, Star-Forge. Compound nouns preferred. NOT steampunk — no brass, gears, steam, clockwork.',
+  'FEY_COURTS':        'Lyrical and ancient. Use nature terms: Thorn, Root, Bloom, Vine, Grove, Glade, Moss. Use fey titles: Lord, Lady, Warden, Huntress, Speaker, Court. Use seasons and celestial: Spring, Autumn, Moon, Star, Dawn. Use mythic descriptors: Verdant, Eternal, Wild, Ancient. Poetic structures preferred.',
+  'DEMONIC_KINGDOMS':  'Visceral and direct. Use dark materials: Ash, Bone, Blood, Shadow, Flame, Cinder, Ruin, Void. Use violent action: Reaver, Ripper, Render, Scar, Breaker. Use infernal titles: Tyrant, Lord, Unbound, Forsaken, Damned, Herald. Direct hard sounds preferred.',
+  'CELESTIAL_CRUSADE': 'Declarative and absolute. Use divine terminology: Radiant, Exalted, Sanctified, Burning, Holy, Consecrated, Divine, Righteous. Use crusade titles: Marshal, Justicar, Crusader, Herald, Champion, Chosen. Use sacred concepts: Bastion, Sanctum, Deliverance, Judgment, Ascension. Formal register, scriptural cadence.',
+  'THE_ENDLESS':       'Deathly and persistent. Use undead terminology: Bone, Spectral, Phylactery, Dust, Ossuary, Wailing, Lingering, Persist, Remnant. Use undead titles: Revenant, Wraith, Lich, Abomination, Remnant, the Forgotten, the Unforgotten. Use concepts of death and memory: Forgotten, Abandoned, Enduring, Eternal, Silence. Dry academic tone.',
 };
 
 const previousNames = [
@@ -1301,15 +1612,15 @@ return {
 
 #### Ironwright — Common to Uncommon, Chaos, Free Tier (Planar Shard)
 
-Reference image: `https://r2.chaos-creatures.com/art/abc123/common.webp` (clockwork wolf)
-Selected modifier: IF02 (Steam Venting)
+Reference image: `https://r2.chaos-creatures.com/art/abc123/common.webp` (rebar golem)
+Selected modifier: IF02 (Reactor Venting)
 Shard: PLANAR
 
 **fal.ai request body:**
 ```json
 {
   "image_url": "https://r2.chaos-creatures.com/art/abc123/common.webp",
-  "prompt": "fantasy card game art, painterly digital illustration, semi-realistic style, rich saturated colors with deep shadows and bright highlights, dramatic studio lighting, sharp focus on subject, subject centered and filling frame, card-portrait composition 3:4 aspect ratio, no text, no borders, no frames, no UI elements, no watermarks, professional quality, Transform this creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain core identity but push toward the extreme. Apply these specific visual changes: multiple high-pressure steam vents erupting from the chassis in dramatic plumes. Maintain the steampunk industrial brass-and-gears aesthetic throughout. Portrait orientation, centered composition, no text, no watermarks.",
+  "prompt": "1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, traditional media on illustration board, visible brushstrokes and ink linework, sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, muted earth tones and desaturated palette, gritty textured surface with grain and tooth, raw unpolished asymmetric forms, dark atmospheric mood, 3:4 portrait ratio, no text no borders no watermarks Transform this creature with Chaos energy. Dramatically alter the design with wild volatile energy. Add fractured asymmetric elements, red-purple crackling Chaos energy surging through and around the creature, jagged edges and distorted proportions, volatile auras, surging unstable power. Dramatic transformation — retain core identity but push toward the extreme. Apply these specific visual changes: high-pressure reactor venting, superheated plasma erupting from hull breach points in dramatic plumes, emergency containment failure. Maintain the brutalist space-industrial concrete-and-iron aesthetic throughout. Portrait orientation, centered composition, no text, no watermarks.",
   "negative_prompt": "text, words, letters, watermarks, signatures, logos, borders, frames, NSFW, explicit content, gore, low quality, blurry, distorted anatomy, multiple heads, deformed limbs, floating objects",
   "image_size": "portrait_4_3",
   "num_inference_steps": 28,
@@ -1334,7 +1645,7 @@ Shard: PLANAR
     },
     {
       "role": "user",
-      "content": "FACTION: Ironwright Collective\nFACTION VOICE: Industrial and precise. Use engineering terminology: Cogwork, Piston, Valve, Forged, Tempered, Wrought, Clockwork. Use functional titles: Warden, Sentinel, Overseer, Architect. Reference places of craft: Forge, Foundry, Crucible, Anvil. Compound nouns preferred.\nBASE NAME: Cogwork Stalker\nEVOLUTION TIER: UNCOMMON\nEVOLUTION DIRECTION: CHAOS\nEVOLUTION HISTORY: 0 Chaos evolutions, 0 Order evolutions before this one\nPREVIOUS NAMES: [\"Cogwork Stalker\"]\n\nGenerate exactly 3 card name candidates. Rules:\n- 2 to 4 words maximum per name\n- Must match the faction voice exactly\n- Must reflect evolution toward CHAOS\n- Must show progression from the most recent name: \"Cogwork Stalker\"\n- Chaos evolution names: suggest power, wildness, corruption, rage, transformation\n- Do not reuse any name from PREVIOUS NAMES\n\nReturn ONLY this JSON array, nothing else:\n[\"Name One\", \"Name Two\", \"Name Three\"]"
+      "content": "FACTION: Ironwright Collective\nFACTION VOICE: Industrial and precise. Use brutalist space-industrial terminology: Reactor, Void-Forge, Rebar, Piston, Hull, Orbital, Iron, Concrete, Dreadnought. Use functional titles: Warden, Sentinel, Overseer, Architect, Directorate. Reference places of industry: Forge, Shipyard, Void-Dock, Strip-Mine, Star-Forge. Compound nouns preferred. NOT steampunk — no brass, gears, steam, clockwork.\nBASE NAME: Rebar Golem\nEVOLUTION TIER: UNCOMMON\nEVOLUTION DIRECTION: CHAOS\nEVOLUTION HISTORY: 0 Chaos evolutions, 0 Order evolutions before this one\nPREVIOUS NAMES: [\"Rebar Golem\"]\n\nGenerate exactly 3 card name candidates. Rules:\n- 2 to 4 words maximum per name\n- Must match the faction voice exactly\n- Must reflect evolution toward CHAOS\n- Must show progression from the most recent name: \"Rebar Golem\"\n- Chaos evolution names: suggest power, wildness, corruption, rage, transformation\n- Do not reuse any name from PREVIOUS NAMES\n\nReturn ONLY this JSON array, nothing else:\n[\"Name One\", \"Name Two\", \"Name Three\"]"
     }
   ]
 }
@@ -1414,13 +1725,13 @@ The batch pipeline is a feature of the **Admin Dashboard** (Railway-deployed web
 
 ### 5.1 Budget Estimates — $300 Total Build Budget
 
-The batch pipeline generates all pre-launch Common-tier card art and text. Cost estimates for the full launch set (from the example CSV: 15 cards, 3 factions):
+The batch pipeline generates all pre-launch Common-tier card art and text. Cost estimates for the full launch set (from the example CSV: 21 cards, 5 factions):
 
 | Item | Count | Unit Cost | Total |
 |---|---|---|---|
-| Base card art (fal.ai flux/dev, txt2img) | 15 cards × 1.2 avg attempts (20% regen rate) | ~$0.03/image | ~$0.54 |
-| Base flavor text (GPT-4o Mini) | 15 cards × 1.1 avg attempts | ~$0.0001/call | ~$0.002 |
-| **Full launch set (358 cards per doc 05)** | 358 × 1.3 avg attempts | ~$0.03/image | ~$13.96 |
+| Base card art (fal.ai flux/dev, txt2img) | 21 cards × 1.2 avg attempts (20% regen rate) | ~$0.03/image | ~$0.76 |
+| Base flavor text (GPT-4o Mini) | 21 cards × 1.1 avg attempts | ~$0.0001/call | ~$0.002 |
+| **Full launch set (~625 cards per doc 05)** | 625 × 1.3 avg attempts | ~$0.03/image | ~$24.38 |
 | Post-launch player evolutions (first 1000 players, est. avg 5 evolutions/player) | 5000 evolutions | ~$0.03 avg (mixed tiers) | ~$150 |
 | GPT-4o Mini for 5000 evolutions (names + flavor text) | 10000 calls | ~$0.0001 | ~$1.00 |
 | fal.ai Pro subscription (optional, for faster throughput) | 1 month | $0 (pay-per-use) | $0 |
@@ -1449,26 +1760,26 @@ The Admin Dashboard reads a CSV file the owner uploads through the dashboard UI.
 | Column | Type | Description |
 |---|---|---|
 | `id` | string | Unique ID for this row. Format: `IW-001`, `FEY-001`, `DMK-001`. Used as the manifest key for resumability. |
-| `faction_id` | string | One of: `IRONWRIGHT`, `FEY_COURTS`, `DEMONIC_KINGDOMS` |
-| `card_type` | string | One of: `CREATURE`, `SPELL`, `STABILIZER` |
+| `faction_id` | string | One of: `IRONWRIGHT`, `FEY_COURTS`, `DEMONIC_KINGDOMS`, `CELESTIAL_CRUSADE`, `THE_ENDLESS` |
+| `card_type` | string | One of: `CREATURE`, `SPELL`, `STABILIZER`, `PLANAR_RUIN` |
 | `base_name` | string | Starting name (Common-tier name). |
 | `creature_description` | string | Visual description for the art prompt. 1–3 sentences. What it looks like, pose, distinctive features. |
 | `mana_cost` | integer | 1 through 6 |
 | `base_attack` | integer | ATK value. Empty for SPELL/STABILIZER. |
 | `base_health` | integer | HP value. |
 | `base_instability` | integer | 0 through 5 |
-| `keywords` | string | Comma-separated from: SHIELD, LIFESTEAL, FLYING, REACH, DEATHTOUCH, TAUNT, PIERCING. Empty if none. |
+| `keywords` | string | Comma-separated from: SHIELD, LIFESTEAL, FLYING, REACH, DEATHTOUCH, TAUNT, PIERCING, HASTE, WARD. Empty if none. |
 | `flavor_note` | string | Optional hint to guide flavor text. e.g., "aggressive hunter," "noble defender." |
 
 **Example CSV (`cards-to-generate.csv`):**
 
 ```csv
 id,faction_id,card_type,base_name,creature_description,mana_cost,base_attack,base_health,base_instability,keywords,flavor_note
-IW-001,IRONWRIGHT,CREATURE,Cogwork Stalker,"clockwork wolf, sleek predatory design, articulated brass leg joints with visible pistons, mechanical jaw with copper fangs, glowing amber optical sensors, mid-prowl stance",3,3,4,2,,hunting machine
-IW-002,IRONWRIGHT,CREATURE,Gear Sprite,"tiny clockwork sprite, insect-like brass wings with visible gear joints, small rounded copper body, spinning gear on back, curious alert posture",1,1,2,1,,nimble scout
-IW-003,IRONWRIGHT,CREATURE,Steamforged Sentinel,"heavily armored humanoid construct, thick riveted iron plates, broad rectangular chest with steam vents, no visible face just glowing amber eye-slit, planted defensive stance",4,2,6,1,SHIELD,immovable guardian
-IW-004,IRONWRIGHT,CREATURE,Overclock Predator,"sleek velocipede-style mechanical creature, six articulated legs, streamlined brass chassis with exposed red-hot gears, speed blurs at joints, aggressive lunging stance",2,3,2,3,,speed over durability
-IW-005,IRONWRIGHT,CREATURE,Pressure Golem,"massive barrel-chested stone-and-brass golem, iron boiler for a torso with pressure gauges visible, thick piston arms, stomping heavy stance, steam erupting from shoulder joints",6,5,8,2,TAUNT,unstoppable force
+IW-001,IRONWRIGHT,CREATURE,Rebar Golem,"massive humanoid construct of poured concrete and cold-rolled iron, exposed rebar skeleton visible through cracked hull plating, hydraulic piston arms, void-reactor glow from chest cavity, heavy planted stance",3,3,4,2,,industrial enforcer
+IW-002,IRONWRIGHT,CREATURE,Maintenance Drone,"small autonomous repair unit, angular concrete-and-iron chassis, articulated welding arms, sensor array dome head, hovering on magnetic repulsor field, alert scanning posture",1,1,2,1,,nimble scout
+IW-003,IRONWRIGHT,CREATURE,Hull-Plate Sentinel,"heavily armored humanoid construct, thick bolted iron plates over reinforced concrete frame, broad rectangular chest with reactor venting slits, no visible face just amber sensor slit, planted defensive stance",4,2,6,1,SHIELD,immovable guardian
+IW-004,IRONWRIGHT,CREATURE,Void-Dock Predator,"sleek six-legged industrial hunter, streamlined iron chassis with exposed hydraulic joints, reactor-heated orange glow at joints, speed blurs at limbs, aggressive lunging stance in zero-gravity dock",2,3,2,3,,speed over durability
+IW-005,IRONWRIGHT,CREATURE,Reactor-Core Colossus,"colossal construct, three stories of reinforced concrete and iron plating, massive reactor core visible through chest cavity, piston arms like construction cranes, stomping heavy stance, void-reactor glow erupting from joints",6,5,8,2,TAUNT,unstoppable force
 FEY-001,FEY_COURTS,CREATURE,Thornwood Warden,"tall fey knight, living bark armor grown into broad plates, large shield woven from vines and glowing teal crystal, antlers crowned with moonflowers, noble protective wide-stance",4,2,6,1,SHIELD,noble defender
 FEY-002,FEY_COURTS,CREATURE,Moonpetal Sprite,"small agile fey scout, dragonfly-like translucent wings of solidified moonlight, lithe body in petal armor, sharp thorn-claws, crouched ready-to-spring",2,3,2,3,FLYING,quick striker
 FEY-003,FEY_COURTS,CREATURE,Rootcaller Warden,"ancient tree-creature, gnarled living wood body, roots extending from feet into the ground, moss-covered bark armor, slow dignified stance, glowing green eye",3,2,5,1,REACH,ancient protector
@@ -1479,6 +1790,12 @@ DMK-002,DEMONIC_KINGDOMS,CREATURE,Bloodrite Warlord,"massive demonic warlord, he
 DMK-003,DEMONIC_KINGDOMS,CREATURE,Bonebreaker Imp,"small vicious imp, oversized clawed hands relative to tiny body, jagged bone-shard wings, manic grin showing rows of fangs, mid-leap attack stance",1,2,1,3,DEATHTOUCH,cheap removal piece
 DMK-004,DEMONIC_KINGDOMS,CREATURE,Emberhound,"demonic hound, four legs with hooked obsidian claws, fire erupting from between rib bones showing through skin, low tail-up hunting stance, hellfire eyes",2,3,2,3,,aggressive body
 DMK-005,DEMONIC_KINGDOMS,CREATURE,Infernal Colossus,"colossal demon, three stories of corrupted flesh and obsidian plating, massive horned head, arms like siege weapons, surrounded by floating infernal runes, apocalyptic presence",6,7,6,4,PIERCING,game-ending threat
+CC-001,CELESTIAL_CRUSADE,CREATURE,Radiant Squire,"young knight in hammered gold plate armor, white tabard with divine sun emblem, glowing golden halo faintly visible, sword raised in salute, noble upright stance, cathedral light streaming from above",2,2,3,1,,holy soldier
+CC-002,CELESTIAL_CRUSADE,CREATURE,Burning Wheel Acolyte,"angelic entity of burning light, concentric rings of sacred geometry rotating slowly, eyes of pure white fire, feathered wings of solidified light spread wide, floating in divine radiance",4,3,4,3,FLYING HASTE,divine manifestation
+CC-003,CELESTIAL_CRUSADE,CREATURE,Sanctum Guardian,"massive armored angel, white marble skin veined with gold, enormous feathered wings, divine blue silk draped over gold plate, towering protective stance before cathedral gates",5,3,7,1,SHIELD WARD,bastion defender
+EL-001,THE_ENDLESS,CREATURE,Bone-Stitched Soldier,"reanimated humanoid construct of fused bones, polished skull face with glowing teal eye sockets, ribcage visible through tattered robes, bone-blade arm, methodical marching stance",2,2,3,1,,expendable infantry
+EL-002,THE_ENDLESS,CREATURE,Wailing Remnant,"translucent spectral figure flickering between solid and ghost, tattered burial shroud, mournful face frozen in grief, ectoplasmic energy trailing from outstretched hands, floating above ground",3,4,2,3,FLYING,aggressive spectre
+EL-003,THE_ENDLESS,CREATURE,Phylactery Guardian,"hunched necromantic construct, bone armor plates over preserved flesh, glowing phylactery embedded in chest cavity, necrotic purple runes carved into limbs, defensive crouch guarding its soul-container",4,2,6,2,SHIELD,soul vessel protector
 ```
 
 ---
@@ -1980,11 +2297,11 @@ All batch-generated base cards go through owner approval in the Admin Dashboard 
 
 | Check | Pass Condition |
 |---|---|
-| Art matches faction | Clearly Ironwright / Fey / Demonic aesthetic |
+| Art matches faction | Clearly Ironwright / Fey / Demonic / Celestial / Endless aesthetic |
 | Consistent with style anchor | Looks like it belongs in the same card game as others already approved |
 | Creature is visible | Subject fills frame, clearly identifiable |
 | No text or watermarks | No readable characters in image |
-| Colors appropriate | Warm metallic / cool nature / dark infernal as expected |
+| Colors appropriate | Gunmetal-slag (IW) / cool nature (Fey) / dark infernal (DMK) / gold-ivory (CC) / bone-purple (EL) as expected |
 | Name fits faction voice | Passes the "does this sound like this faction" gut check |
 | Flavor text grammatical | Readable, no obvious errors |
 | Flavor text evocative | Feels like a card game, not a description |
@@ -2082,3 +2399,41 @@ All batch-generated base cards go through owner approval in the Admin Dashboard 
 8. **Local scripts synced with prompts.ts.** `scripts/generate-test-cards.mjs` and `scripts/validate-art-quality.mjs` updated with: v4 STYLE_ANCHOR, v4 faction prefixes, 25-template COMPOSITION_POOL, 13-environment FACTION_ENVIRONMENTS per faction, and all three new variety dimension arrays and selector functions.
 
 9. **CLAUDE.md updated.** Art Quality Target artist references updated to v4 roster. Composition Variety updated to 25 templates + 13 environments + 3 variety dimensions. Card Visual System updated to full-art card design with translucent text panel (no bordered frames).
+
+---
+
+### Changes Made in Version 5.0 (2026-02-19)
+
+1. **Faction expansion: 3 → 5 factions.** Added Celestial Crusade and The Endless factions throughout all prompt sections. Every faction-indexed data structure (FACTION_PREFIXES, FACTION_SHORT_DESCRIPTIONS, FACTION_NAME_VOICES, flavor tone strings, environments, modifiers) now includes all 5 factions.
+
+2. **Ironwright rethemed: steampunk → brutalist space-industrial.** All Ironwright references updated: faction prefix, environments (13 new: orbital shipyard, strip-mine, void-reactor, gravity-tether, etc.), faction modifiers (IF01-IF28 rethemed: Rebar Reinforcement, Reactor Venting, Concrete Cladding, etc.), naming voice, flavor tone, all examples. No brass, gears, steam, or clockwork. New art references: Piranesi (impossible architecture), John Martin (apocalyptic industrial scale).
+
+3. **Keyword expansion: 7 → 9 keywords.** Added Haste (attack on play turn — speed blur, momentum streaks) and Ward (can't be targeted for 1 turn — translucent barrier, deflection sigils) to keyword visual effect prompts (Section 1.7) and CSV keyword column.
+
+4. **28 Celestial Crusade faction modifiers added (CF01-CF28).** Divine Halo, Angelic Wings, Holy Armor, Formation Glow, Burning Wheels, Rose Window Chest, Apotheosis, Stigmata, etc. Art references: Gustave Dore biblical illustrations, William Blake visionary paintings.
+
+5. **28 Endless faction modifiers added (EF01-EF28).** Bone Growth, Spectral Mist, Phylactery Glow, Soul-Light Eyes, Ghost Swarm, Ossuary Armor, Death's Door, Oblivion Touch, etc. Art references: Gustave Dore Inferno etchings, Francisco Goya Black Paintings.
+
+6. **13 Celestial Crusade environments added.** Radiant Bastion, cloud battlefield, Sanctum of Open Eyes, consecration site, burning bridge between realms, etc.
+
+7. **13 Endless environments added.** Ossuary Parliament, Wailing Reach, necromancer's theater, underground crypt, spectral battlefield, etc.
+
+8. **Section 1.7 added: Keyword Visual Effect Prompts.** All 9 keywords with exact visual prompt strings for image generation.
+
+9. **Section 1.8 added: Planar Ruins Art Prompts.** Neutral ruin prefix + 5 faction-specific transformation prompts for img2img evolution of Planar Ruin cards. Uses FLUX Kontext img2img pipeline.
+
+10. **Celestial Crusade voice guide added (Section 3.4).** Full vocabulary, image/text generation voices, Order/Chaos aesthetics, name progression examples.
+
+11. **Endless voice guide added (Section 3.5).** Full vocabulary, image/text generation voices, Order/Chaos aesthetics, name progression examples for both Cabals and Spectres sub-factions.
+
+12. **TypeScript code blocks updated (Sections 4.1, 4.2).** FACTION_PREFIXES, FACTION_SHORT_DESCRIPTIONS, FACTION_NAME_VOICES Records all updated to include 5 factions with rethemed Ironwright. Modifier ID comment updated to include CF01-CF28, EF01-EF28.
+
+13. **CSV format updated (Section 5.2).** faction_id column now accepts 5 values. card_type includes PLANAR_RUIN. keywords includes HASTE and WARD. Example CSV expanded with Celestial Crusade (CC-001 through CC-003) and Endless (EL-001 through EL-003) sample rows. Ironwright rows rethemed.
+
+14. **Flavor tone strings added for Celestial and Endless.** Celestial: declarative and absolute, scriptural cadence. Endless: dry academic (Cabals) / mournful raw (Spectres).
+
+15. **Concrete examples added for Celestial and Endless.** Naming examples, flavor text examples, and end-to-end example prompts for both new factions.
+
+16. **Budget estimates updated.** Full launch set card count updated from 358 to ~625 to reflect 5 factions. Cost estimate updated accordingly (~$24.38 for base art generation).
+
+17. **QA criteria updated.** Faction aesthetic check and color appropriateness check now reference all 5 factions.

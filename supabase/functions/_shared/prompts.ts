@@ -5,19 +5,23 @@
 
 // =============================================================================
 // 1. STYLE ANCHOR (Section 1.1) -- Prefixes EVERY image generation request
-// v4 style anchor: 1990s MTG artists, ink linework, sketchy atmospheric rendering.
-// Key changes from v3: removed "single creature portrait" (blocked group compositions),
-// replaced Donato/Frazetta with actual 1990s MTG artists Ron Spencer/Pete Venters/Mark Poole,
-// added ink linework and sketchy rendering for authentic MTG feel.
+// v5 style anchor: public domain artist references only (all died pre-1953).
+// Gustave Dore (1832-1883), Arthur Rackham (1867-1939), N.C. Wyeth (1882-1945),
+// John Martin (1789-1854), Edmund Dulac (1882-1953), Hieronymus Bosch (c.1450-1516).
+// No copyrighted brand names, no living artists.
 // =============================================================================
 
 export const STYLE_ANCHOR =
-  '1990s Magic: The Gathering illustration, painted by Ron Spencer and Pete Venters and Mark Poole, ' +
-  'traditional media on illustration board, visible brushstrokes and ink linework, ' +
-  'sketchy atmospheric rendering with areas left loose, moody chiaroscuro with a single dramatic light source, ' +
-  'muted earth tones and desaturated palette, gritty textured surface with grain and tooth, ' +
-  'raw unpolished asymmetric forms, dark atmospheric mood, ' +
-  '3:4 portrait ratio, no text no borders no watermarks';
+  'fantasy creature illustration in the style of Gustave Dore engravings and N.C. Wyeth oil paintings, ' +
+  'traditional media on illustration board, thick acrylic and ink on textured watercolor paper, ' +
+  'heavy visible impasto brushstrokes, dry brush ink linework, crosshatching in shadow areas, ' +
+  'rough sketchy rendering with areas left intentionally unfinished and raw, ' +
+  'dramatic chiaroscuro lighting with a single harsh directional light source, deep blacks, ' +
+  'muted earth tones, raw umber and burnt sienna, desaturated and muddy palette, ' +
+  'visible paper grain and canvas texture throughout, paint cracking at edges, ' +
+  'dark moody atmospheric illustration, raw unpolished asymmetric anatomy, ' +
+  '3:4 portrait ratio, no text no borders no UI no watermarks, ' +
+  'NOT digital art, NOT 3D render, NOT smooth, NOT airbrushed, NOT photorealistic, NOT CGI, NOT clean lines';
 
 // =============================================================================
 // 2. FACTION PREFIXES (Section 1.3) -- Used for base card art generation
@@ -34,19 +38,19 @@ const DEMONIC_PREFIX =
   'grotesque infernal creature, fused bone and volcanic rock and dried gore, ' +
   'lit from below by hellfire glow, deep shadow obscuring details, ' +
   'burnt crimson and charcoal black palette, oppressive and heavy, ' +
-  'painted like a Pete Venters or Anson Maddocks grotesque dark fantasy';
+  'in the style of Gustave Dore Dante Inferno engravings and Hieronymus Bosch hellscape paintings';
 
 export const FACTION_PREFIXES: Record<string, string> = {
   IRONWRIGHT:
     'grimy industrial steampunk creature, corroded brass and blackened iron, ' +
     'oil-stained and soot-caked, dented riveted plates with weld scars, ' +
     'warm ochre and raw umber palette, smoky atmospheric background, ' +
-    'painted like a Ron Spencer or Mark Tedin industrial horror',
+    'in the style of John Martin apocalyptic industrial landscapes and Gustave Dore dramatic engravings',
   FEY_COURTS:
     'dark fey forest creature, twisted ancient wood and thorns, unsettling and wild, ' +
     'dappled green-gold light filtering through dense canopy, muted forest palette, ' +
     'overgrown with moss and lichen, more Brothers Grimm than Disney, ' +
-    'painted like a Rebecca Guay or Quinton Hoover ethereal watercolor',
+    'in the style of Arthur Rackham twisted ink drawings and Edmund Dulac muted watercolors',
   DEMONIC: DEMONIC_PREFIX,
   DEMONIC_KINGDOMS: DEMONIC_PREFIX, // DB alias
 };
@@ -247,10 +251,10 @@ export const CHAOS_INSTRUCTION =
 // =============================================================================
 
 export const FACTION_SHORT_DESCRIPTIONS: Record<string, string> = {
-  IRONWRIGHT: 'grimy industrial steampunk, corroded brass and blackened iron, painted like Ron Spencer and Mark Tedin',
-  FEY_COURTS: 'dark fey forest creature, twisted ancient wood, painted like Rebecca Guay and Quinton Hoover',
-  DEMONIC: 'grotesque infernal creature, fused bone and volcanic rock, painted like Pete Venters and Anson Maddocks',
-  DEMONIC_KINGDOMS: 'grotesque infernal creature, fused bone and volcanic rock, painted like Pete Venters and Anson Maddocks',
+  IRONWRIGHT: 'grimy industrial steampunk, corroded brass and blackened iron, in the style of John Martin and Gustave Dore',
+  FEY_COURTS: 'dark fey forest creature, twisted ancient wood, in the style of Arthur Rackham and Edmund Dulac',
+  DEMONIC: 'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
+  DEMONIC_KINGDOMS: 'grotesque infernal creature, fused bone and volcanic rock, in the style of Gustave Dore and Hieronymus Bosch',
 };
 
 // =============================================================================
