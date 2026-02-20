@@ -173,7 +173,7 @@ struct CardDetailView: View {
             HStack(spacing: 0) {
                 // ATK stat
                 statCell(
-                    iconName: "swords",
+                    iconName: "sword-atk",
                     value: card.currentAttack ?? 0,
                     color: .chaosRed,
                     label: "ATK"
@@ -185,7 +185,7 @@ struct CardDetailView: View {
 
                 // HP stat
                 statCell(
-                    iconName: "heart.fill",
+                    iconName: "heart-hp",
                     value: card.currentHealth ?? 0,
                     color: .healGreen,
                     label: "HP"
@@ -212,8 +212,11 @@ struct CardDetailView: View {
 
     private func statCell(iconName: String, value: Int, color: Color, label: String) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: iconName)
-                .font(.system(size: 14, weight: .semibold))  // SF Symbol icon size - keep as-is
+            Image("StatIcons/\(iconName)")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 14, height: 14)
                 .foregroundColor(color)
                 .frame(width: 24, height: 24)
                 .background(color.opacity(0.15))
@@ -240,8 +243,9 @@ struct CardDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(card.effectiveKeywords) { keyword in
                         HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: keyword.sfSymbolName)
-                                .font(.system(size: 14, weight: .semibold))  // SF Symbol icon size - keep as-is
+                            Image(keyword.customIconName)
+                                .renderingMode(.template)
+                                .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(keywordColor(keyword))
                                 .frame(width: 28, height: 28)
                                 .background(keywordColor(keyword).opacity(0.15))

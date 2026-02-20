@@ -12,8 +12,9 @@ struct KeywordBadgeView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: keyword.sfSymbolName)
-                .font(.system(size: 11, weight: .semibold))  // SF Symbol icon size - keep as-is
+            Image(keyword.customIconName)
+                .renderingMode(.template)
+                .font(.system(size: 11, weight: .semibold))
             Text(keyword.displayName)
                 .font(CardFont.bodyBold(size: 11))
         }
@@ -54,8 +55,9 @@ struct KeywordTooltipView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: keyword.sfSymbolName)
-                    .font(.system(size: 16, weight: .semibold))  // SF Symbol icon size - keep as-is
+                Image(keyword.customIconName)
+                    .renderingMode(.template)
+                    .font(.system(size: 16, weight: .semibold))
                 Text(keyword.displayName)
                     .font(CardFont.cardName(size: 16))
             }

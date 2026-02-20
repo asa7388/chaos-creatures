@@ -841,8 +841,9 @@ struct CardFrameView: View {
 
     private func keywordBadge(keyword: Keyword) -> some View {
         HStack(spacing: 3) {
-            Image(systemName: keyword.sfSymbolName)
-                .font(.system(size: 10, weight: .semibold))  // SF Symbol icon size - keep as-is
+            Image(keyword.customIconName)
+                .renderingMode(.template)
+                .font(.system(size: 10, weight: .semibold))
 
             Text(keyword.displayName)
                 .font(CardFont.body(size: 10))
@@ -1390,7 +1391,7 @@ private struct RarityBorderModifier: ViewModifier {
 // MARK: - Keyword Asset Name Extension
 
 extension Keyword {
-    /// SF Symbol name for this keyword's icon.
+    /// SF Symbol name for this keyword's icon (legacy, kept for backwards compatibility).
     var sfSymbolName: String {
         switch self {
         case .shield: return "shield.fill"

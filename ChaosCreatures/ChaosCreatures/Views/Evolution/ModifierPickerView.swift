@@ -181,8 +181,9 @@ struct ModifierPickerView: View {
                     // Keyword granted
                     if let keyword = modifier.grantsKeyword {
                         HStack(spacing: 4) {
-                            Image(systemName: keyword.iconName)
-                                .font(.system(size: 11))  // SF Symbol icon size - keep as-is
+                            Image(keyword.customIconName)
+                                .renderingMode(.template)
+                                .font(.system(size: 11))
                             Text(keyword.displayName)
                                 .font(CardFont.body(size: 12))
                         }
@@ -205,8 +206,11 @@ struct ModifierPickerView: View {
 
                     // Power rating
                     HStack(spacing: 3) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+                        Image("StatIcons/chaos-motes")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 10, height: 10)
                         Text("Power \(modifier.powerRating)")
                             .font(CardFont.body(size: 11))
                     }

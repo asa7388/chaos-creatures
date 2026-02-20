@@ -80,6 +80,21 @@ enum Keyword: String, Codable, CaseIterable, Identifiable {
         case .ward: return "sparkles"
         }
     }
+
+    /// Custom keyword icon from Assets.xcassets/KeywordIcons/
+    var customIconName: String {
+        switch self {
+        case .shield: return "KeywordIcons/kw-shield"
+        case .lifesteal: return "KeywordIcons/kw-lifesteal"
+        case .flying: return "KeywordIcons/kw-flying"
+        case .reach: return "KeywordIcons/kw-reach"
+        case .deathtouch: return "KeywordIcons/kw-deathtouch"
+        case .taunt: return "KeywordIcons/kw-taunt"
+        case .piercing: return "KeywordIcons/kw-piercing"
+        case .haste: return "KeywordIcons/kw-haste"
+        case .ward: return "KeywordIcons/kw-ward"
+        }
+    }
 }
 
 // MARK: - Stabilizer Types (Section 1)
@@ -609,6 +624,16 @@ enum FactionShortName: String, Codable, CaseIterable, Identifiable {
         case .demonicKingdoms: return .corruption
         case .celestialCrusade: return .exalt
         case .theEndless: return .persist
+        }
+    }
+
+    var emblemAssetName: String {
+        switch self {
+        case .ironwright: return "FactionEmblems/emblem-ironwright"
+        case .feyCourts: return "FactionEmblems/emblem-fey"
+        case .demonicKingdoms: return "FactionEmblems/emblem-demonic"
+        case .celestialCrusade: return "FactionEmblems/emblem-celestial"
+        case .theEndless: return "FactionEmblems/emblem-endless"
         }
     }
 
