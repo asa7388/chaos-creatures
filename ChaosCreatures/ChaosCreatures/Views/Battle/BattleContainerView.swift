@@ -459,30 +459,50 @@ struct HandScrollView: View {
     let onSelect: (String?) -> Void
     let onPlay: (String) -> Void
 
+    /// Card currently shown in the fullscreen expand preview (tap-to-preview)
+    @State private var expandedCard: BattleCardData?
+
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(hand) { card in
-                    HandCardView(
-                        card: card,
-                        isSelected: card.instanceId == selectedCardId,
-                        canAfford: card.manaCost <= currentMana && canPlay,
-                        onTap: {
-                            if card.instanceId == selectedCardId {
-                                // Double-tap to play
-                                if card.manaCost <= currentMana && canPlay {
-                                    onPlay(card.instanceId)
+        ZStack {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(hand) { card in
+                        HandCardView(
+                            card: card,
+                            isSelected: card.instanceId == selectedCardId,
+                            canAfford: card.manaCost <= currentMana && canPlay,
+                            onTap: {
+                                if card.instanceId == selectedCardId {
+                                    // Double-tap to play
+                                    if card.manaCost <= currentMana && canPlay {
+                                        onPlay(card.instanceId)
+                                    }
+                                } else {
+                                    onSelect(card.instanceId)
                                 }
-                            } else {
-                                onSelect(card.instanceId)
+                            },
+                            onLongPress: {
+                                expandedCard = card
                             }
-                        }
-                    )
+                        )
+                    }
                 }
+                .padding(.horizontal, 12)
             }
-            .padding(.horizontal, 12)
+            .coordinateSpace(name: "handScroll")
+            .background(Color.bgPrimary.opacity(0.6))
         }
-        .background(Color.bgPrimary.opacity(0.6))
+        .overlay {
+            // Card expand preview overlay
+            if let card = expandedCard {
+                BattleCardExpandOverlay(card: card) {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        expandedCard = nil
+                    }
+                }
+                .transition(.opacity)
+            }
+        }
     }
 }
 
@@ -493,13 +513,26 @@ struct HandCardView: View {
     let isSelected: Bool
     let canAfford: Bool
     let onTap: () -> Void
+    var onLongPress: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 2) {
-            // Card art placeholder
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.factionPrimary(card.factionShortName ?? .ironwright).opacity(0.3))
-                .frame(width: 60, height: 48)
+            // Card art with scroll-based parallax offset
+            GeometryReader { geo in
+                let scrollFrame = geo.frame(in: .named("handScroll"))
+                let screenMid = UIScreen.main.bounds.width / 2
+                let cardMid = scrollFrame.midX
+                // Normalized offset: -1 (card far left) to +1 (card far right)
+                let normalized = max(-1, min(1, (cardMid - screenMid) / screenMid))
+                // Parallax shift: max 3pt (matches SK.HandParallax.maxOffset)
+                let parallaxOffset = normalized * 3.0
+
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.factionPrimary(card.factionShortName ?? .ironwright).opacity(0.3))
+                    .offset(x: parallaxOffset)
+            }
+            .frame(width: 60, height: 48)
+            .clipped()
 
             // Name
             Text(card.name.prefix(8))
@@ -546,6 +579,9 @@ struct HandCardView: View {
         .scaleEffect(isSelected ? 1.08 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isSelected)
         .onTapGesture(perform: onTap)
+        .onLongPressGesture(minimumDuration: 0.4) {
+            onLongPress?()
+        }
     }
 }
 
@@ -842,6 +878,128 @@ struct ConnectionQualityIndicator: View {
         case .degraded: return .yellow
         case .poor: return .red
         case .disconnected: return .gray
+        }
+    }
+}
+
+// MARK: - Battle Card Expand Overlay (Tap-to-Preview)
+
+/// Fullscreen card preview overlay for battle hand cards.
+/// Shows the card's name, stats, keywords, and art on a dark backdrop.
+/// Tap anywhere to dismiss.
+struct BattleCardExpandOverlay: View {
+    let card: BattleCardData
+    let onDismiss: () -> Void
+
+    @State private var appeared = false
+
+    var body: some View {
+        ZStack {
+            // Dark backdrop
+            Color.black.opacity(appeared ? 0.75 : 0)
+                .ignoresSafeArea()
+                .onTapGesture { onDismiss() }
+
+            // Card preview content
+            VStack(spacing: 16) {
+                // Card art (large)
+                AsyncImage(url: URL(string: card.artUrl)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 240, height: 320)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    default:
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.factionPrimary(card.factionShortName ?? .ironwright).opacity(0.3))
+                            .frame(width: 240, height: 320)
+                    }
+                }
+                .shadow(color: .black.opacity(0.6), radius: 20, x: 0, y: 10)
+
+                // Card name
+                Text(card.name)
+                    .font(CardFont.displayTitle(size: 20))
+                    .foregroundColor(.textPrimary)
+
+                // Stats row
+                HStack(spacing: 20) {
+                    // CM cost
+                    HStack(spacing: 4) {
+                        Image("StatIcons/chaos-motes")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16, height: 16)
+                            .foregroundColor(.timerBlue)
+                        Text("\(card.manaCost)")
+                            .font(CardFont.stats(size: 18))
+                            .foregroundColor(.textPrimary)
+                    }
+
+                    if let atk = card.baseAttack {
+                        HStack(spacing: 4) {
+                            Image("StatIcons/sword-atk")
+                                .renderingMode(.template)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(.damageOrange)
+                            Text("\(atk)")
+                                .font(CardFont.stats(size: 18))
+                                .foregroundColor(.textPrimary)
+                        }
+                    }
+
+                    if let hp = card.baseHealth {
+                        HStack(spacing: 4) {
+                            Image("StatIcons/heart-hp")
+                                .renderingMode(.template)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 16, height: 16)
+                                .foregroundColor(.chaosRed)
+                            Text("\(hp)")
+                                .font(CardFont.stats(size: 18))
+                                .foregroundColor(.textPrimary)
+                        }
+                    }
+                }
+
+                // Keywords
+                if !card.innateKeywords.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(card.innateKeywords, id: \.self) { keyword in
+                            Text(keyword.rawValue.capitalized)
+                                .font(CardFont.bodyBold(size: 12))
+                                .foregroundColor(.textSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.bgTertiary)
+                                .cornerRadius(4)
+                        }
+                    }
+                }
+
+                // Card type
+                Text(card.cardType.rawValue.capitalized)
+                    .font(CardFont.body(size: 13))
+                    .foregroundColor(.textTertiary)
+
+                // Tier
+                Text(card.evolutionTier.rawValue.capitalized)
+                    .font(CardFont.body(size: 11))
+                    .foregroundColor(Color(card.evolutionTier.borderUIColor))
+            }
+            .scaleEffect(appeared ? 1.0 : 0.8)
+            .opacity(appeared ? 1.0 : 0)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.25)) {
+                appeared = true
+            }
         }
     }
 }

@@ -94,4 +94,44 @@ final class HandNode: SKNode {
             node.setPlayable(node.cardData.manaCost <= currentMana)
         }
     }
+
+    // MARK: - Parallax
+
+    /// Apply parallax offset to all hand card art layers.
+    /// Called during horizontal pan/swipe through the hand.
+    ///
+    /// - Parameter normalizedOffset: -1...1 representing pan direction/intensity.
+    func applyParallaxOffset(_ normalizedOffset: CGFloat) {
+        for node in cardNodes {
+            node.applyParallaxOffset(normalizedOffset)
+        }
+    }
+
+    /// Reset parallax offset on all hand cards (call when swipe/pan ends).
+    func resetParallaxOffset() {
+        for node in cardNodes {
+            node.resetParallaxOffset()
+        }
+    }
+
+    // MARK: - Card Expand
+
+    /// Returns the currently expanded card, if any.
+    var expandedCard: HandCardNode? {
+        cardNodes.first(where: { $0.isExpanded })
+    }
+
+    /// Expand a specific hand card by instance ID. Only one card can be expanded at a time.
+    func expandCard(instanceId: String, in scene: SKScene) {
+        // Dismiss any already-expanded card first
+        expandedCard?.dismissExpand()
+
+        guard let node = cardNodes.first(where: { $0.cardData.instanceId == instanceId }) else { return }
+        node.expandInScene(scene)
+    }
+
+    /// Dismiss the currently expanded card, if any.
+    func dismissExpandedCard() {
+        expandedCard?.dismissExpand()
+    }
 }

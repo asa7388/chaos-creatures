@@ -226,6 +226,9 @@ final class BattleScene: SKScene {
         )
     }
 
+    // Track previous creature stats for stamp animation detection: [instanceId: (atk, hp, maxHp)]
+    private var previousCreatureStats: [String: (attack: Int, health: Int, maxHealth: Int)] = [:]
+
     /// Sync board nodes to match server state
     private func syncBoard(boardNode: BoardNode, creatures: [BattleCreatureData?], isPlayer: Bool) {
         // Remove creatures that are no longer on the board
@@ -238,16 +241,52 @@ final class BattleScene: SKScene {
                 node.removeFromParent()
             }
             boardNode.removeCreature(id: removedId)
+            previousCreatureStats.removeValue(forKey: removedId)
         }
 
         // Add or update creatures
         for (slot, creatureData) in creatures.enumerated() {
             if let data = creatureData {
                 if let existingNode = creatureNodes[data.instanceId] {
-                    // Update existing creature stats
-                    existingNode.updateStats(attack: data.attack, health: data.health, maxHealth: data.maxHealth)
+                    // Detect stat changes and play stamp animations
+                    let prevStats = previousCreatureStats[data.instanceId]
+                    let oldHp = prevStats?.health ?? data.health
+                    let oldAtk = prevStats?.attack ?? data.attack
+
+                    // HP change stamp animation
+                    if data.health != oldHp {
+                        if data.health < oldHp {
+                            existingNode.playDamageStamp(newHp: data.health, maxHealth: data.maxHealth)
+                        } else {
+                            existingNode.playBuffStamp(newHp: data.health, maxHealth: data.maxHealth)
+                        }
+                    }
+
+                    // ATK change stamp animation
+                    if data.attack != oldAtk {
+                        if data.attack < oldAtk {
+                            existingNode.playAtkDamageStamp(newAtk: data.attack)
+                        } else {
+                            existingNode.playAtkBuffStamp(newAtk: data.attack)
+                        }
+                    }
+
+                    // Update stats (updates labels for cases where stamp didn't fire,
+                    // and handles badge tint). Stamp animation will override the label text
+                    // with its own animated sequence if it fired.
+                    if data.health == oldHp && data.attack == oldAtk {
+                        // No change — still call updateStats for badge tint consistency
+                        existingNode.updateStats(attack: data.attack, health: data.health, maxHealth: data.maxHealth)
+                    }
+
                     existingNode.updateKeywords(data.activeKeywords)
                     if data.shieldActive { existingNode.showShield() } else { existingNode.removeShield() }
+
+                    // Update exhausted/tapped state based on hasAttacked flag
+                    existingNode.setExhausted(data.hasAttacked)
+
+                    // Store current stats for next comparison
+                    previousCreatureStats[data.instanceId] = (data.attack, data.health, data.maxHealth)
                 } else {
                     // Create new creature node
                     let creatureNode = CreatureNode(creature: data, isPlayer: isPlayer)
@@ -257,6 +296,14 @@ final class BattleScene: SKScene {
                     boardNode.addChild(creatureNode)
                     boardNode.placeCreature(creatureNode, at: slot)
                     creatureNodes[data.instanceId] = creatureNode
+
+                    // Store initial stats for future change detection
+                    previousCreatureStats[data.instanceId] = (data.attack, data.health, data.maxHealth)
+
+                    // Set up Furnace Lords lava pulse for Demonic creatures
+                    if creatureNode.isFurnaceLords {
+                        creatureNode.setupLavaPulse()
+                    }
                 }
             }
         }
@@ -321,6 +368,14 @@ final class BattleScene: SKScene {
         ) { [weak self] in
             boardNode.placeCreature(creatureNode, at: slot)
             self?.creatureNodes[creatureData.instanceId] = creatureNode
+
+            // Store initial stats for future change detection
+            self?.previousCreatureStats[creatureData.instanceId] = (creatureData.attack, creatureData.health, creatureData.maxHealth)
+
+            // Set up Furnace Lords lava pulse for Demonic creatures
+            if creatureNode.isFurnaceLords {
+                creatureNode.setupLavaPulse()
+            }
 
             // Update CM
             if isPlayer {
@@ -529,6 +584,7 @@ final class BattleScene: SKScene {
             // Clean up references
             for death in deaths {
                 self.creatureNodes.removeValue(forKey: death.creatureId)
+                self.previousCreatureStats.removeValue(forKey: death.creatureId)
                 let board = (death.side == self.lastGameState?.mySide) ? self.playerBoard : self.opponentBoard
                 board?.removeCreature(id: death.creatureId)
             }
@@ -548,6 +604,7 @@ final class BattleScene: SKScene {
 
         DeathAction.playDeath(creature: node, faction: node.factionShortName, in: self) { [weak self] in
             self?.creatureNodes.removeValue(forKey: data.creatureId)
+            self?.previousCreatureStats.removeValue(forKey: data.creatureId)
             let board = (data.player == self?.lastGameState?.mySide) ? self?.playerBoard : self?.opponentBoard
             board?.removeCreature(id: data.creatureId)
             self?.stateMachine?.animationDidComplete()
@@ -660,6 +717,7 @@ final class BattleScene: SKScene {
         // Ruin destruction: crumble/fade effect
         DeathAction.playDeath(creature: node, faction: node.factionShortName, in: self) { [weak self] in
             self?.creatureNodes.removeValue(forKey: data.ruinId)
+            self?.previousCreatureStats.removeValue(forKey: data.ruinId)
             let board = (data.player == self?.lastGameState?.mySide) ? self?.playerBoard : self?.opponentBoard
             board?.removeCreature(id: data.ruinId)
             self?.stateMachine?.animationDidComplete()

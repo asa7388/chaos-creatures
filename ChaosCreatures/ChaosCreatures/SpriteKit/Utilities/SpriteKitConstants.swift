@@ -463,6 +463,44 @@ enum SK {
         static let halfDuration: TimeInterval = 0.2
     }
 
+    // MARK: - Hand Card Parallax
+
+    enum HandParallax {
+        /// Maximum horizontal offset (in pts) applied to the art layer during swipe
+        static let maxOffset: CGFloat = 3.0
+        /// Duration of the smooth interpolation to the target offset
+        static let interpolationDuration: TimeInterval = 0.1
+        /// Duration of the smooth reset back to center when swipe stops
+        static let resetDuration: TimeInterval = 0.25
+    }
+
+    // MARK: - Card Expand (Tap-to-Preview)
+
+    enum CardExpand {
+        /// Expanded card width as a fraction of scene width
+        static let widthFraction: CGFloat = 0.80
+        /// Dark overlay alpha behind expanded card
+        static let overlayAlpha: CGFloat = 0.65
+        /// Expansion animation duration
+        static let expandDuration: TimeInterval = 0.30
+        /// Dismiss animation duration
+        static let dismissDuration: TimeInterval = 0.25
+        /// Shadow blur radius when card is fully expanded
+        static let shadowBlurRadius: CGFloat = 20
+        /// Shadow opacity when card is fully expanded
+        static let shadowAlpha: CGFloat = 0.7
+        /// Z-position for the expand overlay (above everything)
+        static let overlayZPosition: CGFloat = 500
+        /// Z-position for the expanded card
+        static let cardZPosition: CGFloat = 510
+        /// Font size for the expanded effect/flavor text
+        static let detailFontSize: CGFloat = 12
+        /// Font size for the expanded card name
+        static let expandedNameFontSize: CGFloat = 16
+        /// Font size for the expanded stat numbers
+        static let expandedStatFontSize: CGFloat = 18
+    }
+
     // MARK: - Card Texture Assets
 
     /// Maps factions to their primary border and text panel texture asset names.

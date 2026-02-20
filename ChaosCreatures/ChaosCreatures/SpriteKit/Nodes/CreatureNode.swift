@@ -31,6 +31,11 @@ final class CreatureNode: SKSpriteNode {
     /// Centered type label for non-creature cards (spells, stabilizers, ruins)
     private var typeLabel: SKLabelNode?
 
+    /// Exhausted/tapped state nodes
+    private var exhaustedGlyph: SKSpriteNode?
+    private var desaturationEffectNode: SKEffectNode?
+    private(set) var isExhausted: Bool = false
+
     // MARK: - State
 
     private(set) var creatureId: String
@@ -121,15 +126,9 @@ final class CreatureNode: SKSpriteNode {
         // LAYER STACK (back to front)
         // ====================================================================
 
-        // Layer -3: Contact shadow — warm soft shadow beneath the card
-        let shadowSize = CGSize(width: cardSize.width + 4, height: cardSize.height + 2)
-        let shadowNode = SKShapeNode(rectOf: shadowSize, cornerRadius: cornerRadius + 1)
-        shadowNode.fillColor = UIColor(hex: "#1A1408").withAlphaComponent(0.45)
-        shadowNode.strokeColor = .clear
-        shadowNode.position = CGPoint(x: 0, y: -2)
-        shadowNode.zPosition = -3
-        shadowNode.name = "contact_shadow"
-        addChild(shadowNode)
+        // Layer -3: Contact shadow — warm-tinted ellipse at the BASE of the card,
+        // dark at contact point, fading quickly. Not pure black: slightly warm brown.
+        setupContactShadow(cardSize: cardSize)
 
         // Layer -2: Rarity glow (colored sprite behind card)
         applyRarityGlow(creature.evolutionTier)
@@ -542,6 +541,249 @@ final class CreatureNode: SKSpriteNode {
         }
     }
 
+    // MARK: - Stat Stamp Animations (Wave 6 Visual Polish)
+
+    /// Stored references for stat label default colors to restore after stamp animation.
+    /// Parchment text color is the default for all stat labels.
+    private static let defaultStatColor = SK.CardTextures.parchmentText
+    private static let damageStampColor = UIColor(hex: "#991B1B")  // Muted red
+    private static let buffStampColor = UIColor(hex: "#F59E0B")    // Warm gold
+
+    /// Play a "stamp" animation on the HP label for damage taken.
+    /// The old numeral fades out, new numeral appears with an emboss pulse
+    /// (starts 1.3x scale, snaps to 1.0x with bounce), HP label flashes muted red,
+    /// and the card shakes briefly (2-3px, 0.15s). Total duration ~0.3s.
+    func playDamageStamp(newHp: Int, maxHealth: Int) {
+        // Update the HP badge tint to red if damaged
+        let hpTintNode = hpBadge.children.compactMap { $0 as? SKShapeNode }.first { $0.fillColor != .clear }
+        if let tintNode = hpTintNode, newHp < maxHealth {
+            tintNode.fillColor = UIColor(hex: "#F44336").withAlphaComponent(0.45)
+        }
+
+        playStatStamp(on: hpLabel, container: hpBadge, newValue: newHp, isDamage: true)
+
+        // Card-local screen shake (not the whole scene)
+        playCardShake()
+    }
+
+    /// Play a "stamp" animation on the HP label for a buff (heal).
+    /// Same emboss pulse but with warm gold color and upward-rising sparkle particles.
+    func playBuffStamp(newHp: Int, maxHealth: Int) {
+        // Restore HP badge tint if healed to full
+        let hpTintNode = hpBadge.children.compactMap { $0 as? SKShapeNode }.first { $0.fillColor != .clear }
+        if let tintNode = hpTintNode {
+            if newHp >= maxHealth {
+                tintNode.fillColor = SK.CardTextures.hpTintColor.withAlphaComponent(0.35)
+            }
+        }
+
+        playStatStamp(on: hpLabel, container: hpBadge, newValue: newHp, isDamage: false)
+
+        // Sparkle particles rising from the HP badge
+        playBuffSparkle(at: hpBadge.position)
+    }
+
+    /// Play a "stamp" animation on the ATK label for damage (debuff).
+    func playAtkDamageStamp(newAtk: Int) {
+        playStatStamp(on: atkLabel, container: atkBadge, newValue: newAtk, isDamage: true)
+
+        // Card-local screen shake for ATK debuffs
+        playCardShake()
+    }
+
+    /// Play a "stamp" animation on the ATK label for a buff.
+    func playAtkBuffStamp(newAtk: Int) {
+        playStatStamp(on: atkLabel, container: atkBadge, newValue: newAtk, isDamage: false)
+
+        // Sparkle particles rising from the ATK badge
+        playBuffSparkle(at: atkBadge.position)
+    }
+
+    /// Core stamp animation shared by damage and buff variants.
+    /// Fades old numeral out quickly (0.1s), shows new numeral with emboss pulse (1.3x -> 1.0x bounce),
+    /// shifts label color to red (damage) or gold (buff), then restores default after hold.
+    private func playStatStamp(on label: SKLabelNode, container: SKNode, newValue: Int, isDamage: Bool) {
+        let stampColor = isDamage ? Self.damageStampColor : Self.buffStampColor
+        let actionKey = "statStamp_\(ObjectIdentifier(label).hashValue)"
+
+        // Remove any in-progress stamp animation on this label
+        label.removeAction(forKey: actionKey)
+
+        // Also update the shadow label behind the stat number
+        let shadowLabel = container.childNode(withName: "stat_shadow") as? SKLabelNode
+
+        // Phase 1: Quick fade out of old value (0.1s)
+        let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 0.1)
+
+        // Phase 2: Update text and start emboss pulse
+        let updateAndPulse = SKAction.run { [weak label, weak shadowLabel] in
+            label?.text = "\(newValue)"
+            shadowLabel?.text = "\(newValue)"
+            label?.fontColor = stampColor
+            label?.alpha = 1.0
+            label?.setScale(1.3)
+        }
+
+        // Phase 3: Bounce scale down from 1.3x to 1.0x with easeOut timing (0.15s)
+        let bounceDown = SKAction.scale(to: 1.0, duration: 0.15)
+        bounceDown.timingMode = .easeOut
+
+        // Phase 4: Brief shadow flicker — darken shadow and brighten back
+        let shadowFlicker = SKAction.run { [weak shadowLabel] in
+            shadowLabel?.fontColor = .black.withAlphaComponent(1.0)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                shadowLabel?.fontColor = .black.withAlphaComponent(0.85)
+            }
+        }
+
+        // Phase 5: Hold the stamp color briefly then restore (total ~0.3s from start)
+        let holdColor = SKAction.wait(forDuration: 0.25)
+        let restoreColor = SKAction.run { [weak label] in
+            label?.fontColor = Self.defaultStatColor
+        }
+
+        let sequence = SKAction.sequence([
+            fadeOut,
+            updateAndPulse,
+            SKAction.group([bounceDown, shadowFlicker]),
+            holdColor,
+            restoreColor
+        ])
+
+        label.run(sequence, withKey: actionKey)
+    }
+
+    /// Brief card-local shake (2-3px random offset for 0.15s).
+    /// Only shakes this card node, not the entire scene.
+    private func playCardShake() {
+        let shakeKey = "cardDamageShake"
+        removeAction(forKey: shakeKey)
+
+        let originalPos = self.position
+        let shakeCount = 4
+        var shakeActions: [SKAction] = []
+
+        for _ in 0..<shakeCount {
+            let offsetX = CGFloat.random(in: -3...3)
+            let offsetY = CGFloat.random(in: -2...2)
+            let duration = 0.15 / Double(shakeCount)
+            let targetPos = CGPoint(x: originalPos.x + offsetX, y: originalPos.y + offsetY)
+            let move = SKAction.move(to: targetPos, duration: duration)
+            move.timingMode = .easeInEaseOut
+            shakeActions.append(move)
+        }
+
+        // Snap back to original position at end
+        let snapBack = SKAction.move(to: originalPos, duration: 0.03)
+        snapBack.timingMode = .easeOut
+        shakeActions.append(snapBack)
+
+        run(SKAction.sequence(shakeActions), withKey: shakeKey)
+    }
+
+    /// Small upward-rising gold sparkle particles from the given local position.
+    /// 2-3 small particles fade out over 0.5s. Lightweight — SKShapeNode circles, no emitter.
+    private func playBuffSparkle(at localPos: CGPoint) {
+        let sparkleCount = 3
+        for i in 0..<sparkleCount {
+            let sparkle = SKShapeNode(circleOfRadius: 1.5)
+            sparkle.fillColor = Self.buffStampColor
+            sparkle.strokeColor = .clear
+            sparkle.position = CGPoint(
+                x: localPos.x + CGFloat.random(in: -4...4),
+                y: localPos.y
+            )
+            sparkle.zPosition = 10
+            sparkle.alpha = 0.9
+            sparkle.name = "buff_sparkle_\(i)"
+            addChild(sparkle)
+
+            let delay = SKAction.wait(forDuration: Double(i) * 0.08)
+            let riseAndFade = SKAction.group([
+                SKAction.moveBy(x: CGFloat.random(in: -3...3), y: 12, duration: 0.5),
+                SKAction.fadeOut(withDuration: 0.5),
+                SKAction.scale(to: 0.3, duration: 0.5)
+            ])
+            let cleanup = SKAction.removeFromParent()
+
+            sparkle.run(SKAction.sequence([delay, riseAndFade, cleanup]))
+        }
+    }
+
+    // MARK: - Furnace Lords Lava Pulse (Wave 6 Visual Polish)
+
+    /// Action keys for lava pulse animations.
+    private static let lavaPulseKey = "furnaceLavaPulse"
+    private static let lavaPulseBloomKey = "furnaceLavaPulseBloom"
+
+    /// Set up a subtle ambient lava vein glow animation along the card border.
+    /// Only for Demonic faction creatures (Furnace Lords is the primary sub-faction visual).
+    /// Uses two thin SKShapeNode lines: a 1.5px foreground line and a wider bloom line behind it.
+    /// Alpha pulses slowly (3.5s cycle). Very lightweight — SKAction on alpha only, no CIFilter.
+    func setupLavaPulse() {
+        // Don't add duplicate lava pulse
+        guard childNode(withName: "lava_pulse_line") == nil else { return }
+
+        let cardSize = SK.Board.slotSize
+        let cornerRadius = SK.Board.slotCornerRadius
+        let lavaColor = UIColor(hex: "#FF4500") // Volcanic orange
+
+        // Foreground lava vein line — 1.5px, along card border, inset slightly
+        let inset: CGFloat = 1.5
+        let lineSize = CGSize(width: cardSize.width - inset * 2, height: cardSize.height - inset * 2)
+        let lineRadius = max(cornerRadius - inset, 2)
+
+        let lavaLine = SKShapeNode(rectOf: lineSize, cornerRadius: lineRadius)
+        lavaLine.fillColor = .clear
+        lavaLine.strokeColor = lavaColor
+        lavaLine.lineWidth = 1.5
+        lavaLine.alpha = 0.3
+        lavaLine.zPosition = 5.5  // Above ruin overlay, below stat badges
+        lavaLine.name = "lava_pulse_line"
+        lavaLine.glowWidth = 0.5
+        addChild(lavaLine)
+
+        // Background bloom line — wider, very low alpha, gives the glow/bloom effect
+        let bloomLine = SKShapeNode(rectOf: lineSize, cornerRadius: lineRadius)
+        bloomLine.fillColor = .clear
+        bloomLine.strokeColor = lavaColor
+        bloomLine.lineWidth = 4.0
+        bloomLine.alpha = 0.1
+        bloomLine.zPosition = 5.4
+        bloomLine.name = "lava_pulse_bloom"
+        addChild(bloomLine)
+
+        // Animate foreground line alpha: 0.3 -> 0.6 -> 0.3 in a 3.5s cycle
+        let pulseDuration: TimeInterval = 1.75  // half-cycle
+        let pulseUp = SKAction.fadeAlpha(to: 0.6, duration: pulseDuration)
+        pulseUp.timingMode = .easeInEaseOut
+        let pulseDown = SKAction.fadeAlpha(to: 0.3, duration: pulseDuration)
+        pulseDown.timingMode = .easeInEaseOut
+        let linePulse = SKAction.sequence([pulseUp, pulseDown])
+        lavaLine.run(SKAction.repeatForever(linePulse), withKey: Self.lavaPulseKey)
+
+        // Animate bloom line alpha: 0.05 -> 0.15 -> 0.05 (very subtle)
+        let bloomUp = SKAction.fadeAlpha(to: 0.15, duration: pulseDuration)
+        bloomUp.timingMode = .easeInEaseOut
+        let bloomDown = SKAction.fadeAlpha(to: 0.05, duration: pulseDuration)
+        bloomDown.timingMode = .easeInEaseOut
+        let bloomPulse = SKAction.sequence([bloomUp, bloomDown])
+        bloomLine.run(SKAction.repeatForever(bloomPulse), withKey: Self.lavaPulseBloomKey)
+    }
+
+    /// Remove the lava pulse effect (cleanup).
+    func removeLavaPulse() {
+        childNode(withName: "lava_pulse_line")?.removeFromParent()
+        childNode(withName: "lava_pulse_bloom")?.removeFromParent()
+    }
+
+    /// Whether this creature should have the Furnace Lords lava pulse.
+    /// The Demonic Kingdoms faction's primary sub-faction is Furnace Lords,
+    /// and sub-faction data is not available during battle, so all Demonic creatures get it.
+    var isFurnaceLords: Bool {
+        factionShortName == .demonicKingdoms
+    }
+
     // MARK: - Selection States (per doc 07 Section 3.3)
 
     /// Mark this creature as an attacker (red glow pulse)
@@ -608,5 +850,260 @@ final class CreatureNode: SKSpriteNode {
     func clearAttunement() {
         removeAction(forKey: "attunement")
         run(SKAction.colorize(withColorBlendFactor: 0, duration: 0.2))
+    }
+
+    // MARK: - Contact Shadow (warm-tinted base shadow)
+
+    /// Elliptical contact shadow at the bottom edge of the card.
+    /// Dark at contact point, fading quickly. Warm brown tint (not pure black).
+    private func setupContactShadow(cardSize: CGSize) {
+        // Primary contact shadow — narrow ellipse at the card's base
+        let shadowWidth = cardSize.width * 0.9
+        let shadowHeight: CGFloat = 6.0  // Thin sliver at base
+        let shadowPath = CGPath(ellipseIn: CGRect(x: -shadowWidth / 2, y: -shadowHeight / 2,
+                                                   width: shadowWidth, height: shadowHeight),
+                                 transform: nil)
+        let contactShadow = SKShapeNode(path: shadowPath)
+        // Warm brown tint per spec: Color(red: 0.1, green: 0.08, blue: 0.06)
+        contactShadow.fillColor = UIColor(red: 0.1, green: 0.08, blue: 0.06, alpha: 0.55)
+        contactShadow.strokeColor = .clear
+        // Position at the very bottom edge of the card, offset slightly below
+        contactShadow.position = CGPoint(x: 0, y: -cardSize.height / 2 - 1)
+        contactShadow.zPosition = -3
+        contactShadow.name = "contact_shadow"
+        // Simulate blur via a slightly larger, more transparent second ellipse
+        addChild(contactShadow)
+
+        // Outer diffuse shadow — wider, softer, fades out
+        let outerWidth = cardSize.width * 1.1
+        let outerHeight: CGFloat = 10.0
+        let outerPath = CGPath(ellipseIn: CGRect(x: -outerWidth / 2, y: -outerHeight / 2,
+                                                  width: outerWidth, height: outerHeight),
+                                transform: nil)
+        let outerShadow = SKShapeNode(path: outerPath)
+        outerShadow.fillColor = UIColor(red: 0.1, green: 0.08, blue: 0.06, alpha: 0.2)
+        outerShadow.strokeColor = .clear
+        outerShadow.position = CGPoint(x: 0, y: -cardSize.height / 2 - 2)
+        outerShadow.zPosition = -3.1
+        outerShadow.name = "contact_shadow_outer"
+        addChild(outerShadow)
+    }
+
+    // MARK: - Destruction Animation
+
+    /// Play a dramatic 3-phase destruction sequence when the creature dies.
+    /// Phase 1: Crack overlay (0-0.3s)
+    /// Phase 2: Art desaturation (0.3-0.8s)
+    /// Phase 3: Card drifts downward off screen (0.8-1.2s)
+    /// Endless faction special: lingering ghost afterimage fades over 2s.
+    func playDestruction(in scene: SKScene, completion: @escaping () -> Void) {
+        let cardSize = self.size
+        let isEndless = factionShortName == .theEndless
+
+        // --- Phase 1 (0-0.3s): Crack overlay ---
+        let crackNode = createCrackOverlay(cardSize: cardSize)
+        crackNode.alpha = 0
+        crackNode.zPosition = 6
+        crackNode.name = "crack_overlay"
+        addChild(crackNode)
+
+        // Fade crack lines in
+        crackNode.run(SKAction.fadeAlpha(to: 1.0, duration: 0.3))
+
+        // --- Phase 2 (0.3-0.8s): Desaturation via colorize ---
+        // CIFilter is expensive per the rules. Instead, use colorize to gray
+        // which achieves a desaturation-like effect without SKEffectNode overhead.
+        let desaturateDelay = SKAction.wait(forDuration: 0.3)
+        let desaturate = SKAction.colorize(with: UIColor(white: 0.3, alpha: 1.0),
+                                            colorBlendFactor: 0.7, duration: 0.5)
+
+        // --- Phase 3 (0.8-1.2s): Drift downward + fade out ---
+        let driftDelay = SKAction.wait(forDuration: 0.8)
+        let drift = SKAction.group([
+            SKAction.moveBy(x: 0, y: -200, duration: 0.4),
+            SKAction.fadeOut(withDuration: 0.4)
+        ])
+        drift.timingMode = .easeIn
+
+        // Capture scene position before removal for ghost effect
+        let scenePosition = scene.convert(self.position, from: self.parent ?? scene)
+
+        // Run the full sequence
+        run(SKAction.sequence([desaturateDelay, desaturate])) // desaturation runs in parallel
+
+        run(SKAction.sequence([driftDelay, drift])) { [weak self] in
+            guard let self = self else {
+                completion()
+                return
+            }
+
+            // Endless faction special: ghost afterimage
+            if isEndless {
+                self.spawnGhostAfterimage(at: scenePosition, in: scene)
+            }
+
+            self.removeFromParent()
+            completion()
+        }
+    }
+
+    /// Create jagged crack lines across the card as an SKNode with SKShapeNode children.
+    private func createCrackOverlay(cardSize: CGSize) -> SKNode {
+        let container = SKNode()
+        let halfW = cardSize.width / 2
+        let halfH = cardSize.height / 2
+
+        // Generate 4 crack lines from random edge points toward the center area
+        let crackCount = 4
+        for _ in 0..<crackCount {
+            let path = CGMutablePath()
+
+            // Start from a random edge
+            let edge = Int.random(in: 0...3)
+            var startPoint: CGPoint
+            switch edge {
+            case 0: // Top
+                startPoint = CGPoint(x: CGFloat.random(in: -halfW...halfW), y: halfH)
+            case 1: // Bottom
+                startPoint = CGPoint(x: CGFloat.random(in: -halfW...halfW), y: -halfH)
+            case 2: // Left
+                startPoint = CGPoint(x: -halfW, y: CGFloat.random(in: -halfH...halfH))
+            default: // Right
+                startPoint = CGPoint(x: halfW, y: CGFloat.random(in: -halfH...halfH))
+            }
+
+            path.move(to: startPoint)
+
+            // Zigzag toward center with 3-5 segments
+            let segmentCount = Int.random(in: 3...5)
+            let centerTarget = CGPoint(x: CGFloat.random(in: -halfW * 0.3...halfW * 0.3),
+                                        y: CGFloat.random(in: -halfH * 0.3...halfH * 0.3))
+
+            for i in 1...segmentCount {
+                let t = CGFloat(i) / CGFloat(segmentCount)
+                let baseX = startPoint.x + (centerTarget.x - startPoint.x) * t
+                let baseY = startPoint.y + (centerTarget.y - startPoint.y) * t
+                // Add jagged offset perpendicular to the general direction
+                let jitterX = CGFloat.random(in: -8...8)
+                let jitterY = CGFloat.random(in: -8...8)
+                path.addLine(to: CGPoint(x: baseX + jitterX, y: baseY + jitterY))
+            }
+
+            let crackLine = SKShapeNode(path: path)
+            crackLine.strokeColor = UIColor.white.withAlphaComponent(0.8)
+            crackLine.lineWidth = CGFloat.random(in: 0.5...1.5)
+            crackLine.lineCap = .round
+            crackLine.glowWidth = 1.0
+            container.addChild(crackLine)
+        }
+
+        return container
+    }
+
+    /// Spawn a translucent ghost afterimage for Endless faction creatures.
+    /// The ghost lingers at 15% opacity and fades out over 2 seconds.
+    private func spawnGhostAfterimage(at position: CGPoint, in scene: SKScene) {
+        let cardSize = self.size
+        let ghost = SKSpriteNode(color: UIColor(hex: "#6B3FA0").withAlphaComponent(0.3),
+                                  size: cardSize)
+        // Copy the card art texture if available
+        if let artTexture = cardArtNode.texture {
+            ghost.texture = artTexture
+            ghost.color = UIColor(hex: "#6B3FA0") // Spectral purple tint
+            ghost.colorBlendFactor = 0.5
+        }
+        ghost.position = position
+        ghost.alpha = 0.15
+        ghost.zPosition = SK.ZPosition.creatures - 1
+        ghost.name = "endless_ghost"
+        scene.addChild(ghost)
+
+        // Subtle upward drift + fade out over 2 seconds
+        let ghostFade = SKAction.group([
+            SKAction.fadeOut(withDuration: 2.0),
+            SKAction.moveBy(x: 0, y: 15, duration: 2.0),
+            SKAction.scale(to: 1.05, duration: 2.0)
+        ])
+        ghost.run(SKAction.sequence([ghostFade, SKAction.removeFromParent()]))
+    }
+
+    // MARK: - Tapped / Exhausted State
+
+    /// Mark the creature as exhausted (tapped) after attacking.
+    /// Rotates 90 degrees clockwise, desaturates to ~60%, adds hourglass glyph.
+    func setExhausted(_ exhausted: Bool) {
+        guard exhausted != isExhausted else { return }
+        isExhausted = exhausted
+
+        if exhausted {
+            // Rotate 90 degrees clockwise (negative = clockwise in SpriteKit)
+            run(SKAction.rotate(toAngle: -.pi / 2, duration: 0.2, shortestUnitArc: true),
+                withKey: "exhaustRotate")
+
+            // Desaturation: tint toward gray at ~40% blend (keeping ~60% color)
+            run(SKAction.colorize(with: UIColor(white: 0.4, alpha: 1.0),
+                                   colorBlendFactor: 0.4, duration: 0.2),
+                withKey: "exhaustDesat")
+
+            // Add hourglass status glyph
+            setupExhaustedGlyph()
+        } else {
+            // Untap: rotate back to 0
+            run(SKAction.rotate(toAngle: 0, duration: 0.2, shortestUnitArc: true),
+                withKey: "exhaustRotate")
+
+            // Restore saturation
+            removeAction(forKey: "exhaustDesat")
+            run(SKAction.colorize(withColorBlendFactor: 0, duration: 0.2),
+                withKey: "exhaustDesatRestore")
+
+            // Remove hourglass glyph
+            removeExhaustedGlyph()
+        }
+    }
+
+    /// Create and add the hourglass status glyph indicator.
+    private func setupExhaustedGlyph() {
+        guard exhaustedGlyph == nil else { return }
+
+        let glyphSize: CGFloat = 24
+        let glyph: SKSpriteNode
+
+        if let _ = UIImage(named: "UIIcons/ui-hourglass") {
+            glyph = SKSpriteNode(imageNamed: "UIIcons/ui-hourglass")
+            glyph.size = CGSize(width: glyphSize, height: glyphSize)
+            // Bronze tint
+            glyph.color = UIColor(hex: "#CD7F32")
+            glyph.colorBlendFactor = 0.4
+        } else {
+            // Fallback: bronze-tinted square placeholder
+            glyph = SKSpriteNode(color: UIColor(hex: "#CD7F32"), size: CGSize(width: glyphSize, height: glyphSize))
+        }
+
+        // Position at top-right corner of the card
+        glyph.position = CGPoint(x: size.width / 2 - glyphSize / 2 - 2,
+                                  y: size.height / 2 - glyphSize / 2 - 2)
+        glyph.zPosition = 5
+        glyph.name = "exhausted_glyph"
+
+        // Subtle pulse animation (scale 1.0 -> 1.1 -> 1.0, repeating)
+        let pulse = SKAction.sequence([
+            SKAction.scale(to: 1.1, duration: 0.6),
+            SKAction.scale(to: 1.0, duration: 0.6)
+        ])
+        glyph.run(SKAction.repeatForever(pulse), withKey: "exhaustedPulse")
+
+        addChild(glyph)
+        exhaustedGlyph = glyph
+    }
+
+    /// Remove the hourglass status glyph.
+    private func removeExhaustedGlyph() {
+        exhaustedGlyph?.removeAction(forKey: "exhaustedPulse")
+        exhaustedGlyph?.run(SKAction.sequence([
+            SKAction.fadeOut(withDuration: 0.15),
+            SKAction.removeFromParent()
+        ]))
+        exhaustedGlyph = nil
     }
 }

@@ -10,6 +10,9 @@ import SpriteKit
 enum DeathAction {
 
     /// Play the full death animation on a creature node, then remove it.
+    /// Uses the enhanced 3-phase destruction sequence from CreatureNode:
+    /// crack overlay -> desaturation -> drift off screen, with faction particles.
+    /// Endless faction creatures leave a lingering ghost afterimage.
     static func playDeath(
         creature: CreatureNode,
         faction: FactionShortName?,
@@ -19,32 +22,7 @@ enum DeathAction {
         let position = creature.position
         let effectiveFaction = faction ?? .ironwright
 
-        // Phase 1: Flash white + scale pulse
-        let flashWhite = SKAction.colorize(with: .white, colorBlendFactor: 0.8, duration: 0.05)
-        let flashBack = SKAction.colorize(withColorBlendFactor: 0, duration: 0.1)
-        let scaleUp = SKAction.scale(to: 1.2, duration: 0.1)
-
-        // Phase 2: Shrink + fade
-        let shrinkAndFade = SKAction.group([
-            SKAction.scale(to: 0.0, duration: SK.Duration.death),
-            SKAction.fadeOut(withDuration: SK.Duration.death)
-        ])
-        shrinkAndFade.timingMode = .easeIn
-
-        // Phase 3: Remove
-        let remove = SKAction.removeFromParent()
-
-        let sequence = SKAction.sequence([
-            flashWhite,
-            flashBack,
-            scaleUp,
-            shrinkAndFade,
-            remove
-        ])
-
-        creature.run(sequence)
-
-        // Faction-specific particle burst
+        // Faction-specific particle burst (fires immediately at creature position)
         let emitter = ParticleEffects.deathEmitter(for: effectiveFaction)
         emitter.position = position
         emitter.zPosition = SK.ZPosition.particles
@@ -67,12 +45,16 @@ enum DeathAction {
             SKAction.removeFromParent()
         ]))
 
-        // Auto-remove emitter after particles finish
-        emitter.run(SKAction.sequence([
-            SKAction.wait(forDuration: SK.Duration.deathParticles),
-            SKAction.removeFromParent()
-        ])) {
-            completion()
+        // Run enhanced 3-phase destruction on the creature node itself
+        // (crack overlay, desaturation, drift downward, Endless ghost)
+        creature.playDestruction(in: scene) {
+            // Auto-remove emitter after particles finish
+            emitter.run(SKAction.sequence([
+                SKAction.wait(forDuration: max(SK.Duration.deathParticles - 1.2, 0)),
+                SKAction.removeFromParent()
+            ])) {
+                completion()
+            }
         }
     }
 

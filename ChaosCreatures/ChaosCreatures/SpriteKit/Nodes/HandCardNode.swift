@@ -4,6 +4,11 @@
 // canvas weave overlay, faction border texture, faction text panel, wax-seal medallion
 // stat badges, keyword dots, and contact shadow. Rendered in SpriteKit for drag-to-play
 // interactions from within the scene.
+//
+// Wave 6 additions:
+//   - Parallax: art layer shifts 1-3px on horizontal pan for depth-under-glass feel
+//   - Card Expand: tap to expand card to ~80% screen width with detail text overlay
+//
 // Source: docs/design/07-ui-ux-specs.md Section 3
 
 import SpriteKit
@@ -14,12 +19,21 @@ import SpriteKit
 /// Wax-seal medallion stat badges overlay corners: CM top-right, ATK bottom-left of text
 /// panel, HP bottom-right of text panel. Keywords shown as tiny colored dots just above
 /// the text panel edge.
+///
+/// **Parallax**: The card art is wrapped in an `SKCropNode` so it clips to the card
+/// bounds. Call `applyParallaxOffset(_:)` during horizontal panning to shift the art
+/// layer relative to the frame, creating a subtle depth effect.
+///
+/// **Card Expand**: Call `expandInScene(_:)` to present a full-screen preview of the
+/// card with a dark overlay, larger stats, and hidden detail text revealed.
 final class HandCardNode: SKSpriteNode {
 
     // MARK: - Properties
 
     private(set) var cardData: BattleCardData
     private let cardArtNode: SKSpriteNode
+    /// Crop node that clips the art to card bounds during parallax offset
+    private let artCropNode: SKCropNode
     private let nameLabel: SKLabelNode
     private let cmBadge: SKNode
     private let cmLabel: SKLabelNode
@@ -36,6 +50,9 @@ final class HandCardNode: SKSpriteNode {
     var isDragging: Bool = false
     var originalPosition: CGPoint = .zero
 
+    /// Whether this card is currently shown in expanded/preview mode
+    private(set) var isExpanded: Bool = false
+
     // MARK: - Init
 
     init(card: BattleCardData) {
@@ -46,11 +63,20 @@ final class HandCardNode: SKSpriteNode {
 
         let factionColor = card.factionPrimaryColor
 
-        // --- Full-bleed card art (fills entire card) ---
+        // --- Full-bleed card art (fills entire card), wrapped in crop for parallax ---
         cardArtNode = SKSpriteNode(color: factionColor.withAlphaComponent(0.3), size: cardSize)
         cardArtNode.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         cardArtNode.position = .zero
         cardArtNode.zPosition = 0
+
+        // Crop node clips the art to card bounds so parallax offset doesn't bleed
+        artCropNode = SKCropNode()
+        let artMask = SKShapeNode(rectOf: cardSize, cornerRadius: 8)
+        artMask.fillColor = .white
+        artMask.strokeColor = .clear
+        artCropNode.maskNode = artMask
+        artCropNode.addChild(cardArtNode)
+        artCropNode.zPosition = 0
 
         // --- Card name (upper portion of text panel) ---
         nameLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
@@ -147,8 +173,8 @@ final class HandCardNode: SKSpriteNode {
         // Layer -1: Background with faction border texture
         setupFactionBorder(cardSize: cardSize, faction: faction, tier: card.evolutionTier)
 
-        // Layer 0: Card art
-        addChild(cardArtNode)
+        // Layer 0: Card art (inside crop node for parallax clipping)
+        addChild(artCropNode)
 
         // Layer 0.5: Canvas weave texture overlay (multiply blend, hand-painted feel)
         let canvasWeave = SKSpriteNode(imageNamed: SK.CardTextures.canvasWeave)
@@ -543,5 +569,276 @@ final class HandCardNode: SKSpriteNode {
     func setSelected(_ selected: Bool) {
         let targetScale: CGFloat = selected ? 1.15 : 1.0
         run(SKAction.scale(to: targetScale, duration: 0.15))
+    }
+
+    // MARK: - Parallax Effect
+
+    /// Apply a horizontal parallax offset to the art layer relative to the card frame.
+    /// Call this during horizontal pan/swipe through the hand. The offset is clamped
+    /// to `SK.HandParallax.maxOffset` and smoothly interpolated.
+    ///
+    /// - Parameter normalizedOffset: A value in -1...1 representing the pan direction
+    ///   and intensity (negative = panning left, positive = panning right).
+    func applyParallaxOffset(_ normalizedOffset: CGFloat) {
+        let maxOff = SK.HandParallax.maxOffset
+        let clamped = max(-1, min(1, normalizedOffset))
+        let targetX = clamped * maxOff
+
+        cardArtNode.removeAction(forKey: "parallax")
+        let moveAction = SKAction.moveTo(x: targetX, duration: SK.HandParallax.interpolationDuration)
+        moveAction.timingMode = .easeOut
+        cardArtNode.run(moveAction, withKey: "parallax")
+    }
+
+    /// Smoothly reset the parallax offset to zero. Call when the swipe/pan ends.
+    func resetParallaxOffset() {
+        cardArtNode.removeAction(forKey: "parallax")
+        let resetAction = SKAction.moveTo(x: 0, duration: SK.HandParallax.resetDuration)
+        resetAction.timingMode = .easeInEaseOut
+        cardArtNode.run(resetAction, withKey: "parallax")
+    }
+
+    // MARK: - Card Expand (Tap-to-Preview)
+
+    /// Expand this card to a full-screen preview in the given scene.
+    /// Creates a dark overlay behind the expanded card, scales the card up to ~80%
+    /// of scene width, corrects rotation to upright, and fades in detail text.
+    /// The overlay is touch-enabled and self-dismissing — no BattleScene modification needed.
+    ///
+    /// - Parameter scene: The SKScene to present the expanded card in.
+    func expandInScene(_ scene: SKScene) {
+        guard !isExpanded, !isDragging else { return }
+        isExpanded = true
+
+        let sceneSize = scene.size
+        let cardSize = self.size
+
+        // Calculate target scale: expanded card should be ~80% of scene width
+        let targetWidth = sceneSize.width * SK.CardExpand.widthFraction
+        let scaleFactor = targetWidth / cardSize.width
+
+        // Store pre-expand state for dismissal
+        let originalZPos = self.zPosition
+        let originalScale = self.xScale
+        let originalParent = self.parent
+        let positionInScene = scene.convert(self.position, from: self.parent ?? scene)
+
+        // --- Dark overlay (touch-enabled, self-dismissing) ---
+        let overlay = CardExpandOverlayNode(size: sceneSize, handCardNode: self)
+        overlay.position = .zero
+        overlay.zPosition = SK.CardExpand.overlayZPosition
+        scene.addChild(overlay)
+
+        // Fade in overlay
+        overlay.run(SKAction.fadeAlpha(to: SK.CardExpand.overlayAlpha, duration: SK.CardExpand.expandDuration))
+
+        // --- Shadow node (grows as card "lifts") ---
+        let shadowSize = CGSize(width: cardSize.width * scaleFactor + 24,
+                                height: cardSize.height * scaleFactor + 12)
+        let shadowNode = SKShapeNode(rectOf: shadowSize, cornerRadius: 14)
+        shadowNode.fillColor = UIColor.black.withAlphaComponent(0)
+        shadowNode.strokeColor = .clear
+        shadowNode.position = CGPoint(x: 0, y: -8)
+        shadowNode.zPosition = SK.CardExpand.cardZPosition - 1
+        shadowNode.name = "cardExpandShadow"
+        scene.addChild(shadowNode)
+
+        // Grow shadow
+        shadowNode.run(SKAction.customAction(withDuration: SK.CardExpand.expandDuration) { node, elapsed in
+            let progress = elapsed / CGFloat(SK.CardExpand.expandDuration)
+            (node as? SKShapeNode)?.fillColor = UIColor.black.withAlphaComponent(progress * SK.CardExpand.shadowAlpha)
+        })
+
+        // --- Move card to scene root for expansion ---
+        self.removeFromParent()
+        self.position = positionInScene
+        self.zPosition = SK.CardExpand.cardZPosition
+        scene.addChild(self)
+
+        // --- Detail text container (fades in during expand) ---
+        let detailContainer = SKNode()
+        detailContainer.name = "cardExpandDetails"
+        detailContainer.alpha = 0
+        detailContainer.zPosition = SK.CardExpand.cardZPosition + 1
+
+        // Build detail content positioned relative to the expanded card center
+        let expandedCardHeight = cardSize.height * scaleFactor
+
+        // Keyword labels (if creature)
+        if cardData.cardType == .creature && !cardData.innateKeywords.isEmpty {
+            let keywordText = cardData.innateKeywords.map { $0.rawValue.capitalized }.joined(separator: " / ")
+            let kwLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
+            kwLabel.fontSize = SK.CardExpand.detailFontSize
+            kwLabel.fontColor = SK.CardTextures.parchmentText.withAlphaComponent(0.85)
+            kwLabel.horizontalAlignmentMode = .center
+            kwLabel.verticalAlignmentMode = .center
+            kwLabel.position = CGPoint(x: 0, y: -expandedCardHeight / 2 - 20)
+            kwLabel.text = keywordText
+            detailContainer.addChild(kwLabel)
+        }
+
+        // Modifier text (if any)
+        if let modifiers = cardData.modifiers, !modifiers.isEmpty {
+            let modText = modifiers.map { $0.name }.joined(separator: ", ")
+            let modLabel = SKLabelNode(fontNamed: SK.Fonts.regular)
+            modLabel.fontSize = SK.CardExpand.detailFontSize - 1
+            modLabel.fontColor = UIColor(hex: "#C0B090")
+            modLabel.horizontalAlignmentMode = .center
+            modLabel.verticalAlignmentMode = .center
+            modLabel.position = CGPoint(x: 0, y: -expandedCardHeight / 2 - 38)
+            modLabel.text = modText
+            modLabel.preferredMaxLayoutWidth = targetWidth - 20
+            modLabel.numberOfLines = 2
+            detailContainer.addChild(modLabel)
+        }
+
+        scene.addChild(detailContainer)
+
+        // --- Animate expansion: scale + move to center + rotation correction ---
+        let currentRotation = self.zRotation
+        let expandGroup = SKAction.group([
+            SKAction.scale(to: scaleFactor, duration: SK.CardExpand.expandDuration),
+            SKAction.move(to: .zero, duration: SK.CardExpand.expandDuration),
+            SKAction.rotate(toAngle: 0, duration: SK.CardExpand.expandDuration)
+        ])
+        expandGroup.timingMode = .easeInEaseOut
+
+        self.run(expandGroup, withKey: "cardExpand")
+        detailContainer.run(SKAction.sequence([
+            SKAction.wait(forDuration: SK.CardExpand.expandDuration * 0.5),
+            SKAction.fadeIn(withDuration: SK.CardExpand.expandDuration * 0.5)
+        ]))
+
+        // --- Store dismiss data for animation back ---
+        let dismissData = CardExpandDismissData(
+            originalParent: originalParent,
+            originalPosition: positionInScene,
+            originalZPosition: originalZPos,
+            originalScale: originalScale,
+            originalRotation: currentRotation,
+            overlay: overlay,
+            shadowNode: shadowNode,
+            detailContainer: detailContainer
+        )
+        self.userData = self.userData ?? NSMutableDictionary()
+        self.userData?["expandDismissData"] = dismissData
+    }
+
+    /// Dismiss the expanded card preview, animating it back to its original position.
+    /// Called when the user taps the overlay or the expanded card itself.
+    func dismissExpand() {
+        guard isExpanded else { return }
+        guard let dismissData = self.userData?["expandDismissData"] as? CardExpandDismissData else {
+            isExpanded = false
+            return
+        }
+
+        let overlay = dismissData.overlay
+        let shadowNode = dismissData.shadowNode
+        let detailContainer = dismissData.detailContainer
+
+        // Disable overlay touch handling during dismiss animation
+        overlay.isUserInteractionEnabled = false
+
+        // Fade out overlay + shadow + details
+        overlay.run(SKAction.sequence([
+            SKAction.fadeAlpha(to: 0, duration: SK.CardExpand.dismissDuration),
+            SKAction.removeFromParent()
+        ]))
+
+        shadowNode.run(SKAction.sequence([
+            SKAction.fadeOut(withDuration: SK.CardExpand.dismissDuration),
+            SKAction.removeFromParent()
+        ]))
+
+        detailContainer.run(SKAction.sequence([
+            SKAction.fadeOut(withDuration: SK.CardExpand.dismissDuration * 0.4),
+            SKAction.removeFromParent()
+        ]))
+
+        // Animate card back to original position
+        let dismissGroup = SKAction.group([
+            SKAction.scale(to: dismissData.originalScale, duration: SK.CardExpand.dismissDuration),
+            SKAction.move(to: dismissData.originalPosition, duration: SK.CardExpand.dismissDuration),
+            SKAction.rotate(toAngle: dismissData.originalRotation, duration: SK.CardExpand.dismissDuration)
+        ])
+        dismissGroup.timingMode = .easeInEaseOut
+
+        let reparentAction = SKAction.run { [weak self] in
+            guard let self = self else { return }
+
+            // Re-parent card back to original container
+            self.removeFromParent()
+            if let parent = dismissData.originalParent {
+                let localPos = parent.convert(dismissData.originalPosition, from: self.scene ?? parent)
+                self.position = localPos
+                parent.addChild(self)
+            }
+            self.zPosition = dismissData.originalZPosition
+            self.isExpanded = false
+            self.userData?.removeObject(forKey: "expandDismissData")
+        }
+
+        self.run(SKAction.sequence([dismissGroup, reparentAction]), withKey: "cardDismiss")
+    }
+}
+
+// MARK: - Card Expand Overlay (Touch-Enabled Dismiss Layer)
+
+/// Full-screen dark overlay that intercepts all touches to dismiss the expanded card.
+/// Uses `isUserInteractionEnabled = true` so BattleScene does not need modification.
+/// Touches on this overlay (or anywhere while it is visible) trigger card dismissal.
+private final class CardExpandOverlayNode: SKSpriteNode {
+
+    private weak var handCardNode: HandCardNode?
+
+    init(size: CGSize, handCardNode: HandCardNode) {
+        self.handCardNode = handCardNode
+        super.init(texture: nil, color: .black, size: size)
+        self.alpha = 0
+        self.name = "cardExpandOverlay"
+        self.isUserInteractionEnabled = true
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) not implemented")
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        // Any touch on the overlay dismisses the expanded card
+        handCardNode?.dismissExpand()
+    }
+}
+
+// MARK: - Card Expand Dismiss Data
+
+/// Stores the state needed to animate the expanded card back to its original position.
+/// Stored in the node's `userData` dictionary during expansion.
+final class CardExpandDismissData: NSObject {
+    weak var originalParent: SKNode?
+    let originalPosition: CGPoint
+    let originalZPosition: CGFloat
+    let originalScale: CGFloat
+    let originalRotation: CGFloat
+    let overlay: SKSpriteNode
+    let shadowNode: SKShapeNode
+    let detailContainer: SKNode
+
+    init(originalParent: SKNode?,
+         originalPosition: CGPoint,
+         originalZPosition: CGFloat,
+         originalScale: CGFloat,
+         originalRotation: CGFloat,
+         overlay: SKSpriteNode,
+         shadowNode: SKShapeNode,
+         detailContainer: SKNode) {
+        self.originalParent = originalParent
+        self.originalPosition = originalPosition
+        self.originalZPosition = originalZPosition
+        self.originalScale = originalScale
+        self.originalRotation = originalRotation
+        self.overlay = overlay
+        self.shadowNode = shadowNode
+        self.detailContainer = detailContainer
     }
 }

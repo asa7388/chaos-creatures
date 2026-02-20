@@ -34,6 +34,7 @@
 | **5-agent deep audit** | 0-5 | **PASS** | 17 issues found: 3 P0 + 6 P1 + 8 P2 — all P0/P1 resolved |
 | Performance | 2, 4, 6, 7 | PENDING | — |
 | Immersion (final) | 8 | PENDING | — |
+| **Screenshot vs Design Guide** | 8 | PENDING | Compare Simulator screenshots against 13-visual-design-guide.md Sections 1-17 |
 
 ---
 
@@ -356,3 +357,24 @@ Audit (consistency agent):
 - 8 game-concept icons left as SF Symbols (no matching custom asset yet — future work)
 - 0 broken UIIcons/ references
 - 4 unused UIIcons (ui-sort-rarity — reserved for future)
+
+### Wave 6: Card States & Interactions — COMPLETE
+
+**3 parallel implementation agents:**
+1. HandCardNode parallax + card expand (a456623): Art parallax on pan (3px offset), tap-to-expand with overlay + detail text
+2. CreatureNode destruction + tapped state (acf5421): 3-phase death (cracks→desaturate→drift), Endless ghost afterimage, exhausted rotation + hourglass glyph, contact shadows
+3. Damage stamps + lava pulse (a32e5b4): HP/ATK stamp animation (emboss pulse, red/gold), card shake on damage, gold sparkles on buff, Demonic lava vein pulse
+
+**Audit found 3 unwired features → fix agent (a2fb350):**
+- Exhausted state: wired `setExhausted(data.hasAttacked)` in syncBoard
+- Hand parallax: SwiftUI-native implementation in HandScrollView (GeometryReader + normalized offset)
+- Card expand: Long-press gesture (0.4s) triggers BattleCardExpandOverlay with card stats/keywords
+
+**Files modified:**
+- `SpriteKit/Utilities/SpriteKitConstants.swift` — SK.HandParallax + SK.CardExpand constants
+- `SpriteKit/Nodes/HandCardNode.swift` — Parallax offset, card expand, art crop node
+- `SpriteKit/Nodes/HandNode.swift` — Parallax + expand propagation methods
+- `SpriteKit/Nodes/CreatureNode.swift` — Destruction, tapped state, contact shadow, damage stamps, lava pulse
+- `SpriteKit/Actions/DeathAction.swift` — Wired to new playDestruction()
+- `SpriteKit/Scenes/BattleScene.swift` — Stat change detection, lava pulse setup, exhausted state
+- `Views/Battle/BattleContainerView.swift` — SwiftUI hand parallax, long-press card expand overlay
