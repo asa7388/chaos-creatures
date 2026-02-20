@@ -26,6 +26,7 @@ struct ContentView: View {
                         }
                     }
             }
+            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.home.rawValue)
@@ -48,6 +49,7 @@ struct ContentView: View {
                         }
                     }
             }
+            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.collection.rawValue)
@@ -70,6 +72,7 @@ struct ContentView: View {
                         }
                     }
             }
+            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.decks.rawValue)
@@ -92,6 +95,7 @@ struct ContentView: View {
                         }
                     }
             }
+            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.profile.rawValue)
@@ -116,6 +120,7 @@ struct ContentView: View {
                         }
                     }
             }
+            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.shop.rawValue)

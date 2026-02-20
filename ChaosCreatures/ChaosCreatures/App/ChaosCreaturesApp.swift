@@ -4,11 +4,17 @@
 // Source: docs/design/07-ui-ux-specs.md Section 7
 
 import SwiftUI
+import UIKit
 
 @main
 struct ChaosCreaturesApp: App {
     @State private var appState = AppState()
     @State private var router = AppRouter()
+
+    init() {
+        // We render a fully custom bottom bar in ContentView; keep UIKit TabBar hidden.
+        UITabBar.appearance().isHidden = true
+    }
 
     var body: some Scene {
         WindowGroup {
