@@ -1,12 +1,26 @@
 {
   "images": [
     {
-      "filename": "ui-deck.png",
-      "idiom": "universal"
+      "idiom": "universal",
+      "scale": "1x",
+      "filename": "ui-deck.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "2x",
+      "filename": "ui-deck@2x.png"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x",
+      "filename": "ui-deck@3x.png"
     }
   ],
   "info": {
     "author": "xcode",
     "version": 1
+  },
+  "properties": {
+    "template-rendering-intent": "template"
   }
 }
