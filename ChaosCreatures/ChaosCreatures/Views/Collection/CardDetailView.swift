@@ -38,67 +38,65 @@ struct CardDetailView: View {
             // Background: subtle radial gradient from faction color
             backgroundGradient
 
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Top spacing for close button area
-                        Spacer().frame(height: 8)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    // Top spacing for close button area
+                    Spacer().frame(height: 8)
 
-                        // Card frame — tap for fullscreen
-                        cardFrameSection(card: card)
+                    // Card frame — tap for fullscreen
+                    cardFrameSection(card: card)
 
-                        // Stats ribbon (ATK, HP, Instability) — creatures only
-                        if let card, card.currentAttack != nil {
-                            statsRibbon(card: card)
+                    // Stats ribbon (ATK, HP, Instability) — creatures only
+                    if let card, card.currentAttack != nil {
+                        statsRibbon(card: card)
+                    }
+
+                    // Expandable sections
+                    if let card {
+                        let hasKeywords = !card.effectiveKeywords.isEmpty
+                        let hasAbilities = !card.triggeredAbilities.isEmpty
+                        let hasModifiers = !card.modifiers.isEmpty
+
+                        // Keywords with full descriptions
+                        if hasKeywords {
+                            keywordsSection(card: card)
                         }
 
-                        // Expandable sections
-                        if let card {
-                            let hasKeywords = !card.effectiveKeywords.isEmpty
-                            let hasAbilities = !card.triggeredAbilities.isEmpty
-                            let hasModifiers = !card.modifiers.isEmpty
+                        // Triggered abilities
+                        if hasAbilities {
+                            triggeredAbilitiesSection(card: card)
+                        }
 
-                            // Keywords with full descriptions
-                            if hasKeywords {
-                                keywordsSection(card: card)
-                            }
+                        // Applied modifiers
+                        if hasModifiers {
+                            modifiersSection(card: card)
+                        }
 
-                            // Triggered abilities
-                            if hasAbilities {
-                                triggeredAbilitiesSection(card: card)
-                            }
+                        // Always keep at least one explanatory panel in view.
+                        if !hasKeywords && !hasAbilities && !hasModifiers {
+                            cardNotesSection(card: card)
+                        }
 
-                            // Applied modifiers
-                            if hasModifiers {
-                                modifiersSection(card: card)
-                            }
+                        // Evolution progress
+                        evolutionSection(card: card)
 
-                            // Always keep at least one explanatory panel in view.
-                            if !hasKeywords && !hasAbilities && !hasModifiers {
-                                cardNotesSection(card: card)
-                            }
-
-                            // Evolution progress
-                            evolutionSection(card: card)
-
-                            // Evolution history
-                            if !card.evolutionHistory.isEmpty {
-                                evolutionHistorySection(card: card)
-                            }
+                        // Evolution history
+                        if !card.evolutionHistory.isEmpty {
+                            evolutionHistorySection(card: card)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 100) // Space for action bar
                 }
-
-                // Sticky bottom action bar
-                if let card {
-                    actionBar(card: card)
-                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
 
             // Close button overlay (top-left)
             closeButton
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let card {
+                actionBar(card: card)
+            }
         }
         .fullScreenCover(isPresented: $showFullscreen) {
             if let card {
@@ -144,8 +142,16 @@ struct CardDetailView: View {
 
     // MARK: - Card Frame Section
 
+    private var detailCardScale: CGFloat {
+        let screenHeight = UIScreen.main.bounds.height
+        if screenHeight <= 700 { return 0.70 }
+        if screenHeight <= 780 { return 0.75 }
+        if screenHeight <= 860 { return 0.79 }
+        return 0.82
+    }
+
     private func cardFrameSection(card: CardInstance?) -> some View {
-        let detailScale: CGFloat = 0.86
+        let detailScale = detailCardScale
 
         return Group {
             if let card {

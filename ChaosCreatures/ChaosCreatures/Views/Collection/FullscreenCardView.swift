@@ -20,56 +20,67 @@ struct FullscreenCardView: View {
     private let dismissThreshold: CGFloat = 100
 
     var body: some View {
-        ZStack {
-            // Dark background
-            Color.black.opacity(0.92)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        opacity = 0
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        dismiss()
-                    }
-                }
+        GeometryReader { geometry in
+            let cardScale = fullscreenCardScale(in: geometry.size)
 
-            // Card — large, centered, with gentle rotation
-            CardFrameView(
-                data: CardDisplayData(instance: card, faction: faction),
-                size: .fullscreen
-            )
-            .shadow(color: .black.opacity(0.6), radius: 24, x: 0, y: 12)
-            .rotation3DEffect(
-                .degrees(rotationPhase ? 1.0 : -1.0),
-                axis: (x: 0.2, y: 1.0, z: 0.0),
-                perspective: 0.5
-            )
-            .offset(y: dragOffset)
-            .scaleEffect(dragScale)
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        // Only track downward drags
-                        if value.translation.height > 0 {
-                            dragOffset = value.translation.height
+            ZStack {
+                // Dark background with a subtle lamp-like highlight on the card.
+                Color.black.opacity(0.92)
+                    .ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color.textPrimary.opacity(0.07), .clear],
+                    center: .top,
+                    startRadius: 20,
+                    endRadius: 520
+                )
+                .ignoresSafeArea()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                dismissWithFade()
+            }
+            .overlay {
+                // Card — biased upward so it reads as "held close" instead of drifting low.
+                CardFrameView(
+                    data: CardDisplayData(instance: card, faction: faction),
+                    size: .fullscreen
+                )
+                .shadow(color: .black.opacity(0.6), radius: 24, x: 0, y: 12)
+                .rotation3DEffect(
+                    .degrees(rotationPhase ? 1.0 : -1.0),
+                    axis: (x: 0.2, y: 1.0, z: 0.0),
+                    perspective: 0.5
+                )
+                .offset(y: dragOffset)
+                .scaleEffect(cardScale * dragScale)
+                .frame(width: CardDisplaySize.fullscreen.width, height: CardDisplaySize.fullscreen.height)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, max(geometry.size.height * 0.08, 52))
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            // Only track downward drags
+                            if value.translation.height > 0 {
+                                dragOffset = value.translation.height
+                            }
                         }
-                    }
-                    .onEnded { value in
-                        if value.translation.height > dismissThreshold {
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                dragOffset = UIScreen.main.bounds.height
-                                opacity = 0
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                dismiss()
-                            }
-                        } else {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                dragOffset = 0
+                        .onEnded { value in
+                            if value.translation.height > dismissThreshold {
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    dragOffset = UIScreen.main.bounds.height
+                                    opacity = 0
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                    dismiss()
+                                }
+                            } else {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    dragOffset = 0
+                                }
                             }
                         }
-                    }
-            )
+                )
+            }
         }
         .opacity(opacity)
         .onAppear {
@@ -88,6 +99,21 @@ struct FullscreenCardView: View {
     private var dragScale: CGFloat {
         let progress = min(abs(dragOffset) / 300.0, 1.0)
         return 1.0 - (progress * 0.1)
+    }
+
+    private func fullscreenCardScale(in size: CGSize) -> CGFloat {
+        let horizontalScale = (size.width - 28) / CardDisplaySize.fullscreen.width
+        let verticalScale = (size.height * 0.68) / CardDisplaySize.fullscreen.height
+        return min(max(min(horizontalScale, verticalScale), 0.95), 1.28)
+    }
+
+    private func dismissWithFade() {
+        withAnimation(.easeOut(duration: 0.25)) {
+            opacity = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            dismiss()
+        }
     }
 }
 
