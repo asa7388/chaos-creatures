@@ -152,9 +152,7 @@ struct AchievementsView: View {
     private func errorView(_ message: String) -> some View {
         VStack(spacing: 16) {
             Spacer()
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 40))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.warningYellow)
+            ThemedGlyph(symbol: "exclamationmark.triangle.fill", size: 40, color: .warningYellow)
             Text(message)
                 .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)
@@ -279,9 +277,7 @@ struct AchievementRowView: View {
                         .foregroundColor(isUnlocked ? .textPrimary : .textSecondary)
 
                     if isUnlocked {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(CardFont.body(size: 12))
-                            .foregroundColor(.healGreen)
+                        ThemedGlyph(symbol: "checkmark.circle.fill", size: 12, color: .healGreen)
                     }
                 }
 

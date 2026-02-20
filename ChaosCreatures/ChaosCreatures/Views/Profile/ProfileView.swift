@@ -37,8 +37,7 @@ struct ProfileView: View {
                             .font(CardFont.bodyBold(size: 16))
                             .foregroundColor(.textPrimary)
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(.textTertiary)
+                        ThemedGlyph(symbol: "chevron.right", size: 12, color: .textTertiary)
                     }
                     .padding(16)
                     .leatherPanel()
@@ -62,8 +61,7 @@ struct ProfileView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: ProfileDestination.settings) {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundColor(.textSecondary)
+                    ThemedGlyph(symbol: "gearshape.fill", size: 14, color: .textSecondary)
                 }
             }
         }

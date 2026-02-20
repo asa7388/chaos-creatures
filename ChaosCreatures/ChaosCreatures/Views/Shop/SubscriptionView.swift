@@ -248,9 +248,7 @@ struct SubscriptionView: View {
         Group {
             if let value {
                 if value == "check" {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))  // SF Symbol icon size - keep as-is
-                        .foregroundColor(.healGreen)
+                    ThemedGlyph(symbol: "checkmark", size: 12, weight: .bold, color: .healGreen)
                 } else {
                     Text(value)
                         .font(CardFont.bodyBold(size: 12))

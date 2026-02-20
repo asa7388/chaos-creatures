@@ -50,15 +50,7 @@ enum TutorialStep: Int, CaseIterable {
         case .playCard: return "UIIcons/ui-mission-cards"
         case .chaosRoll: return "UIIcons/ui-chaos-rift"
         case .attackPhase: return "UIIcons/ui-trigger-attack"
-        case .complete: return "checkmark.circle.fill"
-        }
-    }
-
-    /// Whether this step uses a custom asset (true) or SF Symbol (false)
-    var isCustomIcon: Bool {
-        switch self {
-        case .complete: return false
-        default: return true
+        case .complete: return "UIIcons/ui-check"
         }
     }
 
@@ -166,18 +158,7 @@ struct TutorialOverlayView: View {
                 // Tutorial tooltip
                 VStack(spacing: 16) {
                     // Icon
-                    if step.isCustomIcon {
-                        Image(step.iconName)
-                            .renderingMode(.template)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 36, height: 36)
-                            .foregroundColor(step.iconColor)
-                    } else {
-                        Image(systemName: step.iconName)
-                            .font(.system(size: 36))
-                            .foregroundColor(step.iconColor)
-                    }
+                    ThemedGlyph(symbol: step.iconName, size: 36, color: step.iconColor)
 
                     // Title
                     Text(step.title)

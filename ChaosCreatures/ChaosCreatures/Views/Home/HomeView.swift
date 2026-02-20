@@ -51,8 +51,7 @@ struct HomeView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: HomeDestination.settings) {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundColor(.textSecondary)
+                    ThemedGlyph(symbol: "gearshape.fill", size: 14, color: .textSecondary)
                 }
             }
         }

@@ -215,9 +215,7 @@ struct DeckBuilderView: View {
             if deckCards.isEmpty {
                 VStack(spacing: 8) {
                     Spacer()
-                    Image(systemName: "rectangle.stack")
-                        .font(.system(size: 28))  // SF Symbol icon size - keep as-is
-                        .foregroundColor(.textDisabled)
+                    ThemedGlyph(symbol: "rectangle.stack", size: 28, color: .textDisabled)
                     Text("Tap cards to add")
                         .font(CardFont.body(size: 13))
                         .foregroundColor(.textTertiary)
@@ -233,7 +231,7 @@ struct DeckBuilderView: View {
                                     Button(role: .destructive) {
                                         removeCard(entry.cardInstanceId)
                                     } label: {
-                                        Label("Remove", systemImage: "minus.circle")
+                                        Text("Remove")
                                     }
                                 }
                         }

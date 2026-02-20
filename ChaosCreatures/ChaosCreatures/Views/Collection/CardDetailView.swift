@@ -112,10 +112,7 @@ struct CardDetailView: View {
 
     private var closeButton: some View {
         Button(action: { dismiss() }) {
-            Image(systemName: "xmark")
-                .font(.system(size: 14))  // SF Symbol icon size - keep as-is
-                .fontWeight(.bold)
-                .foregroundColor(.textPrimary.opacity(0.9))
+            ThemedGlyph(symbol: "xmark", size: 14, weight: .bold, color: .textPrimary.opacity(0.9))
                 .frame(width: 32, height: 32)
                 .background(Color.black.opacity(0.6))
                 .clipShape(Circle())
@@ -151,9 +148,7 @@ struct CardDetailView: View {
             .aspectRatio(5.0 / 7.0, contentMode: .fit)
             .cornerRadius(14)
             .overlay(
-                Image(systemName: "photo")
-                    .font(.system(size: 40))  // SF Symbol icon size - keep as-is
-                    .foregroundColor(.textDisabled)
+                ThemedGlyph(symbol: "photo", size: 40, color: .textDisabled)
             )
             .frame(maxWidth: 320)
             .frame(maxWidth: .infinity)
@@ -197,7 +192,7 @@ struct CardDetailView: View {
 
                 // Instability stat
                 statCell(
-                    iconName: "waveform.path",
+                    iconName: "instability-indicator",
                     value: card.instabilityValue,
                     color: .warningYellow,
                     label: "INST"
@@ -300,19 +295,7 @@ struct CardDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(card.triggeredAbilities) { ability in
                         HStack(spacing: 8) {
-                            Group {
-                                if isCustomTriggerIcon(ability.trigger) {
-                                    Image(triggerIcon(ability.trigger))
-                                        .renderingMode(.template)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 14, height: 14)
-                                } else {
-                                    Image(systemName: triggerIcon(ability.trigger))
-                                        .font(.system(size: 14))
-                                }
-                            }
-                                .foregroundColor(triggerColor(ability.trigger))
+                            ThemedGlyph(symbol: triggerIcon(ability.trigger), size: 14, color: triggerColor(ability.trigger))
                                 .frame(width: 24, height: 24)
                                 .background(triggerColor(ability.trigger).opacity(0.15))
                                 .cornerRadius(6)
@@ -421,9 +404,7 @@ struct CardDetailView: View {
             },
             label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "gearshape.2")
-                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
-                        .foregroundColor(.textTertiary)
+                    ThemedGlyph(symbol: "gearshape.2", size: 12, weight: .semibold, color: .textTertiary)
                     Text("Applied Modifiers")
                         .font(CardFont.bodyBold(size: 14))
                         .foregroundColor(.textPrimary)
@@ -461,9 +442,7 @@ struct CardDetailView: View {
 
                         if let nextTier = card.tier.nextTier {
                             HStack(spacing: 4) {
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 10))  // SF Symbol icon size - keep as-is
-                                    .foregroundColor(.textTertiary)
+                                ThemedGlyph(symbol: "arrow.right", size: 10, color: .textTertiary)
                                 Text(nextTier.displayName)
                                     .font(CardFont.bodyBold(size: 13))
                                     .foregroundColor(Color.tierColor(nextTier))
@@ -563,7 +542,7 @@ struct CardDetailView: View {
                             router.navigateToEvolution(card, faction: factionForCard(card))
                         }) {
                             HStack {
-                                Image(systemName: "arrow.up.circle.fill")
+                                ThemedGlyph(symbol: "arrow.up.circle.fill", size: 16, color: .textDark)
                                 Text("Evolve Now")
                             }
                             .font(CardFont.bodyBold(size: 15))
@@ -588,9 +567,12 @@ struct CardDetailView: View {
             },
             label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "arrow.up.circle")
-                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
-                        .foregroundColor(isReady ? .tauntGold : .textTertiary)
+                    ThemedGlyph(
+                        symbol: "arrow.up.circle",
+                        size: 12,
+                        weight: .semibold,
+                        color: isReady ? .tauntGold : .textTertiary
+                    )
                     Text("Evolution")
                         .font(CardFont.bodyBold(size: 14))
                         .foregroundColor(.textPrimary)
@@ -690,8 +672,7 @@ struct CardDetailView: View {
                     router.navigateToEvolution(card, faction: factionForCard(card))
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 16))  // SF Symbol icon size - keep as-is
+                        ThemedGlyph(symbol: "arrow.up.circle.fill", size: 16, color: .textDark)
                         Text("Evolve")
                             .font(CardFont.bodyBold(size: 15))
                     }
@@ -718,8 +699,7 @@ struct CardDetailView: View {
                 appState.selectedTab = .decks
             }) {
                 HStack(spacing: 6) {
-                    Image(systemName: "plus.rectangle.on.rectangle")
-                        .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                    ThemedGlyph(symbol: "plus.rectangle.on.rectangle", size: 14, color: .textPrimary)
                     Text("Add to Deck")
                         .font(CardFont.bodyBold(size: 15))
                 }
@@ -757,15 +737,7 @@ struct CardDetailView: View {
         case .onDeath: return "UIIcons/ui-trigger-death"
         case .onDamageTaken: return "UIIcons/ui-trigger-damage"
         case .onAttack: return "UIIcons/ui-trigger-attack"
-        case .onBlock: return "shield.fill"
-        }
-    }
-
-    /// Whether the trigger icon is a custom asset (true) or SF Symbol (false)
-    private func isCustomTriggerIcon(_ trigger: TriggerType) -> Bool {
-        switch trigger {
-        case .onBlock: return false
-        default: return true
+        case .onBlock: return "KeywordIcons/kw-shield"
         }
     }
 

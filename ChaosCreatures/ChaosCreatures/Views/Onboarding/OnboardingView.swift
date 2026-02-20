@@ -203,9 +203,7 @@ struct ReadyToPlayView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.healGreen)
+            ThemedGlyph(symbol: "checkmark.circle.fill", size: 64, color: .healGreen)
 
             Text("You're Ready!")
                 .font(CardFont.displayTitle(size: 28))

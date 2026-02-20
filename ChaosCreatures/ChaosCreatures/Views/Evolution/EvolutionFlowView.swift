@@ -230,9 +230,7 @@ struct EvolutionFlowView: View {
     private func stageRow(label: String, isComplete: Bool, isActive: Bool) -> some View {
         HStack(spacing: 10) {
             if isComplete {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 16))  // SF Symbol icon size - keep as-is
-                    .foregroundColor(.healGreen)
+                ThemedGlyph(symbol: "checkmark.circle.fill", size: 16, color: .healGreen)
             } else if isActive {
                 ChaosMoteSpinner(size: 14, tint: .tauntGold)
                     .frame(width: 16, height: 16)
@@ -273,8 +271,7 @@ struct EvolutionFlowView: View {
                     .frame(width: 100, height: 100)
                     .cornerRadius(12)
                     .overlay(
-                        Image(systemName: "photo")
-                            .foregroundColor(.textDisabled)
+                        ThemedGlyph(symbol: "photo", size: 20, color: .textDisabled)
                     )
             }
 
@@ -292,9 +289,7 @@ struct EvolutionFlowView: View {
                     .cornerRadius(6)
 
                 if let nextTier = card.tier.nextTier {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
-                        .foregroundColor(.textDisabled)
+                    ThemedGlyph(symbol: "arrow.right", size: 10, color: .textDisabled)
 
                     Text(nextTier.displayName)
                         .font(CardFont.bodyBold(size: 12))
@@ -356,9 +351,7 @@ struct EvolutionFlowView: View {
 
     private func errorView(message: String) -> some View {
         VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.warningYellow)
+            ThemedGlyph(symbol: "exclamationmark.triangle.fill", size: 48, color: .warningYellow)
 
             Text("Evolution Failed")
                 .font(CardFont.cardName(size: 20))

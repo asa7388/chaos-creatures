@@ -113,9 +113,7 @@ struct EvolutionRevealView: View {
             }
 
             // Arrow
-            Image(systemName: "arrow.right")
-                .font(.system(size: 18, weight: .bold))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.tauntGold)
+            ThemedGlyph(symbol: "arrow.right", size: 18, weight: .bold, color: .tauntGold)
 
             // New tier
             VStack(spacing: 4) {

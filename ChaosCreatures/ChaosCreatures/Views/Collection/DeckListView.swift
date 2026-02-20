@@ -57,13 +57,11 @@ struct DeckListView: View {
                         Button(action: {
                             router.decksNavigationPath.append(DecksDestination.deckBuilder(nil))
                         }) {
-                            Image(systemName: "plus")
-                                .foregroundColor(.textSecondary)
+                            ThemedGlyph(symbol: "plus", size: 14, color: .textSecondary)
                         }
                     }
                     NavigationLink(value: DecksDestination.settings) {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundColor(.textSecondary)
+                        ThemedGlyph(symbol: "gearshape.fill", size: 14, color: .textSecondary)
                     }
                 }
             }
@@ -107,8 +105,7 @@ struct DeckListView: View {
                         router.decksNavigationPath.append(DecksDestination.deckBuilder(nil))
                     }) {
                         HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20))  // SF Symbol icon size - keep as-is
+                            ThemedGlyph(symbol: "plus.circle.fill", size: 20, color: .orderBlue)
                             Text("Create New Deck")
                                 .font(CardFont.body(size: 15))
                         }
@@ -196,9 +193,7 @@ struct DeckRowView: View {
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.textTertiary)
+            ThemedGlyph(symbol: "chevron.right", size: 13, color: .textTertiary)
         }
         .padding(16)
         .leatherPanel()

@@ -205,8 +205,12 @@ struct ModifierPickerView: View {
                     let instAdj = modifier.instabilityAdjustment
                     if instAdj != 0 {
                         HStack(spacing: 3) {
-                            Image(systemName: instAdj > 0 ? "arrow.up" : "arrow.down")
-                                .font(.system(size: 10, weight: .bold))  // SF Symbol icon size - keep as-is
+                            ThemedGlyph(
+                                symbol: instAdj > 0 ? "arrow.up" : "arrow.down",
+                                size: 10,
+                                weight: .bold,
+                                color: instAdj > 0 ? .chaosRed : .orderBlue
+                            )
                             Text("\(abs(instAdj)) Instability")
                                 .font(CardFont.body(size: 12))
                         }
@@ -231,8 +235,7 @@ struct ModifierPickerView: View {
                 // Penalty indicator
                 if modifier.hasPenalty {
                     HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+                        ThemedGlyph(symbol: "exclamationmark.triangle.fill", size: 10, color: .warningYellow)
                         Text("Has penalty effect")
                             .font(CardFont.body(size: 11))
                     }

@@ -11,9 +11,7 @@ struct ErrorView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 44))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.warningYellow)
+            ThemedGlyph(symbol: "exclamationmark.triangle.fill", size: 44, color: .warningYellow)
 
             Text("Something went wrong")
                 .font(CardFont.cardName(size: 18))
@@ -27,7 +25,7 @@ struct ErrorView: View {
 
             Button(action: onRetry) {
                 HStack(spacing: 8) {
-                    Image(systemName: "arrow.clockwise")
+                    ThemedGlyph(symbol: "arrow.clockwise", size: 14, color: .textPrimary)
                     Text("Retry")
                 }
                 .font(CardFont.bodyBold(size: 15))

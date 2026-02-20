@@ -263,9 +263,7 @@ private struct SectionPanel<Content: View>: View {
             // Embossed header
             HStack(spacing: 8) {
                 if let icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C9A84C"))
+                    ThemedGlyph(symbol: icon, size: 14, weight: .medium, color: Color(hex: "#C9A84C"))
                 }
                 Text(title.uppercased())
                     .font(CardFont.cardName(size: 14))
@@ -394,9 +392,11 @@ private struct ActionRow: View {
         Button(action: action) {
             HStack {
                 if let icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(isDestructive ? Color(hex: "#E63946") : Color(hex: "#C9A84C"))
+                    ThemedGlyph(
+                        symbol: icon,
+                        size: 14,
+                        color: isDestructive ? Color(hex: "#E63946") : Color(hex: "#C9A84C")
+                    )
                         .frame(width: 20)
                 }
                 Text(label)
@@ -404,9 +404,7 @@ private struct ActionRow: View {
                     .foregroundColor(isDestructive ? Color(hex: "#E63946") : Color(hex: "#F0EAD6"))
                 Spacer()
                 if !isDestructive {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "#555555"))
+                    ThemedGlyph(symbol: "chevron.right", size: 12, weight: .semibold, color: Color(hex: "#555555"))
                 }
             }
             .padding(.vertical, 4)

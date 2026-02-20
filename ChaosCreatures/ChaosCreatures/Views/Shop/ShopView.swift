@@ -43,8 +43,7 @@ struct ShopView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: ShopDestination.settings) {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundColor(.textSecondary)
+                    ThemedGlyph(symbol: "gearshape.fill", size: 14, color: .textSecondary)
                 }
             }
         }
@@ -297,9 +296,7 @@ struct SubscriptionCardItem: View {
 
     private func benefitRow(_ text: String) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "checkmark")
-                .font(.system(size: 10, weight: .bold))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.healGreen)
+            ThemedGlyph(symbol: "checkmark", size: 10, weight: .bold, color: .healGreen)
             Text(text)
                 .font(CardFont.body(size: 12))
                 .foregroundColor(.textSecondary)

@@ -321,9 +321,7 @@ struct OpponentHUDView: View {
 
                 // Hand count
                 HStack(spacing: 4) {
-                    Image(systemName: "rectangle.portrait.fill")
-                        .foregroundColor(.textSecondary)
-                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+                    ThemedGlyph(symbol: "rectangle.portrait.fill", size: 10, color: .textSecondary)
                     Text("\(handCount)")
                         .font(CardFont.stats(size: 12))
                         .foregroundColor(.textSecondary)
@@ -331,9 +329,7 @@ struct OpponentHUDView: View {
 
                 // Deck count
                 HStack(spacing: 4) {
-                    Image(systemName: "square.stack.fill")
-                        .foregroundColor(.textSecondary)
-                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+                    ThemedGlyph(symbol: "square.stack.fill", size: 10, color: .textSecondary)
                     Text("\(deckCount)")
                         .font(CardFont.stats(size: 12))
                         .foregroundColor(.textSecondary)
@@ -417,8 +413,7 @@ struct PlayerHUDView: View {
                 // Graveyard
                 Button(action: onGraveyard) {
                     HStack(spacing: 2) {
-                        Image(systemName: "archivebox.fill")
-                            .font(.system(size: 11))  // SF Symbol icon size - keep as-is
+                        ThemedGlyph(symbol: "archivebox.fill", size: 11, color: .textSecondary)
                         Text("\(graveyardCount)")
                             .font(CardFont.stats(size: 11))
                     }
@@ -427,8 +422,7 @@ struct PlayerHUDView: View {
 
                 // Deck count
                 HStack(spacing: 2) {
-                    Image(systemName: "square.stack.fill")
-                        .font(.system(size: 11))  // SF Symbol icon size - keep as-is
+                    ThemedGlyph(symbol: "square.stack.fill", size: 11, color: .textSecondary)
                     Text("\(deckCount)")
                         .font(CardFont.stats(size: 11))
                 }
@@ -436,9 +430,7 @@ struct PlayerHUDView: View {
 
                 // Surrender (menu)
                 Button(action: onSurrender) {
-                    Image(systemName: "flag.fill")
-                        .foregroundColor(.textTertiary)
-                        .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                    ThemedGlyph(symbol: "flag.fill", size: 14, color: .textTertiary)
                 }
             }
         }
@@ -745,9 +737,7 @@ struct GraveyardSheetView: View {
                 if graveyardCount == 0 {
                     VStack(spacing: 12) {
                         Spacer()
-                        Image(systemName: "archivebox")
-                            .font(.system(size: 40))  // SF Symbol icon size - keep as-is
-                            .foregroundColor(.textDisabled)
+                        ThemedGlyph(symbol: "archivebox", size: 40, color: .textDisabled)
                         Text("No cards in graveyard")
                             .font(CardFont.body(size: 15))
                             .foregroundColor(.textSecondary)
@@ -795,19 +785,7 @@ struct BattleLogSheetView: View {
                     LazyVStack(spacing: 4) {
                         ForEach(entries) { entry in
                             HStack(spacing: 8) {
-                                Group {
-                                    if entry.type.isCustomIcon {
-                                        Image(entry.type.iconName)
-                                            .renderingMode(.template)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 10, height: 10)
-                                    } else {
-                                        Image(systemName: entry.type.iconName)
-                                            .font(.system(size: 10))
-                                    }
-                                }
-                                    .foregroundColor(entry.type.color)
+                                ThemedGlyph(symbol: entry.type.iconName, size: 10, color: entry.type.color)
                                     .frame(width: 16)
 
                                 Text("T\(entry.turn)")
@@ -855,9 +833,7 @@ struct ConnectionQualityIndicator: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: quality.iconName)
-                .font(.system(size: 12))  // SF Symbol icon size - keep as-is
-                .foregroundColor(indicatorColor)
+            ThemedGlyph(symbol: quality.iconName, size: 12, color: indicatorColor)
 
             if quality == .poor || quality == .disconnected {
                 Text(quality == .disconnected ? "Offline" : "Weak")

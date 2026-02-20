@@ -28,9 +28,7 @@ struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
-                .foregroundColor(.textTertiary)
+            ThemedGlyph(symbol: icon, size: 48, color: .textTertiary)
 
             Text(message)
                 .font(CardFont.bodyBold(size: 17))

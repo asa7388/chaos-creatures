@@ -394,10 +394,10 @@ enum ConnectionQuality {
 
     var iconName: String {
         switch self {
-        case .good: return "wifi"
-        case .degraded: return "wifi.exclamationmark"
-        case .poor: return "wifi.slash"
-        case .disconnected: return "wifi.slash"
+        case .good: return "UIIcons/ui-world"
+        case .degraded: return "UIIcons/ui-warning"
+        case .poor: return "UIIcons/ui-defeat"
+        case .disconnected: return "UIIcons/ui-defeat"
         }
     }
 
@@ -426,23 +426,15 @@ enum BattleLogEntryType: String {
 
     var iconName: String {
         switch self {
-        case .turnStart: return "arrow.clockwise"
-        case .phaseChange: return "arrow.right"
+        case .turnStart: return "UIIcons/ui-refresh"
+        case .phaseChange: return "UIIcons/ui-arrow-right"
         case .chaosRoll: return "UIIcons/ui-chaos-rift"
         case .cardPlayed: return "UIIcons/ui-mission-cards"
         case .creatureDied: return "UIIcons/ui-trigger-death"
         case .hpChange: return "StatIcons/heart-hp"
         case .combat: return "UIIcons/ui-trigger-attack"
         case .eventTriggered: return "UIIcons/ui-chaos-spark"
-        case .system: return "gearshape"
-        }
-    }
-
-    /// Whether this entry type uses a custom asset icon (true) or SF Symbol (false)
-    var isCustomIcon: Bool {
-        switch self {
-        case .turnStart, .phaseChange, .system: return false
-        default: return true
+        case .system: return "UIIcons/ui-settings"
         }
     }
 

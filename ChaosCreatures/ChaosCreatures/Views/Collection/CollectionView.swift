@@ -16,16 +16,12 @@ enum CollectionSortOption: String, CaseIterable {
 
     var iconName: String {
         switch self {
-        case .newest: return "clock.arrow.circlepath"
-        case .oldest: return "clock"
-        case .name: return "textformat"
-        case .manaCost: return "chaos-motes"  // custom asset
-        case .rarity: return "star.fill"
+        case .newest: return "arrow.clockwise"
+        case .oldest: return "UIIcons/ui-hourglass"
+        case .name: return "UIIcons/ui-battle-log"
+        case .manaCost: return "StatIcons/chaos-motes"
+        case .rarity: return "UIIcons/ui-sort-rarity"
         }
-    }
-
-    var isCustomAsset: Bool {
-        self == .manaCost
     }
 }
 
@@ -122,8 +118,7 @@ struct CollectionView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: CollectionDestination.settings) {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundColor(.textSecondary)
+                    ThemedGlyph(symbol: "gearshape.fill", size: 14, color: .textSecondary)
                 }
             }
         }
@@ -178,22 +173,15 @@ struct CollectionView: View {
                     Button(action: {
                         sortOption = option
                     }) {
-                        if option.isCustomAsset {
-                            Label {
-                                Text(option.rawValue)
-                            } icon: {
-                                Image("StatIcons/\(option.iconName)")
-                                    .renderingMode(.template)
-                            }
-                        } else {
-                            Label(option.rawValue, systemImage: option.iconName)
+                        HStack(spacing: 8) {
+                            ThemedGlyph(symbol: option.iconName, size: 12, color: .textPrimary)
+                            Text(option.rawValue)
                         }
                     }
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
+                    ThemedGlyph(symbol: "arrow.up.arrow.down", size: 12, color: .textSecondary)
                     Text(sortOption.rawValue)
                         .font(CardFont.body(size: 12))
                 }
@@ -220,8 +208,7 @@ struct CollectionView: View {
                     if !showSearch { searchQuery = "" }
                 }
             }) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.textSecondary)
+                ThemedGlyph(symbol: "magnifyingglass", size: 14, color: .textSecondary)
             }
         }
         .padding(.horizontal, 12)

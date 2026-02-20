@@ -26,8 +26,7 @@ struct DailyMissionsView: View {
 
             if appState.activeMissions.isEmpty {
                 HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.healGreen)
+                    ThemedGlyph(symbol: "checkmark.circle.fill", size: 16, color: .healGreen)
                     Text("All missions complete! Check back tomorrow.")
                         .font(CardFont.body(size: 14))
                         .foregroundColor(.textSecondary)

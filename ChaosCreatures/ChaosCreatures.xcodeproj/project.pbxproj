@@ -46,6 +46,7 @@
 		4FF519A86474DEDD3DB4A1F5 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04F8EF3F3AF02EE72675105 /* AuthService.swift */; };
 		51429FFB6A2F68F6BBCC704F /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6C1A940DA59DD45D3ABE88 /* SubscriptionView.swift */; };
 		5A1A7FA5BCBADD42CD6CC999 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4688B60BDB611CE942CEFC5 /* ErrorView.swift */; };
+		C3D9F1A7B4E26D50819A3C72 /* ThemedGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A9C1D4B2F34A5C8E1D9073 /* ThemedGlyph.swift */; };
 		5A256B7E1F407B7AA280F9E6 /* Data+Codable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A39E9295562D6124B7FED4B /* Data+Codable.swift */; };
 		5A77BBF50206859F29831FDF /* ManaBarNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2F46F3E1D63BF639931F8B /* ManaBarNode.swift */; };
 		5B3816B072A4804A58FBAEFC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DEDBFBD918235DF4A87F2B76 /* Assets.xcassets */; };
@@ -261,6 +262,7 @@
 		A216A056FFD6A43269EF74AD /* ScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTests.swift; sourceTree = "<group>"; };
 		A2AB34AF641F5432DDFFBDFB /* DeathAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeathAction.swift; sourceTree = "<group>"; };
 		A4688B60BDB611CE942CEFC5 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
+		E7A9C1D4B2F34A5C8E1D9073 /* ThemedGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemedGlyph.swift; sourceTree = "<group>"; };
 		A5167523FF0AC7A52C063336 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A57B18654ABEEDFE02FF0950 /* DamageNumberNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DamageNumberNode.swift; sourceTree = "<group>"; };
 		A5C612D3DDEE13263171FB1A /* BattleCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleCard.swift; sourceTree = "<group>"; };
@@ -682,6 +684,7 @@
 				CD01A2B3E4F56789AB012346 /* ChaosDustView.swift */,
 				5AE64322615B77DD0D2F9A62 /* EmptyStateView.swift */,
 				A4688B60BDB611CE942CEFC5 /* ErrorView.swift */,
+				E7A9C1D4B2F34A5C8E1D9073 /* ThemedGlyph.swift */,
 				989E1235853D35C321E96662 /* KeywordBadgeView.swift */,
 				49CF45F9013860294E4763B8 /* LoadingView.swift */,
 				BF9BC3783B4BAD2770ED8A91 /* ManaGemView.swift */,
@@ -942,6 +945,7 @@
 				60D8ACE7F80BA981C18DEEDA /* EmptyStateView.swift in Sources */,
 				15565E16EFD4489A99641845 /* Enums.swift in Sources */,
 				5A1A7FA5BCBADD42CD6CC999 /* ErrorView.swift in Sources */,
+				C3D9F1A7B4E26D50819A3C72 /* ThemedGlyph.swift in Sources */,
 				8BFB1CD09A2CE980C618347B /* EventBannerNode.swift in Sources */,
 				B4F8FE8B4E089DBEEBD5AEF1 /* EventSlideAction.swift in Sources */,
 				C61687996D641A7591DE7D12 /* EvolutionFlowView.swift in Sources */,

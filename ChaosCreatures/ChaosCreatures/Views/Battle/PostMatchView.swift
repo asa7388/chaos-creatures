@@ -310,9 +310,7 @@ struct PostMatchView: View {
                     .frame(width: 24, height: 24)
                     .foregroundColor(color)
             } else {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(color)
+                ThemedGlyph(symbol: icon, size: 24, color: color)
             }
 
             Text(value)
