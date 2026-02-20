@@ -26,7 +26,6 @@ struct ContentView: View {
                         }
                     }
             }
-            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.home.rawValue)
@@ -49,7 +48,6 @@ struct ContentView: View {
                         }
                     }
             }
-            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.collection.rawValue)
@@ -72,7 +70,6 @@ struct ContentView: View {
                         }
                     }
             }
-            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.decks.rawValue)
@@ -95,7 +92,6 @@ struct ContentView: View {
                         }
                     }
             }
-            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.profile.rawValue)
@@ -120,7 +116,6 @@ struct ContentView: View {
                         }
                     }
             }
-            .toolbar(.hidden, for: .tabBar)
             .tabItem {
                 Label {
                     Text(AppTab.shop.rawValue)
@@ -132,11 +127,6 @@ struct ContentView: View {
             .tag(AppTab.shop)
         }
         .tint(.appAccent)
-        .toolbar(.hidden, for: .tabBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            CustomTabBar(selectedTab: tabSelection)
-        }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
         .fullScreenCover(isPresented: $router.showBattle) {
             if let matchID = router.matchID {
                 BattleContainerView(matchId: matchID)
