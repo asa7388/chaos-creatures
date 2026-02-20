@@ -39,7 +39,16 @@ struct DeckBuilderView: View {
                 phoneLayout
             }
         }
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-aged-wood")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.35)
+            }
+        )
         .navigationTitle("Deck Builder")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

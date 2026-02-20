@@ -29,6 +29,14 @@ struct BattleContainerView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
+                // Play mat felt texture behind SpriteKit
+                Color.bgPrimary.ignoresSafeArea()
+                Image("UIBackgrounds/bg-play-mat-felt")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.40)
+
                 // SpriteKit battlefield
                 SpriteView(scene: viewModel.createScene(size: geo.size))
                     .ignoresSafeArea()
@@ -373,9 +381,9 @@ struct PlayerHUDView: View {
                 HPBarView(current: hp, max: maxHp, height: 12, showLabel: true, fontSize: 12)
                     .frame(maxWidth: 140)
 
-                // Mana
+                // Chaos Motes (CM)
                 HStack(spacing: 4) {
-                    Image(systemName: "drop.fill")
+                    Image(systemName: "diamond.fill")
                         .foregroundColor(.timerBlue)
                         .font(.system(size: 12))
                     Text("\(mana)/\(manaCap)")
@@ -513,7 +521,7 @@ struct HandCardView: View {
                 )
         )
         .overlay(alignment: .topLeading) {
-            // Mana cost badge
+            // CM cost badge
             Text("\(card.manaCost)")
                 .font(CardFont.stats(size: 10))
                 .foregroundColor(.white)

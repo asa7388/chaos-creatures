@@ -462,4 +462,59 @@ enum SK {
         static let totalDuration: TimeInterval = 0.4
         static let halfDuration: TimeInterval = 0.2
     }
+
+    // MARK: - Card Texture Assets
+
+    /// Maps factions to their primary border and text panel texture asset names.
+    /// Since sub-faction data is not available during battle, each faction maps to
+    /// its primary sub-faction texture (e.g. feyCourts -> fey-verdant).
+    enum CardTextures {
+        /// Faction-specific border texture asset name from CardTextures/ in Assets.xcassets.
+        static func borderAssetName(faction: FactionShortName?) -> String {
+            guard let faction = faction else { return "CardTextures/border-ironwright" }
+            switch faction {
+            case .ironwright: return "CardTextures/border-ironwright"
+            case .feyCourts: return "CardTextures/border-fey-verdant"
+            case .demonicKingdoms: return "CardTextures/border-demonic-furnace"
+            case .celestialCrusade: return "CardTextures/border-celestial-knights"
+            case .theEndless: return "CardTextures/border-endless-cabals"
+            }
+        }
+
+        /// Faction-specific text panel texture asset name from TextPanels/ in Assets.xcassets.
+        static func textPanelAssetName(faction: FactionShortName?) -> String {
+            guard let faction = faction else { return "TextPanels/tp-ironwright" }
+            switch faction {
+            case .ironwright: return "TextPanels/tp-ironwright"
+            case .feyCourts: return "TextPanels/tp-fey-verdant"
+            case .demonicKingdoms: return "TextPanels/tp-demonic-furnace"
+            case .celestialCrusade: return "TextPanels/tp-celestial-knights"
+            case .theEndless: return "TextPanels/tp-endless-cabals"
+            }
+        }
+
+        /// Canvas weave overlay texture
+        static let canvasWeave = "CardTextures/tex-canvas-weave"
+
+        /// Wax seal bronze texture for medallion stat badges
+        static let waxSealBronze = "CardTextures/wax-seal-bronze"
+
+        // MARK: Medallion Badge Colors
+
+        /// CM badge tint color (deep blue)
+        static let cmTintColor = UIColor(hex: "#0D47A1")
+        /// ATK badge tint color (deep orange)
+        static let atkTintColor = UIColor(hex: "#BF360C")
+        /// HP badge tint color (deep green)
+        static let hpTintColor = UIColor(hex: "#1B5E20")
+
+        /// Parchment text color for medallion numbers
+        static let parchmentText = UIColor(hex: "#F0E6D2")
+        /// Dark brown for medallion rim gradient start
+        static let rimLight = UIColor(hex: "#8B7355")
+        /// Very dark brown for medallion rim gradient end
+        static let rimDark = UIColor(hex: "#2A1F0F")
+        /// Inner highlight on medallion rim
+        static let rimHighlight = UIColor(hex: "#D4B896")
+    }
 }

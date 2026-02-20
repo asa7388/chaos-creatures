@@ -38,6 +38,16 @@ final class AppState {
 
     /// Called on app launch to restore session and load initial data
     func initialize() async {
+        #if DEBUG
+        if CommandLine.arguments.contains("-devMode") {
+            enterDevMode()
+            if CommandLine.arguments.contains("-startCollection") {
+                selectedTab = .collection
+            }
+            return
+        }
+        #endif
+
         isInitializing = true
         defer { isInitializing = false }
 
@@ -122,6 +132,8 @@ final class AppState {
 
     #if DEBUG
     var isDevMode = false
+    var devCards: [CardInstance] = []
+    var devTemplateFactionMap: [UUID: UUID] = [:]
 
     /// Skip auth and load mock data so all screens are visible in Simulator
     func enterDevMode() {
@@ -180,6 +192,71 @@ final class AppState {
             Mission(id: UUID(), playerId: player!.id, missionType: .winGames, description: "Win 3 games", difficulty: .easy, period: .daily, targetValue: 3, currentValue: 1, isCompleted: false, isClaimed: false, rewardDust: 50, rewardShardTier: nil, rewardShardCount: 0, expiresAt: now.addingTimeInterval(86400), createdAt: now),
             Mission(id: UUID(), playerId: player!.id, missionType: .playCreatures, description: "Play 10 creatures", difficulty: .medium, period: .daily, targetValue: 10, currentValue: 6, isCompleted: false, isClaimed: false, rewardDust: 30, rewardShardTier: .uncommon, rewardShardCount: 1, expiresAt: now.addingTimeInterval(86400), createdAt: now),
         ]
+
+        // Mock v18 test cards with real R2 art URLs
+        let devPlayerId = player!.id
+        let r2Base = "https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/cards/v18-test"
+
+        struct DevCard {
+            let name: String
+            let fileName: String
+            let factionId: UUID
+            let cardType: CardType
+            let atk: Int?
+            let hp: Int
+            let cm: Int
+            let keywords: [String]
+        }
+
+        let devCardDefs: [DevCard] = [
+            DevCard(name: "Rebar Golem", fileName: "V18-ironwright-rebar-golem.png", factionId: ironwrightId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["HASTE"]),
+            DevCard(name: "Void Welder", fileName: "V18-ironwright-void-welder.png", factionId: ironwrightId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["SHIELD"]),
+            DevCard(name: "Thornback Stag", fileName: "V18-fey-courts-thornback-stag.png", factionId: feyId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["TAUNT"]),
+            DevCard(name: "Briar Witch", fileName: "V18-fey-courts-briar-witch.png", factionId: feyId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["LIFESTEAL"]),
+            DevCard(name: "Infernal Bailiff", fileName: "V18-demonic-infernal-bailiff.png", factionId: demonicId, cardType: .creature, atk: 4, hp: 4, cm: 4, keywords: ["DEATHTOUCH"]),
+            DevCard(name: "Ember Hound", fileName: "V18-demonic-ember-hound.png", factionId: demonicId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["HASTE"]),
+            DevCard(name: "Siege Seraph", fileName: "V18-celestial-crusade-siege-seraph.png", factionId: celestialId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["FLYING"]),
+            DevCard(name: "Chapel Warden", fileName: "V18-celestial-crusade-chapel-warden.png", factionId: celestialId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["WARD"]),
+            DevCard(name: "Bone Colossus", fileName: "V18-the-endless-bone-colossus.png", factionId: endlessId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["TAUNT"]),
+            DevCard(name: "Wailing Shade", fileName: "V18-the-endless-wailing-shade.png", factionId: endlessId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["LIFESTEAL"]),
+            DevCard(name: "The Resonance Spire", fileName: "V18-neutral-the-resonance-spire.png", factionId: ironwrightId, cardType: .planarRuin, atk: nil, hp: 8, cm: 3, keywords: []),
+            DevCard(name: "The Sunken Archive", fileName: "V18-neutral-the-sunken-archive.png", factionId: feyId, cardType: .planarRuin, atk: nil, hp: 6, cm: 5, keywords: []),
+        ]
+
+        var mockCards: [CardInstance] = []
+        var mockFactionMap: [UUID: UUID] = [:]
+        for def in devCardDefs {
+            let templateId = UUID()
+            mockFactionMap[templateId] = def.factionId
+            mockCards.append(CardInstance(
+                id: UUID(),
+                templateId: templateId,
+                ownerId: devPlayerId,
+                cardType: def.cardType,
+                tier: .common,
+                currentName: def.name,
+                currentAttack: def.atk,
+                currentHealth: def.hp,
+                currentManaCost: def.cm,
+                instabilityValue: 1,
+                innateKeywords: def.keywords,
+                modifierKeywords: [],
+                evolutionHistory: [],
+                modifiers: [],
+                triggeredAbilities: [],
+                chaosEnergy: 0,
+                gamesPlayed: 0,
+                artUrl: "\(r2Base)/\(def.fileName)",
+                flavorText: "The forge remembers what the flesh forgets.",
+                artPromptHistory: [],
+                isFavorite: false,
+                inDeckIds: [],
+                createdAt: now,
+                lastEvolvedAt: nil
+            ))
+        }
+        devCards = mockCards
+        devTemplateFactionMap = mockFactionMap
 
         isDevMode = true
         isInitializing = false

@@ -22,6 +22,13 @@ struct OnboardingView: View {
         ZStack {
             Color.bgPrimary.ignoresSafeArea()
 
+            // Dark parchment texture
+            Image("UIBackgrounds/bg-dark-parchment")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .ignoresSafeArea()
+                .opacity(0.25)
+
             switch currentStep {
             case .introCinematic:
                 IntroCinematicView {

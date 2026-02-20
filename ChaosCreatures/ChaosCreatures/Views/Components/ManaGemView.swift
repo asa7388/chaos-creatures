@@ -1,6 +1,6 @@
 // ManaGemView.swift
 // Chaos Creatures
-// Mana cost display with gem-shaped background and themed font.
+// CM (Chaos Motes) cost display with gem-shaped background and themed font.
 // Source: docs/design/07-ui-ux-specs.md Section 3.2
 
 import SwiftUI
@@ -36,7 +36,7 @@ struct ManaGemView: View {
     }
 }
 
-// MARK: - Large Mana Gem (for card detail)
+// MARK: - Large CM Gem (for card detail)
 
 struct LargeManaGemView: View {
     let cost: Int

@@ -36,7 +36,16 @@ struct HomeView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 80) // Space for tab bar
         }
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.35)
+            }
+        )
         .navigationTitle("Chaos Creatures")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

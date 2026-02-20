@@ -12,12 +12,8 @@ struct KeywordBadgeView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            // Custom keyword icon from asset catalog, with SF Symbol fallback
-            Image(keyword.assetIconName)
-                .resizable()
-                .renderingMode(.template)
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 12, height: 12)
+            Image(systemName: keyword.sfSymbolName)
+                .font(.system(size: 11, weight: .semibold))
             Text(keyword.displayName)
                 .font(CardFont.bodyBold(size: 11))
         }
@@ -58,11 +54,8 @@ struct KeywordTooltipView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(keyword.assetIconName)
-                    .resizable()
-                    .renderingMode(.template)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 18, height: 18)
+                Image(systemName: keyword.sfSymbolName)
+                    .font(.system(size: 16, weight: .semibold))
                 Text(keyword.displayName)
                     .font(CardFont.cardName(size: 16))
             }

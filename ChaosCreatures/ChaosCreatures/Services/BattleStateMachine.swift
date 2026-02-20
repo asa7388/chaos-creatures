@@ -216,7 +216,7 @@ final class BattleStateMachine: ObservableObject {
         currentPhase.isDecisionPhase
     }
 
-    /// Current mana available (from last game state)
+    /// Current CM available (from last game state)
     var currentMana: Int {
         gameState?.me.currentMana ?? 0
     }

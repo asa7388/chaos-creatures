@@ -140,7 +140,7 @@ struct EvolutionRevealView: View {
             data: CardDisplayData(
                 name: result.newName,
                 artUrl: result.newArtUrl,
-                manaCost: 0, // Mana cost not shown in reveal context
+                manaCost: 0, // CM cost not shown in reveal context
                 tier: result.tier,
                 flavorText: result.newFlavorText
             ),

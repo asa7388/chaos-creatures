@@ -1,11 +1,11 @@
 // ManaBarNode.swift
 // Chaos Creatures
-// Mana crystal display (filled/empty gems).
+// CM (Chaos Motes) crystal display (filled/empty gems).
 // Source: docs/design/07-ui-ux-specs.md Section 3.2
 
 import SpriteKit
 
-/// Horizontal row of mana gems. Filled gems = available mana, empty = used.
+/// Horizontal row of CM gems. Filled gems = available CM, empty = used.
 /// Max 10 gems per doc design.
 final class ManaBarNode: SKNode {
 
@@ -81,7 +81,7 @@ final class ManaBarNode: SKNode {
         gem.fillColor = SK.Colors.manaEmpty
     }
 
-    /// Animate gaining mana at start of turn
+    /// Animate gaining CM at start of turn
     func animateGain(newFilled: Int) {
         guard newFilled > 0 && newFilled <= gemNodes.count else { return }
         let gem = gemNodes[newFilled - 1]

@@ -1,33 +1,35 @@
 // CreatureNode.swift
 // Chaos Creatures
-// BoardCardNode — full-art card on board with unified text panel, stat icons,
-// mana cost badge, keyword icons, rarity glow, and selection states.
+// BoardCardNode — full-art card on board with textured layers matching CardFrameView:
+// canvas weave overlay, faction border texture, faction text panel, wax-seal medallion
+// stat badges (ATK bottom-left, HP bottom-right, CM top-right), rarity glow, contact
+// shadow, and selection states. At 64x90pt the card name is omitted — too small to read.
 // Source: docs/design/07-ui-ux-specs.md Section 3.3
 
 import SpriteKit
 
 /// A card on the battlefield board. Full-bleed art fills the card bounds.
-/// A dark semi-transparent panel at the bottom 28% holds the card name and ATK/HP
-/// stats with sword-atk and heart-hp icons. A mana cost badge with chaos-motes
-/// icon sits at the top-right. Rarity is expressed as a colored glow behind the card.
+/// Texture layers (canvas weave, faction border, text panel) give the hand-painted
+/// paper-card feel matching the SwiftUI CardFrameView. Wax-seal medallion stat badges
+/// overlay corners: CM top-right, ATK bottom-left, HP bottom-right.
+/// Rarity is expressed as a colored glow behind the card.
 final class CreatureNode: SKSpriteNode {
 
     // MARK: - Child Nodes
 
     private let cardArtNode: SKSpriteNode
-    private let textPanel: SKSpriteNode
-    private let nameLabel: SKLabelNode
-    private let atkIcon: SKSpriteNode
+    private let cmBadge: SKNode
+    private let cmLabel: SKLabelNode
+    private let atkBadge: SKNode
     private let atkLabel: SKLabelNode
-    private let hpIcon: SKSpriteNode
+    private let hpBadge: SKNode
     private let hpLabel: SKLabelNode
-    private let manaBadge: SKSpriteNode
-    private let manaIcon: SKSpriteNode
-    private let manaCostLabel: SKLabelNode
-    private var keywordIcons: [SKSpriteNode] = []
     private var tauntIcon: SKSpriteNode?
     private var shieldOverlay: SKShapeNode?
     private var rarityGlowNode: SKSpriteNode?
+
+    /// Centered type label for non-creature cards (spells, stabilizers, ruins)
+    private var typeLabel: SKLabelNode?
 
     // MARK: - State
 
@@ -50,7 +52,8 @@ final class CreatureNode: SKSpriteNode {
 
         let factionColor = creature.factionPrimaryColor
         let cardSize = SK.Board.slotSize
-        let panelHeight = cardSize.height * SK.Card.textPanelRatio
+        let cornerRadius = SK.Board.slotCornerRadius
+        let faction = creature.factionShortName
 
         // --- Full-bleed card art (fills entire card) ---
         cardArtNode = SKSpriteNode(color: factionColor.withAlphaComponent(0.3), size: cardSize)
@@ -58,129 +61,148 @@ final class CreatureNode: SKSpriteNode {
         cardArtNode.position = .zero
         cardArtNode.zPosition = 0
 
-        // --- Unified text panel at bottom 28% ---
-        textPanel = SKSpriteNode(color: .black.withAlphaComponent(SK.Card.textPanelAlpha),
-                                 size: CGSize(width: cardSize.width, height: panelHeight))
-        textPanel.anchorPoint = CGPoint(x: 0.5, y: 0.0)
-        textPanel.position = CGPoint(x: 0, y: -cardSize.height / 2)
-        textPanel.zPosition = 1
+        // --- Medallion stat badges ---
 
-        // --- Card name (top of text panel) ---
-        let nameFontSize = SK.Card.boardNameFontSize
-        nameLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
-        nameLabel.fontSize = nameFontSize
-        nameLabel.fontColor = .white
-        nameLabel.horizontalAlignmentMode = .center
-        nameLabel.verticalAlignmentMode = .center
-        // Position name in upper portion of text panel
-        nameLabel.position = CGPoint(x: 0, y: -cardSize.height / 2 + panelHeight * 0.65)
-        nameLabel.zPosition = 2
+        // CM cost badge (top-right) — wax seal medallion
+        let cmRadius = SK.Card.boardCMBadgeRadius
+        let cmContainer = SKNode()
+        cmContainer.position = CGPoint(x: cardSize.width / 2 - cmRadius - 2,
+                                       y: cardSize.height / 2 - cmRadius - 2)
+        cmContainer.zPosition = 3
 
-        let displayName = creature.name.count > 8 ? String(creature.name.prefix(7)) + "\u{2026}" : creature.name
-        nameLabel.text = displayName
+        cmLabel = SKLabelNode(fontNamed: SK.Fonts.statNumber)
+        cmLabel.fontSize = SK.Card.boardCMFontSize
+        cmLabel.fontColor = SK.CardTextures.parchmentText
+        cmLabel.horizontalAlignmentMode = .center
+        cmLabel.verticalAlignmentMode = .center
+        cmLabel.position = .zero
+        cmLabel.zPosition = 4
+        cmLabel.text = "\(creature.manaCost)"
+        cmBadge = cmContainer
 
-        // --- ATK: sword icon + label (bottom-left of text panel) ---
-        let statIconSize = SK.Card.boardStatIconSize
-        let statFontSize = SK.Card.boardStatFontSize
-        let statsY = -cardSize.height / 2 + panelHeight * 0.25
+        // ATK badge (bottom-left) — wax seal medallion
+        let statRadius = SK.Card.boardStatBadgeRadius
+        let atkContainer = SKNode()
+        atkContainer.position = CGPoint(x: -cardSize.width / 2 + statRadius + 2,
+                                        y: -cardSize.height / 2 + statRadius + 2)
+        atkContainer.zPosition = 3
 
-        atkIcon = SKSpriteNode(imageNamed: "StatIcons/sword-atk")
-        atkIcon.size = CGSize(width: statIconSize, height: statIconSize)
-        atkIcon.position = CGPoint(x: -cardSize.width / 2 + 7, y: statsY)
-        atkIcon.zPosition = 2
-
-        atkLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
-        atkLabel.fontSize = statFontSize
-        atkLabel.fontColor = UIColor(hex: "#FF7043")
-        atkLabel.horizontalAlignmentMode = .left
+        atkLabel = SKLabelNode(fontNamed: SK.Fonts.statNumber)
+        atkLabel.fontSize = SK.Card.boardStatFontSize
+        atkLabel.fontColor = SK.CardTextures.parchmentText
+        atkLabel.horizontalAlignmentMode = .center
         atkLabel.verticalAlignmentMode = .center
-        atkLabel.position = CGPoint(x: -cardSize.width / 2 + 7 + statIconSize / 2 + 2, y: statsY)
-        atkLabel.zPosition = 2
+        atkLabel.position = .zero
+        atkLabel.zPosition = 4
         atkLabel.text = "\(creature.attack)"
+        atkBadge = atkContainer
 
-        // --- HP: heart icon + label (bottom-right of text panel) ---
-        hpIcon = SKSpriteNode(imageNamed: "StatIcons/heart-hp")
-        hpIcon.size = CGSize(width: statIconSize, height: statIconSize)
-        hpIcon.position = CGPoint(x: cardSize.width / 2 - 7, y: statsY)
-        hpIcon.zPosition = 2
+        // HP badge (bottom-right) — wax seal medallion
+        let hpContainer = SKNode()
+        hpContainer.position = CGPoint(x: cardSize.width / 2 - statRadius - 2,
+                                       y: -cardSize.height / 2 + statRadius + 2)
+        hpContainer.zPosition = 3
 
-        hpLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
-        hpLabel.fontSize = statFontSize
-        hpLabel.fontColor = UIColor(hex: "#4CAF50")
-        hpLabel.horizontalAlignmentMode = .right
+        hpLabel = SKLabelNode(fontNamed: SK.Fonts.statNumber)
+        hpLabel.fontSize = SK.Card.boardStatFontSize
+        hpLabel.fontColor = SK.CardTextures.parchmentText
+        hpLabel.horizontalAlignmentMode = .center
         hpLabel.verticalAlignmentMode = .center
-        hpLabel.position = CGPoint(x: cardSize.width / 2 - 7 - statIconSize / 2 - 2, y: statsY)
-        hpLabel.zPosition = 2
+        hpLabel.position = .zero
+        hpLabel.zPosition = 4
         hpLabel.text = "\(creature.health)"
-
-        // --- Mana cost badge (top-right) ---
-        let manaBadgeSize = SK.Card.boardManaBadgeSize
-        let manaIconSize = SK.Card.boardManaIconSize
-
-        manaBadge = SKSpriteNode(color: UIColor(hex: "#1A1A1A").withAlphaComponent(0.75),
-                                 size: CGSize(width: manaBadgeSize, height: manaBadgeSize))
-        manaBadge.position = CGPoint(x: cardSize.width / 2 - manaBadgeSize / 2 - 2,
-                                     y: cardSize.height / 2 - manaBadgeSize / 2 - 2)
-        manaBadge.zPosition = 3
-
-        manaIcon = SKSpriteNode(imageNamed: "StatIcons/chaos-motes")
-        manaIcon.size = CGSize(width: manaIconSize, height: manaIconSize)
-        manaIcon.position = CGPoint(x: -manaIconSize / 4, y: 0)
-        manaIcon.zPosition = 1
-        manaBadge.addChild(manaIcon)
-
-        manaCostLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
-        manaCostLabel.fontSize = SK.Card.boardManaCostFontSize
-        manaCostLabel.fontColor = .white
-        manaCostLabel.horizontalAlignmentMode = .center
-        manaCostLabel.verticalAlignmentMode = .center
-        manaCostLabel.position = CGPoint(x: manaIconSize / 4, y: 0)
-        manaCostLabel.zPosition = 1
-        manaCostLabel.text = "\(creature.manaCost)"
-        manaBadge.addChild(manaCostLabel)
+        hpBadge = hpContainer
 
         // --- Super init ---
         super.init(texture: nil, color: .clear, size: cardSize)
         self.name = "creature_\(creature.instanceId)"
 
-        // Background rounded rect with thin rarity-tinted border
-        let bg = SKShapeNode(rectOf: cardSize, cornerRadius: SK.Board.slotCornerRadius)
-        bg.fillColor = UIColor(hex: "#1A1A1A")
-        bg.strokeColor = creature.evolutionTier.borderUIColor.withAlphaComponent(0.6)
-        bg.lineWidth = 1.5
-        bg.zPosition = -1
-        addChild(bg)
+        // ====================================================================
+        // LAYER STACK (back to front)
+        // ====================================================================
 
-        // Rarity glow (colored sprite behind card)
+        // Layer -3: Contact shadow — warm soft shadow beneath the card
+        let shadowSize = CGSize(width: cardSize.width + 4, height: cardSize.height + 2)
+        let shadowNode = SKShapeNode(rectOf: shadowSize, cornerRadius: cornerRadius + 1)
+        shadowNode.fillColor = UIColor(hex: "#1A1408").withAlphaComponent(0.45)
+        shadowNode.strokeColor = .clear
+        shadowNode.position = CGPoint(x: 0, y: -2)
+        shadowNode.zPosition = -3
+        shadowNode.name = "contact_shadow"
+        addChild(shadowNode)
+
+        // Layer -2: Rarity glow (colored sprite behind card)
         applyRarityGlow(creature.evolutionTier)
 
+        // Layer -1: Background rounded rect with faction border texture
+        setupFactionBorder(cardSize: cardSize, cornerRadius: cornerRadius,
+                           faction: faction, tier: creature.evolutionTier)
+
+        // Layer 0: Card art
         addChild(cardArtNode)
-        addChild(textPanel)
-        addChild(nameLabel)
 
-        // Planar Ruins have HP but no ATK — hide ATK display for ruins
+        // Layer 0.5: Canvas weave texture overlay (multiply blend, hand-painted feel)
+        let canvasWeave = SKSpriteNode(imageNamed: SK.CardTextures.canvasWeave)
+        canvasWeave.size = cardSize
+        canvasWeave.position = .zero
+        canvasWeave.zPosition = 0.5
+        canvasWeave.alpha = 0.15
+        canvasWeave.blendMode = .multiply
+        canvasWeave.name = "canvas_weave"
+        addChild(canvasWeave)
+
+        // Layer 1: Faction text panel texture at bottom (small — just enough for stat context)
+        setupTextPanelTexture(cardSize: cardSize, faction: faction)
+
+        // Layer 3: CM badge (medallion)
+        setupMedallionBadge(container: cmContainer, radius: cmRadius,
+                            tintColor: SK.CardTextures.cmTintColor,
+                            iconName: "StatIcons/chaos-motes", label: cmLabel)
+        addChild(cmBadge)
+
+        // Planar Ruins have HP but no ATK — hide ATK badge for ruins
         let isRuin = creature.cardType == .planarRuin
-        if !isRuin {
-            addChild(atkIcon)
-            addChild(atkLabel)
-        }
-        addChild(hpIcon)
-        addChild(hpLabel)
-        addChild(manaBadge)
+        let isCreature = creature.cardType == .creature
 
-        // Ruin visual overlay: subtle stone/ruin tint border
-        if isRuin {
-            let ruinOverlay = SKShapeNode(rectOf: cardSize, cornerRadius: SK.Board.slotCornerRadius)
+        if isCreature {
+            // Creatures show ATK and HP badges
+            setupMedallionBadge(container: atkContainer, radius: statRadius,
+                                tintColor: SK.CardTextures.atkTintColor,
+                                iconName: "StatIcons/sword-atk", label: atkLabel)
+            addChild(atkBadge)
+
+            setupMedallionBadge(container: hpContainer, radius: statRadius,
+                                tintColor: SK.CardTextures.hpTintColor,
+                                iconName: "StatIcons/heart-hp", label: hpLabel)
+            addChild(hpBadge)
+        } else if isRuin {
+            // Ruins show HP badge only (no ATK)
+            setupMedallionBadge(container: hpContainer, radius: statRadius,
+                                tintColor: SK.CardTextures.hpTintColor,
+                                iconName: "StatIcons/heart-hp", label: hpLabel)
+            addChild(hpBadge)
+
+            // Ruin visual overlay: subtle stone/ruin tint border
+            let ruinOverlay = SKShapeNode(rectOf: cardSize, cornerRadius: cornerRadius)
             ruinOverlay.fillColor = .clear
             ruinOverlay.strokeColor = UIColor(hex: "#8B8680").withAlphaComponent(0.6)
             ruinOverlay.lineWidth = 2.0
             ruinOverlay.zPosition = 5
             ruinOverlay.name = "ruin_overlay"
             addChild(ruinOverlay)
+        } else {
+            // Spells/Stabilizers on board: show CM badge + centered type text instead of ATK/HP
+            let typeLbl = SKLabelNode(fontNamed: SK.Fonts.bold)
+            typeLbl.fontSize = 8
+            typeLbl.fontColor = UIColor(hex: "#AAAAAA")
+            typeLbl.horizontalAlignmentMode = .center
+            typeLbl.verticalAlignmentMode = .center
+            typeLbl.position = CGPoint(x: 0, y: -cardSize.height / 2 + 12)
+            typeLbl.zPosition = 3
+            typeLbl.text = creature.cardType == .spell ? "Spell" : "Ruin"
+            addChild(typeLbl)
+            self.typeLabel = typeLbl
         }
-
-        // Keyword icons above the text panel
-        setupKeywordIcons(creature.activeKeywords)
 
         // Taunt indicator
         if creature.hasTaunt {
@@ -198,6 +220,155 @@ final class CreatureNode: SKSpriteNode {
 
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) not implemented")
+    }
+
+    // MARK: - Faction Border Texture
+
+    /// Background with faction-specific border texture instead of a flat color border.
+    /// The border texture is placed behind the art; the art covers the inner area,
+    /// leaving only the 2pt border edge of the texture visible around the card.
+    private func setupFactionBorder(cardSize: CGSize, cornerRadius: CGFloat,
+                                    faction: FactionShortName?, tier: EvolutionTier) {
+        // Faction border texture fills the full card — the art sprite on top covers
+        // the inner area, leaving only the border edges visible.
+        let borderTexture = SKSpriteNode(imageNamed: SK.CardTextures.borderAssetName(faction: faction))
+        borderTexture.size = cardSize
+        borderTexture.position = .zero
+        borderTexture.alpha = 0.85
+        borderTexture.zPosition = -1
+        borderTexture.name = "faction_border"
+
+        // Crop the border texture to the card's rounded rect shape
+        let borderCropMask = SKShapeNode(rectOf: cardSize, cornerRadius: cornerRadius)
+        borderCropMask.fillColor = .white
+        borderCropMask.strokeColor = .clear
+
+        let borderCrop = SKCropNode()
+        borderCrop.maskNode = borderCropMask
+        borderCrop.addChild(borderTexture)
+        borderCrop.zPosition = -1
+        addChild(borderCrop)
+
+        // Dark base fill for the inner card area (behind art)
+        let innerInset: CGFloat = 2.0
+        let innerSize = CGSize(width: cardSize.width - innerInset * 2,
+                               height: cardSize.height - innerInset * 2)
+        let innerBg = SKShapeNode(rectOf: innerSize, cornerRadius: max(cornerRadius - innerInset, 2))
+        innerBg.fillColor = UIColor(hex: "#1A1A1A")
+        innerBg.strokeColor = .clear
+        innerBg.zPosition = -0.8
+        innerBg.name = "card_bg"
+        addChild(innerBg)
+
+        // Thin rarity-tinted stroke on top of the textured border
+        let strokeOverlay = SKShapeNode(rectOf: cardSize, cornerRadius: cornerRadius)
+        strokeOverlay.fillColor = .clear
+        strokeOverlay.strokeColor = tier.borderUIColor.withAlphaComponent(0.5)
+        strokeOverlay.lineWidth = 1.0
+        strokeOverlay.zPosition = -0.4
+        addChild(strokeOverlay)
+    }
+
+    // MARK: - Text Panel Texture
+
+    /// Faction-specific text panel texture at the bottom of the card.
+    private func setupTextPanelTexture(cardSize: CGSize, faction: FactionShortName?) {
+        let panelHeight: CGFloat = cardSize.height * 0.20 // Slightly shorter on board cards
+        let panelWidth: CGFloat = cardSize.width - 4 // Inset 2pt from each side
+
+        let textPanelSprite = SKSpriteNode(imageNamed: SK.CardTextures.textPanelAssetName(faction: faction))
+        textPanelSprite.size = CGSize(width: panelWidth, height: panelHeight)
+        textPanelSprite.anchorPoint = CGPoint(x: 0.5, y: 0)
+        textPanelSprite.position = CGPoint(x: 0, y: -cardSize.height / 2 + 2)
+        textPanelSprite.zPosition = 1
+        textPanelSprite.alpha = 0.7
+        textPanelSprite.name = "text_panel"
+
+        // Darkening overlay for contrast (matches CardFrameView dark-vellum treatment)
+        let darkenOverlay = SKSpriteNode(color: .black.withAlphaComponent(0.25),
+                                         size: CGSize(width: panelWidth, height: panelHeight))
+        darkenOverlay.anchorPoint = CGPoint(x: 0.5, y: 0)
+        darkenOverlay.position = CGPoint(x: 0, y: -cardSize.height / 2 + 2)
+        darkenOverlay.zPosition = 1.1
+        darkenOverlay.name = "text_panel_darken"
+
+        addChild(textPanelSprite)
+        addChild(darkenOverlay)
+    }
+
+    // MARK: - Medallion Badge Setup
+
+    /// Creates a wax-seal medallion badge at the given container position.
+    /// Matches the SwiftUI MedallionBadge: wax-seal-bronze texture base, faction color
+    /// tint, stat icon at low opacity, embossed rim, and Bebas Neue stat number.
+    private func setupMedallionBadge(container: SKNode, radius: CGFloat,
+                                     tintColor: UIColor, iconName: String,
+                                     label: SKLabelNode) {
+        let diameter = radius * 2
+
+        // 1. Wax seal bronze texture base, clipped to circle
+        let sealTexture = SKSpriteNode(imageNamed: SK.CardTextures.waxSealBronze)
+        sealTexture.size = CGSize(width: diameter, height: diameter)
+        sealTexture.zPosition = 0
+
+        let sealCrop = SKCropNode()
+        let sealMask = SKShapeNode(circleOfRadius: radius)
+        sealMask.fillColor = .white
+        sealCrop.maskNode = sealMask
+        sealCrop.addChild(sealTexture)
+        sealCrop.zPosition = 0
+        container.addChild(sealCrop)
+
+        // 2. Stat color tint overlay
+        let tintCircle = SKShapeNode(circleOfRadius: radius)
+        tintCircle.fillColor = tintColor.withAlphaComponent(0.35)
+        tintCircle.strokeColor = .clear
+        tintCircle.zPosition = 1
+        container.addChild(tintCircle)
+
+        // 3. Stat icon texture at low opacity (overlay blend)
+        let iconSprite = SKSpriteNode(imageNamed: iconName)
+        iconSprite.size = CGSize(width: diameter, height: diameter)
+        iconSprite.alpha = 0.25
+        iconSprite.blendMode = .alpha
+        let iconCrop = SKCropNode()
+        let iconMask = SKShapeNode(circleOfRadius: radius)
+        iconMask.fillColor = .white
+        iconCrop.maskNode = iconMask
+        iconCrop.addChild(iconSprite)
+        iconCrop.zPosition = 2
+        container.addChild(iconCrop)
+
+        // 4. Embossed rim — dark outer ring
+        let outerRim = SKShapeNode(circleOfRadius: radius)
+        outerRim.fillColor = .clear
+        outerRim.strokeColor = SK.CardTextures.rimDark.withAlphaComponent(0.8)
+        outerRim.lineWidth = max(radius * 0.12, 0.75)
+        outerRim.zPosition = 3
+        container.addChild(outerRim)
+
+        // 5. Inner highlight — simulates light hitting metal edge
+        let innerRim = SKShapeNode(circleOfRadius: radius * 0.88)
+        innerRim.fillColor = .clear
+        innerRim.strokeColor = SK.CardTextures.rimHighlight.withAlphaComponent(0.35)
+        innerRim.lineWidth = 0.5
+        innerRim.zPosition = 3.5
+        container.addChild(innerRim)
+
+        // 6. Number label (Bebas Neue)
+        label.zPosition = 4
+        // Drop shadow effect via a second label behind
+        let shadowLabel = SKLabelNode(fontNamed: SK.Fonts.statNumber)
+        shadowLabel.fontSize = label.fontSize
+        shadowLabel.fontColor = .black.withAlphaComponent(0.85)
+        shadowLabel.horizontalAlignmentMode = .center
+        shadowLabel.verticalAlignmentMode = .center
+        shadowLabel.position = CGPoint(x: 0, y: -0.5)
+        shadowLabel.zPosition = 3.8
+        shadowLabel.text = label.text
+        shadowLabel.name = "stat_shadow"
+        container.addChild(shadowLabel)
+        container.addChild(label)
     }
 
     // MARK: - Art Loading
@@ -244,55 +415,6 @@ final class CreatureNode: SKSpriteNode {
 
         addChild(glow)
         rarityGlowNode = glow
-    }
-
-    // MARK: - Keyword Icons
-
-    private func setupKeywordIcons(_ keywords: [Keyword]) {
-        keywordIcons.forEach { $0.removeFromParent() }
-        keywordIcons.removeAll()
-
-        let displayKeywords = Array(keywords.prefix(SK.Card.maxKeywordIcons))
-        let iconSize = SK.Card.keywordIconSize
-        let spacing: CGFloat = iconSize + 2
-        let totalWidth = CGFloat(displayKeywords.count) * spacing - 2
-        let startX = -totalWidth / 2 + iconSize / 2
-
-        // Position keyword icons just above the text panel
-        let panelHeight = size.height * SK.Card.textPanelRatio
-        let iconsY = -size.height / 2 + panelHeight + iconSize / 2 + 2
-
-        for (index, keyword) in displayKeywords.enumerated() {
-            let icon: SKSpriteNode
-
-            let assetName = SK.KeywordIcons.assetName(keyword: keyword)
-            if let _ = UIImage(named: assetName) {
-                icon = SKSpriteNode(imageNamed: assetName)
-                icon.size = CGSize(width: iconSize, height: iconSize)
-            } else {
-                icon = SKSpriteNode(color: keywordColor(keyword), size: CGSize(width: iconSize, height: iconSize))
-            }
-
-            icon.position = CGPoint(x: startX + CGFloat(index) * spacing, y: iconsY)
-            icon.zPosition = 2
-            icon.name = "keyword_\(keyword.rawValue)"
-            addChild(icon)
-            keywordIcons.append(icon)
-        }
-    }
-
-    private func keywordColor(_ keyword: Keyword) -> UIColor {
-        switch keyword {
-        case .shield: return UIColor(hex: "#5BC0EB")
-        case .lifesteal: return UIColor(hex: "#4CAF50")
-        case .flying: return UIColor(hex: "#90CAF9")
-        case .reach: return UIColor(hex: "#FF7043")
-        case .deathtouch: return UIColor(hex: "#E63946")
-        case .taunt: return UIColor(hex: "#FFD700")
-        case .piercing: return UIColor(hex: "#FFC107")
-        case .haste: return UIColor(hex: "#FF9800")
-        case .ward: return UIColor(hex: "#B39DDB")
-        }
     }
 
     // MARK: - Taunt Icon
@@ -356,18 +478,27 @@ final class CreatureNode: SKSpriteNode {
         atkLabel.text = "\(attack)"
         hpLabel.text = "\(health)"
 
-        // Color HP red if damaged
-        if health < maxHealth {
-            hpLabel.fontColor = UIColor(hex: "#F44336")
-        } else {
-            hpLabel.fontColor = UIColor(hex: "#4CAF50")
+        // Also update shadow labels
+        if let atkShadow = atkBadge.childNode(withName: "stat_shadow") as? SKLabelNode {
+            atkShadow.text = "\(attack)"
+        }
+        if let hpShadow = hpBadge.childNode(withName: "stat_shadow") as? SKLabelNode {
+            hpShadow.text = "\(health)"
+        }
+
+        // Color HP badge tint red if damaged
+        let hpTintNode = hpBadge.children.compactMap { $0 as? SKShapeNode }.first { $0.fillColor != .clear }
+        if let tintNode = hpTintNode {
+            if health < maxHealth {
+                tintNode.fillColor = UIColor(hex: "#F44336").withAlphaComponent(0.45)
+            } else {
+                tintNode.fillColor = SK.CardTextures.hpTintColor.withAlphaComponent(0.35)
+            }
         }
     }
 
-    /// Update keywords display
+    /// Update keywords display (taunt indicator only at board scale)
     func updateKeywords(_ keywords: [Keyword]) {
-        setupKeywordIcons(keywords)
-
         if keywords.contains(.taunt) && tauntIcon == nil {
             setupTauntIcon()
         } else if !keywords.contains(.taunt) {

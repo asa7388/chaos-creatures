@@ -28,7 +28,16 @@ struct ShopView: View {
                 shardsSection
             }
         }
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-polished-stone")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.30)
+            }
+        )
         .navigationTitle("Shop")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

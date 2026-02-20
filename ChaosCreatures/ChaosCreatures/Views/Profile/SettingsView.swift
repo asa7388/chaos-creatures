@@ -106,6 +106,17 @@ struct SettingsView: View {
                 LabeledContent("Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-parchment")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.30)
+            }
+        )
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
         .alert("Sign Out?", isPresented: $showSignOutConfirmation) {

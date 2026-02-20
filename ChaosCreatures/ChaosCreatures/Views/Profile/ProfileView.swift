@@ -43,7 +43,16 @@ struct ProfileView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 80)
         }
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.35)
+            }
+        )
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

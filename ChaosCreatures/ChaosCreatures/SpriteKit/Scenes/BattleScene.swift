@@ -16,11 +16,11 @@ protocol BattleSceneDelegate: AnyObject {
 
 /// Main battlefield scene. Renders the game state received from the server.
 /// Layout (top to bottom):
-///   - Opponent avatar + mana bar
+///   - Opponent avatar + CM bar
 ///   - Opponent board (5 slots)
 ///   - Center divider (phase indicator + turn timer)
 ///   - Player board (5 slots)
-///   - Player avatar + mana bar
+///   - Player avatar + CM bar
 ///   - (Hand is rendered via SwiftUI overlay below)
 final class BattleScene: SKScene {
 
@@ -156,13 +156,13 @@ final class BattleScene: SKScene {
     }
 
     private func setupManaBars() {
-        // Player mana bar (below player board)
+        // Player CM bar (below player board)
         playerManaBar = ManaBarNode(factionColor: playerFactionColor)
         playerManaBar.position = CGPoint(x: 0, y: SK.Board.playerBoardOffsetY - 60)
         playerManaBar.zPosition = SK.ZPosition.manaBar
         addChild(playerManaBar)
 
-        // Opponent mana bar (above opponent board)
+        // Opponent CM bar (above opponent board)
         opponentManaBar = ManaBarNode(factionColor: opponentFactionColor)
         opponentManaBar.position = CGPoint(x: 0, y: SK.Board.opponentBoardOffsetY + 60)
         opponentManaBar.zPosition = SK.ZPosition.manaBar
@@ -198,7 +198,7 @@ final class BattleScene: SKScene {
         playerAvatar.updateInstability(state.me.instability)
         opponentAvatar.updateInstability(state.opponent.instability)
 
-        // Update mana
+        // Update CM
         playerManaBar.update(filled: state.me.currentMana, total: state.me.manaCap)
         opponentManaBar.update(filled: state.opponent.currentMana, total: state.opponent.manaCap)
 
@@ -322,7 +322,7 @@ final class BattleScene: SKScene {
             boardNode.placeCreature(creatureNode, at: slot)
             self?.creatureNodes[creatureData.instanceId] = creatureNode
 
-            // Update mana
+            // Update CM
             if isPlayer {
                 self?.playerManaBar.update(filled: data.manaRemaining, total: self?.lastGameState?.me.manaCap ?? 10)
                 self?.playerManaBar.animateSpend(newFilled: data.manaRemaining)
@@ -588,17 +588,17 @@ final class BattleScene: SKScene {
         stateMachine?.animationDidComplete()
     }
 
-    /// Handle mana gained
+    /// Handle CM gained
     func animateManaGained(_ data: ManaGainedData) {
         let isPlayer = (data.player == lastGameState?.mySide)
         let manaBar = isPlayer ? playerManaBar! : opponentManaBar!
         manaBar.update(filled: data.currentMana, total: data.manaCap)
         manaBar.animateGain(newFilled: data.currentMana)
 
-        // SFX: mana crystal clink
+        // SFX: CM crystal clink
         BattleAudioManager.shared.playSFX(.manaGain, in: self)
 
-        // Mana gain sparkle particles at mana bar position
+        // CM gain sparkle particles at CM bar position
         let sparkle = ParticleEffects.manaGainSparkle(at: manaBar.position)
         sparkle.zPosition = SK.ZPosition.particles
         addChild(sparkle)

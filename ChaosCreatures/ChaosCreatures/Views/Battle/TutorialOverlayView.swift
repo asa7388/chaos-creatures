@@ -9,7 +9,7 @@ import SwiftUI
 
 enum TutorialStep: Int, CaseIterable {
     case welcome = 0
-    case manaExplain
+    case chaosMoteExplain
     case playCard
     case chaosRoll
     case attackPhase
@@ -18,7 +18,7 @@ enum TutorialStep: Int, CaseIterable {
     var title: String {
         switch self {
         case .welcome: return "Welcome to Battle!"
-        case .manaExplain: return "Mana"
+        case .chaosMoteExplain: return "Chaos Motes"
         case .playCard: return "Playing Cards"
         case .chaosRoll: return "The Chaos Roll"
         case .attackPhase: return "Combat"
@@ -29,9 +29,9 @@ enum TutorialStep: Int, CaseIterable {
     var message: String {
         switch self {
         case .welcome:
-            return "This is your first battle. Let's learn the basics! Each turn you'll draw a card, gain mana, and play cards from your hand."
-        case .manaExplain:
-            return "The blue number at the bottom is your mana. Cards cost mana to play. You gain +1 max mana each turn."
+            return "This is your first battle. Let's learn the basics! Each turn you'll draw a card, gain Chaos Motes, and play cards from your hand."
+        case .chaosMoteExplain:
+            return "The blue number at the bottom is your Chaos Motes (CM). Cards cost CM to play. You gain +1 max CM each turn."
         case .playCard:
             return "Tap a card in your hand to select it, then tap again to play it. Creatures go on your board, spells take effect immediately."
         case .chaosRoll:
@@ -46,7 +46,7 @@ enum TutorialStep: Int, CaseIterable {
     var iconName: String {
         switch self {
         case .welcome: return "sparkles"
-        case .manaExplain: return "drop.fill"
+        case .chaosMoteExplain: return "drop.fill"
         case .playCard: return "rectangle.portrait.fill"
         case .chaosRoll: return "die.face.5.fill"
         case .attackPhase: return "bolt.fill"
@@ -57,7 +57,7 @@ enum TutorialStep: Int, CaseIterable {
     var iconColor: Color {
         switch self {
         case .welcome: return .ironwright
-        case .manaExplain: return .timerBlue
+        case .chaosMoteExplain: return .timerBlue
         case .playCard: return .healGreen
         case .chaosRoll: return .warningYellow
         case .attackPhase: return .chaosRed
@@ -69,7 +69,7 @@ enum TutorialStep: Int, CaseIterable {
     var triggerPhase: TurnPhase? {
         switch self {
         case .welcome: return .gameSetup
-        case .manaExplain: return .drawAndMana
+        case .chaosMoteExplain: return .drawAndMana
         case .playCard: return .mainPhase
         case .chaosRoll: return .chaosRoll
         case .attackPhase: return .declareAttackers

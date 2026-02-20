@@ -11,7 +11,7 @@ enum CollectionSortOption: String, CaseIterable {
     case newest = "Newest"
     case oldest = "Oldest"
     case name = "Name"
-    case manaCost = "Mana Cost"
+    case manaCost = "CM Cost"
     case rarity = "Rarity"
 
     var iconName: String {
@@ -19,7 +19,7 @@ enum CollectionSortOption: String, CaseIterable {
         case .newest: return "clock.arrow.circlepath"
         case .oldest: return "clock"
         case .name: return "textformat"
-        case .manaCost: return "drop.fill"
+        case .manaCost: return "diamond.fill"
         case .rarity: return "star.fill"
         }
     }
@@ -72,6 +72,7 @@ struct CollectionView: View {
     @State private var error: String?
     @State private var showSearch = false
     @State private var selectedCard: CardInstance?
+    @State private var fullscreenCard: CardInstance?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -101,7 +102,17 @@ struct CollectionView: View {
                 cardGrid
             }
         }
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                // Felt table texture — cards laid out on a game table
+                Image("UIBackgrounds/felt-table")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.5)
+            }
+        )
         .navigationTitle("Collection")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -114,6 +125,9 @@ struct CollectionView: View {
         }
         .sheet(item: $selectedCard) { card in
             CardDetailView()
+        }
+        .fullScreenCover(item: $fullscreenCard) { card in
+            FullscreenCardView(card: card)
         }
         .task {
             await loadCards()
@@ -207,15 +221,18 @@ struct CollectionView: View {
     private var cardGrid: some View {
         ScrollView {
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 100, maximum: 120))],
+                columns: [GridItem(.adaptive(minimum: 112, maximum: 130))],
                 spacing: 8
             ) {
                 ForEach(filteredCards) { card in
                     CardGridItemView(card: card)
-                        .frame(height: 140)
+                        .frame(height: 157)
                         .onTapGesture {
                             router.selectedCardInstance = card
                             selectedCard = card
+                        }
+                        .onLongPressGesture(minimumDuration: 0.4) {
+                            fullscreenCard = card
                         }
                 }
             }
@@ -281,6 +298,14 @@ struct CollectionView: View {
     // MARK: - Data Loading
 
     private func loadCards() async {
+        #if DEBUG
+        if appState.isDevMode {
+            cards = appState.devCards
+            templateFactionMap = appState.devTemplateFactionMap
+            return
+        }
+        #endif
+
         guard let playerId = appState.player?.id else { return }
         isLoading = true
         error = nil

@@ -458,9 +458,9 @@ enum ParticleEffects {
         return emitter
     }
 
-    // MARK: - Mana Gain Sparkle
+    // MARK: - CM Gain Sparkle
 
-    /// Small burst of blue/cyan sparkles for mana gain. Quick and subtle. 0.3s duration.
+    /// Small burst of blue/cyan sparkles for CM gain. Quick and subtle. 0.3s duration.
     static func manaGainSparkle(at position: CGPoint) -> SKEmitterNode {
         let emitter = SKEmitterNode()
 
@@ -480,7 +480,7 @@ enum ParticleEffects {
         emitter.particleScale = 0.12
         emitter.particleScaleRange = 0.06
 
-        emitter.particleColor = UIColor(hex: "#4A90E2") // Mana blue
+        emitter.particleColor = UIColor(hex: "#4A90E2") // CM blue
         emitter.particleColorBlendFactor = 1.0
         emitter.particleSize = CGSize(width: 4, height: 4)
 

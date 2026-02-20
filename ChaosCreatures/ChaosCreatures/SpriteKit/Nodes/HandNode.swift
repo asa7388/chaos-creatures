@@ -88,7 +88,7 @@ final class HandNode: SKNode {
         return convert(node.position, to: scene ?? self)
     }
 
-    /// Update playability based on current mana
+    /// Update playability based on current CM
     func updatePlayability(currentMana: Int) {
         for node in cardNodes {
             node.setPlayable(node.cardData.manaCost <= currentMana)

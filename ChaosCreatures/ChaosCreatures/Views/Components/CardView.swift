@@ -90,7 +90,7 @@ struct CardListRowView: View {
                     .foregroundColor(.textSecondary)
             }
 
-            // Mana cost
+            // CM cost
             ManaGemView(cost: card.currentManaCost)
         }
         .padding(.vertical, 4)

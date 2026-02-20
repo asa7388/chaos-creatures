@@ -98,6 +98,13 @@ struct CardPackOpeningView: View {
                 // Background
                 Color.bgPrimary.ignoresSafeArea()
 
+                // Metallic foil texture
+                Image("UIBackgrounds/bg-metallic-foil")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.50)
+
                 // Particle glow behind pack
                 if showGlow {
                     RadialGradient(

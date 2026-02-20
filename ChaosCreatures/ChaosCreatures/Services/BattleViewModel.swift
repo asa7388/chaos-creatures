@@ -266,7 +266,7 @@ final class BattleViewModel: ObservableObject {
         battleScene?.battleDelegate?.battleScene(battleScene!, didRequestAction: action)
     }
 
-    /// Whether a card can be played (enough mana + correct phase)
+    /// Whether a card can be played (enough CM + correct phase)
     func canPlayCard(_ card: BattleCardData) -> Bool {
         stateMachine.canPlayCards && card.manaCost <= playerMana
     }

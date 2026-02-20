@@ -14,8 +14,8 @@
 | **1A** | AI texture generation | **COMPLETE** | a770116 | 38/38 pass (21 regens across 3 iterations), $2.36 total |
 | **1B** | Programmatic icons + shapes | **COMPLETE** | aa081ed | 86 icons via node-canvas, $0 |
 | **1C** | Font integration (Bebas Neue + Fira Sans) | **COMPLETE** | a990a22 | 3 fonts, CardFont.swift + SpriteKit constants updated, $0 |
-| **2** | SpriteKit card parity | READY | — | |
-| **3** | Screen backgrounds | READY | — | |
+| **2** | SpriteKit card parity | **IN PROGRESS** | a3baf91 | CreatureNode + HandCardNode texture layers |
+| **3** | Screen backgrounds | **IN PROGRESS** | a2fdce4 | 8 screens getting textured backgrounds |
 | **4** | Faction-specific card frames | BLOCKED (needs 2) | — | |
 | **5** | UI chrome | BLOCKED (needs 1A) | — | |
 | **6** | Card states + interactions | BLOCKED (needs 2) | — | |
