@@ -81,7 +81,7 @@ struct CardDetailView: View {
         }
         .fullScreenCover(isPresented: $showFullscreen) {
             if let card = router.selectedCardInstance {
-                FullscreenCardView(card: card)
+                FullscreenCardView(card: card, faction: router.selectedCardFaction)
             }
         }
     }
@@ -130,7 +130,7 @@ struct CardDetailView: View {
         Group {
             if let card = router.selectedCardInstance {
                 CardFrameView(
-                    data: CardDisplayData(instance: card),
+                    data: CardDisplayData(instance: card, faction: factionForCard(card)),
                     size: .detail
                 )
                 .frame(width: 320, height: 448) // 320pt wide, 5:7 ratio
@@ -560,7 +560,7 @@ struct CardDetailView: View {
                     // Evolve button (inside section, only if ready)
                     if isReady {
                         Button(action: {
-                            router.navigateToEvolution(card)
+                            router.navigateToEvolution(card, faction: factionForCard(card))
                         }) {
                             HStack {
                                 Image(systemName: "arrow.up.circle.fill")
@@ -687,7 +687,7 @@ struct CardDetailView: View {
             if card.isEvolutionReady {
                 Button(action: {
                     dismiss()
-                    router.navigateToEvolution(card)
+                    router.navigateToEvolution(card, faction: factionForCard(card))
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.up.circle.fill")
@@ -797,12 +797,11 @@ struct CardDetailView: View {
 
     /// Get the faction for theming (from appState template-faction map, or fallback).
     private func factionForCard(_ card: CardInstance) -> FactionShortName? {
-        // Try to resolve faction from appState template map
+        if let selectedFaction = router.selectedCardFaction {
+            return selectedFaction
+        }
         if let factionId = appState.devTemplateFactionMap[card.templateId] {
-            // Match factionId to a FactionShortName via appState.factions
-            if let faction = appState.factions.first(where: { $0.id == factionId }) {
-                return faction.shortName
-            }
+            return appState.factions.first(where: { $0.id == factionId })?.shortName
         }
         return nil
     }

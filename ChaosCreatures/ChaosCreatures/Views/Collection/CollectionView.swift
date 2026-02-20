@@ -131,7 +131,7 @@ struct CollectionView: View {
             CardDetailView()
         }
         .fullScreenCover(item: $fullscreenCard) { card in
-            FullscreenCardView(card: card)
+            FullscreenCardView(card: card, faction: factionForCard(card))
         }
         .task {
             await loadCards()
@@ -238,13 +238,16 @@ struct CollectionView: View {
                 spacing: 8
             ) {
                 ForEach(filteredCards) { card in
-                    CardGridItemView(card: card)
+                    let faction = factionForCard(card)
+                    CardGridItemView(card: card, faction: faction)
                         .frame(height: 157)
                         .onTapGesture {
                             router.selectedCardInstance = card
+                            router.selectedCardFaction = faction
                             selectedCard = card
                         }
                         .onLongPressGesture(minimumDuration: 0.4) {
+                            router.selectedCardFaction = faction
                             fullscreenCard = card
                         }
                 }
@@ -306,6 +309,12 @@ struct CollectionView: View {
         case .endless: targetShortName = .theEndless
         }
         return Set(appState.factions.filter { $0.shortName == targetShortName }.map(\.id))
+    }
+
+    /// Resolve card faction from template-faction map and app state's faction definitions.
+    private func factionForCard(_ card: CardInstance) -> FactionShortName? {
+        guard let factionId = templateFactionMap[card.templateId] else { return nil }
+        return appState.factions.first(where: { $0.id == factionId })?.shortName
     }
 
     // MARK: - Data Loading

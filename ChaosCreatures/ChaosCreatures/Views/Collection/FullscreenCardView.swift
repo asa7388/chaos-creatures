@@ -8,6 +8,7 @@ import SwiftUI
 
 struct FullscreenCardView: View {
     let card: CardInstance
+    let faction: FactionShortName?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -34,7 +35,7 @@ struct FullscreenCardView: View {
 
             // Card — large, centered, with gentle rotation
             CardFrameView(
-                data: CardDisplayData(instance: card),
+                data: CardDisplayData(instance: card, faction: faction),
                 size: .fullscreen
             )
             .shadow(color: .black.opacity(0.6), radius: 24, x: 0, y: 12)
@@ -118,6 +119,7 @@ struct FullscreenCardView: View {
             inDeckIds: [],
             createdAt: Date(),
             lastEvolvedAt: nil
-        )
+        ),
+        faction: .ironwright
     )
 }

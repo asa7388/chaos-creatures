@@ -376,7 +376,7 @@ struct CardFrameView: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // Layer 0: Wood-textured card border (visible frame)
+            // Layer 0: Pre-baked card frame artwork (fallbacks to texture frame)
             borderFrame
 
             // Layer 1: Card art (inset from edges to show border)
@@ -407,7 +407,8 @@ struct CardFrameView: View {
             InnerVignetteOverlay()
                 .frame(width: size.width, height: size.height)
 
-            // Layer 5: Textured text panel at bottom
+            // Layer 5: Header band + text panel establish card information zones
+            headerBand
             textPanel
 
             // Layer 5.5: Faction decorative accents (detail/fullscreen only)
@@ -501,19 +502,77 @@ struct CardFrameView: View {
 
     // MARK: - Faction-Textured Border Frame
 
-    /// Faction-specific border texture that frames the card art.
-    /// Falls back to universal wood grain for cards with no faction.
+    /// Uses pre-baked card frame art where available.
+    /// Falls back to faction texture frame for cards with unknown faction.
     private var borderFrame: some View {
-        Image(factionBorderAssetName)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: size.width, height: size.height)
-            .clipped()
-            .brightness(-0.05)
-            .overlay(
-                // Faction frame tint overlay — darkens and unifies the texture
-                factionFrameTintColor.opacity(0.20)
-            )
+        ZStack {
+            Image(factionBorderAssetName)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: size.width, height: size.height)
+                .clipped()
+
+            Image(frameAssetName)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: size.width, height: size.height)
+                .clipped()
+        }
+        .overlay(
+            // Keep frame stack grounded in each faction's palette
+            factionFrameTintColor.opacity(0.10)
+        )
+    }
+
+    /// Deterministic per-card seed for selecting sub-faction visual variants.
+    private var visualSeed: UInt32 {
+        let key = "\(data.name)|\(data.manaCost)|\(data.cardType.rawValue)"
+        return fnv1a32(key)
+    }
+
+    private var useAlternateSubfactionVisual: Bool {
+        (visualSeed % 2) == 1
+    }
+
+    private func fnv1a32(_ input: String) -> UInt32 {
+        var hash: UInt32 = 2_166_136_261
+        for byte in input.utf8 {
+            hash ^= UInt32(byte)
+            hash = hash &* 16_777_619
+        }
+        return hash
+    }
+
+    /// Asset name for pre-baked card frame art.
+    private var frameAssetName: String {
+        if data.cardType == .planarRuin {
+            return "CardFrames/planar-ruin"
+        }
+        guard let faction = data.faction else { return "CardTextures/card-border-wood" }
+
+        let factionKey: String
+        switch faction {
+        case .ironwright: factionKey = "ironwright"
+        case .feyCourts: factionKey = "fey"
+        case .demonicKingdoms: factionKey = "demonic"
+        case .celestialCrusade: factionKey = "celestial"
+        case .theEndless: factionKey = "endless"
+        }
+
+        if data.cardType == .spell {
+            return "CardFrames/\(factionKey)-spell"
+        }
+        if data.cardType == .stabilizer {
+            return "CardFrames/\(factionKey)-stabilizer"
+        }
+
+        let rarityKey: String
+        switch data.tier {
+        case .common, .uncommon: rarityKey = "common"
+        case .rare: rarityKey = "rare"
+        case .epic, .legendary: rarityKey = "legendary"
+        }
+        return "CardFrames/\(factionKey)-\(rarityKey)"
     }
 
     /// Asset name for faction border texture.
@@ -521,10 +580,10 @@ struct CardFrameView: View {
         guard let faction = data.faction else { return "CardTextures/card-border-wood" }
         switch faction {
         case .ironwright: return "CardTextures/border-ironwright"
-        case .feyCourts: return "CardTextures/border-fey-verdant"
-        case .demonicKingdoms: return "CardTextures/border-demonic-furnace"
-        case .celestialCrusade: return "CardTextures/border-celestial-knights"
-        case .theEndless: return "CardTextures/border-endless-cabals"
+        case .feyCourts: return useAlternateSubfactionVisual ? "CardTextures/border-fey-hollow" : "CardTextures/border-fey-verdant"
+        case .demonicKingdoms: return useAlternateSubfactionVisual ? "CardTextures/border-demonic-bureaucracy" : "CardTextures/border-demonic-furnace"
+        case .celestialCrusade: return useAlternateSubfactionVisual ? "CardTextures/border-celestial-chosen" : "CardTextures/border-celestial-knights"
+        case .theEndless: return useAlternateSubfactionVisual ? "CardTextures/border-endless-spectres" : "CardTextures/border-endless-cabals"
         }
     }
 
@@ -539,10 +598,10 @@ struct CardFrameView: View {
         guard let faction = data.faction else { return "CardTextures/dark-vellum" }
         switch faction {
         case .ironwright: return "TextPanels/tp-ironwright"
-        case .feyCourts: return "TextPanels/tp-fey-verdant"
-        case .demonicKingdoms: return "TextPanels/tp-demonic-furnace"
-        case .celestialCrusade: return "TextPanels/tp-celestial-knights"
-        case .theEndless: return "TextPanels/tp-endless-cabals"
+        case .feyCourts: return useAlternateSubfactionVisual ? "TextPanels/tp-fey-hollow" : "TextPanels/tp-fey-verdant"
+        case .demonicKingdoms: return useAlternateSubfactionVisual ? "TextPanels/tp-demonic-bureaucracy" : "TextPanels/tp-demonic-furnace"
+        case .celestialCrusade: return useAlternateSubfactionVisual ? "TextPanels/tp-celestial-chosen" : "TextPanels/tp-celestial-knights"
+        case .theEndless: return useAlternateSubfactionVisual ? "TextPanels/tp-endless-spectres" : "TextPanels/tp-endless-cabals"
         }
     }
 
@@ -551,10 +610,10 @@ struct CardFrameView: View {
         guard let faction = data.faction else { return "StatIcons/sword-atk" }
         switch faction {
         case .ironwright: return "StatIcons/atk-ironwright"
-        case .feyCourts: return "StatIcons/atk-feyVerdant"
-        case .demonicKingdoms: return "StatIcons/atk-demonicFurnace"
-        case .celestialCrusade: return "StatIcons/atk-celestialKnights"
-        case .theEndless: return "StatIcons/atk-endlessCabals"
+        case .feyCourts: return useAlternateSubfactionVisual ? "StatIcons/atk-feyHollow" : "StatIcons/atk-feyVerdant"
+        case .demonicKingdoms: return useAlternateSubfactionVisual ? "StatIcons/atk-demonicBureaucracy" : "StatIcons/atk-demonicFurnace"
+        case .celestialCrusade: return useAlternateSubfactionVisual ? "StatIcons/atk-celestialChosen" : "StatIcons/atk-celestialKnights"
+        case .theEndless: return useAlternateSubfactionVisual ? "StatIcons/atk-endlessSpectres" : "StatIcons/atk-endlessCabals"
         }
     }
 
@@ -562,10 +621,10 @@ struct CardFrameView: View {
         guard let faction = data.faction else { return "StatIcons/heart-hp" }
         switch faction {
         case .ironwright: return "StatIcons/hp-ironwright"
-        case .feyCourts: return "StatIcons/hp-feyVerdant"
-        case .demonicKingdoms: return "StatIcons/hp-demonicFurnace"
-        case .celestialCrusade: return "StatIcons/hp-celestialKnights"
-        case .theEndless: return "StatIcons/hp-endlessCabals"
+        case .feyCourts: return useAlternateSubfactionVisual ? "StatIcons/hp-feyHollow" : "StatIcons/hp-feyVerdant"
+        case .demonicKingdoms: return useAlternateSubfactionVisual ? "StatIcons/hp-demonicBureaucracy" : "StatIcons/hp-demonicFurnace"
+        case .celestialCrusade: return useAlternateSubfactionVisual ? "StatIcons/hp-celestialChosen" : "StatIcons/hp-celestialKnights"
+        case .theEndless: return useAlternateSubfactionVisual ? "StatIcons/hp-endlessSpectres" : "StatIcons/hp-endlessCabals"
         }
     }
 
@@ -573,10 +632,27 @@ struct CardFrameView: View {
         guard let faction = data.faction else { return "StatIcons/chaos-motes" }
         switch faction {
         case .ironwright: return "StatIcons/chaos-mote-ironwright"
-        case .feyCourts: return "StatIcons/chaos-mote-feyVerdant"
-        case .demonicKingdoms: return "StatIcons/chaos-mote-demonicFurnace"
-        case .celestialCrusade: return "StatIcons/chaos-mote-celestialKnights"
-        case .theEndless: return "StatIcons/chaos-mote-endlessCabals"
+        case .feyCourts: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-feyHollow" : "StatIcons/chaos-mote-feyVerdant"
+        case .demonicKingdoms: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-demonicBureaucracy" : "StatIcons/chaos-mote-demonicFurnace"
+        case .celestialCrusade: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-celestialChosen" : "StatIcons/chaos-mote-celestialKnights"
+        case .theEndless: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-endlessSpectres" : "StatIcons/chaos-mote-endlessCabals"
+        }
+    }
+
+    /// Sub-faction emblem assets are used where available so generated emblem art is visible.
+    private var factionEmblemAssetName: String? {
+        guard let faction = data.faction else { return data.factionEmblemAssetName }
+        switch faction {
+        case .ironwright:
+            return useAlternateSubfactionVisual ? "FactionEmblems/sub-scrap-legions" : "FactionEmblems/sub-foundry-directorate"
+        case .feyCourts:
+            return useAlternateSubfactionVisual ? "FactionEmblems/sub-hollow-court" : "FactionEmblems/sub-verdant-throne"
+        case .demonicKingdoms:
+            return useAlternateSubfactionVisual ? "FactionEmblems/sub-obsidian-bureaucracy" : "FactionEmblems/sub-furnace-lords"
+        case .celestialCrusade:
+            return useAlternateSubfactionVisual ? "FactionEmblems/sub-heavens-chosen" : "FactionEmblems/sub-knights-deliverance"
+        case .theEndless:
+            return useAlternateSubfactionVisual ? "FactionEmblems/sub-lost-spectres" : "FactionEmblems/sub-necromantic-cabals"
         }
     }
 
@@ -626,13 +702,93 @@ struct CardFrameView: View {
             )
             .frame(width: artWidth, height: artHeight)
             .overlay(
-                Image(systemName: "photo")
-                    .font(.system(size: max(artWidth * 0.2, 12)))  // SF Symbol icon size - keep as-is
-                    .foregroundColor(.textDisabled)
+                Image("UIIcons/ui-hero")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: max(artWidth * 0.16, 12), height: max(artWidth * 0.16, 12))
+                    .foregroundColor(.textDisabled.opacity(0.8))
             )
     }
 
-    // MARK: - Contained Text Panel
+    // MARK: - Header Band + Contained Text Panel
+
+    /// Top header strip establishes the "header band" zone from the design guide.
+    private var headerBand: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                if let emblemAsset = factionEmblemAssetName {
+                    Image(emblemAsset)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: headerEmblemSize, height: headerEmblemSize)
+                        .opacity(0.85)
+                }
+
+                if size == .detail || size == .fullscreen {
+                    Text(data.cardType.displayName.uppercased())
+                        .font(CardFont.uiLabelBold(size: size == .fullscreen ? 10 : 9))
+                        .foregroundColor(parchmentTextColor.opacity(0.78))
+                        .lineLimit(1)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, headerHorizontalInset)
+            .padding(.top, headerTopInset)
+            .frame(height: headerHeight)
+            .background(
+                ZStack {
+                    Image(factionTextPanelAssetName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: headerHeight)
+                        .clipped()
+                    Color.black.opacity(0.52)
+                }
+            )
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(factionBorderColor.opacity(0.45))
+                    .frame(height: 0.8)
+            }
+
+            Spacer()
+        }
+        .frame(width: size.width, height: size.height)
+        .allowsHitTesting(false)
+    }
+
+    private var headerHeight: CGFloat {
+        switch size {
+        case .grid: return size.height * 0.08
+        case .hand: return size.height * 0.08
+        case .detail, .fullscreen: return size.height * 0.10
+        }
+    }
+
+    private var headerEmblemSize: CGFloat {
+        switch size {
+        case .grid: return 10
+        case .hand: return 9
+        case .detail: return 16
+        case .fullscreen: return 18
+        }
+    }
+
+    private var headerHorizontalInset: CGFloat {
+        switch size {
+        case .grid, .hand: return 6
+        case .detail, .fullscreen: return 10
+        }
+    }
+
+    private var headerTopInset: CGFloat {
+        switch size {
+        case .grid, .hand: return 3
+        case .detail, .fullscreen: return 5
+        }
+    }
 
     /// The name bar bridge lifts the text panel slightly into the art area,
     /// creating a visual "bridge" between art and text at the name bar.
@@ -745,9 +901,9 @@ struct CardFrameView: View {
 
     private var textPanelHeightRatio: CGFloat {
         switch size {
-        case .grid: return 0.30
-        case .hand: return 0.22
-        case .detail, .fullscreen: return 0.25
+        case .grid: return 0.34
+        case .hand: return 0.26
+        case .detail, .fullscreen: return 0.33
         }
     }
 
@@ -819,79 +975,91 @@ struct CardFrameView: View {
 
     private var detailPanel: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Card name
+            // Name bar bridge
             Text(data.name)
-                .font(CardFont.cardName(size: 22))
+                .font(CardFont.cardName(size: 20))
                 .foregroundColor(parchmentTextColor)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .shadow(color: .black.opacity(0.8), radius: 3, x: 0, y: 1)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.black.opacity(0.32))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(factionBorderColor.opacity(0.35), lineWidth: 0.6)
+                        )
+                )
+                .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
 
-            // Type line + faction icon
+            // Type line + instability
             HStack(spacing: 6) {
-                if let emblemAsset = data.factionEmblemAssetName {
-                    Image(emblemAsset)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 16, height: 16)
-                        .opacity(0.8)
-                }
-
                 Text(data.typeLine)
                     .font(CardFont.body(size: 12))
                     .foregroundColor(parchmentTextColor.opacity(0.70))
                     .lineLimit(1)
 
+                if let instability = data.instability {
+                    Text("INST \(instability)")
+                        .font(CardFont.bodyBold(size: 10))
+                        .foregroundColor(factionAccentColor.opacity(0.85))
+                }
+
                 Spacer()
             }
 
-            // Keywords (full pill badges with text)
+            // Effect preview rows (first 1-2 keywords only)
             if !data.keywords.isEmpty {
-                keywordBadgesRow
+                effectPreviewRows
             }
 
             // Flavor text
-            if !data.flavorText.isEmpty {
+            if !data.flavorText.isEmpty && size == .fullscreen {
                 Text(data.flavorText)
                     .font(CardFont.flavorText(size: 12))
                     .foregroundColor(parchmentTextColor.opacity(0.55))
                     .multilineTextAlignment(.leading)
-                    .lineLimit(3)
+                    .lineLimit(2)
                     .padding(.top, 2)
             }
         }
         .padding(.horizontal, 14)
-        .padding(.bottom, 14)
-        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .padding(.top, 6)
     }
 
-    // MARK: - Keyword Badges Row (Detail only)
+    // MARK: - Effect Preview Rows (Detail only)
 
     /// Maximum visible keywords before showing "more" indicator.
     private let maxVisibleKeywords = 2
 
-    private var keywordBadgesRow: some View {
-        HStack(spacing: 4) {
+    private var effectPreviewRows: some View {
+        VStack(alignment: .leading, spacing: 3) {
             ForEach(Array(data.keywords.prefix(maxVisibleKeywords))) { keyword in
-                keywordBadge(keyword: keyword)
+                HStack(spacing: 5) {
+                    Image(keyword.customIconName)
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 10, height: 10)
+                        .foregroundColor(keywordColor(keyword))
+                    Text(keyword.displayName)
+                        .font(CardFont.body(size: 11))
+                        .foregroundColor(parchmentTextColor.opacity(0.86))
+                        .lineLimit(1)
+                    Spacer()
+                }
             }
 
-            // "More" chevron when keywords exceed the visible limit
+            // "More" indicator when keywords exceed the visible limit
             if data.keywords.count > maxVisibleKeywords {
                 let extraCount = data.keywords.count - maxVisibleKeywords
-                HStack(spacing: 2) {
-                    Text("+\(extraCount)")
-                        .font(CardFont.body(size: 10))
-                        .lineLimit(1)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .semibold))
-                }
-                .foregroundColor(factionAccentColor)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(factionAccentColor.opacity(0.12))
-                .cornerRadius(4)
+                Text("+\(extraCount) more...")
+                    .font(CardFont.body(size: 10))
+                    .foregroundColor(factionAccentColor.opacity(0.88))
+                    .padding(.top, 1)
             }
         }
     }
@@ -900,25 +1068,6 @@ struct CardFrameView: View {
     private var factionAccentColor: Color {
         guard let faction = data.faction else { return parchmentTextColor }
         return Color.factionAccent(faction)
-    }
-
-    private func keywordBadge(keyword: Keyword) -> some View {
-        HStack(spacing: 3) {
-            Image(keyword.customIconName)
-                .renderingMode(.template)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 10, height: 10)
-
-            Text(keyword.displayName)
-                .font(CardFont.body(size: 10))
-                .lineLimit(1)
-        }
-        .foregroundColor(keywordColor(keyword))
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
-        .background(keywordColor(keyword).opacity(0.15))
-        .cornerRadius(4)
     }
 
     // MARK: - CM Badge (Top-Right)
@@ -1154,7 +1303,7 @@ struct CardFrameView: View {
     private var factionDecorativeOverlay: some View {
         ZStack {
             // Faction emblem watermark in text panel area
-            if let emblemAsset = data.factionEmblemAssetName {
+            if let emblemAsset = factionEmblemAssetName {
                 VStack {
                     Spacer()
                     HStack {

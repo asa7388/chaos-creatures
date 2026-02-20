@@ -187,7 +187,7 @@ struct DeckBuilderView: View {
                     spacing: 6
                 ) {
                     ForEach(filteredAvailable) { card in
-                        CardGridItemView(card: card, showEvolutionBadge: false)
+                        CardGridItemView(card: card, faction: deckFaction, showEvolutionBadge: false)
                             .frame(height: 112)
                             .opacity(canAddCard(card) ? 1.0 : 0.4)
                             .onTapGesture {
@@ -227,7 +227,7 @@ struct DeckBuilderView: View {
                 List {
                     ForEach(deckCards, id: \.cardInstanceId) { entry in
                         if let card = findCard(entry.cardInstanceId) {
-                            CardListRowView(card: card, quantity: entry.quantity)
+                            CardListRowView(card: card, quantity: entry.quantity, faction: deckFaction)
                                 .listRowBackground(Color.bgPrimary)
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) {
@@ -342,6 +342,17 @@ struct DeckBuilderView: View {
 
     private func findCard(_ id: UUID) -> CardInstance? {
         availableCards.first(where: { $0.id == id })
+    }
+
+    private var deckFaction: FactionShortName? {
+        if let deck = router.selectedDeck,
+           let faction = appState.factions.first(where: { $0.id == deck.factionId })?.shortName {
+            return faction
+        }
+        if let primaryFactionId = appState.player?.primaryFactionId {
+            return appState.factions.first(where: { $0.id == primaryFactionId })?.shortName
+        }
+        return nil
     }
 
     // MARK: - Data

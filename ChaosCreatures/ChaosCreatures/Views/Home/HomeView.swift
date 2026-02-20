@@ -147,8 +147,11 @@ struct HomeView: View {
     private var firstDeckPrompt: some View {
         VStack(spacing: 12) {
             HStack(spacing: 10) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 20))  // SF Symbol icon size - keep as-is
+                Image("UIIcons/ui-defeat")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
                     .foregroundColor(.warningYellow)
 
                 VStack(alignment: .leading, spacing: 2) {

@@ -11,8 +11,9 @@ struct ContentView: View {
 
     var body: some View {
         @Bindable var router = router
+        let tabSelection = Bindable(appState).selectedTab
 
-        TabView(selection: Bindable(appState).selectedTab) {
+        TabView(selection: tabSelection) {
             // Tab 1: Home
             NavigationStack(path: $router.homeNavigationPath) {
                 HomeView()
@@ -126,6 +127,11 @@ struct ContentView: View {
             .tag(AppTab.shop)
         }
         .tint(.appAccent)
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            CustomTabBar(selectedTab: tabSelection)
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .fullScreenCover(isPresented: $router.showBattle) {
             if let matchID = router.matchID {
                 BattleContainerView(matchId: matchID)
@@ -148,6 +154,79 @@ struct ContentView: View {
                     .environment(appState)
             }
         }
+    }
+}
+
+// MARK: - Custom Tab Bar
+
+private struct CustomTabBar: View {
+    @Binding var selectedTab: AppTab
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(AppTab.allCases) { tab in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(tab.customIconName)
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 20, height: 20)
+                            .foregroundColor(selectedTab == tab ? .tauntGold : .textSecondary)
+
+                        Text(tab.rawValue)
+                            .font(selectedTab == tab ? CardFont.uiLabelBold(size: 10) : CardFont.uiLabel(size: 10))
+                            .foregroundColor(selectedTab == tab ? .textPrimary : .textSecondary)
+
+                        Capsule()
+                            .fill(
+                                selectedTab == tab
+                                ? LinearGradient(
+                                    colors: [Color(hex: "#D4AF37"), Color(hex: "#8C6A1A")],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                : LinearGradient(colors: [.clear, .clear], startPoint: .top, endPoint: .bottom)
+                            )
+                            .frame(width: 22, height: 2)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedTab == tab ? Color.bgTertiary.opacity(0.45) : Color.clear)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .background(
+            ZStack {
+                Color.bgSecondary
+                Image("CardTextures/leather-panel")
+                    .resizable()
+                    .opacity(0.30)
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .fill(Color.black.opacity(0.25))
+                .frame(height: 0.5),
+            alignment: .top
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .fill(Color.tauntGold.opacity(0.20))
+                .frame(height: 0.5),
+            alignment: .top
+        )
     }
 }
 
@@ -185,7 +264,11 @@ struct ModeSelectionView: View {
                                 .foregroundColor(.textSecondary)
                         }
                         Spacer()
-                        Image(systemName: "chevron.right")
+                        Image("UIIcons/ui-trigger-order")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 12, height: 12)
                             .foregroundColor(.textTertiary)
                     }
                     .padding(16)

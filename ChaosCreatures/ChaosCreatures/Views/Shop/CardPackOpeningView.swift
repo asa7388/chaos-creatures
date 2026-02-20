@@ -343,7 +343,7 @@ struct CardPackOpeningView: View {
 
             // Card front — uses CardFrameView for professional rendering
             CardFrameView(
-                data: CardDisplayData(instance: card),
+                data: CardDisplayData(instance: card, faction: packFaction),
                 size: .hand
             )
             .overlay(
@@ -362,6 +362,11 @@ struct CardPackOpeningView: View {
     }
 
     // MARK: - Action Buttons
+
+    private var packFaction: FactionShortName? {
+        guard let factionId = appState.player?.primaryFactionId else { return nil }
+        return appState.factions.first(where: { $0.id == factionId })?.shortName
+    }
 
     private var actionButtons: some View {
         VStack(spacing: 12) {

@@ -82,8 +82,11 @@ struct SplashView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 60))
+            Image("UIIcons/ui-chaos-spark")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 60, height: 60)
                 .foregroundColor(.ironwright)
                 .opacity(logoOpacity)
                 .scaleEffect(logoScale)
@@ -128,8 +131,11 @@ struct SignInView: View {
 
             // Logo area
             VStack(spacing: 16) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 72))
+                Image("UIIcons/ui-chaos-spark")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 72, height: 72)
                     .foregroundColor(.ironwright)
 
                 Text("Chaos Creatures")
@@ -180,8 +186,11 @@ struct SignInView: View {
                 appState.enterDevMode()
             }) {
                 HStack(spacing: 6) {
-                    Image(systemName: "hammer.fill")
-                        .font(.system(size: 14))
+                    Image("UIIcons/ui-chaos-rift")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 14, height: 14)
                     Text("Dev Mode (Skip Auth)")
                         .font(CardFont.uiLabel(size: 14))
                 }

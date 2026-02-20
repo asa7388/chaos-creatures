@@ -115,8 +115,11 @@ struct MatchmakingView: View {
                     .rotationEffect(.degrees(rotationAngle))
 
                 // Inner pulsing icon
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 32, weight: .medium))  // SF Symbol icon size - keep as-is
+                Image("UIIcons/ui-world")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32, height: 32)
                     .foregroundColor(.ironwright)
                     .scaleEffect(pulseScale)
             }
@@ -149,8 +152,11 @@ struct MatchmakingView: View {
 
     private var matchFoundView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
+            Image("UIIcons/ui-victory")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
                 .foregroundColor(.orderBlue)
                 .transition(.scale.combined(with: .opacity))
 
@@ -171,8 +177,11 @@ struct MatchmakingView: View {
 
     private func errorView(_ error: String) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
+            Image("UIIcons/ui-defeat")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 48, height: 48)
                 .foregroundColor(.warningYellow)
 
             Text("Queue Error")

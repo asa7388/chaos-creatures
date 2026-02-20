@@ -83,8 +83,11 @@ struct PostMatchView: View {
         VStack(spacing: 20) {
             Spacer()
 
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
+            Image("UIIcons/ui-defeat")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 48, height: 48)
                 .foregroundColor(.warningYellow)
 
             Text("Could not load match results")
@@ -276,9 +279,12 @@ struct PostMatchView: View {
             // Ranked mode bonus info
             if matchRecord?.gameMode == .ranked {
                 HStack(spacing: 8) {
-                    Image(systemName: isVictory ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                    Image(isVictory ? "UIIcons/ui-victory" : "UIIcons/ui-defeat")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 16, height: 16)
                         .foregroundColor(isVictory ? .orderBlue : .chaosRed)
-                        .font(.system(size: 16))  // SF Symbol icon size - keep as-is
                     Text(isVictory ? "Rank Points +15" : "Rank Points -10")
                         .font(CardFont.bodyBold(size: 14))
                         .foregroundColor(isVictory ? .orderBlue : .chaosRed)
