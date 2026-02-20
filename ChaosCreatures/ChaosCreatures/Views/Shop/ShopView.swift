@@ -38,8 +38,7 @@ struct ShopView: View {
                     .opacity(0.30)
             }
         )
-        .navigationTitle("Shop")
-        .navigationBarTitleDisplayMode(.inline)
+        .themedNavigationTitle("Shop")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: ShopDestination.settings) {

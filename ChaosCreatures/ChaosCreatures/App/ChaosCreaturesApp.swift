@@ -10,6 +10,11 @@ struct ChaosCreaturesApp: App {
     @State private var appState = AppState()
     @State private var router = AppRouter()
 
+    init() {
+        // We render a fully custom tab bar in ContentView.
+        UITabBar.appearance().isHidden = true
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

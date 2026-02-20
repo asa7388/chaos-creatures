@@ -46,8 +46,7 @@ struct HomeView: View {
                     .opacity(0.35)
             }
         )
-        .navigationTitle("Chaos Creatures")
-        .navigationBarTitleDisplayMode(.inline)
+        .themedNavigationTitle("Chaos Creatures")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: HomeDestination.settings) {

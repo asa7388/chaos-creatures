@@ -252,6 +252,50 @@ struct ShimmerModifier: ViewModifier {
     }
 }
 
+// MARK: - Themed Navigation Title
+
+private struct ThemedNavigationTitleModifier: ViewModifier {
+    let title: String
+
+    private var underlineWidth: CGFloat {
+        let estimate = CGFloat(title.count) * 6.2
+        return min(max(estimate, 56), 168)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 2) {
+                        Text(title)
+                            .font(CardFont.header(size: 24))
+                            .tracking(0.2)
+                            .foregroundColor(.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.tauntGold.opacity(0.12),
+                                        Color.tauntGold.opacity(0.65),
+                                        Color.tauntGold.opacity(0.12)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: underlineWidth, height: 1)
+                    }
+                    .padding(.top, 2)
+                }
+            }
+    }
+}
+
 // MARK: - View Extension
 
 extension View {
@@ -306,6 +350,11 @@ extension View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.borderDefault, lineWidth: 1)
             )
+    }
+
+    /// Apply the shared collector-style top navigation title treatment.
+    func themedNavigationTitle(_ title: String) -> some View {
+        modifier(ThemedNavigationTitleModifier(title: title))
     }
 
     /// Leather-textured panel background

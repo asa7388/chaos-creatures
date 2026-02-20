@@ -55,6 +55,25 @@ struct DailyMissionsView: View {
 struct MissionRowView: View {
     let mission: Mission
 
+    private var missionTint: Color {
+        mission.isCompleted ? .healGreen : .missionBlue
+    }
+
+    private var progressFill: LinearGradient {
+        if mission.isCompleted {
+            return LinearGradient(
+                colors: [Color.healGreen.opacity(0.95), Color.healGreen.opacity(0.72)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+        return LinearGradient(
+            colors: [Color.missionBlue.opacity(0.95), Color(hex: "#3E7E99").opacity(0.84)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -64,11 +83,11 @@ struct MissionRowView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 16, height: 16)
-                    .foregroundColor(mission.isCompleted ? .healGreen : .orderBlue)
+                    .foregroundColor(missionTint)
                     .frame(width: 28, height: 28)
                     .background(
-                        (mission.isCompleted ? Color.healGreen : Color.orderBlue)
-                            .opacity(0.15)
+                        missionTint
+                            .opacity(0.16)
                     )
                     .cornerRadius(6)
 
@@ -99,7 +118,7 @@ struct MissionRowView: View {
                         .cornerRadius(3)
 
                     Rectangle()
-                        .fill(mission.isCompleted ? Color.healGreen : Color.orderBlue)
+                        .fill(progressFill)
                         .frame(width: geometry.size.width * mission.progress)
                         .cornerRadius(3)
                 }

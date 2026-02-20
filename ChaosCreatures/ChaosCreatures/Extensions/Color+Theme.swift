@@ -90,6 +90,7 @@ extension Color {
     static let warningYellow = Color(hex: "#FFC107")
     static let damageOrange = Color(hex: "#FF7043")
     static let timerBlue = Color(hex: "#4A90E2")
+    static let missionBlue = Color(hex: "#4EA6C5")
     static let tauntGold = Color(hex: "#FFD700")
     static let validGreen = Color(hex: "#4CAF50")
     static let invalidRed = Color(hex: "#F44336")

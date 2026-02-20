@@ -48,8 +48,7 @@ struct DeckListView: View {
                     .opacity(0.35)
             }
         )
-        .navigationTitle("My Decks")
-        .navigationBarTitleDisplayMode(.inline)
+        .themedNavigationTitle("My Decks")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {

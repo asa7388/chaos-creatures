@@ -56,8 +56,7 @@ struct ProfileView: View {
                     .opacity(0.35)
             }
         )
-        .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.inline)
+        .themedNavigationTitle("Profile")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: ProfileDestination.settings) {

@@ -128,8 +128,7 @@ struct CollectionView: View {
                 .ignoresSafeArea()
             }
         )
-        .navigationTitle("Collection")
-        .navigationBarTitleDisplayMode(.inline)
+        .themedNavigationTitle("Collection")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: CollectionDestination.settings) {

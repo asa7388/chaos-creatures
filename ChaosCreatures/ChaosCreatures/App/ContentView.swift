@@ -126,6 +126,10 @@ struct ContentView: View {
             }
             .tag(AppTab.shop)
         }
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            CustomTabBar(selectedTab: tabSelection)
+        }
         .tint(.appAccent)
         .fullScreenCover(isPresented: $router.showBattle) {
             if let matchID = router.matchID {
@@ -158,70 +162,73 @@ private struct CustomTabBar: View {
     @Binding var selectedTab: AppTab
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             ForEach(AppTab.allCases) { tab in
+                let isActive = selectedTab == tab
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
                         selectedTab = tab
                     }
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 3) {
                         Image(tab.customIconName)
                             .renderingMode(.template)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(selectedTab == tab ? .tauntGold : .textSecondary)
+                            .frame(width: 21, height: 21)
+                            .foregroundColor(isActive ? .tauntGold : .textSecondary)
 
                         Text(tab.rawValue)
-                            .font(selectedTab == tab ? CardFont.uiLabelBold(size: 10) : CardFont.uiLabel(size: 10))
-                            .foregroundColor(selectedTab == tab ? .textPrimary : .textSecondary)
+                            .font(isActive ? CardFont.uiLabelBold(size: 10) : CardFont.uiLabel(size: 10))
+                            .foregroundColor(isActive ? .textPrimary : .textSecondary)
 
                         Capsule()
                             .fill(
-                                selectedTab == tab
+                                isActive
                                 ? LinearGradient(
-                                    colors: [Color(hex: "#D4AF37"), Color(hex: "#8C6A1A")],
+                                    colors: [Color.tauntGold.opacity(0.92), Color(hex: "#8C6A1A").opacity(0.85)],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 )
                                 : LinearGradient(colors: [.clear, .clear], startPoint: .top, endPoint: .bottom)
                             )
-                            .frame(width: 22, height: 2)
+                            .frame(width: 24, height: 1.6)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .padding(.vertical, 3)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(selectedTab == tab ? Color.bgTertiary.opacity(0.45) : Color.clear)
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .fill(isActive ? Color.tauntGold.opacity(0.12) : Color.clear)
                     )
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .frame(height: 68)
         .background(
-            ZStack {
-                Color.bgSecondary
-                Image("CardTextures/leather-panel")
-                    .resizable()
-                    .opacity(0.30)
-            }
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(Color.bgSecondary.opacity(0.42))
+                )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 0)
-                .fill(Color.black.opacity(0.25))
-                .frame(height: 0.5),
-            alignment: .top
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.tauntGold.opacity(0.32), Color.white.opacity(0.08)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.8
+                )
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 0)
-                .fill(Color.tauntGold.opacity(0.20))
-                .frame(height: 0.5),
-            alignment: .top
-        )
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
     }
 }
 

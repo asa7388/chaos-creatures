@@ -212,30 +212,43 @@ function saveAndInstall(name, canvas) {
 
 function drawSettings() {
   const { canvas, ctx } = baseCanvas();
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 8; i++) {
     ctx.save();
-    ctx.rotate((Math.PI * 2 * i) / 10);
-    roundRectPath(ctx, -10, -102, 20, 34, 6);
+    ctx.rotate((Math.PI * 2 * i) / 8);
+    roundRectPath(ctx, -11, -102, 22, 36, 7);
+    ctx.fill();
+    roundRectPath(ctx, -5, -114, 10, 18, 4);
     ctx.fill();
     ctx.restore();
   }
 
   ctx.beginPath();
-  ctx.arc(0, 0, 70, 0, Math.PI * 2);
+  ctx.arc(0, 0, 68, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.globalCompositeOperation = 'destination-out';
   ctx.beginPath();
-  ctx.arc(0, 0, 38, 0, Math.PI * 2);
+  ctx.arc(0, 0, 35, 0, Math.PI * 2);
   ctx.fill();
+
+  for (let i = 0; i < 8; i++) {
+    ctx.save();
+    ctx.rotate((Math.PI * 2 * i) / 8);
+    roundRectPath(ctx, -3, -56, 6, 14, 2.5);
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.globalCompositeOperation = 'source-over';
 
-  drawRivet(ctx, 0, -52, 4);
-  drawRivet(ctx, 45, -22, 3.5);
-  drawRivet(ctx, 45, 22, 3.5);
-  drawRivet(ctx, 0, 52, 4);
-  drawRivet(ctx, -45, 22, 3.5);
-  drawRivet(ctx, -45, -22, 3.5);
+  drawRivet(ctx, 0, -50, 4);
+  drawRivet(ctx, 43, -22, 3.5);
+  drawRivet(ctx, 43, 22, 3.5);
+  drawRivet(ctx, 0, 50, 4);
+  drawRivet(ctx, -43, 22, 3.5);
+  drawRivet(ctx, -43, -22, 3.5);
+  ctx.beginPath();
+  ctx.arc(0, 0, 8, 0, Math.PI * 2);
+  ctx.fill();
   return canvas;
 }
 
@@ -498,23 +511,36 @@ function drawHandCards() {
 
 function drawAccount() {
   const { canvas, ctx } = baseCanvas();
+  // Outer medallion + inner coin for a stamped profile glyph.
   ctx.beginPath();
-  ctx.arc(0, 0, 92, 0, Math.PI * 2);
+  ctx.arc(0, 0, 94, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(0, 0, 74, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.beginPath();
+  ctx.arc(0, 0, 68, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.globalCompositeOperation = 'destination-out';
   ctx.beginPath();
-  ctx.arc(0, -30, 24, 0, Math.PI * 2);
+  ctx.arc(0, -19, 18, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(-48, 58);
-  ctx.quadraticCurveTo(-40, 10, 0, 10);
-  ctx.quadraticCurveTo(40, 10, 48, 58);
+  ctx.moveTo(-44, 52);
+  ctx.quadraticCurveTo(-38, 5, 0, 5);
+  ctx.quadraticCurveTo(38, 5, 44, 52);
   ctx.closePath();
   ctx.fill();
 
   ctx.globalCompositeOperation = 'source-over';
+  drawRivet(ctx, 0, -58, 4);
+  drawRivet(ctx, 58, 0, 4);
+  drawRivet(ctx, 0, 58, 4);
+  drawRivet(ctx, -58, 0, 4);
   return canvas;
 }
 
@@ -902,13 +928,24 @@ async function renderContactSheet(names) {
 }
 
 async function main() {
-  console.log(`Generating ${ICONS.length} handcrafted UI icons...`);
-  for (const icon of ICONS) {
+  const requested = process.argv.slice(2);
+  const selectedIcons =
+    requested.length > 0
+      ? ICONS.filter((icon) => requested.includes(icon.name))
+      : ICONS;
+
+  if (requested.length > 0 && selectedIcons.length === 0) {
+    console.error('No matching icon names provided.');
+    process.exit(1);
+  }
+
+  console.log(`Generating ${selectedIcons.length} handcrafted UI icons...`);
+  for (const icon of selectedIcons) {
     const canvas = icon.draw();
     saveAndInstall(icon.name, canvas);
   }
 
-  await renderContactSheet(ICONS.map((i) => i.name));
+  await renderContactSheet(selectedIcons.map((i) => i.name));
 
   console.log(`\nDone.`);
   console.log(`Preview icons: ${PREVIEW_DIR}`);
