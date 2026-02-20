@@ -92,7 +92,7 @@ enum Keyword: String, Codable, CaseIterable, Identifiable {
         case .taunt: return "KeywordIcons/kw-taunt"
         case .piercing: return "KeywordIcons/kw-piercing"
         case .haste: return "KeywordIcons/kw-haste"
-        case .ward: return "KeywordIcons/kw-ward"
+        case .ward: return "KeywordIcons/ward"
         }
     }
 }

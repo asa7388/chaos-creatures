@@ -7,6 +7,7 @@ import SwiftUI
 
 struct EvolutionFlowView: View {
     @Environment(AppState.self) private var appState
+    @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
 
     let card: CardInstance
@@ -86,6 +87,12 @@ struct EvolutionFlowView: View {
                             previousArtUrl: previousArtUrl,
                             modifierName: selectedModifier?.name,
                             statChanges: evolutionService.statChanges,
+                            evolvedFaction: router.selectedCardFaction,
+                            evolvedManaCost: card.currentManaCost,
+                            evolvedAttack: evolvedAttackValue,
+                            evolvedHealth: evolvedHealthValue,
+                            evolvedInstability: evolvedInstabilityValue,
+                            evolvedCardType: card.cardType ?? (card.currentAttack != nil ? .creature : .spell),
                             onContinue: {
                                 evolutionService.reset()
                                 Task { await appState.refreshPlayer() }
@@ -250,30 +257,11 @@ struct EvolutionFlowView: View {
 
     private var cardPreview: some View {
         VStack(spacing: 8) {
-            // Mini art
-            if let url = card.artURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    default:
-                        Rectangle()
-                            .fill(Color.bgTertiary)
-                    }
-                }
-                .frame(width: 100, height: 100)
-                .cornerRadius(12)
-            } else {
-                Rectangle()
-                    .fill(Color.bgTertiary)
-                    .frame(width: 100, height: 100)
-                    .cornerRadius(12)
-                    .overlay(
-                        ThemedGlyph(symbol: "photo", size: 20, color: .textDisabled)
-                    )
-            }
+            CardFrameView(
+                data: CardDisplayData(instance: card, faction: router.selectedCardFaction),
+                size: .hand
+            )
+            .contactShadow(opacity: 0.45, yOffset: 2)
 
             Text(card.currentName)
                 .font(CardFont.cardName(size: 16))
@@ -423,6 +411,23 @@ struct EvolutionFlowView: View {
         }
     }
 
+    // MARK: - Evolved Card Preview Values
+
+    private var evolvedAttackValue: Int? {
+        guard let currentAttack = card.currentAttack else { return nil }
+        return currentAttack + (evolutionService.statChanges?.attackBonus ?? 0)
+    }
+
+    private var evolvedHealthValue: Int? {
+        guard let currentHealth = card.currentHealth else { return nil }
+        return currentHealth + (evolutionService.statChanges?.healthBonus ?? 0)
+    }
+
+    private var evolvedInstabilityValue: Int? {
+        guard card.cardType == .creature else { return nil }
+        return card.instabilityValue + (evolutionService.statChanges?.instabilityChange ?? 0)
+    }
+
     // MARK: - Status Change Handler
 
     private func handleStatusChange(_ status: EvolutionStatus) {
@@ -488,4 +493,5 @@ struct EvolutionFlowView: View {
         )
     )
     .environment(AppState())
+    .environment(AppRouter())
 }

@@ -60,9 +60,7 @@ struct ErrorOverlayModifier: ViewModifier {
 
             if let error {
                 VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 36))
-                        .foregroundColor(.warningYellow)
+                    ThemedGlyph(symbol: "exclamationmark.triangle.fill", size: 36, color: .warningYellow)
 
                     Text(error)
                         .font(CardFont.body(size: 14))
@@ -84,7 +82,15 @@ struct ErrorOverlayModifier: ViewModifier {
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.bgPrimary.opacity(0.9))
+                .background(
+                    ZStack {
+                        Color.bgPrimary.opacity(0.92)
+                        Image("UIBackgrounds/bg-dark-parchment")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .opacity(0.2)
+                    }
+                )
                 .transition(.opacity)
             }
         }
@@ -104,9 +110,7 @@ struct EmptyStateModifier: ViewModifier {
     func body(content: Content) -> some View {
         if isEmpty {
             VStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 48))
-                    .foregroundColor(.textTertiary)
+                ThemedGlyph(symbol: icon, size: 48, color: .textTertiary)
 
                 Text(message)
                     .font(CardFont.body(size: 16))
@@ -127,7 +131,15 @@ struct EmptyStateModifier: ViewModifier {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.bgPrimary)
+            .background(
+                ZStack {
+                    Color.bgPrimary
+                    Image("UIBackgrounds/bg-dark-parchment")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.18)
+                }
+            )
         } else {
             content
         }

@@ -14,6 +14,12 @@ struct EvolutionRevealView: View {
     let previousArtUrl: String?
     let modifierName: String?
     let statChanges: EvolutionStatChanges?
+    let evolvedFaction: FactionShortName?
+    let evolvedManaCost: Int
+    let evolvedAttack: Int?
+    let evolvedHealth: Int?
+    let evolvedInstability: Int?
+    let evolvedCardType: CardType
     let onContinue: () -> Void
 
     // MARK: - Animation State
@@ -138,8 +144,13 @@ struct EvolutionRevealView: View {
             data: CardDisplayData(
                 name: result.newName,
                 artUrl: result.newArtUrl,
-                manaCost: 0, // CM cost not shown in reveal context
+                manaCost: evolvedManaCost,
+                attack: evolvedAttack,
+                health: evolvedHealth,
+                instability: evolvedInstability,
                 tier: result.tier,
+                cardType: evolvedCardType,
+                faction: evolvedFaction,
                 flavorText: result.newFlavorText
             ),
             size: .detail
@@ -368,6 +379,12 @@ struct EvolutionRevealView: View {
             healthBonus: 2,
             instabilityChange: -1
         ),
+        evolvedFaction: .ironwright,
+        evolvedManaCost: 3,
+        evolvedAttack: 4,
+        evolvedHealth: 6,
+        evolvedInstability: 1,
+        evolvedCardType: .creature,
         onContinue: {}
     )
 }

@@ -160,7 +160,20 @@ struct CollectionView: View {
             }
         }
         .frame(height: 48)
-        .background(Color.bgSecondary)
+        .background(
+            ZStack {
+                Color.bgSecondary
+                Image("UIComponents/ui-panel-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.32)
+            }
+        )
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.tauntGold.opacity(0.16))
+                .frame(height: 0.6)
+        }
     }
 
     // MARK: - Filter Bar
@@ -188,18 +201,51 @@ struct CollectionView: View {
                 .foregroundColor(.textSecondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.bgTertiary)
-                .cornerRadius(6)
+                .background(
+                    ZStack {
+                        Color(hex: "#2A2318")
+                        Image("CardTextures/tex-parchment")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .opacity(0.2)
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.tauntGold.opacity(0.2), lineWidth: 0.5)
+                )
             }
 
             Spacer()
 
             if showSearch {
-                TextField("Search cards...", text: $searchQuery)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 200)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                    .submitLabel(.search)
+                HStack(spacing: 6) {
+                    ThemedGlyph(symbol: "magnifyingglass", size: 12, color: .textTertiary)
+                    TextField("Search cards...", text: $searchQuery)
+                        .font(CardFont.body(size: 13))
+                        .foregroundColor(.textPrimary)
+                        .textFieldStyle(.plain)
+                        .submitLabel(.search)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(
+                    ZStack {
+                        Color(hex: "#2A2318")
+                        Image("CardTextures/tex-parchment")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .opacity(0.22)
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.tauntGold.opacity(0.2), lineWidth: 0.6)
+                )
+                .frame(maxWidth: 220)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
 
             Button(action: {
@@ -213,7 +259,15 @@ struct CollectionView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 44)
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("CardTextures/tex-parchment")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.12)
+            }
+        )
     }
 
     // MARK: - Card Grid

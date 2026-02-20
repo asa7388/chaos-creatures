@@ -32,13 +32,20 @@ struct ErrorView: View {
                 .foregroundColor(.textPrimary)
                 .padding(.horizontal, 28)
                 .padding(.vertical, 12)
-                .background(Color.borderActive)
-                .cornerRadius(10)
             }
+            .buttonStyle(CardstockButtonStyle())
             .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-parchment")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.18)
+            }
+        )
     }
 }
 

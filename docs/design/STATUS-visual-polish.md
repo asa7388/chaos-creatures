@@ -445,6 +445,27 @@ Audit (consistency agent):
 
 ---
 
+### 2026-02-20: Post-Complete Remediation Pass
+
+User-reported runtime gap: generated assets and card layout polish were not consistently visible in app flows. Additional audit and fixes shipped:
+
+- **Checkpoint commit:** `2f6315a` — replaced high-visibility SF Symbols with 14 new custom UI glyph assets + `ThemedGlyph` resolver integration.
+- **Asset path bug fixes:**
+  - `Keyword.ward` icon mapping fixed from missing `KeywordIcons/kw-ward` to `KeywordIcons/ward`.
+  - SpriteKit faction emblem mapping fixed to `FactionEmblems/emblem-*` (prevents missing emblem fallback in battle card-back path).
+  - SpriteKit spell/stabilizer frame constants replaced with faction-aware helpers to avoid invalid `CardFrames/spell` style paths.
+- **Card layout parity improvements:**
+  - `EvolutionFlowView` now previews the card using `CardFrameView` (hand-size frame) instead of a generic square art tile.
+  - `EvolutionRevealView` now renders the evolved card with real card data (faction, mana, ATK/HP/instability, card type) instead of a generic `manaCost: 0` fallback card.
+- **High-traffic screen material pass:**
+  - `CollectionView` tab bar and filter/search bar restyled with leather/parchment textures and custom search field styling (removed native rounded-border field).
+  - `DeckBuilderView` deck header, phone toggle, filter rail, search field, and deck header strip restyled to leather/parchment materials (removed native rounded-border field).
+  - `FactionPickerView` onboarding cards and keyword pills upgraded to textured panel treatments.
+  - `ErrorView`, `EmptyStateView`, and shared overlay modifiers in `View+Loading.swift` now use textured backgrounds and themed glyph rendering instead of native SF-symbol-only styling.
+- **Verification:** `xcodebuild -project ChaosCreatures/ChaosCreatures.xcodeproj -scheme ChaosCreatures -destination 'generic/platform=iOS Simulator' build` → **BUILD SUCCEEDED**.
+
+---
+
 ## Visual Polish Plan — COMPLETE
 
 All 9 waves (0-8) implemented, audited, and committed. Summary:

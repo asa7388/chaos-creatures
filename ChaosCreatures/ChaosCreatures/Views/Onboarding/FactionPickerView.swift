@@ -37,7 +37,15 @@ struct FactionPickerView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
         }
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-parchment")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.26)
+            }
+        )
     }
 }
 
@@ -87,8 +95,20 @@ struct FactionCardView: View {
                         .foregroundColor(.textTertiary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.bgTertiary)
-                        .cornerRadius(8)
+                        .background(
+                            ZStack {
+                                Color(hex: "#2A2318")
+                                Image("CardTextures/tex-parchment")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .opacity(0.2)
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.tauntGold.opacity(0.15), lineWidth: 0.5)
+                        )
                 }
             }
 
@@ -108,15 +128,30 @@ struct FactionCardView: View {
         .padding(.top, 20)
         .frame(maxWidth: .infinity)
         .background(
-            LinearGradient(
-                colors: [
-                    faction.swiftUIColor.opacity(0.15),
-                    Color.bgPrimary
-                ],
-                startPoint: .top,
-                endPoint: .center
+            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.bgSecondary.opacity(0.92))
+                Image("UIComponents/ui-panel-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.3)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                LinearGradient(
+                    colors: [
+                        faction.swiftUIColor.opacity(0.18),
+                        .clear
+                    ],
+                    startPoint: .top,
+                    endPoint: .center
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(faction.swiftUIColor.opacity(0.3), lineWidth: 0.8)
             )
         )
+        .padding(.horizontal, 16)
     }
 
     private func factionDescription(_ faction: FactionShortName) -> String {

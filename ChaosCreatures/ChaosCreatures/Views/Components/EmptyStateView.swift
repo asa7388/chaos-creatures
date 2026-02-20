@@ -49,14 +49,21 @@ struct EmptyStateView: View {
                         .foregroundColor(.textPrimary)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 10)
-                        .background(Color.borderActive)
-                        .cornerRadius(8)
                 }
+                .buttonStyle(CardstockButtonStyle())
                 .padding(.top, 4)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-parchment")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.18)
+            }
+        )
     }
 }
 

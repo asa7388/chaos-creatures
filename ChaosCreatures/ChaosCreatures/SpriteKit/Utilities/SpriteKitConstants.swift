@@ -346,11 +346,31 @@ enum SK {
             return "CardFrames/\(factionKey)-\(tierKey)"
         }
 
-        /// Spell card frame asset name
-        static let spell = "CardFrames/spell"
+        /// Spell card frame asset name for a specific faction.
+        static func spellAssetName(faction: FactionShortName) -> String {
+            let factionKey: String
+            switch faction {
+            case .ironwright: factionKey = "ironwright"
+            case .feyCourts: factionKey = "fey"
+            case .demonicKingdoms: factionKey = "demonic"
+            case .celestialCrusade: factionKey = "celestial"
+            case .theEndless: factionKey = "endless"
+            }
+            return "CardFrames/\(factionKey)-spell"
+        }
 
-        /// Stabilizer card frame asset name
-        static let stabilizer = "CardFrames/stabilizer"
+        /// Stabilizer card frame asset name for a specific faction.
+        static func stabilizerAssetName(faction: FactionShortName) -> String {
+            let factionKey: String
+            switch faction {
+            case .ironwright: factionKey = "ironwright"
+            case .feyCourts: factionKey = "fey"
+            case .demonicKingdoms: factionKey = "demonic"
+            case .celestialCrusade: factionKey = "celestial"
+            case .theEndless: factionKey = "endless"
+            }
+            return "CardFrames/\(factionKey)-stabilizer"
+        }
     }
 
     // MARK: - Keyword Icon Asset Names
@@ -386,7 +406,7 @@ enum SK {
             case .celestialCrusade: key = "celestial"
             case .theEndless: key = "endless"
             }
-            return "FactionEmblems/\(key)"
+            return "FactionEmblems/emblem-\(key)"
         }
     }
 

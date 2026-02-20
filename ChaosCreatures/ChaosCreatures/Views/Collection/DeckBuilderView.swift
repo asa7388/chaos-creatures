@@ -78,6 +78,22 @@ struct DeckBuilderView: View {
                     .font(CardFont.cardName(size: 16))
                     .foregroundColor(.textPrimary)
                     .textFieldStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(
+                        ZStack {
+                            Color(hex: "#2A2318")
+                            Image("CardTextures/tex-parchment")
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .opacity(0.24)
+                        }
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.tauntGold.opacity(0.2), lineWidth: 0.6)
+                    )
 
                 Spacer()
 
@@ -94,7 +110,15 @@ struct DeckBuilderView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color.bgSecondary)
+            .background(
+                ZStack {
+                    Color.bgSecondary
+                    Image("UIComponents/ui-panel-leather")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.32)
+                }
+            )
 
             // S-25: Phone toggle between Available Cards and Deck
             if sizeClass != .regular {
@@ -121,7 +145,15 @@ struct DeckBuilderView: View {
                         .background(showDeckPanel ? Color.orderBlue.opacity(0.3) : Color.clear)
                     }
                 }
-                .background(Color.bgSecondary)
+                .background(
+                    ZStack {
+                        Color.bgSecondary
+                        Image("UIComponents/ui-panel-leather")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .opacity(0.26)
+                    }
+                )
             }
         }
     }
@@ -174,11 +206,38 @@ struct DeckBuilderView: View {
                 .padding(.vertical, 6)
             }
             .background(Color.bgSecondary)
+            .overlay(
+                Image("UIComponents/ui-panel-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.28)
+            )
 
             // Search
-            TextField("Search...", text: $searchQuery)
-                .textFieldStyle(.roundedBorder)
-                .padding(8)
+            HStack(spacing: 6) {
+                ThemedGlyph(symbol: "magnifyingglass", size: 12, color: .textTertiary)
+                TextField("Search cards...", text: $searchQuery)
+                    .font(CardFont.body(size: 13))
+                    .foregroundColor(.textPrimary)
+                    .textFieldStyle(.plain)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                ZStack {
+                    Color(hex: "#2A2318")
+                    Image("CardTextures/tex-parchment")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.22)
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.tauntGold.opacity(0.2), lineWidth: 0.6)
+            )
+            .padding(8)
 
             // Card grid
             ScrollView {
@@ -210,7 +269,15 @@ struct DeckBuilderView: View {
                 .foregroundColor(.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(8)
-                .background(Color.bgSecondary)
+                .background(
+                    ZStack {
+                        Color.bgSecondary
+                        Image("UIComponents/ui-panel-leather")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .opacity(0.3)
+                    }
+                )
 
             if deckCards.isEmpty {
                 VStack(spacing: 8) {
