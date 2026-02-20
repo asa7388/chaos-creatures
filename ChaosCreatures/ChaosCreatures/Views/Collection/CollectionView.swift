@@ -151,29 +151,50 @@ struct CollectionView: View {
 
     private var factionTabBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
+            HStack(spacing: 8) {
                 ForEach(FactionFilter.allCases, id: \.self) { faction in
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedFaction = faction
                         }
                     }) {
-                        VStack(spacing: 4) {
-                            Text(faction.displayName)
-                                .font(CardFont.body(size: 14))
-                                .foregroundColor(selectedFaction == faction ? .textPrimary : .textTertiary)
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(selectedFaction == faction ? faction.color : Color.textTertiary.opacity(0.35))
+                                .frame(width: 6, height: 6)
 
-                            Rectangle()
-                                .fill(selectedFaction == faction ? faction.color : Color.clear)
-                                .frame(height: 3)
-                                .cornerRadius(1.5)
+                            Text(faction.displayName)
+                                .font(CardFont.uiLabelBold(size: 11))
+                                .tracking(0.35)
+                                .foregroundColor(selectedFaction == faction ? .textPrimary : .textTertiary)
                         }
-                        .frame(minWidth: 80)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            ZStack {
+                                Color.black.opacity(selectedFaction == faction ? 0.42 : 0.26)
+                                Image("CardTextures/tex-parchment")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .opacity(selectedFaction == faction ? 0.12 : 0.07)
+                            }
+                        )
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    (selectedFaction == faction ? faction.color : Color.tauntGold.opacity(0.18))
+                                        .opacity(selectedFaction == faction ? 0.56 : 1),
+                                    lineWidth: selectedFaction == faction ? 0.85 : 0.55
+                                )
+                        )
                     }
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
-        .frame(height: 48)
+        .frame(height: 54)
         .background(
             ZStack {
                 Color.bgSecondary
