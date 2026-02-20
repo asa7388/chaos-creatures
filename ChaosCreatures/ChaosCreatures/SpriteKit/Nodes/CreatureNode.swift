@@ -155,6 +155,14 @@ final class CreatureNode: SKSpriteNode {
         // Layer 1: Faction text panel texture at bottom (small — just enough for stat context)
         setupTextPanelTexture(cardSize: cardSize, faction: faction)
 
+        // Layer 1.5: Pre-baked card frame overlay (faction/type/rarity art pass)
+        addPrebakedFrameOverlay(
+            cardType: creature.cardType,
+            faction: faction,
+            tier: creature.evolutionTier,
+            cardSize: cardSize
+        )
+
         // Faction-specific stat icon names
         let cmIcon = SK.CardTextures.cmIconName(faction: faction)
         let atkIcon = SK.CardTextures.atkIconName(faction: faction)
@@ -306,6 +314,26 @@ final class CreatureNode: SKSpriteNode {
 
         addChild(textPanelSprite)
         addChild(darkenOverlay)
+    }
+
+    // MARK: - Pre-baked Frame Overlay
+
+    /// Overlays faction/type/rarity frame art so generated card frame assets are visible
+    /// on SpriteKit battlefield cards, not only on SwiftUI card views.
+    private func addPrebakedFrameOverlay(cardType: CardType, faction: FactionShortName?,
+                                         tier: EvolutionTier, cardSize: CGSize) {
+        guard let frameAsset = SK.CardFrames.frameAssetName(cardType: cardType, faction: faction, tier: tier),
+              UIImage(named: frameAsset) != nil else {
+            return
+        }
+
+        let frameOverlay = SKSpriteNode(imageNamed: frameAsset)
+        frameOverlay.size = cardSize
+        frameOverlay.position = .zero
+        frameOverlay.zPosition = 2.2
+        frameOverlay.alpha = 0.62
+        frameOverlay.name = "prebaked_frame_overlay"
+        addChild(frameOverlay)
     }
 
     // MARK: - Medallion Badge Setup

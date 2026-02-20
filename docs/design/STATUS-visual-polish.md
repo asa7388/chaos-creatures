@@ -457,6 +457,7 @@ User-reported runtime gap: generated assets and card layout polish were not cons
 - **Card layout parity improvements:**
   - `EvolutionFlowView` now previews the card using `CardFrameView` (hand-size frame) instead of a generic square art tile.
   - `EvolutionRevealView` now renders the evolved card with real card data (faction, mana, ATK/HP/instability, card type) instead of a generic `manaCost: 0` fallback card.
+  - SpriteKit parity pass: `HandCardNode` and `CreatureNode` now overlay the pre-baked `CardFrames/*` art (faction/type/rarity aware) so generated frame assets appear during battle, not just in SwiftUI collection/detail surfaces.
 - **High-traffic screen material pass:**
   - `CollectionView` tab bar and filter/search bar restyled with leather/parchment textures and custom search field styling (removed native rounded-border field).
   - `DeckBuilderView` deck header, phone toggle, filter rail, search field, and deck header strip restyled to leather/parchment materials (removed native rounded-border field).

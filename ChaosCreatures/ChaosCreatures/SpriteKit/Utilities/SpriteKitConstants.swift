@@ -326,50 +326,54 @@ enum SK {
     // MARK: - Card Frame Asset Names
 
     enum CardFrames {
+        private static func factionKey(_ faction: FactionShortName) -> String {
+            switch faction {
+            case .ironwright: return "ironwright"
+            case .feyCourts: return "fey"
+            case .demonicKingdoms: return "demonic"
+            case .celestialCrusade: return "celestial"
+            case .theEndless: return "endless"
+            }
+        }
+
         /// Asset name for a card frame by faction and rarity.
         /// Format: "CardFrames/{faction}-{rarity}" e.g. "CardFrames/ironwright-common"
         static func assetName(faction: FactionShortName, tier: EvolutionTier) -> String {
-            let factionKey: String
-            switch faction {
-            case .ironwright: factionKey = "ironwright"
-            case .feyCourts: factionKey = "fey"
-            case .demonicKingdoms: factionKey = "demonic"
-            case .celestialCrusade: factionKey = "celestial"
-            case .theEndless: factionKey = "endless"
-            }
             let tierKey: String
             switch tier {
             case .common, .uncommon: tierKey = "common"
             case .rare: tierKey = "rare"
             case .epic, .legendary: tierKey = "legendary"
             }
-            return "CardFrames/\(factionKey)-\(tierKey)"
+            return "CardFrames/\(factionKey(faction))-\(tierKey)"
         }
 
         /// Spell card frame asset name for a specific faction.
         static func spellAssetName(faction: FactionShortName) -> String {
-            let factionKey: String
-            switch faction {
-            case .ironwright: factionKey = "ironwright"
-            case .feyCourts: factionKey = "fey"
-            case .demonicKingdoms: factionKey = "demonic"
-            case .celestialCrusade: factionKey = "celestial"
-            case .theEndless: factionKey = "endless"
-            }
-            return "CardFrames/\(factionKey)-spell"
+            return "CardFrames/\(factionKey(faction))-spell"
         }
 
         /// Stabilizer card frame asset name for a specific faction.
         static func stabilizerAssetName(faction: FactionShortName) -> String {
-            let factionKey: String
-            switch faction {
-            case .ironwright: factionKey = "ironwright"
-            case .feyCourts: factionKey = "fey"
-            case .demonicKingdoms: factionKey = "demonic"
-            case .celestialCrusade: factionKey = "celestial"
-            case .theEndless: factionKey = "endless"
+            return "CardFrames/\(factionKey(faction))-stabilizer"
+        }
+
+        /// Best frame asset for a specific card type/faction/tier combination.
+        /// Returns nil if faction-specific selection is required but faction is unavailable.
+        static func frameAssetName(cardType: CardType, faction: FactionShortName?, tier: EvolutionTier) -> String? {
+            switch cardType {
+            case .planarRuin:
+                return "CardFrames/planar-ruin"
+            case .spell:
+                guard let faction else { return nil }
+                return spellAssetName(faction: faction)
+            case .stabilizer:
+                guard let faction else { return nil }
+                return stabilizerAssetName(faction: faction)
+            case .creature:
+                guard let faction else { return nil }
+                return assetName(faction: faction, tier: tier)
             }
-            return "CardFrames/\(factionKey)-stabilizer"
         }
     }
 

@@ -191,6 +191,14 @@ final class HandCardNode: SKSpriteNode {
         // Layer 1: Faction text panel texture at bottom
         setupTextPanelTexture(cardSize: cardSize, panelHeight: panelHeight, faction: faction)
 
+        // Layer 1.5: Pre-baked card frame overlay (faction/type/rarity art pass)
+        addPrebakedFrameOverlay(
+            cardType: card.cardType,
+            faction: faction,
+            tier: card.evolutionTier,
+            cardSize: cardSize
+        )
+
         // Layer 2: Card name (on top of text panel)
         // Drop shadow for name label
         let nameShadow = SKLabelNode(fontNamed: SK.Fonts.bold)
@@ -332,6 +340,26 @@ final class HandCardNode: SKSpriteNode {
 
         addChild(textPanelSprite)
         addChild(darkenOverlay)
+    }
+
+    // MARK: - Pre-baked Frame Overlay
+
+    /// Overlays faction/type/rarity frame art so generated card frame assets are visible
+    /// in SpriteKit hand cards, not only in SwiftUI surfaces.
+    private func addPrebakedFrameOverlay(cardType: CardType, faction: FactionShortName?,
+                                         tier: EvolutionTier, cardSize: CGSize) {
+        guard let frameAsset = SK.CardFrames.frameAssetName(cardType: cardType, faction: faction, tier: tier),
+              UIImage(named: frameAsset) != nil else {
+            return
+        }
+
+        let frameOverlay = SKSpriteNode(imageNamed: frameAsset)
+        frameOverlay.size = cardSize
+        frameOverlay.position = .zero
+        frameOverlay.zPosition = 2.2
+        frameOverlay.alpha = 0.62
+        frameOverlay.name = "prebaked_frame_overlay"
+        addChild(frameOverlay)
     }
 
     // MARK: - Medallion Badge Setup
