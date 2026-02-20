@@ -214,31 +214,42 @@ private struct MedallionBadge: View {
 
     var body: some View {
         ZStack {
-            // Bronze wax seal texture base
-            Image("CardTextures/wax-seal-bronze")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: size, height: size)
-                .clipShape(Circle())
-
-            // Stat color tint
+            // Dark metal base with warm tint and texture grain.
             Circle()
-                .fill(tintColor.opacity(0.35))
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            tintColor.opacity(0.45),
+                            Color(hex: "#2D2215"),
+                            Color.black.opacity(0.94)
+                        ],
+                        center: .center,
+                        startRadius: 1,
+                        endRadius: size * 0.7
+                    )
+                )
 
-            // AI art icon faintly visible through the medallion
-            Image(iconName)
+            Image("CardTextures/metal-bronze")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .frame(width: size, height: size)
                 .clipShape(Circle())
-                .blendMode(.overlay)
-                .opacity(0.3)
+                .opacity(0.55)
+
+            // New icon language: icon is stamped into the badge behind the number.
+            Image(iconName)
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size * 0.62, height: size * 0.62)
+                .foregroundColor(Color(hex: "#F0EAD6").opacity(0.28))
+                .offset(y: -size * 0.03)
 
             // Embossed raised rim — dark outer edge
             Circle()
                 .stroke(
                     LinearGradient(
-                        colors: [Color(hex: "#8B7355"), Color(hex: "#2A1F0F")],
+                        colors: [Color(hex: "#AA8A54"), Color(hex: "#23180B")],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -255,7 +266,7 @@ private struct MedallionBadge: View {
                 .font(CardFont.statNumber(size: size * 0.50))
                 .foregroundColor(Color(hex: "#F0EAD6"))
                 .shadow(color: .black.opacity(0.9), radius: 1.5, x: 0, y: 1)
-                .shadow(color: tintColor.opacity(0.3), radius: 3, x: 0, y: 0)
+                .shadow(color: tintColor.opacity(0.45), radius: 4, x: 0, y: 0)
         }
         .frame(width: size, height: size)
         .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
@@ -269,7 +280,7 @@ struct CMBadgeView: View {
     var body: some View {
         MedallionBadge(
             value: value, size: size,
-            iconName: "StatIcons/chaos-motes",
+            iconName: "UIIcons/ui-chaos-mana",
             tintColor: Color(hex: "#0D47A1")
         )
     }
@@ -282,7 +293,7 @@ struct ATKBadgeView: View {
     var body: some View {
         MedallionBadge(
             value: value, size: size,
-            iconName: "StatIcons/sword-atk",
+            iconName: "UIIcons/ui-trigger-attack",
             tintColor: Color(hex: "#BF360C")
         )
     }
@@ -295,7 +306,7 @@ struct HPBadgeView: View {
     var body: some View {
         MedallionBadge(
             value: value, size: size,
-            iconName: "StatIcons/heart-hp",
+            iconName: "KeywordIcons/kw-shield",
             tintColor: Color(hex: "#1B5E20")
         )
     }
@@ -308,7 +319,7 @@ struct InstabilityBadgeView: View {
     var body: some View {
         MedallionBadge(
             value: value, size: size,
-            iconName: "StatIcons/chaos-motes",
+            iconName: "UIIcons/ui-crystal-shard",
             tintColor: Color(hex: "#FF8F00")
         )
     }
@@ -408,7 +419,9 @@ struct CardFrameView: View {
                 .frame(width: size.width, height: size.height)
 
             // Layer 5: Header band + text panel establish card information zones
-            headerBand
+            if size == .detail || size == .fullscreen {
+                headerBand
+            }
             textPanel
 
             // Layer 5.5: Faction decorative accents (detail/fullscreen only)
@@ -416,10 +429,8 @@ struct CardFrameView: View {
                 factionDecorativeOverlay
             }
 
-            // Layer 6: CM cost badge (top-right corner)
-            cmBadge
-                .padding(.trailing, cmInset)
-                .padding(.top, cmInset)
+            // Layer 6: CM cost badge (top-left corner)
+            cmBadgeOverlay
 
             // Layer 7: ATK badge (bottom-left, overlapping text panel)
             if data.showsCreatureStats, let atk = data.attack {
@@ -431,15 +442,15 @@ struct CardFrameView: View {
                 hpBadgeOverlay(hp: hp)
             }
 
-            // Layer 9: Instability badge (top-left, for creatures at detail/fullscreen, or hand if > 0)
+            // Layer 9: Instability badge (top-right, for creatures at detail/fullscreen, or hand if > 0)
             if let instability = data.instability, data.showsCreatureStats {
                 if size == .detail || size == .fullscreen || (instability > 0 && size == .hand) {
                     instabilityBadgeOverlay(value: instability)
                 }
             }
 
-            // Layer 10: Evolution tier chevron badge (top-left, below instability if shown)
-            if data.tier != .common && size != .hand {
+            // Layer 10: Evolution tier chevron badge (detail/fullscreen only)
+            if data.tier != .common && (size == .detail || size == .fullscreen) {
                 evolutionChevronBadge
             }
 
@@ -605,40 +616,6 @@ struct CardFrameView: View {
         }
     }
 
-    /// Faction-colored stat icon asset names for medallion badges.
-    private var factionAtkIconName: String {
-        guard let faction = data.faction else { return "StatIcons/sword-atk" }
-        switch faction {
-        case .ironwright: return "StatIcons/atk-ironwright"
-        case .feyCourts: return useAlternateSubfactionVisual ? "StatIcons/atk-feyHollow" : "StatIcons/atk-feyVerdant"
-        case .demonicKingdoms: return useAlternateSubfactionVisual ? "StatIcons/atk-demonicBureaucracy" : "StatIcons/atk-demonicFurnace"
-        case .celestialCrusade: return useAlternateSubfactionVisual ? "StatIcons/atk-celestialChosen" : "StatIcons/atk-celestialKnights"
-        case .theEndless: return useAlternateSubfactionVisual ? "StatIcons/atk-endlessSpectres" : "StatIcons/atk-endlessCabals"
-        }
-    }
-
-    private var factionHpIconName: String {
-        guard let faction = data.faction else { return "StatIcons/heart-hp" }
-        switch faction {
-        case .ironwright: return "StatIcons/hp-ironwright"
-        case .feyCourts: return useAlternateSubfactionVisual ? "StatIcons/hp-feyHollow" : "StatIcons/hp-feyVerdant"
-        case .demonicKingdoms: return useAlternateSubfactionVisual ? "StatIcons/hp-demonicBureaucracy" : "StatIcons/hp-demonicFurnace"
-        case .celestialCrusade: return useAlternateSubfactionVisual ? "StatIcons/hp-celestialChosen" : "StatIcons/hp-celestialKnights"
-        case .theEndless: return useAlternateSubfactionVisual ? "StatIcons/hp-endlessSpectres" : "StatIcons/hp-endlessCabals"
-        }
-    }
-
-    private var factionCmIconName: String {
-        guard let faction = data.faction else { return "StatIcons/chaos-motes" }
-        switch faction {
-        case .ironwright: return "StatIcons/chaos-mote-ironwright"
-        case .feyCourts: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-feyHollow" : "StatIcons/chaos-mote-feyVerdant"
-        case .demonicKingdoms: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-demonicBureaucracy" : "StatIcons/chaos-mote-demonicFurnace"
-        case .celestialCrusade: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-celestialChosen" : "StatIcons/chaos-mote-celestialKnights"
-        case .theEndless: return useAlternateSubfactionVisual ? "StatIcons/chaos-mote-endlessSpectres" : "StatIcons/chaos-mote-endlessCabals"
-        }
-    }
-
     /// Sub-faction emblem assets are used where available so generated emblem art is visible.
     private var factionEmblemAssetName: String? {
         guard let faction = data.faction else { return data.factionEmblemAssetName }
@@ -713,45 +690,53 @@ struct CardFrameView: View {
 
     // MARK: - Header Band + Contained Text Panel
 
-    /// Top header strip establishes the "header band" zone from the design guide.
+    /// Floating type chip in detail/fullscreen.
     private var headerBand: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 6) {
-                if let emblemAsset = factionEmblemAssetName {
-                    Image(emblemAsset)
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    Image(cardTypeIconAssetName)
+                        .renderingMode(.template)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: headerEmblemSize, height: headerEmblemSize)
-                        .opacity(0.85)
-                }
+                        .foregroundColor(parchmentTextColor.opacity(0.82))
+                        .frame(width: headerIconSize, height: headerIconSize)
 
-                if size == .detail || size == .fullscreen {
-                    Text(data.cardType.displayName.uppercased())
+                    Text(compactTypeLabel)
                         .font(CardFont.uiLabelBold(size: size == .fullscreen ? 10 : 9))
-                        .foregroundColor(parchmentTextColor.opacity(0.78))
+                        .foregroundColor(parchmentTextColor.opacity(0.85))
+                        .tracking(0.4)
                         .lineLimit(1)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    ZStack {
+                        Color.black.opacity(0.52)
+                        Image("CardTextures/tex-parchment")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .opacity(0.12)
+                    }
+                )
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(factionBorderColor.opacity(0.45), lineWidth: 0.6)
+                )
+
+                if data.tier != .common {
+                    Image(tierPipIconAsset)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: headerTierPipSize, height: headerTierPipSize)
+                        .shadow(color: Color.tierColor(data.tier).opacity(0.45), radius: 3)
                 }
 
                 Spacer()
             }
             .padding(.horizontal, headerHorizontalInset)
             .padding(.top, headerTopInset)
-            .frame(height: headerHeight)
-            .background(
-                ZStack {
-                    Image(factionTextPanelAssetName)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: headerHeight)
-                        .clipped()
-                    Color.black.opacity(0.52)
-                }
-            )
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(factionBorderColor.opacity(0.45))
-                    .frame(height: 0.8)
-            }
 
             Spacer()
         }
@@ -759,22 +744,8 @@ struct CardFrameView: View {
         .allowsHitTesting(false)
     }
 
-    private var headerHeight: CGFloat {
-        switch size {
-        case .grid: return size.height * 0.08
-        case .hand: return size.height * 0.08
-        case .detail, .fullscreen: return size.height * 0.10
-        }
-    }
-
-    private var headerEmblemSize: CGFloat {
-        switch size {
-        case .grid: return 10
-        case .hand: return 9
-        case .detail: return 16
-        case .fullscreen: return 18
-        }
-    }
+    private var headerIconSize: CGFloat { size == .fullscreen ? 13 : 11 }
+    private var headerTierPipSize: CGFloat { size == .fullscreen ? 14 : 12 }
 
     private var headerHorizontalInset: CGFloat {
         switch size {
@@ -794,9 +765,9 @@ struct CardFrameView: View {
     /// creating a visual "bridge" between art and text at the name bar.
     private var nameBarBridgeOffset: CGFloat {
         switch size {
-        case .grid: return 3
-        case .hand: return 2
-        case .detail, .fullscreen: return 5
+        case .grid: return 1
+        case .hand: return 1
+        case .detail, .fullscreen: return 4
         }
     }
 
@@ -888,7 +859,7 @@ struct CardFrameView: View {
         switch size {
         case .grid: return 6
         case .hand: return 5
-        case .detail, .fullscreen: return 10
+        case .detail, .fullscreen: return 11
         }
     }
 
@@ -901,9 +872,9 @@ struct CardFrameView: View {
 
     private var textPanelHeightRatio: CGFloat {
         switch size {
-        case .grid: return 0.38
-        case .hand: return 0.26
-        case .detail, .fullscreen: return 0.33
+        case .grid: return 0.30
+        case .hand: return 0.27
+        case .detail, .fullscreen: return 0.35
         }
     }
 
@@ -926,27 +897,51 @@ struct CardFrameView: View {
     // MARK: - Grid Panel (112x157) -- Name only, minimal
 
     private var gridPanel: some View {
-        VStack(spacing: 2) {
-            Text(data.name)
-                .font(CardFont.cardName(size: 10))
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(cardTypeIconAssetName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(parchmentTextColor.opacity(0.78))
+                    .frame(width: 8, height: 8)
+
+                Text(compactTypeLabel)
+                    .font(CardFont.uiLabel(size: 7))
+                    .foregroundColor(parchmentTextColor.opacity(0.68))
+                    .tracking(0.5)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                if data.tier != .common {
+                    Image(tierPipIconAsset)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 8, height: 8)
+                        .opacity(0.95)
+                }
+            }
+
+            Text(data.name.uppercased())
+                .font(CardFont.bodyBold(size: 10))
                 .foregroundColor(parchmentTextColor)
                 .lineLimit(2)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .minimumScaleFactor(0.78)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .minimumScaleFactor(0.72)
+                .tracking(0.15)
                 .shadow(color: .black.opacity(0.9), radius: 2, x: 0, y: 1)
-
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 3)
-        .padding(.top, 3)
+        .padding(.horizontal, 7)
+        .padding(.top, 6)
         .padding(.bottom, 8)
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.black.opacity(0.34))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(factionBorderColor.opacity(0.26), lineWidth: 0.6)
+                        .stroke(factionBorderColor.opacity(0.32), lineWidth: 0.6)
                 )
         )
     }
@@ -954,12 +949,29 @@ struct CardFrameView: View {
     // MARK: - Hand Panel (90x130) -- Name + keyword dots
 
     private var handPanel: some View {
-        VStack(spacing: 2) {
-            Text(data.name)
-                .font(CardFont.cardName(size: 9))
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
+                Image(cardTypeIconAssetName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(parchmentTextColor.opacity(0.78))
+                    .frame(width: 7, height: 7)
+
+                Text(compactTypeLabel)
+                    .font(CardFont.uiLabel(size: 6.5))
+                    .foregroundColor(parchmentTextColor.opacity(0.65))
+                    .tracking(0.45)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+            }
+
+            Text(data.name.uppercased())
+                .font(CardFont.bodyBold(size: 8.8))
                 .foregroundColor(parchmentTextColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
 
@@ -976,45 +988,71 @@ struct CardFrameView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 7)
         .padding(.bottom, 6)
-        .padding(.top, 4)
+        .padding(.top, 5)
     }
 
     // MARK: - Detail Panel (280x392) -- Full info
 
     private var detailPanel: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Name bar bridge
-            Text(data.name)
-                .font(CardFont.cardName(size: 20))
+        VStack(alignment: .leading, spacing: 6) {
+            // Name bar bridge with refreshed type treatment.
+            Text(data.name.uppercased())
+                .font(CardFont.bodyBold(size: size == .fullscreen ? 24 : 20))
                 .foregroundColor(parchmentTextColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .tracking(0.22)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.black.opacity(0.32))
+                        .fill(Color.black.opacity(0.38))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
-                                .stroke(factionBorderColor.opacity(0.35), lineWidth: 0.6)
+                                .stroke(factionBorderColor.opacity(0.42), lineWidth: 0.7)
                         )
                 )
                 .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
 
-            // Type line + instability
+            // Type line with explicit icon family.
             HStack(spacing: 6) {
-                Text(data.typeLine)
-                    .font(CardFont.body(size: 12))
+                Image(cardTypeIconAssetName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(parchmentTextColor.opacity(0.75))
+                    .frame(width: 11, height: 11)
+
+                Text(data.typeLine.uppercased())
+                    .font(CardFont.uiLabel(size: 11))
                     .foregroundColor(parchmentTextColor.opacity(0.70))
+                    .tracking(0.4)
                     .lineLimit(1)
 
                 if let instability = data.instability {
-                    Text("INST \(instability)")
-                        .font(CardFont.bodyBold(size: 10))
-                        .foregroundColor(factionAccentColor.opacity(0.85))
+                    HStack(spacing: 3) {
+                        Image("UIIcons/ui-crystal-shard")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 9, height: 9)
+                        Text("INST \(instability)")
+                            .font(CardFont.uiLabelBold(size: 10))
+                    }
+                    .foregroundColor(factionAccentColor.opacity(0.88))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(Color.black.opacity(0.35))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(factionBorderColor.opacity(0.30), lineWidth: 0.5)
+                    )
                 }
 
                 Spacer()
@@ -1046,30 +1084,42 @@ struct CardFrameView: View {
     private let maxVisibleKeywords = 2
 
     private var effectPreviewRows: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            ForEach(Array(data.keywords.prefix(maxVisibleKeywords))) { keyword in
-                HStack(spacing: 5) {
+        let keywords = Array(data.keywords.prefix(maxVisibleKeywords))
+
+        return HStack(spacing: 5) {
+            ForEach(keywords) { keyword in
+                HStack(spacing: 4) {
                     Image(keyword.customIconName)
                         .renderingMode(.template)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 10, height: 10)
                         .foregroundColor(keywordColor(keyword))
-                    Text(keyword.displayName)
-                        .font(CardFont.body(size: 11))
-                        .foregroundColor(parchmentTextColor.opacity(0.86))
+                    Text(keyword.displayName.uppercased())
+                        .font(CardFont.uiLabel(size: 9))
+                        .foregroundColor(parchmentTextColor.opacity(0.84))
                         .lineLimit(1)
-                    Spacer()
+                        .tracking(0.35)
                 }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(
+                    Capsule()
+                        .fill(Color.black.opacity(0.34))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(keywordColor(keyword).opacity(0.36), lineWidth: 0.55)
+                )
             }
 
             // "More" indicator when keywords exceed the visible limit
-            if data.keywords.count > maxVisibleKeywords {
+            if data.keywords.count > keywords.count {
                 let extraCount = data.keywords.count - maxVisibleKeywords
                 Text("+\(extraCount) more...")
-                    .font(CardFont.body(size: 10))
+                    .font(CardFont.uiLabel(size: 9))
                     .foregroundColor(factionAccentColor.opacity(0.88))
-                    .padding(.top, 1)
+                    .tracking(0.3)
             }
         }
     }
@@ -1085,16 +1135,29 @@ struct CardFrameView: View {
     private var cmBadge: some View {
         MedallionBadge(
             value: data.manaCost, size: cmBadgeSize,
-            iconName: factionCmIconName,
+            iconName: "UIIcons/ui-chaos-mana",
             tintColor: Color(hex: "#0D47A1")
         )
     }
 
+    private var cmBadgeOverlay: some View {
+        VStack {
+            HStack {
+                cmBadge
+                    .padding(.leading, cmInset)
+                    .padding(.top, cmInset)
+                Spacer()
+            }
+            Spacer()
+        }
+        .frame(width: size.width, height: size.height)
+    }
+
     private var cmBadgeSize: CGFloat {
         switch size {
-        case .grid: return 22
+        case .grid: return 23
         case .hand: return 20
-        case .detail, .fullscreen: return 36
+        case .detail, .fullscreen: return 34
         }
     }
 
@@ -1114,7 +1177,7 @@ struct CardFrameView: View {
             HStack {
                 MedallionBadge(
                     value: atk, size: atkHpBadgeSize,
-                    iconName: factionAtkIconName,
+                    iconName: "UIIcons/ui-trigger-attack",
                     tintColor: Color(hex: "#BF360C")
                 )
                 Spacer()
@@ -1134,7 +1197,7 @@ struct CardFrameView: View {
                 Spacer()
                 MedallionBadge(
                     value: hp, size: atkHpBadgeSize,
-                    iconName: factionHpIconName,
+                    iconName: "KeywordIcons/kw-shield",
                     tintColor: Color(hex: "#1B5E20")
                 )
             }
@@ -1149,14 +1212,14 @@ struct CardFrameView: View {
     private func instabilityBadgeOverlay(value: Int) -> some View {
         VStack {
             HStack {
+                Spacer()
                 MedallionBadge(
                     value: value, size: instabilityBadgeSize,
-                    iconName: "StatIcons/instability-indicator",
+                    iconName: "UIIcons/ui-crystal-shard",
                     tintColor: Color(hex: "#FF8F00")
                 )
-                    .padding(.leading, instabilityInset)
-                    .padding(.top, instabilityInset)
-                Spacer()
+                .padding(.trailing, instabilityInset)
+                .padding(.top, instabilityInset)
             }
             Spacer()
         }
@@ -1165,9 +1228,9 @@ struct CardFrameView: View {
 
     private var instabilityBadgeSize: CGFloat {
         switch size {
-        case .grid: return 22
+        case .grid: return 23
         case .hand: return 20
-        case .detail, .fullscreen: return 36
+        case .detail, .fullscreen: return 34
         }
     }
 
@@ -1181,9 +1244,9 @@ struct CardFrameView: View {
 
     private var atkHpBadgeSize: CGFloat {
         switch size {
-        case .grid: return 22
+        case .grid: return 23
         case .hand: return 20
-        case .detail, .fullscreen: return 36
+        case .detail, .fullscreen: return 34
         }
     }
 
@@ -1263,19 +1326,10 @@ struct CardFrameView: View {
         }
     }
 
-    /// Leading inset shifts right if instability badge is shown at top-left
     private var tierChevronLeadingInset: CGFloat {
-        let hasInstability: Bool
-        if let inst = data.instability, data.showsCreatureStats {
-            hasInstability = (size == .detail || size == .fullscreen) || (inst > 0 && size == .hand)
-        } else {
-            hasInstability = false
-        }
         let base: CGFloat = (size == .detail || size == .fullscreen) ? 8 : 4
-        if hasInstability {
-            return base + instabilityBadgeSize + 2
-        }
-        return base
+        guard size == .detail || size == .fullscreen else { return base }
+        return base + cmInset + cmBadgeSize + 6
     }
 
     private var tierChevronTopInset: CGFloat {
@@ -1453,6 +1507,36 @@ struct CardFrameView: View {
                 )
                 .blur(radius: 3)
                 .padding(borderWidth)
+        }
+    }
+
+    // MARK: - Card Metadata Helpers
+
+    private var cardTypeIconAssetName: String {
+        switch data.cardType {
+        case .creature: return "UIIcons/ui-mission-creatures"
+        case .spell: return "UIIcons/ui-mission-spells"
+        case .stabilizer: return "UIIcons/ui-check"
+        case .planarRuin: return "UIIcons/ui-world"
+        }
+    }
+
+    private var compactTypeLabel: String {
+        switch data.cardType {
+        case .creature: return "CREATURE"
+        case .spell: return "SPELL"
+        case .stabilizer: return "STABILIZER"
+        case .planarRuin: return "RUIN"
+        }
+    }
+
+    private var tierPipIconAsset: String {
+        switch data.tier {
+        case .common: return "StatIcons/rarity-common"
+        case .uncommon: return "StatIcons/rarity-uncommon"
+        case .rare: return "StatIcons/rarity-rare"
+        case .epic: return "StatIcons/rarity-epic"
+        case .legendary: return "StatIcons/rarity-legendary"
         }
     }
 
