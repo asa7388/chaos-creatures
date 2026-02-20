@@ -25,13 +25,13 @@ struct ManaGemView: View {
 
             // Outer ring for polish
             Circle()
-                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                .stroke(Color.textPrimary.opacity(0.25), lineWidth: 1)
                 .frame(width: size, height: size)
 
             // Cost number
             Text("\(cost)")
-                .font(CardFont.stats(size: size * 0.55))
-                .foregroundColor(.white)
+                .font(CardFont.statNumber(size: size * 0.55))
+                .foregroundColor(.textPrimary)
         }
     }
 }

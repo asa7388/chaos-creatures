@@ -69,9 +69,7 @@ struct PostMatchView: View {
     private var loadingView: some View {
         VStack(spacing: 16) {
             Spacer()
-            ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                .scaleEffect(1.5)
+            ChaosMoteSpinner(size: 36, tint: isVictory ? .orderBlue : .chaosRed)
             Text("Loading results...")
                 .font(CardFont.body(size: 16))
                 .foregroundColor(.textSecondary)

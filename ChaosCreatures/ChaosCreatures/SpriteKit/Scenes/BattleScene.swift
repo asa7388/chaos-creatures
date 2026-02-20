@@ -120,7 +120,7 @@ final class BattleScene: SKScene {
 
         // Center line divider
         let divider = SKShapeNode(rectOf: CGSize(width: size.width * 0.85, height: 1))
-        divider.fillColor = UIColor.white.withAlphaComponent(0.08)
+        divider.fillColor = UIColor(hex: "#F0EAD6").withAlphaComponent(0.08)
         divider.strokeColor = .clear
         divider.position = .zero
         divider.zPosition = SK.ZPosition.background + 1

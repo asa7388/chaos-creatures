@@ -141,8 +141,7 @@ struct AchievementsView: View {
     private var loadingView: some View {
         VStack(spacing: 12) {
             Spacer()
-            ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .ironwright))
+            ChaosMoteSpinner(size: 30, tint: .ironwright)
             Text("Loading achievements...")
                 .font(CardFont.body(size: 14))
                 .foregroundColor(.textSecondary)

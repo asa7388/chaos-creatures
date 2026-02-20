@@ -336,8 +336,7 @@ struct SubscriptionView: View {
                     }) {
                         Group {
                             if isPurchasing {
-                                ProgressView()
-                                    .tint(.black)
+                                ChaosMoteSpinner(size: 20, tint: .textDark)
                             } else {
                                 Text("Subscribe to \(selectedTier.displayName) - \(tierPriceLabel(selectedTier))")
                                     .font(CardFont.bodyBold(size: 16))

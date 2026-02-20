@@ -14,7 +14,9 @@ struct KeywordBadgeView: View {
         HStack(spacing: 4) {
             Image(keyword.customIconName)
                 .renderingMode(.template)
-                .font(.system(size: 11, weight: .semibold))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 11, height: 11)
             Text(keyword.displayName)
                 .font(CardFont.bodyBold(size: 11))
         }
@@ -57,7 +59,9 @@ struct KeywordTooltipView: View {
             HStack(spacing: 6) {
                 Image(keyword.customIconName)
                     .renderingMode(.template)
-                    .font(.system(size: 16, weight: .semibold))
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
                 Text(keyword.displayName)
                     .font(CardFont.cardName(size: 16))
             }

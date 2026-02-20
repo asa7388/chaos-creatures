@@ -213,8 +213,7 @@ struct CachedCardArt: View {
                 placeholder
                     .overlay {
                         if isLoading {
-                            ProgressView()
-                                .tint(.textTertiary)
+                            ChaosMoteSpinner(size: 20, tint: .textTertiary)
                         }
                     }
             }

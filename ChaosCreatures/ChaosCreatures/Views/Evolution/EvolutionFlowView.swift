@@ -143,9 +143,7 @@ struct EvolutionFlowView: View {
             // Card being evolved
             cardPreview
 
-            ProgressView()
-                .scaleEffect(1.3)
-                .tint(Color.tierColor(card.tier))
+            ChaosMoteSpinner(size: 34, tint: Color.tierColor(card.tier))
 
             Text("Preparing evolution choices...")
                 .font(CardFont.body(size: 15))
@@ -165,9 +163,7 @@ struct EvolutionFlowView: View {
 
             // Status indicator
             VStack(spacing: 12) {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .tint(.tauntGold)
+                ChaosMoteSpinner(size: 38, tint: .tauntGold)
 
                 Text(evolutionService.evolutionStatus.displayMessage)
                     .font(CardFont.body(size: 16))
@@ -238,9 +234,7 @@ struct EvolutionFlowView: View {
                     .font(.system(size: 16))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.healGreen)
             } else if isActive {
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .tint(.tauntGold)
+                ChaosMoteSpinner(size: 14, tint: .tauntGold)
                     .frame(width: 16, height: 16)
             } else {
                 Circle()

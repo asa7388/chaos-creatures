@@ -63,7 +63,7 @@ final class EventBannerNode: SKNode {
         // Description (multi-line via line breaks)
         descriptionLabel = SKLabelNode(fontNamed: SK.Fonts.regular)
         descriptionLabel.fontSize = SK.EventOverlay.descriptionFontSize
-        descriptionLabel.fontColor = UIColor.white.withAlphaComponent(0.85)
+        descriptionLabel.fontColor = UIColor(hex: "#F0EAD6").withAlphaComponent(0.85)
         descriptionLabel.horizontalAlignmentMode = .center
         descriptionLabel.verticalAlignmentMode = .top
         descriptionLabel.position = CGPoint(x: 0, y: -10)

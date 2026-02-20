@@ -906,7 +906,9 @@ struct CardFrameView: View {
         HStack(spacing: 3) {
             Image(keyword.customIconName)
                 .renderingMode(.template)
-                .font(.system(size: 10, weight: .semibold))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 10, height: 10)
 
             Text(keyword.displayName)
                 .font(CardFont.body(size: 10))

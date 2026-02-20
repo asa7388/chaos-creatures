@@ -40,7 +40,7 @@ enum ChaosRollAction {
         // Number label
         let label = SKLabelNode(fontNamed: SK.Fonts.heavy)
         label.fontSize = SK.D20.numberFontSize
-        label.fontColor = .white
+        label.fontColor = UIColor(hex: "#F0EAD6")
         label.horizontalAlignmentMode = .center
         label.verticalAlignmentMode = .center
         label.zPosition = 2

@@ -54,7 +54,7 @@ final class ChaosRollScene: SKScene {
         // Instability display
         let instLabel = SKLabelNode(fontNamed: SK.Fonts.medium)
         instLabel.fontSize = 14
-        instLabel.fontColor = UIColor.white.withAlphaComponent(0.6)
+        instLabel.fontColor = UIColor(hex: "#F0EAD6").withAlphaComponent(0.6)
         instLabel.horizontalAlignmentMode = .center
         instLabel.verticalAlignmentMode = .center
         instLabel.position = CGPoint(x: 0, y: SK.D20.diameter / 2 + 30)

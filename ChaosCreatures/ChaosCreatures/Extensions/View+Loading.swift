@@ -19,20 +19,28 @@ struct LoadingOverlayModifier: ViewModifier {
 
             if isLoading {
                 VStack(spacing: 12) {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(.white)
-                        .scaleEffect(1.2)
+                    ChaosMoteSpinner(size: 30, tint: .tauntGold)
                     if !message.isEmpty {
                         Text(message)
-                            .font(CardFont.body(size: 14))
+                            .font(CardFont.uiLabel(size: 14))
                             .foregroundColor(.textSecondary)
                     }
                 }
                 .padding(24)
-                .background(Color.bgTertiary.opacity(0.95))
-                .cornerRadius(16)
-                .contactShadow()
+                .background(
+                    ZStack {
+                        Color.bgTertiary.opacity(0.95)
+                        Image("CardTextures/dark-vellum")
+                            .resizable()
+                            .opacity(0.25)
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.tauntGold.opacity(0.2), lineWidth: 0.8)
+                )
+                .contactShadow(opacity: 0.45)
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
@@ -154,14 +162,37 @@ struct ToastModifier: ViewModifier {
             content
 
             if isPresented {
-                Text(message)
-                    .font(CardFont.body(size: 14))
-                    .foregroundColor(.textPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(type.color)
-                    .cornerRadius(20)
-                    .shadow(radius: 8)
+                HStack(spacing: 10) {
+                    Image("UIComponents/ui-wax-seal")
+                        .resizable()
+                        .frame(width: 26, height: 26)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(type.color.opacity(0.4), lineWidth: 0.8)
+                        )
+
+                    Text(message)
+                        .font(CardFont.uiLabel(size: 14))
+                        .foregroundColor(.textPrimary)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    ZStack {
+                        Color(hex: "#2A2318")
+                        Image("CardTextures/tex-parchment")
+                            .resizable()
+                            .opacity(0.33)
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(type.color.opacity(0.35), lineWidth: 0.8)
+                )
+                .contactShadow(opacity: 0.45, yOffset: 1.5)
                     .padding(.bottom, 60) // Above tab bar
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .onAppear {
@@ -189,7 +220,7 @@ struct ShimmerModifier: ViewModifier {
                 LinearGradient(
                     gradient: Gradient(colors: [
                         .clear,
-                        Color.white.opacity(0.15),
+                        Color.textPrimary.opacity(0.12),
                         .clear
                     ]),
                     startPoint: .leading,

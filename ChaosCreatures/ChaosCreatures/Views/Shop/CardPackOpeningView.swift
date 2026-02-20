@@ -127,9 +127,7 @@ struct CardPackOpeningView: View {
 
                     case .purchasing:
                         VStack(spacing: 16) {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                                .tint(packType.color)
+                            ChaosMoteSpinner(size: 38, tint: packType.color)
                             Text("Opening pack...")
                                 .font(CardFont.body(size: 16))
                                 .foregroundColor(.textSecondary)

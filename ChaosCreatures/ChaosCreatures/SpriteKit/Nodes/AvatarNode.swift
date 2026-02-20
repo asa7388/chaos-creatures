@@ -36,7 +36,7 @@ final class AvatarNode: SKNode {
         // Instability modifier label
         instabilityLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
         instabilityLabel.fontSize = 12
-        instabilityLabel.fontColor = .white
+        instabilityLabel.fontColor = UIColor(hex: "#F0EAD6")
         instabilityLabel.horizontalAlignmentMode = .center
         instabilityLabel.verticalAlignmentMode = .center
         instabilityLabel.position = CGPoint(x: 0, y: -36)
@@ -65,7 +65,7 @@ final class AvatarNode: SKNode {
         } else if value <= 4 {
             instabilityLabel.fontColor = UIColor(hex: "#5BC0EB")
         } else {
-            instabilityLabel.fontColor = .white
+            instabilityLabel.fontColor = UIColor(hex: "#F0EAD6")
         }
     }
 

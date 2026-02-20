@@ -39,7 +39,7 @@ final class ManaBarNode: SKNode {
         for i in 0..<maxMana {
             let gem = SKShapeNode(circleOfRadius: gemRadius)
             gem.fillColor = SK.Colors.manaEmpty
-            gem.strokeColor = UIColor.white.withAlphaComponent(0.15)
+            gem.strokeColor = UIColor(hex: "#F0EAD6").withAlphaComponent(0.15)
             gem.lineWidth = 0.5
             gem.position = CGPoint(x: startX + CGFloat(i) * (gemRadius * 2 + gemSpacing), y: 0)
             gem.zPosition = 1
@@ -61,7 +61,7 @@ final class ManaBarNode: SKNode {
                     gem.strokeColor = factionColor.withAlphaComponent(0.6)
                 } else {
                     gem.fillColor = SK.Colors.manaEmpty
-                    gem.strokeColor = UIColor.white.withAlphaComponent(0.15)
+                    gem.strokeColor = UIColor(hex: "#F0EAD6").withAlphaComponent(0.15)
                 }
             } else {
                 gem.isHidden = true

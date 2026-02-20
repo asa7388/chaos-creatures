@@ -187,7 +187,7 @@ enum SK {
         static let fillColor = UIColor(hex: "#1A1A1A")
 
         /// Stroke color
-        static let strokeColor = UIColor.white
+        static let strokeColor = UIColor(hex: "#F0EAD6")
 
         /// Stroke width
         static let strokeWidth: CGFloat = 2

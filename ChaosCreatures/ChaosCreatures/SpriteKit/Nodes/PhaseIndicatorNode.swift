@@ -19,6 +19,7 @@ final class PhaseIndicatorNode: SKNode {
     private let dotRadius: CGFloat = 4
     private let dotSpacing: CGFloat = 32
     private var currentPhaseIndex: Int = 0
+    private let parchment = UIColor(hex: "#F0EAD6")
 
     // MARK: - Init
 
@@ -26,7 +27,7 @@ final class PhaseIndicatorNode: SKNode {
         // Large current phase name label
         currentPhaseLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
         currentPhaseLabel.fontSize = 13
-        currentPhaseLabel.fontColor = .white
+        currentPhaseLabel.fontColor = parchment
         currentPhaseLabel.horizontalAlignmentMode = .center
         currentPhaseLabel.verticalAlignmentMode = .center
         currentPhaseLabel.position = CGPoint(x: 0, y: 14)
@@ -64,7 +65,7 @@ final class PhaseIndicatorNode: SKNode {
             // Small label below dot
             let label = SKLabelNode(fontNamed: SK.Fonts.regular)
             label.fontSize = 7
-            label.fontColor = UIColor.white.withAlphaComponent(0.3)
+            label.fontColor = parchment.withAlphaComponent(0.3)
             label.horizontalAlignmentMode = .center
             label.verticalAlignmentMode = .top
             label.position = CGPoint(x: startX + CGFloat(index) * dotSpacing, y: -dotRadius - 3)
@@ -83,7 +84,7 @@ final class PhaseIndicatorNode: SKNode {
             // Non-display phase (gameSetup, gameOver) — dim everything
             currentPhaseLabel.text = phase.displayName
             phaseDots.forEach { $0.fillColor = SK.Colors.surfaceMid }
-            phaseLabels.forEach { $0.fontColor = UIColor.white.withAlphaComponent(0.3) }
+            phaseLabels.forEach { $0.fontColor = parchment.withAlphaComponent(0.3) }
             return
         }
 
@@ -99,9 +100,9 @@ final class PhaseIndicatorNode: SKNode {
         for (i, dot) in phaseDots.enumerated() {
             if i < index {
                 // Past phase — dim
-                dot.fillColor = UIColor.white.withAlphaComponent(0.2)
+                dot.fillColor = parchment.withAlphaComponent(0.2)
                 dot.run(SKAction.scale(to: 1.0, duration: SK.Duration.phaseTransition))
-                phaseLabels[i].fontColor = UIColor.white.withAlphaComponent(0.2)
+                phaseLabels[i].fontColor = parchment.withAlphaComponent(0.2)
             } else if i == index {
                 // Current phase — bright + pulse
                 let phaseColor = colorForPhase(phase)
@@ -113,7 +114,7 @@ final class PhaseIndicatorNode: SKNode {
                 // Future phase — dark
                 dot.fillColor = SK.Colors.surfaceMid
                 dot.run(SKAction.scale(to: 1.0, duration: SK.Duration.phaseTransition))
-                phaseLabels[i].fontColor = UIColor.white.withAlphaComponent(0.3)
+                phaseLabels[i].fontColor = parchment.withAlphaComponent(0.3)
             }
         }
     }
@@ -129,7 +130,7 @@ final class PhaseIndicatorNode: SKNode {
         case .mainPhase:
             return SK.Colors.orderBlue
         default:
-            return UIColor.white
+            return parchment
         }
     }
 }

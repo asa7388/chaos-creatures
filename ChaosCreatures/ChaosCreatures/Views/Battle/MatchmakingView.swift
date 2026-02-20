@@ -162,8 +162,7 @@ struct MatchmakingView: View {
                 .font(CardFont.body(size: 15))
                 .foregroundColor(.textSecondary)
 
-            ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .ironwright))
+            ChaosMoteSpinner(size: 26, tint: .ironwright)
         }
         .transition(.opacity)
     }

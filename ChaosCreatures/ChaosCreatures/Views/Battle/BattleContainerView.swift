@@ -611,8 +611,7 @@ struct ConnectionLostOverlay: View {
         ZStack {
             Color.black.opacity(0.7)
             VStack(spacing: 12) {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                ChaosMoteSpinner(size: 30, tint: .appAccent)
                 Text("Reconnecting...")
                     .font(CardFont.bodyBold(size: 16))
                     .foregroundColor(.textPrimary)

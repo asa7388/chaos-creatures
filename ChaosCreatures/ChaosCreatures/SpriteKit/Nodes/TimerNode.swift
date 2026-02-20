@@ -16,6 +16,7 @@ final class TimerNode: SKNode {
     private let timeLabel: SKLabelNode
     private let radius: CGFloat = 22
     private let ringWidth: CGFloat = 4
+    private let parchmentText = UIColor(hex: "#F0EAD6")
 
     private var totalSeconds: Int = 60
     private var remainingSeconds: Int = 60
@@ -50,7 +51,7 @@ final class TimerNode: SKNode {
         // Time label
         timeLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
         timeLabel.fontSize = 14
-        timeLabel.fontColor = .white
+        timeLabel.fontColor = parchmentText
         timeLabel.horizontalAlignmentMode = .center
         timeLabel.verticalAlignmentMode = .center
         timeLabel.zPosition = 2
@@ -102,7 +103,7 @@ final class TimerNode: SKNode {
         removeAction(forKey: "urgentPulse")
         isActive = false
         progressRing.strokeColor = SK.Colors.timerNormal
-        timeLabel.fontColor = .white
+        timeLabel.fontColor = parchmentText
     }
 
     /// Hide the timer (non-decision phases)
@@ -156,7 +157,7 @@ final class TimerNode: SKNode {
             }
         } else {
             progressRing.strokeColor = SK.Colors.timerNormal
-            timeLabel.fontColor = .white
+            timeLabel.fontColor = parchmentText
             removeAction(forKey: "urgentPulse")
         }
     }

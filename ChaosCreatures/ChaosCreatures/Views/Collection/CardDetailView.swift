@@ -115,7 +115,7 @@ struct CardDetailView: View {
             Image(systemName: "xmark")
                 .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                 .fontWeight(.bold)
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(.textPrimary.opacity(0.9))
                 .frame(width: 32, height: 32)
                 .background(Color.black.opacity(0.6))
                 .clipShape(Circle())
@@ -245,7 +245,8 @@ struct CardDetailView: View {
                         HStack(alignment: .top, spacing: 10) {
                             Image(keyword.customIconName)
                                 .renderingMode(.template)
-                                .font(.system(size: 14, weight: .semibold))
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
                                 .foregroundColor(keywordColor(keyword))
                                 .frame(width: 28, height: 28)
                                 .background(keywordColor(keyword).opacity(0.15))
@@ -514,7 +515,7 @@ struct CardDetailView: View {
                                     // Glowing leading edge
                                     if fillWidth > 10 {
                                         Circle()
-                                            .fill(Color.white.opacity(0.7))
+                                            .fill(Color.textPrimary.opacity(0.7))
                                             .frame(width: 6, height: 6)
                                             .shadow(color: factionAccentColor(card), radius: 4)
                                             .offset(x: fillWidth - 6)
@@ -528,7 +529,7 @@ struct CardDetailView: View {
                                             LinearGradient(
                                                 stops: [
                                                     .init(color: .clear, location: 0.0),
-                                                    .init(color: .white.opacity(0.3), location: 0.5),
+                                                    .init(color: Color.textPrimary.opacity(0.3), location: 0.5),
                                                     .init(color: .clear, location: 1.0)
                                                 ],
                                                 startPoint: .leading,
@@ -577,7 +578,7 @@ struct CardDetailView: View {
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                    .stroke(Color.textPrimary.opacity(0.15), lineWidth: 1)
                             )
                             .cornerRadius(10)
                         }
@@ -705,7 +706,7 @@ struct CardDetailView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            .stroke(Color.textPrimary.opacity(0.15), lineWidth: 1)
                     )
                     .cornerRadius(10)
                 }
@@ -733,7 +734,7 @@ struct CardDetailView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        .stroke(Color.textPrimary.opacity(0.15), lineWidth: 1)
                 )
                 .cornerRadius(10)
             }

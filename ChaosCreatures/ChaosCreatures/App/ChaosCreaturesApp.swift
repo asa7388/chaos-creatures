@@ -93,14 +93,21 @@ struct SplashView: View {
                 .foregroundColor(.textPrimary)
                 .opacity(logoOpacity)
 
-            ProgressView()
-                .progressViewStyle(.circular)
-                .tint(.textTertiary)
+            ChaosMoteSpinner(size: 30, tint: .ironwright)
                 .padding(.top, 20)
                 .opacity(logoOpacity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.28)
+            }
+        )
         .onAppear {
             withAnimation(.easeOut(duration: 0.8)) {
                 logoOpacity = 1
@@ -156,8 +163,7 @@ struct SignInView: View {
                 .disabled(appState.auth.isLoading)
 
                 if appState.auth.isLoading {
-                    ProgressView()
-                        .tint(.white)
+                    ChaosMoteSpinner(size: 24, tint: .appAccent)
                 }
 
                 if let error = appState.auth.error {
@@ -205,7 +211,16 @@ struct SignInView: View {
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.28)
+            }
+        )
     }
 }
 
