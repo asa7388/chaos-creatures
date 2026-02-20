@@ -107,21 +107,19 @@ struct DeckListView: View {
                     Button(action: {
                         router.decksNavigationPath.append(DecksDestination.deckBuilder(nil))
                     }) {
-                        HStack {
-                            ThemedGlyph(symbol: "plus.circle.fill", size: 20, color: .orderBlue)
+                        HStack(spacing: 8) {
+                            ThemedGlyph(symbol: "plus.circle.fill", size: 18, color: .tauntGold)
                             Text("Create New Deck")
                                 .font(CardFont.body(size: 15))
+                                .foregroundColor(.textPrimary)
                         }
-                        .foregroundColor(.orderBlue)
                         .frame(maxWidth: .infinity, minHeight: 52)
-                        .background(Color.orderBlue.opacity(0.1))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6]))
-                                .foregroundColor(.orderBlue.opacity(0.3))
-                        )
                     }
+                    .buttonStyle(CardstockButtonStyle())
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.tauntGold.opacity(0.28), lineWidth: 0.8)
+                    )
                     .padding(.horizontal, 16)
                 }
             }

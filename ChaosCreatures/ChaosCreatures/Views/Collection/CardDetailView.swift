@@ -705,25 +705,24 @@ struct CardDetailView: View {
                 }
                 .foregroundColor(.textPrimary)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .background(
-                    LinearGradient(
-                        colors: [factionColor, factionColor.opacity(0.8)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.textPrimary.opacity(0.15), lineWidth: 1)
-                )
-                .cornerRadius(10)
             }
+            .buttonStyle(CardstockButtonStyle())
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(factionColor.opacity(0.35), lineWidth: 1)
+            )
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
-            Color.bgSecondary
-                .shadow(color: .black.opacity(0.3), radius: 8, y: -4)
+            ZStack {
+                Color.bgSecondary
+                Image("UIComponents/ui-panel-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .opacity(0.22)
+            }
+            .shadow(color: .black.opacity(0.3), radius: 8, y: -4)
         )
     }
 
