@@ -7,6 +7,7 @@
 // Source: CLAUDE.md Card Visual System, docs/design/07-ui-ux-specs.md Section 5
 
 import SwiftUI
+import CoreMotion
 
 // MARK: - Card Display Size
 
@@ -379,18 +380,20 @@ struct CardFrameView: View {
             borderFrame
 
             // Layer 1: Card art (inset from edges to show border)
+            // Legendary: art bleeds 4pt into the border for extended art effect
             artLayer
-                .padding(borderWidth)
+                .padding(legendaryArtBleed)
 
             // Layer 2: Canvas texture overlay (makes art feel painted on physical canvas)
+            // Uncommon+ gets slightly richer texture detail (higher opacity)
             Image("CardTextures/canvas-weave")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: size.width - borderWidth * 2, height: size.height - borderWidth * 2)
+                .frame(width: size.width - legendaryArtBleed * 2, height: size.height - legendaryArtBleed * 2)
                 .clipped()
                 .blendMode(.overlay)
-                .opacity(0.15)
-                .padding(borderWidth)
+                .opacity(canvasWeaveOpacity)
+                .padding(legendaryArtBleed)
                 .allowsHitTesting(false)
 
             // Layer 3: Print grain overlay (offset printing texture)
@@ -473,6 +476,26 @@ struct CardFrameView: View {
         case .hand: return 3
         case .detail: return 8
         case .fullscreen: return 10
+        }
+    }
+
+    /// Legendary cards bleed art 4pt into the border for extended art effect.
+    /// All other tiers use the standard border width for art inset.
+    private var legendaryArtBleed: CGFloat {
+        if data.tier == .legendary {
+            return max(borderWidth - 4, 0)
+        }
+        return borderWidth
+    }
+
+    /// Canvas weave opacity — Uncommon+ gets slightly richer texture.
+    private var canvasWeaveOpacity: Double {
+        switch data.tier {
+        case .common: return 0.15
+        case .uncommon: return 0.20
+        case .rare: return 0.22
+        case .epic: return 0.18
+        case .legendary: return 0.16
         }
     }
 
@@ -560,9 +583,10 @@ struct CardFrameView: View {
     // MARK: - Full-Bleed Art Layer
 
     /// Inner art dimensions (inset by border width on all sides).
-    private var artWidth: CGFloat { size.width - borderWidth * 2 }
-    private var artHeight: CGFloat { size.height - borderWidth * 2 }
-    private var innerCornerRadius: CGFloat { max(cornerRadius - borderWidth, 4) }
+    /// Legendary uses legendaryArtBleed for extended art effect.
+    private var artWidth: CGFloat { size.width - legendaryArtBleed * 2 }
+    private var artHeight: CGFloat { size.height - legendaryArtBleed * 2 }
+    private var innerCornerRadius: CGFloat { max(cornerRadius - legendaryArtBleed, 4) }
 
     private var artLayer: some View {
         Group {
@@ -1273,7 +1297,9 @@ struct CardFrameView: View {
 // MARK: - Rarity Border Modifier
 
 /// Applies rarity-based border treatment using the card border itself.
-/// Common = plain brown border. Higher rarities use faction color with increasing glow/shimmer.
+/// Common = plain matte border. Uncommon = thin silver metallic inner line.
+/// Rare = gold metallic inner border. Epic = holographic foil overlay (gyroscope-driven).
+/// Legendary = full foil border + art overlay + extended art bleed.
 private struct RarityBorderModifier: ViewModifier {
     let tier: EvolutionTier
     let faction: FactionShortName?
@@ -1281,6 +1307,7 @@ private struct RarityBorderModifier: ViewModifier {
 
     @State private var isPulsing = false
     @State private var shimmerPhase: CGFloat = 0
+    @ObservedObject private var gyroscope = GyroscopeManager.shared
 
     private var factionColor: Color {
         guard let faction = faction else { return Color(hex: "#888888") }
@@ -1296,24 +1323,36 @@ private struct RarityBorderModifier: ViewModifier {
     func body(content: Content) -> some View {
         switch tier {
         case .common:
-            // Plain warm brown border — the base card look. No extra glow.
+            // Plain warm brown border — the base matte card look. No metallic elements.
             content
 
         case .uncommon:
-            // Faction-colored border at 50% + subtle outer shadow
+            // Thin silver metallic inner border line (1px, #C0C0C0, 0.6 opacity)
+            // + faction-colored outer shadow + slightly richer canvas weave
             content
                 .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius - 1)
+                        .stroke(Color(hex: "#C0C0C0").opacity(0.60), lineWidth: 1)
+                        .padding(1)
+                )
+                .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(factionColor.opacity(0.50), lineWidth: 2)
+                        .stroke(factionColor.opacity(0.30), lineWidth: 1.5)
                 )
                 .shadow(color: factionColor.opacity(0.15), radius: 4)
 
         case .rare:
-            // Faction-colored border at 70% + 6px glow + slow 3s pulse on shadow
+            // Gold metallic inner border (1.5px, #FFD700, 0.7 opacity)
+            // + faction-colored border + 6px pulsing glow
             content
                 .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius - 1)
+                        .stroke(Color(hex: "#FFD700").opacity(0.70), lineWidth: 1.5)
+                        .padding(1)
+                )
+                .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(factionColor.opacity(0.70), lineWidth: 2)
+                        .stroke(factionColor.opacity(0.50), lineWidth: 2)
                 )
                 .shadow(
                     color: factionColor.opacity(isPulsing ? 0.35 : 0.20),
@@ -1329,7 +1368,8 @@ private struct RarityBorderModifier: ViewModifier {
                 }
 
         case .epic:
-            // Gradient border cycling faction color and white-gold + 8px glow + shimmer
+            // Gradient border + holographic foil overlay on card border
+            // Foil offset driven by gyroscope tilt data
             content
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
@@ -1346,8 +1386,29 @@ private struct RarityBorderModifier: ViewModifier {
                             lineWidth: 2.5
                         )
                 )
+                // Holographic foil overlay on the border region
+                .overlay(
+                    Image("RarityEffects/holographic-foil")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .offset(
+                            x: gyroscope.tiltX * 30,
+                            y: gyroscope.tiltY * 20
+                        )
+                        .blendMode(.overlay)
+                        .opacity(0.20)
+                        .clipShape(
+                            // Only show foil on the border region (mask out the inner art area)
+                            RarityFoilBorderMask(
+                                cornerRadius: cornerRadius,
+                                borderWidth: 0 // full card coverage at low opacity
+                            )
+                        )
+                        .allowsHitTesting(false)
+                )
                 .shadow(color: factionColor.opacity(0.40), radius: 8)
                 .onAppear {
+                    gyroscope.startIfNeeded()
                     withAnimation(
                         .easeInOut(duration: 3.0)
                         .repeatForever(autoreverses: true)
@@ -1355,9 +1416,13 @@ private struct RarityBorderModifier: ViewModifier {
                         isPulsing = true
                     }
                 }
+                .onDisappear {
+                    gyroscope.stopIfUnneeded()
+                }
 
         case .legendary:
-            // Gold border at full opacity + 12px golden glow + animated shimmer
+            // Gold prismatic border at full opacity + 12px golden glow + animated shimmer
+            // + holographic foil at higher opacity + subtle art overlay
             content
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
@@ -1374,12 +1439,46 @@ private struct RarityBorderModifier: ViewModifier {
                                 startAngle: .degrees(shimmerPhase),
                                 endAngle: .degrees(shimmerPhase + 360)
                             ),
-                            lineWidth: 3
+                            lineWidth: 3.5
                         )
+                )
+                // Full holographic foil border at higher opacity (0.35)
+                .overlay(
+                    Image("RarityEffects/holographic-foil")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .offset(
+                            x: gyroscope.tiltX * 40,
+                            y: gyroscope.tiltY * 30
+                        )
+                        .blendMode(.overlay)
+                        .opacity(0.35)
+                        .clipShape(
+                            RarityFoilBorderMask(
+                                cornerRadius: cornerRadius,
+                                borderWidth: 0
+                            )
+                        )
+                        .allowsHitTesting(false)
+                )
+                // Subtle foil overlay on art area (very low opacity)
+                .overlay(
+                    Image("RarityEffects/holographic-foil")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .offset(
+                            x: gyroscope.tiltX * 20,
+                            y: gyroscope.tiltY * 15
+                        )
+                        .blendMode(.softLight)
+                        .opacity(0.08)
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                        .allowsHitTesting(false)
                 )
                 .shadow(color: Color(hex: "#FFD700").opacity(0.35), radius: 12)
                 .shadow(color: Color(hex: "#FFD700").opacity(0.15), radius: 4)
                 .onAppear {
+                    gyroscope.startIfNeeded()
                     withAnimation(
                         .linear(duration: 4.0)
                         .repeatForever(autoreverses: false)
@@ -1387,7 +1486,33 @@ private struct RarityBorderModifier: ViewModifier {
                         shimmerPhase = 360
                     }
                 }
+                .onDisappear {
+                    gyroscope.stopIfUnneeded()
+                }
         }
+    }
+}
+
+// MARK: - Rarity Foil Border Mask Shape
+
+/// A shape that masks to the border region of a rounded rectangle.
+/// When borderWidth > 0, it shows only the border strip.
+/// When borderWidth == 0, it shows the full card area (for low-opacity full-card foil).
+private struct RarityFoilBorderMask: Shape {
+    let cornerRadius: CGFloat
+    let borderWidth: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        if borderWidth <= 0 {
+            // Full card coverage
+            return Path(roundedRect: rect, cornerRadius: cornerRadius)
+        }
+        // Border-only: outer minus inner
+        var path = Path(roundedRect: rect, cornerRadius: cornerRadius)
+        let insetRect = rect.insetBy(dx: borderWidth, dy: borderWidth)
+        let innerRadius = max(cornerRadius - borderWidth, 2)
+        path.addPath(Path(roundedRect: insetRect, cornerRadius: innerRadius))
+        return path
     }
 }
 
@@ -1412,54 +1537,80 @@ extension Keyword {
 
 // MARK: - CardFrameView Previews
 
-#Preview("Grid Size") {
-    HStack(spacing: 8) {
-        CardFrameView(
-            data: CardDisplayData(
-                name: "Iron Sentinel",
-                artUrl: nil,
-                manaCost: 3,
-                attack: 4,
-                health: 5,
-                instability: 2,
-                tier: .common,
-                faction: .ironwright,
-                keywords: [.shield, .taunt]
-            ),
-            size: .grid
-        )
-
-        CardFrameView(
-            data: CardDisplayData(
-                name: "Fey Whisperer",
-                artUrl: nil,
-                manaCost: 2,
-                attack: 2,
-                health: 3,
-                instability: 1,
-                tier: .rare,
-                faction: .feyCourts,
-                keywords: [.flying]
-            ),
-            size: .grid
-        )
-
-        CardFrameView(
-            data: CardDisplayData(
-                name: "Hellfire Drake",
-                artUrl: nil,
-                manaCost: 5,
-                attack: 6,
-                health: 4,
-                instability: 4,
-                tier: .legendary,
-                faction: .demonicKingdoms,
-                keywords: [.piercing, .deathtouch]
-            ),
-            size: .grid
-        )
+#Preview("Rarity Tiers - Grid") {
+    HStack(spacing: 6) {
+        ForEach(
+            [
+                ("Recruit", EvolutionTier.common, FactionShortName.ironwright),
+                ("Veteran", EvolutionTier.uncommon, FactionShortName.feyCourts),
+                ("Champion", EvolutionTier.rare, FactionShortName.demonicKingdoms),
+                ("Archon", EvolutionTier.epic, FactionShortName.celestialCrusade),
+                ("Ascended", EvolutionTier.legendary, FactionShortName.theEndless)
+            ],
+            id: \.0
+        ) { name, tier, faction in
+            VStack(spacing: 4) {
+                CardFrameView(
+                    data: CardDisplayData(
+                        name: name,
+                        artUrl: nil,
+                        manaCost: tier.tierIndex + 1,
+                        attack: tier.tierIndex + 2,
+                        health: tier.tierIndex + 3,
+                        instability: tier.tierIndex,
+                        tier: tier,
+                        faction: faction,
+                        keywords: [.shield]
+                    ),
+                    size: .grid
+                )
+                Text(tier.displayName)
+                    .font(.caption2)
+                    .foregroundColor(.textSecondary)
+            }
+        }
     }
     .padding()
+    .background(Color.bgPrimary)
+}
+
+#Preview("Rarity Tiers - Detail") {
+    ScrollView(.horizontal) {
+        HStack(spacing: 12) {
+            ForEach(
+                [
+                    ("Iron Recruit", EvolutionTier.common, FactionShortName.ironwright),
+                    ("Fey Veteran", EvolutionTier.uncommon, FactionShortName.feyCourts),
+                    ("Demon Champion", EvolutionTier.rare, FactionShortName.demonicKingdoms),
+                    ("Celestial Archon", EvolutionTier.epic, FactionShortName.celestialCrusade),
+                    ("Endless Ascended", EvolutionTier.legendary, FactionShortName.theEndless)
+                ],
+                id: \.0
+            ) { name, tier, faction in
+                VStack(spacing: 4) {
+                    CardFrameView(
+                        data: CardDisplayData(
+                            name: name,
+                            artUrl: nil,
+                            manaCost: tier.tierIndex + 1,
+                            attack: tier.tierIndex + 2,
+                            health: tier.tierIndex + 3,
+                            instability: tier.tierIndex,
+                            tier: tier,
+                            faction: faction,
+                            keywords: [.shield, .taunt],
+                            flavorText: "A warrior forged in \(tier.displayName) fire."
+                        ),
+                        size: .detail
+                    )
+                    Text(tier.displayName)
+                        .font(.caption)
+                        .foregroundColor(.textSecondary)
+                }
+            }
+        }
+        .padding()
+    }
     .background(Color.bgPrimary)
 }
 
@@ -1492,26 +1643,6 @@ extension Keyword {
             size: .hand
         )
     }
-    .padding()
-    .background(Color.bgPrimary)
-}
-
-#Preview("Detail Size") {
-    CardFrameView(
-        data: CardDisplayData(
-            name: "Iron Sentinel, Forged Warden",
-            artUrl: nil,
-            manaCost: 3,
-            attack: 4,
-            health: 5,
-            instability: 3,
-            tier: .epic,
-            faction: .ironwright,
-            keywords: [.shield, .taunt, .lifesteal],
-            flavorText: "Through the flames of industry, a new guardian is born."
-        ),
-        size: .detail
-    )
     .padding()
     .background(Color.bgPrimary)
 }

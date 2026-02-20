@@ -43,6 +43,8 @@ final class HandCardNode: SKSpriteNode {
     private let hpLabel: SKLabelNode
     private var keywordDots: [SKShapeNode] = []
     private var rarityOverlay: SKNode?
+    private var rarityBorderNode: SKShapeNode?
+    private var raritySparkles: [SKShapeNode] = []
 
     /// Centered type label for non-creature cards
     private var typeLabel: SKLabelNode?
@@ -468,87 +470,195 @@ final class HandCardNode: SKSpriteNode {
         }
     }
 
-    // MARK: - Rarity Visual Effects
+    // MARK: - Rarity Visual Effects (Wave 7)
 
+    /// Apply tier-specific rarity inner border treatment.
+    /// Common: nothing (matte frame). Uncommon: thin silver inner border.
+    /// Rare: gold inner border with subtle glow. Epic: rainbow shimmer border.
+    /// Legendary: rainbow shimmer + extended art + pulse + sparkle dots.
     private func applyRarityEffect(_ tier: EvolutionTier) {
+        // Clean up previous effects
         rarityOverlay?.removeFromParent()
         rarityOverlay = nil
+        rarityBorderNode?.removeFromParent()
+        rarityBorderNode = nil
+        raritySparkles.forEach { $0.removeFromParent() }
+        raritySparkles.removeAll()
+
+        let cardSize = self.size
+        let cornerRadius: CGFloat = 8
 
         switch tier {
         case .common:
-            break // No effect
+            break // No treatment — standard matte frame
 
         case .uncommon:
-            let overlay = SKShapeNode(rectOf: size, cornerRadius: 8)
-            overlay.fillColor = SK.RarityEffects.uncommonSheenColor.withAlphaComponent(SK.RarityEffects.uncommonOverlayAlpha)
-            overlay.strokeColor = .clear
-            overlay.zPosition = 5
-            let anim = SKAction.sequence([
-                SKAction.fadeAlpha(to: 0.12, duration: SK.RarityEffects.uncommonSheenDuration),
-                SKAction.fadeAlpha(to: 0.04, duration: SK.RarityEffects.uncommonSheenDuration)
-            ])
-            overlay.run(SKAction.repeatForever(anim), withKey: "uncommonSheen")
-            addChild(overlay)
-            rarityOverlay = overlay
+            // Thin silver metallic inner border line (1px, #C0C0C0, 0.6 alpha), 2pt inset
+            let inset = SK.RarityEffects.uncommonBorderInset
+            let borderSize = CGSize(width: cardSize.width - inset * 2,
+                                    height: cardSize.height - inset * 2)
+            let border = SKShapeNode(rectOf: borderSize,
+                                     cornerRadius: max(cornerRadius - inset, 2))
+            border.fillColor = .clear
+            border.strokeColor = SK.RarityEffects.uncommonBorderColor
+                .withAlphaComponent(SK.RarityEffects.uncommonBorderAlpha)
+            border.lineWidth = SK.RarityEffects.uncommonBorderWidth
+            border.zPosition = 5.5
+            border.name = "rarity_border"
+            addChild(border)
+            rarityBorderNode = border
 
         case .rare:
-            let glowRect = CGSize(width: size.width + 3, height: size.height + 3)
-            let overlay = SKShapeNode(rectOf: glowRect, cornerRadius: 9)
-            overlay.fillColor = .clear
-            overlay.strokeColor = SK.RarityEffects.rareGlowColor
-            overlay.lineWidth = 2
-            overlay.alpha = SK.RarityEffects.rareGlowAlphaMin
-            overlay.zPosition = 5
-            overlay.glowWidth = 2
-            let pulse = SKAction.sequence([
-                SKAction.fadeAlpha(to: SK.RarityEffects.rareGlowAlphaMax, duration: SK.RarityEffects.rareGlowPulseDuration),
-                SKAction.fadeAlpha(to: SK.RarityEffects.rareGlowAlphaMin, duration: SK.RarityEffects.rareGlowPulseDuration)
-            ])
-            overlay.run(SKAction.repeatForever(pulse), withKey: "rareGlow")
-            addChild(overlay)
-            rarityOverlay = overlay
+            // Gold metallic inner border (1.5px, #FFD700, 0.7 alpha), 0.5px glow
+            let inset = SK.RarityEffects.rareBorderInset
+            let borderSize = CGSize(width: cardSize.width - inset * 2,
+                                    height: cardSize.height - inset * 2)
+            let border = SKShapeNode(rectOf: borderSize,
+                                     cornerRadius: max(cornerRadius - inset, 2))
+            border.fillColor = .clear
+            border.strokeColor = SK.RarityEffects.rareBorderColor
+                .withAlphaComponent(SK.RarityEffects.rareBorderAlpha)
+            border.lineWidth = SK.RarityEffects.rareBorderWidth
+            border.glowWidth = SK.RarityEffects.rareBorderGlowWidth
+            border.zPosition = 5.5
+            border.name = "rarity_border"
+            addChild(border)
+            rarityBorderNode = border
 
         case .epic:
-            let overlay = SKShapeNode(rectOf: size, cornerRadius: 8)
-            overlay.fillColor = SK.RarityEffects.epicShimmerColor.withAlphaComponent(0.1)
-            overlay.strokeColor = SK.RarityEffects.epicShimmerColor
-            overlay.lineWidth = 1.5
-            overlay.alpha = SK.RarityEffects.epicShimmerAlphaMin
-            overlay.zPosition = 5
-            overlay.glowWidth = 2
-            let shimmer = SKAction.sequence([
-                SKAction.fadeAlpha(to: SK.RarityEffects.epicShimmerAlphaMax, duration: SK.RarityEffects.epicShimmerDuration),
-                SKAction.fadeAlpha(to: SK.RarityEffects.epicShimmerAlphaMin, duration: SK.RarityEffects.epicShimmerDuration)
-            ])
-            overlay.run(SKAction.repeatForever(shimmer), withKey: "epicShimmer")
-            addChild(overlay)
-            rarityOverlay = overlay
+            // Holographic foil: rainbow color cycling on border
+            let inset = SK.RarityEffects.epicBorderInset
+            let borderSize = CGSize(width: cardSize.width - inset * 2,
+                                    height: cardSize.height - inset * 2)
+            let border = SKShapeNode(rectOf: borderSize,
+                                     cornerRadius: max(cornerRadius - inset, 2))
+            border.fillColor = .clear
+            border.strokeColor = SK.RarityEffects.epicShimmerColors[0]
+                .withAlphaComponent(SK.RarityEffects.epicBorderBaseAlpha)
+            border.lineWidth = SK.RarityEffects.epicBorderWidth
+            border.glowWidth = 1.0
+            border.zPosition = 5.5
+            border.name = "rarity_border"
+            addChild(border)
+            rarityBorderNode = border
+
+            // Rainbow shimmer via color cycling
+            let shimmerColors = SK.RarityEffects.epicShimmerColors
+            let stepDuration = SK.RarityEffects.epicShimmerStepDuration
+            let blendFactor = SK.RarityEffects.epicShimmerBlendFactor
+            var colorActions: [SKAction] = []
+            for color in shimmerColors {
+                colorActions.append(
+                    SKAction.colorize(with: color,
+                                      colorBlendFactor: blendFactor,
+                                      duration: stepDuration)
+                )
+            }
+            border.run(SKAction.repeatForever(SKAction.sequence(colorActions)),
+                       withKey: "epicShimmer")
 
         case .legendary:
-            let container = SKNode()
-            container.zPosition = 5
+            // Full holographic shimmer at higher intensity
+            let inset = SK.RarityEffects.legendaryBorderInset
+            let borderSize = CGSize(width: cardSize.width - inset * 2,
+                                    height: cardSize.height - inset * 2)
+            let border = SKShapeNode(rectOf: borderSize,
+                                     cornerRadius: max(cornerRadius - inset, 2))
+            border.fillColor = .clear
+            border.strokeColor = SK.RarityEffects.epicShimmerColors[0]
+                .withAlphaComponent(SK.RarityEffects.legendaryBorderBaseAlpha)
+            border.lineWidth = SK.RarityEffects.legendaryBorderWidth
+            border.glowWidth = 1.5
+            border.zPosition = 5.5
+            border.name = "rarity_border"
+            addChild(border)
+            rarityBorderNode = border
 
-            let glowRect = CGSize(width: size.width + 4, height: size.height + 4)
-            let glowBorder = SKShapeNode(rectOf: glowRect, cornerRadius: 10)
-            glowBorder.fillColor = .clear
-            glowBorder.strokeColor = SK.RarityEffects.legendaryGlowColor
-            glowBorder.lineWidth = 2.5
-            glowBorder.alpha = SK.RarityEffects.legendaryGlowAlphaMin
-            glowBorder.glowWidth = 3
-            let pulse = SKAction.sequence([
-                SKAction.fadeAlpha(to: SK.RarityEffects.legendaryGlowAlphaMax, duration: SK.RarityEffects.legendaryGlowDuration),
-                SKAction.fadeAlpha(to: SK.RarityEffects.legendaryGlowAlphaMin, duration: SK.RarityEffects.legendaryGlowDuration)
-            ])
-            glowBorder.run(SKAction.repeatForever(pulse), withKey: "legendaryGlow")
-            container.addChild(glowBorder)
+            // Rainbow shimmer at higher intensity
+            let shimmerColors = SK.RarityEffects.epicShimmerColors
+            let stepDuration = SK.RarityEffects.legendaryShimmerStepDuration
+            let blendFactor = SK.RarityEffects.legendaryShimmerBlendFactor
+            var colorActions: [SKAction] = []
+            for color in shimmerColors {
+                colorActions.append(
+                    SKAction.colorize(with: color,
+                                      colorBlendFactor: blendFactor,
+                                      duration: stepDuration)
+                )
+            }
+            border.run(SKAction.repeatForever(SKAction.sequence(colorActions)),
+                       withKey: "legendaryShimmer")
 
-            let emitter = ParticleEffects.legendarySparkles(cardSize: size)
-            emitter.zPosition = 1
-            container.addChild(emitter)
+            // Animated pulse glow on the border (slow scale 1.0 -> 1.02 -> 1.0)
+            let pulseUp = SKAction.scale(to: SK.RarityEffects.legendaryPulseScaleMax,
+                                         duration: SK.RarityEffects.legendaryPulseDuration / 2)
+            pulseUp.timingMode = .easeInEaseOut
+            let pulseDown = SKAction.scale(to: 1.0,
+                                           duration: SK.RarityEffects.legendaryPulseDuration / 2)
+            pulseDown.timingMode = .easeInEaseOut
+            border.run(SKAction.repeatForever(SKAction.sequence([pulseUp, pulseDown])),
+                       withKey: "legendaryPulse")
 
-            addChild(container)
-            rarityOverlay = container
+            // Extended art: expand card art by 4pt on each side so it bleeds into border
+            let extendedSize = CGSize(
+                width: cardSize.width + SK.RarityEffects.legendaryArtExtension * 2,
+                height: cardSize.height + SK.RarityEffects.legendaryArtExtension * 2
+            )
+            cardArtNode.size = extendedSize
+
+            // Floating sparkle dots (lightweight SKShapeNode, no SKEmitterNode)
+            spawnLegendarySparkles(cardSize: cardSize)
         }
+    }
+
+    /// Spawn a few small floating sparkle dots that drift randomly around the card.
+    /// Uses SKShapeNode circles instead of SKEmitterNode for lightweight 60fps performance.
+    private func spawnLegendarySparkles(cardSize: CGSize) {
+        let count = SK.RarityEffects.legendarySparkleCount
+        let radius = SK.RarityEffects.legendarySparkleRadius
+        let sparkleColor = SK.RarityEffects.legendarySparkleColor
+        let halfW = cardSize.width / 2
+        let halfH = cardSize.height / 2
+
+        for i in 0..<count {
+            let dot = SKShapeNode(circleOfRadius: radius)
+            dot.fillColor = sparkleColor
+            dot.strokeColor = .clear
+            dot.alpha = 0.0
+            dot.zPosition = 6.0
+            dot.name = "legendary_sparkle_\(i)"
+
+            // Random starting position along the card border area
+            let startX = CGFloat.random(in: -halfW...halfW)
+            let startY = CGFloat.random(in: -halfH...halfH)
+            dot.position = CGPoint(x: startX, y: startY)
+            addChild(dot)
+            raritySparkles.append(dot)
+
+            // Each sparkle: fade in, drift randomly, fade out, reposition, repeat
+            let initialDelay = SKAction.wait(forDuration: Double(i) * 0.6)
+            let driftCycle = createSparkleDriftCycle(halfW: halfW, halfH: halfH)
+            dot.run(SKAction.sequence([initialDelay,
+                                       SKAction.repeatForever(driftCycle)]),
+                    withKey: "sparkleDrift_\(i)")
+        }
+    }
+
+    /// One cycle of a sparkle: fade in, drift, fade out, reposition.
+    private func createSparkleDriftCycle(halfW: CGFloat, halfH: CGFloat) -> SKAction {
+        let fadeIn = SKAction.fadeAlpha(to: CGFloat.random(in: 0.5...0.9),
+                                        duration: 0.4)
+        let drift = SKAction.moveBy(x: CGFloat.random(in: -8...8),
+                                    y: CGFloat.random(in: -8...8),
+                                    duration: 1.8)
+        drift.timingMode = .easeInEaseOut
+        let fadeOut = SKAction.fadeOut(withDuration: 0.4)
+        let moveTo = SKAction.move(to: CGPoint(
+            x: CGFloat.random(in: -halfW...halfW),
+            y: CGFloat.random(in: -halfH...halfH)
+        ), duration: 0)
+
+        return SKAction.sequence([fadeIn, drift, fadeOut, moveTo])
     }
 
     // MARK: - Playability

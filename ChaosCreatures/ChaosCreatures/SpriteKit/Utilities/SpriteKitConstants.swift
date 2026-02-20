@@ -411,32 +411,61 @@ enum SK {
     // MARK: - Rarity Effects
 
     enum RarityEffects {
-        /// Uncommon: subtle metallic sheen overlay
-        static let uncommonOverlayAlpha: CGFloat = 0.08
-        static let uncommonSheenDuration: TimeInterval = 2.0
-        static let uncommonSheenColor = UIColor(hex: "#C0C0C0") // Silver
 
-        /// Rare: energy glow pulse
-        static let rareGlowColor = UIColor(hex: "#2196F3")  // Blue
-        static let rareGlowAlphaMin: CGFloat = 0.15
-        static let rareGlowAlphaMax: CGFloat = 0.4
-        static let rareGlowPulseDuration: TimeInterval = 1.2
+        // MARK: - Uncommon: Thin Silver Metallic Inner Border
+        /// 1px silver stroke, 2pt inset from card edge, 0.6 alpha
+        static let uncommonBorderColor = UIColor(hex: "#C0C0C0") // Silver
+        static let uncommonBorderAlpha: CGFloat = 0.6
+        static let uncommonBorderWidth: CGFloat = 1.0
+        static let uncommonBorderInset: CGFloat = 2.0
 
-        /// Epic: purple shimmer
-        static let epicShimmerColor = UIColor(hex: "#9C27B0")
-        static let epicShimmerAlphaMin: CGFloat = 0.1
-        static let epicShimmerAlphaMax: CGFloat = 0.35
-        static let epicShimmerDuration: TimeInterval = 1.5
+        // MARK: - Rare: Gold Metallic Inner Border
+        /// 1.5px gold stroke, 2pt inset from card edge, 0.7 alpha, 0.5px glow
+        static let rareBorderColor = UIColor(hex: "#FFD700") // Gold
+        static let rareBorderAlpha: CGFloat = 0.7
+        static let rareBorderWidth: CGFloat = 1.5
+        static let rareBorderInset: CGFloat = 2.0
+        static let rareBorderGlowWidth: CGFloat = 0.5
 
-        /// Legendary: gold prismatic + particle sparkles
-        static let legendaryGlowColor = UIColor(hex: "#FF9800")
-        static let legendaryParticleColor = UIColor(hex: "#FFD700")
-        static let legendaryGlowAlphaMin: CGFloat = 0.2
-        static let legendaryGlowAlphaMax: CGFloat = 0.5
-        static let legendaryGlowDuration: TimeInterval = 1.0
+        // MARK: - Epic: Holographic Rainbow Shimmer on Border
+        /// Rainbow color cycling via SKAction.colorize on a border stroke
+        static let epicBorderWidth: CGFloat = 1.5
+        static let epicBorderInset: CGFloat = 2.0
+        static let epicBorderBaseAlpha: CGFloat = 0.55
+        /// Duration per color step in the rainbow shimmer cycle
+        static let epicShimmerStepDuration: TimeInterval = 1.5
+        /// Colors in the hue cycle for the holographic shimmer
+        static let epicShimmerColors: [UIColor] = [
+            UIColor(hex: "#9C27B0"), // Purple
+            UIColor(hex: "#2196F3"), // Blue
+            UIColor(hex: "#4CAF50"), // Green
+            UIColor(hex: "#FFD700"), // Gold
+        ]
+        /// Color blend factor for each shimmer step
+        static let epicShimmerBlendFactor: CGFloat = 0.15
+
+        // MARK: - Legendary: Full Holographic + Extended Art + Pulse + Sparkles
+        /// Rainbow shimmer at higher intensity
+        static let legendaryBorderWidth: CGFloat = 2.0
+        static let legendaryBorderInset: CGFloat = 2.0
+        static let legendaryBorderBaseAlpha: CGFloat = 0.7
+        static let legendaryShimmerStepDuration: TimeInterval = 1.2
+        static let legendaryShimmerBlendFactor: CGFloat = 0.25
+        /// Extended art: expand card art by this many points on each side
+        static let legendaryArtExtension: CGFloat = 4.0
+        /// Border pulse scale range (1.0 -> max -> 1.0)
+        static let legendaryPulseScaleMax: CGFloat = 1.02
+        static let legendaryPulseDuration: TimeInterval = 1.5
+        /// Number of floating sparkle dots (lightweight SKShapeNode)
+        static let legendarySparkleCount: Int = 4
+        static let legendarySparkleRadius: CGFloat = 1.5
+        static let legendarySparkleColor = UIColor(hex: "#FFD700") // Gold
+
+        /// Legacy: particle birth rate for SKEmitterNode legendary sparkles (used by ParticleEffects)
         static let legendaryParticleBirthRate: CGFloat = 8
+        static let legendaryParticleColor = UIColor(hex: "#FFD700")
 
-        // MARK: Rarity Background Glow (full-art cards)
+        // MARK: - Rarity Background Glow (full-art cards)
         /// Colored glow behind the card based on rarity tier.
         /// Used as a slightly-oversized SKSpriteNode behind the card.
 
@@ -449,7 +478,7 @@ enum SK {
             switch tier {
             case .common: return nil  // no glow
             case .uncommon: return UIColor(hex: "#C0C0C0")  // silver
-            case .rare: return UIColor(hex: "#2196F3")       // blue
+            case .rare: return UIColor(hex: "#FFD700")       // gold (matches rare border)
             case .epic: return UIColor(hex: "#9C27B0")       // purple
             case .legendary: return UIColor(hex: "#FFD700")  // gold
             }

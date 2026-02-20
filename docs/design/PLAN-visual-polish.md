@@ -598,6 +598,18 @@ Replace native iOS Form:
 - Ensure all panels use custom styles (zero `.cardBackground()`)
 - Ensure no system-native components visible (no iOS Form, no standard toggles)
 
+### Screenshot Verification Against Design Guide
+- Launch app in Simulator, take screenshots of every major screen (Home, Collection, Deck Builder, Shop, Profile, Settings, Battle, Onboarding, Pack Opening, Evolution, Card Detail)
+- Compare each screenshot section-by-section against `13-visual-design-guide.md`:
+  - Section 2 (Materials): leather, parchment, metal, stone surfaces match spec
+  - Section 3 (Typography): Cinzel headers, Alegreya body, Bebas Neue stats, Fira Sans UI
+  - Section 4 (Card Anatomy): full-art, translucent text panel, stat badges, medallion
+  - Section 5 (Faction Identity): 9 sub-faction visual kits distinct and correct
+  - Section 7 (Rarity): Common→Legendary progression visible
+  - Section 10 (Color Palette): off-white text, faction colors, no pure white/black
+  - Section 15 (Screen Layouts): each screen matches its layout spec
+- Flag any deviation with screenshot evidence + design guide reference
+
 **Files:** `SettingsView.swift` (rewrite), `CardFrameView.swift`, `ShopView.swift`, `HomeView.swift`
 
 ---
@@ -612,6 +624,7 @@ Replace native iOS Form:
 | `faction-identity-auditor` | 4 | Screenshot 5 faction variants — visually distinct, consistent within faction |
 | `performance-auditor` | 2, 4, 6, 7 | Battle fps with 10+ textured cards — must hold 60fps |
 | `immersion-auditor` | 8 | Full app walkthrough — flag anything "digital" or immersion-breaking |
+| `screenshot-vs-design-auditor` | 8 | Take Simulator screenshots of every screen, compare against 13-visual-design-guide.md Sections 1-17. Verify materials, colors, typography, card anatomy, rarity treatments, faction identity all match spec. |
 
 ---
 
