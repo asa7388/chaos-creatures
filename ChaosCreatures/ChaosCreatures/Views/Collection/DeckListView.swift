@@ -94,7 +94,10 @@ struct DeckListView: View {
                         router.selectedDeck = deck
                         router.decksNavigationPath.append(DecksDestination.deckBuilder(deck.id))
                     }) {
-                        DeckRowView(deck: deck)
+                        DeckRowView(
+                            deck: deck,
+                            faction: appState.factions.first(where: { $0.id == deck.factionId })?.shortName
+                        )
                     }
                     .padding(.horizontal, 16)
                 }
@@ -131,32 +134,66 @@ struct DeckListView: View {
 
     private func loadDecks() async {
         guard let playerId = appState.player?.id else { return }
+
+        #if DEBUG
+        if appState.isDevMode {
+            decks = buildDevModeDecks(playerId: playerId)
+            return
+        }
+        #endif
+
         isLoading = true
         error = nil
         defer { isLoading = false }
 
         do {
-            decks = try await SupabaseService.shared.fetchAll(
-                from: SupabaseService.Table.decks,
-                filters: [("player_id", playerId.uuidString)],
-                orderBy: "updated_at",
-                ascending: false
-            )
+            decks = try await CollectionService.shared.fetchDecks(playerId: playerId)
         } catch {
             self.error = "Failed to load decks: \(error.localizedDescription)"
         }
     }
+
+    #if DEBUG
+    private func buildDevModeDecks(playerId: UUID) -> [Deck] {
+        guard let factionId = appState.factions.first?.id else { return [] }
+        let now = Date()
+
+        // Build a 20-card deck from dev cards so the Decks UI is visually testable in dev mode.
+        let seedEntries = Array(appState.devCards.prefix(10)).map { card in
+            DeckEntry(cardInstanceId: card.id, quantity: 2)
+        }
+
+        return [
+            Deck(
+                id: UUID(),
+                ownerId: playerId,
+                name: "Foundry Vanguard",
+                factionId: factionId,
+                avatarId: UUID(),
+                cardEntries: seedEntries,
+                isValid: true,
+                validationErrors: [],
+                gamesPlayed: 18,
+                wins: 11,
+                losses: 7,
+                createdAt: now.addingTimeInterval(-86_400),
+                updatedAt: now
+            )
+        ]
+    }
+    #endif
 }
 
 // MARK: - Deck Row
 
 struct DeckRowView: View {
     let deck: Deck
+    let faction: FactionShortName?
 
     var body: some View {
         HStack(spacing: 12) {
             // Faction icon
-            if let faction = FactionShortName(rawValue: deck.factionId.uuidString) {
+            if let faction {
                 Image(faction.emblemAssetName)
                     .renderingMode(.template)
                     .resizable()
