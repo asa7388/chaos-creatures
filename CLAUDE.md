@@ -7,7 +7,7 @@ Chaos Creatures is a mobile-first collectible card game where every card's art i
 
 The entire Chaos Creatures project is built by a solo non-engineer using Claude Code. There is no engineering team. Every technical document is specific enough that Claude Code can implement directly from it — no ambiguity, no "the engineer should decide," no hand-waving.
 
-The codebase is functionally complete (80+ Swift files, 28 game server files, 30 Edge Functions, 14 DB migrations, admin dashboard). The project is now in the **faction expansion overhaul** — expanding from 3 to 5 factions, adding Planar Ruins card type, retheme Ironwright, creating lore bible, then LoRA training and App Store submission. See `docs/design/PLAN-faction-expansion.md` for the full plan.
+The codebase is functionally complete (80+ Swift files, 28 game server files, 30 Edge Functions, 18 DB migrations, admin dashboard). The project is now in the **polish and audit phase** — adding professional visual assets, fixing bugs, and preparing for App Store submission.
 
 All build-phase agents must produce code-ready output: actual files, actual commands, actual configs. Not recommendations.
 
@@ -33,6 +33,7 @@ These are the actual services the project uses. Do not recommend alternatives or
 - **Analytics**: PostHog (player behavior, retention, match data, economy health)
 - **App Store**: Apple Developer Program (iOS only — no Android)
 - **Payments**: App Store native IAP via StoreKit 2 (no Stripe, no RevenueCat, no third-party payment SDK)
+- **Asset Pipeline Tools**: ImageMagick 7 (CLI compositing, emboss, procedural textures), node-canvas (programmatic vector icons), Puppeteer (headless HTML/CSS→PNG rendering), sharp (color correction, resize, tiling)
 
 All accounts are created and configured. Credentials are stored in gitignored files:
 - `/.env` — Root env with Supabase, fal.ai, OpenAI, R2, PostHog keys
@@ -68,23 +69,15 @@ What's done:
 - Game Server: Deployed on Railway, health check passing, match engine + bot AI + matchmaking poller running
 - Admin Dashboard: Deployed on Vercel, 8 pages (login, dashboard, cards, economy, analytics, batch generate, settings, generation jobs)
 - iOS App: Builds and runs in Simulator, all screens implemented, practice match mode working
-- Card Art: 35 base pool cards generated (13 Fey, 10 Demonic, 12 Ironwright-steampunk — Ironwright cards to be discarded after retheme). Prompt system v5.
-
-What's in progress (Faction Expansion Overhaul):
-- Expanding from 3 → 5 factions (adding Celestial Crusade, The Endless)
-- Retheme Ironwright from Victorian steampunk → brutalist space-industrial empire
-- Adding Planar Ruins card type (neutral → faction-evolved structures)
-- Adding 2 keywords (Haste, Ward) → 9 total
-- Creating lore bible (docs/design/11-lore-bible.md)
-- Trimming all factions to 2 sub-factions each (10 total)
-- Full plan: docs/design/PLAN-faction-expansion.md
+- Card Art: 9 test cards + 3 evolution variants generated locally. Prompt system v5.1 (public domain artists only, 25 compositions, 13 envs/faction). Versions v6-v18 were test iterations for style locking.
+- Faction Expansion: Complete. 5 factions, 10 sub-factions, 9 keywords, Planar Ruins, Ironwright rethemed, lore bible written.
+- Visual Assets: CardFrameView has wood borders, canvas weave, vellum text panel, bronze medallion badges. 63 imagesets in Assets.xcassets. Cinzel + Alegreya fonts integrated.
 
 What's NOT done:
-- Faction expansion code changes (database, server, iOS, admin — all pending)
 - Card art at scale (local scripts work; Edge Function auth bug bypassed)
-- Professional card frames, fonts, icons, audio (placeholder assets)
+- Visual polish (SpriteKit card parity, screen backgrounds, faction-specific frames, UI chrome)
 - App Store submission (screenshots, legal pages, metadata)
-- LoRA training (moved to after faction expansion)
+- Audio (SFX, music — 0% done)
 
 Known bugs:
 - Edge Function `verifyServiceRole()` returns 403 consistently — `Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")` doesn't match deployed secret. Bypassed with local generation scripts.
@@ -142,7 +135,7 @@ This ships to the App Store only. Every doc must account for:
 
 ## Art Quality Target
 
-Card art and visual quality must match Magic: The Gathering. Every card must look hand-painted by a professional fantasy illustrator. If a card looks AI-generated, smooth, generic, or "digital art"-looking, it is a failed generation and must be rejected/regenerated.
+Card art and visual quality must match professional fantasy card game quality. Every card must look hand-painted by a professional fantasy illustrator. If a card looks AI-generated, smooth, generic, or "digital art"-looking, it is a failed generation and must be rejected/regenerated.
 
 The locked style anchor (v5) references only public domain artists (all died pre-1953): Gustave Dore and N.C. Wyeth (base anchor), and faction-specific: Giovanni Battista Piranesi + John Martin (Ironwright), Arthur Rackham and Edmund Dulac (Fey Courts), Hieronymus Bosch (Demonic), Gustave Dore + William Blake (Celestial Crusade), Gustave Dore + Francisco Goya (The Endless). No copyrighted brand names or living artist references in any prompt. This produces traditional media aesthetics with heavy impasto brushstrokes, ink linework, crosshatching. Colors can be vivid and saturated within the palette knife oil painting aesthetic — faction identity is expressed through color.
 
@@ -196,6 +189,20 @@ These rules are absolute:
 - Ensure .gitignore includes: *.xcconfig, .env, .env.*, *.secret
 - If something breaks, git stash or git revert — never try to manually reconstruct
 
+## Copyright & Trademark Prohibition
+
+Trademarked and copyrighted content must NEVER be referenced in code, design docs, AI prompts, or asset filenames. This includes:
+- Brand names (e.g., game titles, company names, product names)
+- Copyrighted artist names (died after 1953 — still in copyright)
+- Any intellectual property not in the public domain
+
+Approved references:
+- Public domain artists (died before 1953): Gustave Dore, N.C. Wyeth, John Martin, Arthur Rackham, Edmund Dulac, Hieronymus Bosch, William Blake, Francisco Goya, Giovanni Battista Piranesi
+- Generic descriptive terms (e.g., "fantasy card game", "tactical combat")
+- OFL/CC0-licensed assets
+
+When uncertain, DO NOT use it. Use a generic description instead.
+
 ## Protected Files
 
 These design files are the source of truth for game design. They are the authority — downstream docs (03-10) must conform to them:
@@ -203,9 +210,9 @@ These design files are the source of truth for game design. They are the authori
 - docs/design/01-battle-mechanics.md
 - docs/design/02-card-data-model.md
 
-**Faction Expansion Authorization**: These files ARE authorized for edits during the faction expansion overhaul (adding Celestial Crusade, The Endless, Planar Ruins, Haste/Ward keywords, Ironwright retheme). All edits must include a Revision Log entry. After expansion is complete, they return to read-only status.
-
 If a downstream doc (03-10) contradicts a protected file, the downstream doc is wrong and must be fixed to match the protected file. Never the other way around.
+
+CLAUDE.md may be updated for deployment state, infrastructure changes, and build status updates. Game design decisions in CLAUDE.md (Key Design Decisions section) remain locked.
 
 ## Repository Structure
 ```
@@ -213,10 +220,10 @@ ChaosCreatures/                 — iOS app (Swift/SwiftUI/SpriteKit, Xcode proj
 packages/game-server/           — Node.js/TS match engine (deployed on Railway)
 packages/admin-dashboard/       — Next.js admin web app (deployed on Vercel)
 supabase/                       — Migrations, seed data, Edge Functions
-  migrations/                   — 14 SQL migrations (33 tables)
-  functions/                    — 24 Edge Functions + 6 shared modules
+  migrations/                   — 18 SQL migrations (33 tables)
+  functions/                    — 24 Edge Functions + shared modules
   seed.sql                      — Seed data (factions, avatars, economy configs, etc.)
-scripts/                        — Local generation scripts (card art, evolution, frames, icons)
+scripts/                        — 58+ generation/test scripts (card art, evolution, frames, icons, textures, LoRA training, validation)
 docs/design/
   00-game-design-master.md      — Master design doc (all systems, UI, decisions)
   01-battle-mechanics.md        — Battle mechanics (PP, instability, turn structure)
@@ -230,8 +237,9 @@ docs/design/
   09-monetization-details.md    — Subscription tiers, pricing, conversion funnels
   10-prd.md                     — Formal PRD for engineering handoff
   11-lore-bible.md              — Universe lore, faction histories, avatars, sub-factions (NEW)
-  12-art-direction.md           — App-wide art plan, asset inventory (NEW)
-  PLAN-faction-expansion.md     — Master plan for faction expansion overhaul
+  12-art-direction.md           — App-wide art plan, asset inventory, faction visual identity
+  13-visual-design-guide.md     — Visual Design & Art Direction Guide (materials, textures, card anatomy)
+  PLAN-faction-expansion.md     — Faction expansion overhaul plan (complete)
   faction-art-bible.md          — Per-faction art guide (sub-factions, envs, moods, textures)
 ```
 
@@ -241,7 +249,7 @@ docs/design/
 - 2 sub-factions per faction (10 total): each with distinct visual identity, lore, and avatar
 - 9 keywords: Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward
 - Planar Ruins: New card type — ancient structures from Plane of Chaos. High HP, zero ATK, passive benefits, destruction penalties. Evolve neutral → faction-specific (one evolution, same subscription tier system). Max 1 on field, takes creature slot.
-- MTG-style combat: declare attackers → defender assigns blockers → simultaneous damage
+- Combat: declare attackers → defender assigns blockers → simultaneous damage
 - Taunt = forced attack + forced block (two-part rule)
 - Main phase only spells — no instant-speed, no response windows
 - PP-based modifier pools: 5 factions × 28 faction modifiers + 30 universal = 170 modifiers
@@ -257,7 +265,7 @@ This project uses orchestrator agents that delegate to specialized sub-agents. S
 
 - **Doc pipeline:** Complete. Orchestrator coordinated doc agents for docs 03-10.
 - **Build pipeline:** Complete. Build-orchestrator coordinated build agents in waves with audit agents between waves.
-- **Current phase:** Faction expansion overhaul — 8-phase plan with ~22 task agents + 10 audit agents. See `docs/design/PLAN-faction-expansion.md` for the full plan with agent assignments, phase dependencies, and user gates.
+- **Current phase:** Visual polish and App Store prep — visual design guide implementation across 9 waves (foundation → asset gen → SpriteKit parity → screen textures → faction frames → UI chrome → interactions → rarity → final polish). See `docs/design/13-visual-design-guide.md` for the design guide.
 
 ## Build Phase Protocol — Context Resilience
 

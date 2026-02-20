@@ -72,7 +72,7 @@ enum SK {
 
         // MARK: Full-Art Layout
 
-        /// Unified text panel occupies the bottom 28% of the card
+        /// Unified text panel occupies the bottom 28% of the card (hand cards only)
         static let textPanelRatio: CGFloat = 0.28
 
         /// Text panel background opacity
@@ -81,16 +81,33 @@ enum SK {
         /// Corner radius for the text panel
         static let textPanelCornerRadius: CGFloat = 0
 
+        // MARK: Circular Badge Radii
+
+        /// CM cost badge radius on board cards (14pt diameter)
+        static let boardCMBadgeRadius: CGFloat = 7
+
+        /// CM cost badge radius on hand cards (18pt diameter)
+        static let handCMBadgeRadius: CGFloat = 9
+
+        /// ATK/HP stat badge radius on board cards (12pt diameter)
+        static let boardStatBadgeRadius: CGFloat = 6
+
+        /// ATK/HP stat badge radius on hand cards (16pt diameter)
+        static let handStatBadgeRadius: CGFloat = 8
+
         // MARK: Font Sizes — Board (64x90pt)
 
-        /// Name label font size on board cards
+        /// Name label font size on board cards (removed from board but kept for reference)
         static let boardNameFontSize: CGFloat = 7
 
         /// ATK/HP stat font size on board cards
         static let boardStatFontSize: CGFloat = 9
 
-        /// Mana cost font size on board cards
+        /// CM cost font size on board cards
         static let boardManaCostFontSize: CGFloat = 8
+
+        /// CM cost font size for circular badge on board
+        static let boardCMFontSize: CGFloat = 8
 
         // MARK: Font Sizes — Hand (90x130pt)
 
@@ -100,10 +117,13 @@ enum SK {
         /// ATK/HP stat font size on hand cards
         static let handStatFontSize: CGFloat = 11
 
-        /// Mana cost font size on hand cards
+        /// CM cost font size on hand cards
         static let handManaCostFontSize: CGFloat = 10
 
-        // MARK: Stat Icon Sizes
+        /// CM cost font size for circular badge in hand
+        static let handCMFontSize: CGFloat = 10
+
+        // MARK: Stat Icon Sizes (legacy — replaced by badge radii)
 
         /// Stat icon size (sword-atk, heart-hp) on board cards
         static let boardStatIconSize: CGFloat = 8
@@ -111,26 +131,29 @@ enum SK {
         /// Stat icon size on hand cards
         static let handStatIconSize: CGFloat = 10
 
-        // MARK: Mana Cost Badge
+        // MARK: CM Cost Badge (legacy square badge sizes)
 
-        /// Mana cost badge diameter on board cards
+        /// CM cost badge diameter on board cards
         static let boardManaBadgeSize: CGFloat = 14
 
-        /// Mana cost badge diameter on hand cards
+        /// CM cost badge diameter on hand cards
         static let handManaBadgeSize: CGFloat = 18
 
-        /// Chaos-motes icon size inside mana badge on board cards
+        /// Chaos-motes icon size inside CM badge on board cards
         static let boardManaIconSize: CGFloat = 10
 
-        /// Chaos-motes icon size inside mana badge on hand cards
+        /// Chaos-motes icon size inside CM badge on hand cards
         static let handManaIconSize: CGFloat = 13
 
         // MARK: Keyword Icons
 
-        /// Keyword icon size
+        /// Keyword icon size (legacy sprite-based icons — hand cards now use dots)
         static let keywordIconSize: CGFloat = 12
 
-        /// Max keyword icons displayed
+        /// Keyword dot radius for hand cards (6pt diameter)
+        static let keywordDotRadius: CGFloat = 3
+
+        /// Max keyword icons/dots displayed
         static let maxKeywordIcons: Int = 3
 
         // MARK: Legacy (kept for compatibility)
@@ -150,7 +173,7 @@ enum SK {
         /// Tier badge size
         static let tierBadgeSize: CGFloat = 10
 
-        /// Mana cost badge size (legacy)
+        /// CM cost badge size (legacy)
         static let manaCostBadgeSize: CGFloat = 16
     }
 
@@ -280,8 +303,8 @@ enum SK {
     }
 
     // MARK: - Fonts
-    // Cinzel for card names/headers, Alegreya for body/stats/flavor text.
-    // PostScript names from variable font files registered via Info.plist.
+    // Cinzel for card names/headers, Alegreya for body/flavor, Bebas Neue for stat numbers,
+    // Fira Sans for UI labels. PostScript names from font files registered via Info.plist.
 
     enum Fonts {
         /// Card names, titles — Cinzel Bold
@@ -292,6 +315,12 @@ enum SK {
         static let medium = CardFont.spriteKitStats         // "Alegreya-Bold"
         /// Body text, descriptions — Alegreya Regular
         static let regular = CardFont.spriteKitBody         // "Alegreya-Regular"
+        /// Stat numerals (ATK/HP/CM/damage numbers) — Bebas Neue
+        static let statNumber = CardFont.spriteKitStatNumber // "BebasNeue-Regular"
+        /// UI labels — Fira Sans Regular
+        static let uiLabel = CardFont.spriteKitUILabel       // "FiraSans-Regular"
+        /// Emphasized UI labels — Fira Sans SemiBold
+        static let uiLabelBold = CardFont.spriteKitUILabelBold // "FiraSans-SemiBold"
     }
 
     // MARK: - Card Frame Asset Names

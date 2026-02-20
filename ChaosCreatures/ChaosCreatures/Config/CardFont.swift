@@ -1,6 +1,10 @@
 // CardFont.swift
 // Chaos Creatures
-// Typed font accessors for Cinzel (card names, headers) and Alegreya (body, flavor, stats).
+// Typed font accessors for all app fonts:
+//   - Cinzel (card names, headers)
+//   - Alegreya (body, flavor text)
+//   - Bebas Neue (stat numerals, damage numbers, chaos roll, mana cost)
+//   - Fira Sans (UI labels, buttons, navigation, secondary text)
 // Source: CLAUDE.md Card Visual System — Fonts section
 
 import SwiftUI
@@ -9,13 +13,17 @@ import UIKit
 enum CardFont {
 
     // MARK: - Font Family Names
-    // These must match the family names registered by iOS from the variable .ttf files.
+    // These must match the family names registered by iOS from the .ttf files.
     // Cinzel variable font (wght 400–900): family "Cinzel"
     // Alegreya variable font (wght 400–900): family "Alegreya"
     // Alegreya Italic variable font (wght 400–900): family "Alegreya"
+    // Bebas Neue (single weight): family "Bebas Neue"
+    // Fira Sans Regular + SemiBold: family "Fira Sans"
 
     private static let cinzelFamily = "Cinzel"
     private static let alegreyaFamily = "Alegreya"
+    private static let bebasNeueFamily = "Bebas Neue"
+    private static let firaSansFamily = "Fira Sans"
 
     // MARK: - SwiftUI Font Accessors (Card Names, Headers — Cinzel)
 
@@ -52,8 +60,29 @@ enum CardFont {
     }
 
     /// ATK/HP and other numeric stats. Alegreya Bold (weight 700).
+    /// NOTE: Prefer statNumber() for numeric stat displays — uses Bebas Neue for impact.
     static func stats(size: CGFloat) -> Font {
         .custom(alegreyaFamily, size: size).weight(.bold)
+    }
+
+    // MARK: - SwiftUI Font Accessors (Stat Numerals — Bebas Neue)
+
+    /// ATK, HP, CM cost, damage numbers, chaos roll results. Bebas Neue Regular.
+    /// This is a display/impact font — visually bold despite being "Regular" weight.
+    static func statNumber(size: CGFloat) -> Font {
+        .custom(bebasNeueFamily, size: size)
+    }
+
+    // MARK: - SwiftUI Font Accessors (UI Labels — Fira Sans)
+
+    /// UI labels, button text, navigation, secondary info. Fira Sans Regular.
+    static func uiLabel(size: CGFloat) -> Font {
+        .custom(firaSansFamily, size: size).weight(.regular)
+    }
+
+    /// Emphasized UI labels, active nav items, button text. Fira Sans SemiBold.
+    static func uiLabelBold(size: CGFloat) -> Font {
+        .custom(firaSansFamily, size: size).weight(.semibold)
     }
 
     // MARK: - UIFont Accessors (for SpriteKit / UIKit)
@@ -89,8 +118,33 @@ enum CardFont {
     }
 
     /// ATK/HP stats in SpriteKit. Alegreya Bold.
+    /// NOTE: Prefer statNumberUI() for numeric stat displays — uses Bebas Neue for impact.
     static func statsUI(size: CGFloat) -> UIFont {
         alegreyaUIFont(size: size, weight: .bold, italic: false)
+    }
+
+    /// Stat numerals (ATK/HP/CM/damage) in SpriteKit. Bebas Neue.
+    static func statNumberUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "BebasNeue-Regular", size: size) {
+            return font
+        }
+        // Fallback: try family name descriptor
+        let descriptor = UIFontDescriptor(fontAttributes: [.family: bebasNeueFamily])
+        let font = UIFont(descriptor: descriptor, size: size)
+        if font.familyName == bebasNeueFamily {
+            return font
+        }
+        return .systemFont(ofSize: size, weight: .bold)
+    }
+
+    /// UI labels in SpriteKit. Fira Sans Regular.
+    static func uiLabelUI(size: CGFloat) -> UIFont {
+        firaSansUIFont(size: size, weight: .regular)
+    }
+
+    /// Emphasized UI labels in SpriteKit. Fira Sans SemiBold.
+    static func uiLabelBoldUI(size: CGFloat) -> UIFont {
+        firaSansUIFont(size: size, weight: .semibold)
     }
 
     // MARK: - SpriteKit Font Name Strings
@@ -111,6 +165,15 @@ enum CardFont {
     /// Alegreya Italic PostScript name for SKLabelNode.
     static let spriteKitFlavorText = "Alegreya-Italic"
 
+    /// Bebas Neue PostScript name for SKLabelNode (stat numerals, damage numbers).
+    static let spriteKitStatNumber = "BebasNeue-Regular"
+
+    /// Fira Sans Regular PostScript name for SKLabelNode (UI labels).
+    static let spriteKitUILabel = "FiraSans-Regular"
+
+    /// Fira Sans SemiBold PostScript name for SKLabelNode (emphasized UI labels).
+    static let spriteKitUILabelBold = "FiraSans-SemiBold"
+
     // MARK: - Private Helpers
 
     private static func cinzelUIFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
@@ -125,6 +188,23 @@ enum CardFont {
         }
         // Fallback: try PostScript name directly
         if let psFont = UIFont(name: "Cinzel-Regular", size: size) {
+            return psFont
+        }
+        return .systemFont(ofSize: size, weight: weight)
+    }
+
+    private static func firaSansUIFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let descriptor = UIFontDescriptor(fontAttributes: [
+            .family: firaSansFamily,
+            .traits: [UIFontDescriptor.TraitKey.weight: weight]
+        ])
+        let font = UIFont(descriptor: descriptor, size: size)
+        if font.familyName == firaSansFamily {
+            return font
+        }
+        // Fallback: try PostScript name directly
+        let psName = weight == .semibold ? "FiraSans-SemiBold" : "FiraSans-Regular"
+        if let psFont = UIFont(name: psName, size: size) {
             return psFont
         }
         return .systemFont(ofSize: size, weight: weight)
@@ -158,11 +238,12 @@ enum CardFont {
     // MARK: - Debug: List Registered Font Names
 
     /// Call this once at app launch (debug only) to verify fonts loaded correctly.
-    /// Prints all font names in the Cinzel and Alegreya families.
+    /// Prints all font names in the Cinzel, Alegreya, Bebas Neue, and Fira Sans families.
     static func debugPrintRegisteredFonts() {
         #if DEBUG
+        let targetFamilies = ["Cinzel", "Alegreya", "Bebas", "Fira"]
         for family in UIFont.familyNames.sorted() {
-            if family.contains("Cinzel") || family.contains("Alegreya") {
+            if targetFamilies.contains(where: { family.contains($0) }) {
                 print("Font family: \(family)")
                 for name in UIFont.fontNames(forFamilyName: family) {
                     print("  - \(name)")

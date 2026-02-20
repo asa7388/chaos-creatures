@@ -10,19 +10,64 @@ import UIKit
 
 extension Color {
     // Ironwright Collective -- brutalist space-industrial
-    static let ironwright = Color(hex: "#C9A84C")
-    static let ironwrightDark = Color(hex: "#8B6914")
-    static let ironwrightAccent = Color(hex: "#D4AF37")
+    static let ironwright = Color(hex: "#6B7B8D")          // Steel Blue-Gray
+    static let ironwrightDark = Color(hex: "#4A5568")      // Cold Iron
+    static let ironwrightAccent = Color(hex: "#E07020")    // Warning Orange
+    static let ironwrightHighlight = Color(hex: "#3B82C4") // Reactor Blue
+    static let ironwrightFrameTint = Color(hex: "#3D4654") // Iron Plate (text panel overlay)
 
-    // Fey Courts -- ethereal green/nature
-    static let feyCourts = Color(hex: "#4CAF50")
-    static let feyCourtsDark = Color(hex: "#2E7D32")
-    static let feyCourtsAccent = Color(hex: "#81C784")
+    // Fey Courts -- living forest
+    static let feyCourts = Color(hex: "#2E8B57")           // Emerald
+    static let feyCourtsDark = Color(hex: "#8B4513")       // Bark Brown
+    static let feyCourtsAccent = Color(hex: "#7FFFD4")     // Bioluminescent
+    static let feyCourtsHighlight = Color(hex: "#B8860B")  // Forest Gold
+    static let feyCourtsFrameTint = Color(hex: "#1A3A1A")  // Forest Shadow (text panel overlay)
 
-    // Demonic Kingdoms -- hellfire red
-    static let demonic = Color(hex: "#E63946")
-    static let demonicDark = Color(hex: "#B71C1C")
-    static let demonicAccent = Color(hex: "#FF5252")
+    // Demonic Kingdoms -- volcanic infernal
+    static let demonic = Color(hex: "#8B2252")             // Blood Red
+    static let demonicDark = Color(hex: "#1A0A0A")         // Obsidian Black
+    static let demonicAccent = Color(hex: "#FF4500")       // Volcanic Orange
+    static let demonicHighlight = Color(hex: "#FFD700")    // Hellfire Yellow
+    static let demonicFrameTint = Color(hex: "#2A1010")    // Smoked Obsidian (text panel overlay)
+
+    // Celestial Crusade -- divine radiance
+    static let celestial = Color(hex: "#DAA520")           // Holy Gold
+    static let celestialDark = Color(hex: "#2A2030")       // Divine Shadow
+    static let celestialAccent = Color(hex: "#F5F0E1")     // Divine Ivory
+    static let celestialHighlight = Color(hex: "#3B5998")  // Righteous Blue
+    static let celestialFrameTint = Color(hex: "#2A2030")  // Divine Shadow (text panel overlay)
+
+    // The Endless -- necrotic spectral
+    static let endless = Color(hex: "#6B3FA0")             // Necrotic Purple
+    static let endlessDark = Color(hex: "#1A1525")         // Tomb Shadow
+    static let endlessAccent = Color(hex: "#E8DCC8")       // Bone White
+    static let endlessHighlight = Color(hex: "#5F9EA0")    // Ghostly Teal
+    static let endlessFrameTint = Color(hex: "#1A1525")    // Tomb Shadow (text panel overlay)
+
+    // MARK: - Sub-Faction Accent Colors
+
+    // Ironwright sub-factions
+    static let foundryDirectorate = Color(hex: "#6B7B8D")  // Steel (primary)
+    static let scrapLegions = Color(hex: "#8B4513")        // Rust
+
+    // Fey Courts sub-factions
+    static let verdantThrone = Color(hex: "#2E8B57")       // Emerald (primary)
+    static let hollowCourt = Color(hex: "#A0C4E8")         // Ice Blue
+
+    // Demonic Kingdoms sub-factions
+    static let obsidianBureaucracy = Color(hex: "#D4C4A8") // Parchment Tan
+    static let furnaceLords = Color(hex: "#FF4500")        // Volcanic Orange
+
+    // Celestial Crusade sub-factions
+    static let knightsOfDeliverance = Color(hex: "#3B5998") // Righteous Blue
+    static let heavensChosen = Color(hex: "#F8F4F0")        // Judgment White
+
+    // Endless sub-factions
+    static let necromanticCabals = Color(hex: "#7B9E5F")   // Sickly Green
+    static let lostSpectres = Color(hex: "#5F9EA0")        // Ghostly Teal
+
+    // MARK: - App Accent (generic warm gold, used across non-faction UI)
+    static let appAccent = Color(hex: "#C9A84C")
 
     // MARK: - UI Theme Colors
 
@@ -102,8 +147,28 @@ extension Color {
         case .ironwright: return .ironwright
         case .feyCourts: return .feyCourts
         case .demonicKingdoms: return .demonic
-        case .celestialCrusade: return Color(hex: "#DAA520")
-        case .theEndless: return Color(hex: "#6B3FA0")
+        case .celestialCrusade: return .celestial
+        case .theEndless: return .endless
+        }
+    }
+
+    static func factionFrameTint(_ faction: FactionShortName) -> Color {
+        switch faction {
+        case .ironwright: return .ironwrightFrameTint
+        case .feyCourts: return .feyCourtsFrameTint
+        case .demonicKingdoms: return .demonicFrameTint
+        case .celestialCrusade: return .celestialFrameTint
+        case .theEndless: return .endlessFrameTint
+        }
+    }
+
+    static func factionAccent(_ faction: FactionShortName) -> Color {
+        switch faction {
+        case .ironwright: return .ironwrightAccent
+        case .feyCourts: return .feyCourtsAccent
+        case .demonicKingdoms: return .demonicAccent
+        case .celestialCrusade: return .celestialAccent
+        case .theEndless: return .endlessAccent
         }
     }
 
@@ -159,9 +224,9 @@ extension UIColor {
 extension FactionShortName {
     var primaryUIColor: UIColor {
         switch self {
-        case .ironwright: return UIColor(hex: "#C9A84C")
-        case .feyCourts: return UIColor(hex: "#4CAF50")
-        case .demonicKingdoms: return UIColor(hex: "#E63946")
+        case .ironwright: return UIColor(hex: "#6B7B8D")
+        case .feyCourts: return UIColor(hex: "#2E8B57")
+        case .demonicKingdoms: return UIColor(hex: "#8B2252")
         case .celestialCrusade: return UIColor(hex: "#DAA520")
         case .theEndless: return UIColor(hex: "#6B3FA0")
         }
@@ -169,11 +234,21 @@ extension FactionShortName {
 
     var accentUIColor: UIColor {
         switch self {
-        case .ironwright: return UIColor(hex: "#D4AF37")
-        case .feyCourts: return UIColor(hex: "#81C784")
-        case .demonicKingdoms: return UIColor(hex: "#FF5252")
+        case .ironwright: return UIColor(hex: "#E07020")
+        case .feyCourts: return UIColor(hex: "#7FFFD4")
+        case .demonicKingdoms: return UIColor(hex: "#FF4500")
         case .celestialCrusade: return UIColor(hex: "#F5F0E1")
         case .theEndless: return UIColor(hex: "#E8DCC8")
+        }
+    }
+
+    var frameTintUIColor: UIColor {
+        switch self {
+        case .ironwright: return UIColor(hex: "#3D4654")
+        case .feyCourts: return UIColor(hex: "#1A3A1A")
+        case .demonicKingdoms: return UIColor(hex: "#2A1010")
+        case .celestialCrusade: return UIColor(hex: "#2A2030")
+        case .theEndless: return UIColor(hex: "#1A1525")
         }
     }
 
@@ -182,8 +257,8 @@ extension FactionShortName {
         case .ironwright: return .ironwright
         case .feyCourts: return .feyCourts
         case .demonicKingdoms: return .demonic
-        case .celestialCrusade: return Color(hex: "#DAA520")
-        case .theEndless: return Color(hex: "#6B3FA0")
+        case .celestialCrusade: return .celestial
+        case .theEndless: return .endless
         }
     }
 }
