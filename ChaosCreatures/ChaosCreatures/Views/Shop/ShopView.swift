@@ -243,7 +243,7 @@ struct SubscriptionCardItem: View {
             HStack {
                 Text(tier.displayName)
                     .font(CardFont.cardName(size: 18))
-                    .foregroundColor(.textPrimary)
+                    .foregroundColor(tierPrimaryTextColor)
                 Spacer()
                 if isCurrent {
                     Text("CURRENT")
@@ -259,7 +259,7 @@ struct SubscriptionCardItem: View {
             // Price
             Text(tierPrice)
                 .font(CardFont.body(size: 15))
-                .foregroundColor(.textSecondary)
+                .foregroundColor(tierSecondaryTextColor)
 
             Divider()
 
@@ -296,10 +296,10 @@ struct SubscriptionCardItem: View {
 
     private func benefitRow(_ text: String) -> some View {
         HStack(spacing: 6) {
-            ThemedGlyph(symbol: "checkmark", size: 10, weight: .bold, color: .healGreen)
+            ThemedGlyph(symbol: "checkmark", size: 10, weight: .bold, color: tierBenefitColor)
             Text(text)
                 .font(CardFont.body(size: 12))
-                .foregroundColor(.textSecondary)
+                .foregroundColor(tierSecondaryTextColor)
         }
     }
 
@@ -322,17 +322,29 @@ struct SubscriptionCardItem: View {
                         .opacity(0.3)
                 }
             case .mid:
-                LinearGradient(
-                    colors: [Color(hex: "#0D47A1"), Color(hex: "#1565C0")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                ZStack {
+                    Color(hex: "#182332")
+                    Image("CardTextures/metal-iron")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.42)
+                    Image("CardTextures/tex-cardstock-grain")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.14)
+                }
             case .high:
-                LinearGradient(
-                    colors: [Color(hex: "#E65100"), Color(hex: "#F57F17")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                ZStack {
+                    Color(hex: "#2A2418")
+                    Image("CardTextures/metal-bronze")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.40)
+                    Image("CardTextures/tex-parchment")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.16)
+                }
             }
         }
     }
@@ -340,16 +352,40 @@ struct SubscriptionCardItem: View {
     private var tierBorderColor: Color {
         switch tier {
         case .free: return .borderDefault
-        case .mid: return .rarityRare
-        case .high: return .tauntGold
+        case .mid: return Color(hex: "#5D7DA0")
+        case .high: return Color(hex: "#A9823B")
         }
     }
 
     private var tierAccentColor: Color {
         switch tier {
-        case .free: return .borderActive
-        case .mid: return .rarityRare
-        case .high: return .tauntGold
+        case .free: return Color(hex: "#8C6A2A")
+        case .mid: return Color(hex: "#355E8A")
+        case .high: return Color(hex: "#9A6A2A")
+        }
+    }
+
+    private var tierPrimaryTextColor: Color {
+        switch tier {
+        case .free: return .textPrimary
+        case .mid: return Color(hex: "#E8EEF7")
+        case .high: return Color(hex: "#F2E5CF")
+        }
+    }
+
+    private var tierSecondaryTextColor: Color {
+        switch tier {
+        case .free: return .textSecondary
+        case .mid: return Color(hex: "#C6D4E6")
+        case .high: return Color(hex: "#DECCAD")
+        }
+    }
+
+    private var tierBenefitColor: Color {
+        switch tier {
+        case .free: return .healGreen
+        case .mid: return Color(hex: "#8EC0FF")
+        case .high: return Color(hex: "#E4B85A")
         }
     }
 }

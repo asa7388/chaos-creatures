@@ -105,12 +105,27 @@ struct CollectionView: View {
         .background(
             ZStack {
                 Color.bgPrimary
+                // Collector table key art (subtle so cards remain primary)
+                Image("UIBackgrounds/bg-collection")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.26)
+
                 // Dark leather texture — card collection
                 Image("UIBackgrounds/bg-dark-leather")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .ignoresSafeArea()
-                    .opacity(0.35)
+                    .opacity(0.40)
+
+                // Center-weighted vignette for clearer hierarchy
+                LinearGradient(
+                    colors: [Color.black.opacity(0.32), .clear, Color.black.opacity(0.36)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
             }
         )
         .navigationTitle("Collection")
@@ -274,14 +289,62 @@ struct CollectionView: View {
 
     private var cardGrid: some View {
         ScrollView {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 112, maximum: 130))],
-                spacing: 8
-            ) {
-                ForEach(filteredCards) { card in
-                    let faction = factionForCard(card)
-                    CardGridItemView(card: card, faction: faction)
-                        .frame(height: 157)
+            ZStack(alignment: .leading) {
+                // Binder page surface
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.26))
+                    .overlay(
+                        Image("CardTextures/tex-parchment")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .opacity(0.10)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.tauntGold.opacity(0.16), lineWidth: 0.8)
+                    )
+
+                // Binder ring spine treatment
+                VStack(spacing: 24) {
+                    ForEach(0..<12, id: \.self) { _ in
+                        Circle()
+                            .stroke(Color.tauntGold.opacity(0.28), lineWidth: 1.2)
+                            .frame(width: 12, height: 12)
+                            .background(Circle().fill(Color.black.opacity(0.35)))
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 0.6)
+                            )
+                    }
+                }
+                .frame(width: 20)
+                .padding(.leading, 4)
+
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 112, maximum: 130))],
+                    spacing: 10
+                ) {
+                    ForEach(filteredCards) { card in
+                        let faction = factionForCard(card)
+                        ZStack {
+                            // Recessed card pocket (binder sleeve look)
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.black.opacity(0.30))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.tauntGold.opacity(0.14), lineWidth: 0.5)
+                                )
+
+                            CardGridItemView(card: card, faction: faction)
+                                .frame(height: 157)
+                                .padding(3)
+                        }
+                        .frame(height: 164)
                         .onTapGesture {
                             router.selectedCardInstance = card
                             router.selectedCardFaction = faction
@@ -291,7 +354,11 @@ struct CollectionView: View {
                             router.selectedCardFaction = faction
                             fullscreenCard = card
                         }
+                    }
                 }
+                .padding(.leading, 24)
+                .padding(.trailing, 8)
+                .padding(.vertical, 10)
             }
             .padding(.horizontal, 8)
             .padding(.bottom, 80)

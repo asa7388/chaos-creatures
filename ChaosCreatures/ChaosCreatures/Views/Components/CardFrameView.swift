@@ -901,7 +901,7 @@ struct CardFrameView: View {
 
     private var textPanelHeightRatio: CGFloat {
         switch size {
-        case .grid: return 0.34
+        case .grid: return 0.38
         case .hand: return 0.26
         case .detail, .fullscreen: return 0.33
         }
@@ -926,19 +926,29 @@ struct CardFrameView: View {
     // MARK: - Grid Panel (112x157) -- Name only, minimal
 
     private var gridPanel: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 2) {
             Text(data.name)
-                .font(CardFont.body(size: 10))
+                .font(CardFont.cardName(size: 10))
                 .foregroundColor(parchmentTextColor)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
+                .minimumScaleFactor(0.78)
+                .shadow(color: .black.opacity(0.9), radius: 2, x: 0, y: 1)
+
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 4)
-        .padding(.bottom, 4)
+        .padding(.horizontal, 3)
+        .padding(.top, 3)
+        .padding(.bottom, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.black.opacity(0.34))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(factionBorderColor.opacity(0.26), lineWidth: 0.6)
+                )
+        )
     }
 
     // MARK: - Hand Panel (90x130) -- Name + keyword dots
