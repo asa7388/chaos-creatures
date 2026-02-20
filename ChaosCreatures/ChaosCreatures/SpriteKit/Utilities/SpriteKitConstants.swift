@@ -493,6 +493,42 @@ enum SK {
             }
         }
 
+        /// Faction-specific ATK icon asset name.
+        static func atkIconName(faction: FactionShortName?) -> String {
+            guard let faction = faction else { return "StatIcons/sword-atk" }
+            switch faction {
+            case .ironwright: return "StatIcons/atk-ironwright"
+            case .feyCourts: return "StatIcons/atk-feyVerdant"
+            case .demonicKingdoms: return "StatIcons/atk-demonicFurnace"
+            case .celestialCrusade: return "StatIcons/atk-celestialKnights"
+            case .theEndless: return "StatIcons/atk-endlessCabals"
+            }
+        }
+
+        /// Faction-specific HP icon asset name.
+        static func hpIconName(faction: FactionShortName?) -> String {
+            guard let faction = faction else { return "StatIcons/heart-hp" }
+            switch faction {
+            case .ironwright: return "StatIcons/hp-ironwright"
+            case .feyCourts: return "StatIcons/hp-feyVerdant"
+            case .demonicKingdoms: return "StatIcons/hp-demonicFurnace"
+            case .celestialCrusade: return "StatIcons/hp-celestialKnights"
+            case .theEndless: return "StatIcons/hp-endlessCabals"
+            }
+        }
+
+        /// Faction-specific CM (chaos mote) icon asset name.
+        static func cmIconName(faction: FactionShortName?) -> String {
+            guard let faction = faction else { return "StatIcons/chaos-motes" }
+            switch faction {
+            case .ironwright: return "StatIcons/chaos-mote-ironwright"
+            case .feyCourts: return "StatIcons/chaos-mote-feyVerdant"
+            case .demonicKingdoms: return "StatIcons/chaos-mote-demonicFurnace"
+            case .celestialCrusade: return "StatIcons/chaos-mote-celestialKnights"
+            case .theEndless: return "StatIcons/chaos-mote-endlessCabals"
+            }
+        }
+
         /// Canvas weave overlay texture
         static let canvasWeave = "CardTextures/tex-canvas-weave"
 

@@ -177,23 +177,28 @@ final class HandCardNode: SKSpriteNode {
         addChild(nameShadow)
         addChild(nameLabel)
 
+        // Faction-specific stat icon names
+        let cmIcon = SK.CardTextures.cmIconName(faction: faction)
+        let atkIcon = SK.CardTextures.atkIconName(faction: faction)
+        let hpIcon = SK.CardTextures.hpIconName(faction: faction)
+
         // Layer 3: CM badge (medallion)
         setupMedallionBadge(container: cmContainer, radius: cmRadius,
                             tintColor: SK.CardTextures.cmTintColor,
-                            iconName: "StatIcons/chaos-motes", label: cmLabel)
+                            iconName: cmIcon, label: cmLabel)
         addChild(cmBadge)
 
         if isCreature {
             // ATK medallion badge
             setupMedallionBadge(container: atkContainer, radius: statRadius,
                                 tintColor: SK.CardTextures.atkTintColor,
-                                iconName: "StatIcons/sword-atk", label: atkLabel)
+                                iconName: atkIcon, label: atkLabel)
             addChild(atkBadge)
 
             // HP medallion badge
             setupMedallionBadge(container: hpContainer, radius: statRadius,
                                 tintColor: SK.CardTextures.hpTintColor,
-                                iconName: "StatIcons/heart-hp", label: hpLabel)
+                                iconName: hpIcon, label: hpLabel)
             addChild(hpBadge)
         } else {
             // Non-creature: show centered type label instead of ATK/HP badges

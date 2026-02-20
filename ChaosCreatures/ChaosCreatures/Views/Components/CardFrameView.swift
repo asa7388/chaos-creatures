@@ -407,6 +407,11 @@ struct CardFrameView: View {
             // Layer 5: Textured text panel at bottom
             textPanel
 
+            // Layer 5.5: Faction decorative accents (detail/fullscreen only)
+            if size == .detail || size == .fullscreen {
+                factionDecorativeOverlay
+            }
+
             // Layer 6: CM cost badge (top-right corner)
             cmBadge
                 .padding(.trailing, cmInset)
@@ -471,20 +476,85 @@ struct CardFrameView: View {
         }
     }
 
-    // MARK: - Wood-Textured Border Frame
+    // MARK: - Faction-Textured Border Frame
 
-    /// Dark wood grain border that frames the card art, like a physical card stock edge.
+    /// Faction-specific border texture that frames the card art.
+    /// Falls back to universal wood grain for cards with no faction.
     private var borderFrame: some View {
-        Image("CardTextures/card-border-wood")
+        Image(factionBorderAssetName)
             .resizable()
             .aspectRatio(contentMode: .fill)
             .frame(width: size.width, height: size.height)
             .clipped()
-            .brightness(-0.1)
+            .brightness(-0.05)
             .overlay(
-                // Warm parchment tint — like aged card stock
-                Color(hex: "#3D2B1A").opacity(0.15)
+                // Faction frame tint overlay — darkens and unifies the texture
+                factionFrameTintColor.opacity(0.20)
             )
+    }
+
+    /// Asset name for faction border texture.
+    private var factionBorderAssetName: String {
+        guard let faction = data.faction else { return "CardTextures/card-border-wood" }
+        switch faction {
+        case .ironwright: return "CardTextures/border-ironwright"
+        case .feyCourts: return "CardTextures/border-fey-verdant"
+        case .demonicKingdoms: return "CardTextures/border-demonic-furnace"
+        case .celestialCrusade: return "CardTextures/border-celestial-knights"
+        case .theEndless: return "CardTextures/border-endless-cabals"
+        }
+    }
+
+    /// Faction frame tint color for the border overlay.
+    private var factionFrameTintColor: Color {
+        guard let faction = data.faction else { return Color(hex: "#3D2B1A") }
+        return Color.factionFrameTint(faction)
+    }
+
+    /// Asset name for faction text panel texture.
+    private var factionTextPanelAssetName: String {
+        guard let faction = data.faction else { return "CardTextures/dark-vellum" }
+        switch faction {
+        case .ironwright: return "TextPanels/tp-ironwright"
+        case .feyCourts: return "TextPanels/tp-fey-verdant"
+        case .demonicKingdoms: return "TextPanels/tp-demonic-furnace"
+        case .celestialCrusade: return "TextPanels/tp-celestial-knights"
+        case .theEndless: return "TextPanels/tp-endless-cabals"
+        }
+    }
+
+    /// Faction-colored stat icon asset names for medallion badges.
+    private var factionAtkIconName: String {
+        guard let faction = data.faction else { return "StatIcons/sword-atk" }
+        switch faction {
+        case .ironwright: return "StatIcons/atk-ironwright"
+        case .feyCourts: return "StatIcons/atk-feyVerdant"
+        case .demonicKingdoms: return "StatIcons/atk-demonicFurnace"
+        case .celestialCrusade: return "StatIcons/atk-celestialKnights"
+        case .theEndless: return "StatIcons/atk-endlessCabals"
+        }
+    }
+
+    private var factionHpIconName: String {
+        guard let faction = data.faction else { return "StatIcons/heart-hp" }
+        switch faction {
+        case .ironwright: return "StatIcons/hp-ironwright"
+        case .feyCourts: return "StatIcons/hp-feyVerdant"
+        case .demonicKingdoms: return "StatIcons/hp-demonicFurnace"
+        case .celestialCrusade: return "StatIcons/hp-celestialKnights"
+        case .theEndless: return "StatIcons/hp-endlessCabals"
+        }
+    }
+
+    private var factionCmIconName: String {
+        guard let faction = data.faction else { return "StatIcons/chaos-motes" }
+        switch faction {
+        case .ironwright: return "StatIcons/chaos-mote-ironwright"
+        case .feyCourts: return "StatIcons/chaos-mote-feyVerdant"
+        case .demonicKingdoms: return "StatIcons/chaos-mote-demonicFurnace"
+        case .celestialCrusade: return "StatIcons/chaos-mote-celestialKnights"
+        case .theEndless: return "StatIcons/chaos-mote-endlessCabals"
+        }
     }
 
     // MARK: - Full-Bleed Art Layer
@@ -559,8 +629,8 @@ struct CardFrameView: View {
         VStack(spacing: 0) {
             Spacer()
             ZStack {
-                // Dark vellum/leather texture base
-                Image("CardTextures/dark-vellum")
+                // Faction-specific text panel texture base
+                Image(factionTextPanelAssetName)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(
@@ -788,7 +858,11 @@ struct CardFrameView: View {
     // MARK: - CM Badge (Top-Right)
 
     private var cmBadge: some View {
-        CMBadgeView(value: data.manaCost, size: cmBadgeSize)
+        MedallionBadge(
+            value: data.manaCost, size: cmBadgeSize,
+            iconName: factionCmIconName,
+            tintColor: Color(hex: "#0D47A1")
+        )
     }
 
     private var cmBadgeSize: CGFloat {
@@ -813,7 +887,11 @@ struct CardFrameView: View {
         VStack {
             Spacer()
             HStack {
-                ATKBadgeView(value: atk, size: atkHpBadgeSize)
+                MedallionBadge(
+                    value: atk, size: atkHpBadgeSize,
+                    iconName: factionAtkIconName,
+                    tintColor: Color(hex: "#BF360C")
+                )
                 Spacer()
             }
             .padding(.leading, atkHpInset)
@@ -829,7 +907,11 @@ struct CardFrameView: View {
             Spacer()
             HStack {
                 Spacer()
-                HPBadgeView(value: hp, size: atkHpBadgeSize)
+                MedallionBadge(
+                    value: hp, size: atkHpBadgeSize,
+                    iconName: factionHpIconName,
+                    tintColor: Color(hex: "#1B5E20")
+                )
             }
             .padding(.trailing, atkHpInset)
             .padding(.bottom, atkHpBottomInset)
@@ -842,7 +924,11 @@ struct CardFrameView: View {
     private func instabilityBadgeOverlay(value: Int) -> some View {
         VStack {
             HStack {
-                InstabilityBadgeView(value: value, size: instabilityBadgeSize)
+                MedallionBadge(
+                    value: value, size: instabilityBadgeSize,
+                    iconName: "StatIcons/instability-indicator",
+                    tintColor: Color(hex: "#FF8F00")
+                )
                     .padding(.leading, instabilityInset)
                     .padding(.top, instabilityInset)
                 Spacer()
@@ -989,6 +1075,157 @@ struct CardFrameView: View {
             Spacer()
         }
         .frame(width: size.width, height: size.height)
+    }
+
+    // MARK: - Faction Decorative Overlay
+
+    /// Subtle faction-specific decorative accents visible at detail/fullscreen scale.
+    /// Corner accents, inner glow tints, and faction emblem watermark.
+    @ViewBuilder
+    private var factionDecorativeOverlay: some View {
+        ZStack {
+            // Faction emblem watermark in text panel area
+            if let emblemAsset = data.factionEmblemAssetName {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Image(emblemAsset)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: size.width * 0.22, height: size.width * 0.22)
+                            .opacity(0.06)
+                            .blendMode(.screen)
+                        Spacer()
+                    }
+                    .padding(.bottom, size.height * textPanelHeightRatio * 0.3)
+                }
+            }
+
+            // Faction-specific accents
+            switch data.faction {
+            case .ironwright:
+                ironwrightAccents
+            case .feyCourts:
+                feyAccents
+            case .demonicKingdoms:
+                demonicAccents
+            case .celestialCrusade:
+                celestialAccents
+            case .theEndless:
+                endlessAccents
+            case nil:
+                EmptyView()
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .allowsHitTesting(false)
+    }
+
+    /// Ironwright: bolt rivets at 4 corners.
+    private var ironwrightAccents: some View {
+        let rivetSize: CGFloat = size == .fullscreen ? 7 : 5
+        let inset: CGFloat = borderWidth + 2
+        return ZStack {
+            ForEach(0..<4) { i in
+                Circle()
+                    .fill(Color(hex: "#6B7B8D").opacity(0.6))
+                    .frame(width: rivetSize, height: rivetSize)
+                    .overlay(
+                        Circle()
+                            .stroke(Color(hex: "#4A5568").opacity(0.8), lineWidth: 0.5)
+                    )
+                    .overlay(
+                        Circle()
+                            .fill(Color.white.opacity(0.2))
+                            .frame(width: rivetSize * 0.4, height: rivetSize * 0.4)
+                            .offset(x: -rivetSize * 0.12, y: -rivetSize * 0.12)
+                    )
+                    .position(
+                        x: i % 2 == 0 ? inset + rivetSize / 2 : size.width - inset - rivetSize / 2,
+                        y: i < 2 ? inset + rivetSize / 2 : size.height - inset - rivetSize / 2
+                    )
+            }
+        }
+    }
+
+    /// Fey Courts: tiny leaf-bud dots at corners + organic inner glow.
+    private var feyAccents: some View {
+        let budSize: CGFloat = size == .fullscreen ? 5 : 4
+        let inset: CGFloat = borderWidth + 3
+        return ZStack {
+            // Bioluminescent inner glow at corners
+            RadialGradient(
+                colors: [Color(hex: "#7FFFD4").opacity(0.06), .clear],
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: size.width * 0.4
+            )
+            RadialGradient(
+                colors: [Color(hex: "#7FFFD4").opacity(0.04), .clear],
+                center: .bottomTrailing,
+                startRadius: 0,
+                endRadius: size.width * 0.4
+            )
+
+            // Leaf bud dots at top corners
+            ForEach(0..<2) { i in
+                Ellipse()
+                    .fill(Color(hex: "#2E8B57").opacity(0.5))
+                    .frame(width: budSize, height: budSize * 1.4)
+                    .rotationEffect(.degrees(i == 0 ? -30 : 30))
+                    .position(
+                        x: i == 0 ? inset + budSize : size.width - inset - budSize,
+                        y: inset + budSize
+                    )
+            }
+        }
+    }
+
+    /// Demonic Kingdoms: faint lava vein glow at bottom edge.
+    private var demonicAccents: some View {
+        VStack {
+            Spacer()
+            // Lava glow at bottom border
+            LinearGradient(
+                colors: [.clear, Color(hex: "#FF4500").opacity(0.08)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: size.height * 0.15)
+        }
+    }
+
+    /// Celestial Crusade: gold filigree inner border accent.
+    private var celestialAccents: some View {
+        RoundedRectangle(cornerRadius: cornerRadius - 1)
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        Color(hex: "#DAA520").opacity(0.12),
+                        Color(hex: "#FFD700").opacity(0.06),
+                        Color(hex: "#DAA520").opacity(0.12)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1
+            )
+            .padding(borderWidth + 1)
+    }
+
+    /// The Endless: necrotic teal inner glow.
+    private var endlessAccents: some View {
+        ZStack {
+            // Soul-light inner glow from edges
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    Color(hex: "#2DD4BF").opacity(0.08),
+                    lineWidth: 3
+                )
+                .blur(radius: 3)
+                .padding(borderWidth)
+        }
     }
 
     // MARK: - Helper Colors

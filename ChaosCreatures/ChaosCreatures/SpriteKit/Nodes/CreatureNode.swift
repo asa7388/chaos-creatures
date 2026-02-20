@@ -154,10 +154,15 @@ final class CreatureNode: SKSpriteNode {
         // Layer 1: Faction text panel texture at bottom (small — just enough for stat context)
         setupTextPanelTexture(cardSize: cardSize, faction: faction)
 
+        // Faction-specific stat icon names
+        let cmIcon = SK.CardTextures.cmIconName(faction: faction)
+        let atkIcon = SK.CardTextures.atkIconName(faction: faction)
+        let hpIcon = SK.CardTextures.hpIconName(faction: faction)
+
         // Layer 3: CM badge (medallion)
         setupMedallionBadge(container: cmContainer, radius: cmRadius,
                             tintColor: SK.CardTextures.cmTintColor,
-                            iconName: "StatIcons/chaos-motes", label: cmLabel)
+                            iconName: cmIcon, label: cmLabel)
         addChild(cmBadge)
 
         // Planar Ruins have HP but no ATK — hide ATK badge for ruins
@@ -168,18 +173,18 @@ final class CreatureNode: SKSpriteNode {
             // Creatures show ATK and HP badges
             setupMedallionBadge(container: atkContainer, radius: statRadius,
                                 tintColor: SK.CardTextures.atkTintColor,
-                                iconName: "StatIcons/sword-atk", label: atkLabel)
+                                iconName: atkIcon, label: atkLabel)
             addChild(atkBadge)
 
             setupMedallionBadge(container: hpContainer, radius: statRadius,
                                 tintColor: SK.CardTextures.hpTintColor,
-                                iconName: "StatIcons/heart-hp", label: hpLabel)
+                                iconName: hpIcon, label: hpLabel)
             addChild(hpBadge)
         } else if isRuin {
             // Ruins show HP badge only (no ATK)
             setupMedallionBadge(container: hpContainer, radius: statRadius,
                                 tintColor: SK.CardTextures.hpTintColor,
-                                iconName: "StatIcons/heart-hp", label: hpLabel)
+                                iconName: hpIcon, label: hpLabel)
             addChild(hpBadge)
 
             // Ruin visual overlay: subtle stone/ruin tint border
@@ -203,6 +208,9 @@ final class CreatureNode: SKSpriteNode {
             addChild(typeLbl)
             self.typeLabel = typeLbl
         }
+
+        // Layer 4: Faction accent (subtle inner glow at board scale)
+        setupFactionAccent(faction: faction, cardSize: cardSize, cornerRadius: cornerRadius)
 
         // Taunt indicator
         if creature.hasTaunt {
@@ -369,6 +377,33 @@ final class CreatureNode: SKSpriteNode {
         shadowLabel.name = "stat_shadow"
         container.addChild(shadowLabel)
         container.addChild(label)
+    }
+
+    // MARK: - Faction Accent
+
+    /// Subtle faction-specific accent at board card scale — a thin inner glow line
+    /// in the faction's accent color, visible along the card edges.
+    private func setupFactionAccent(faction: FactionShortName?, cardSize: CGSize, cornerRadius: CGFloat) {
+        guard let faction = faction else { return }
+
+        let accentColor: UIColor
+        switch faction {
+        case .ironwright: accentColor = UIColor(hex: "#E07020") // Warning orange
+        case .feyCourts: accentColor = UIColor(hex: "#7FFFD4")  // Bioluminescent
+        case .demonicKingdoms: accentColor = UIColor(hex: "#FF4500") // Volcanic
+        case .celestialCrusade: accentColor = UIColor(hex: "#DAA520") // Holy gold
+        case .theEndless: accentColor = UIColor(hex: "#2DD4BF")  // Ghostly teal
+        }
+
+        let innerGlow = SKShapeNode(rectOf: CGSize(width: cardSize.width - 4,
+                                                     height: cardSize.height - 4),
+                                     cornerRadius: max(cornerRadius - 2, 2))
+        innerGlow.fillColor = .clear
+        innerGlow.strokeColor = accentColor.withAlphaComponent(0.15)
+        innerGlow.lineWidth = 0.75
+        innerGlow.zPosition = 2.5
+        innerGlow.name = "faction_accent"
+        addChild(innerGlow)
     }
 
     // MARK: - Art Loading
