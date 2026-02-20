@@ -43,7 +43,7 @@ struct ShopView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: ShopDestination.settings) {
-                    Image(systemName: "gearshape")
+                    Image(systemName: "gearshape.fill")
                         .foregroundColor(.textSecondary)
                 }
             }
@@ -63,13 +63,12 @@ struct ShopView: View {
     private var currencyHeader: some View {
         HStack {
             // Chaos Dust
-            HStack(spacing: 4) {
-                Image(systemName: "sparkle")
+            HStack(spacing: 6) {
+                Image("StatIcons/chaos-mote-ironwright")
                     .resizable()
-                    .frame(width: 18, height: 18)
-                    .foregroundColor(.tauntGold)
+                    .frame(width: 22, height: 22)
                 Text("\(appState.player?.chaosDust ?? 0)")
-                    .font(CardFont.cardName(size: 18))
+                    .font(CardFont.statNumber(size: 20))
                     .foregroundColor(.tauntGold)
             }
 
@@ -85,17 +84,24 @@ struct ShopView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 52)
-        .background(Color.bgSecondary)
+        .background(
+            ZStack {
+                Color.bgSecondary
+                Image("CardTextures/tex-cardstock-grain")
+                    .resizable()
+                    .opacity(0.2)
+            }
+        )
     }
 
     private func shardCounter(tier: ShardTier, count: Int) -> some View {
         HStack(spacing: 3) {
-            Image(systemName: "diamond.fill")
+            Image("StatIcons/instability-diamond")
                 .resizable()
                 .frame(width: 14, height: 14)
-                .foregroundColor(shardColor(tier))
+                .foregroundStyle(shardColor(tier))
             Text("\(count)")
-                .font(CardFont.body(size: 12))
+                .font(CardFont.statNumber(size: 14))
                 .foregroundColor(.textSecondary)
         }
     }
@@ -169,8 +175,8 @@ struct ShopView: View {
                 PackRow(
                     name: "Starter Pack",
                     description: "5 random cards from your faction",
-                    price: "100 Dust",
-                    icon: "gift.fill",
+                    price: "100",
+                    iconAsset: "StatIcons/rarity-common",
                     color: .rarityUncommon,
                     canAfford: (appState.player?.chaosDust ?? 0) >= 100,
                     onPurchase: { selectedPackType = .starter }
@@ -178,8 +184,8 @@ struct ShopView: View {
                 PackRow(
                     name: "Rare Pack",
                     description: "3 cards, guaranteed 1 Rare or better",
-                    price: "250 Dust",
-                    icon: "star.fill",
+                    price: "250",
+                    iconAsset: "StatIcons/rarity-rare",
                     color: .rarityRare,
                     canAfford: (appState.player?.chaosDust ?? 0) >= 250,
                     onPurchase: { selectedPackType = .rare }
@@ -187,8 +193,8 @@ struct ShopView: View {
                 PackRow(
                     name: "Epic Pack",
                     description: "3 cards, guaranteed 1 Epic or better",
-                    price: "500 Dust",
-                    icon: "sparkles",
+                    price: "500",
+                    iconAsset: "StatIcons/rarity-epic",
                     color: .rarityEpic,
                     canAfford: (appState.player?.chaosDust ?? 0) >= 500,
                     onPurchase: { selectedPackType = .epic }
@@ -208,10 +214,19 @@ struct ShopView: View {
                 .foregroundColor(.textPrimary)
                 .padding(.horizontal, 16)
 
-            Text("Shards are earned through gameplay. Use them to evolve your creatures.")
-                .font(CardFont.body(size: 13))
-                .foregroundColor(.textTertiary)
-                .padding(.horizontal, 16)
+            HStack(spacing: 12) {
+                Image("StatIcons/instability-diamond")
+                    .resizable()
+                    .frame(width: 28, height: 28)
+                    .foregroundColor(.appAccent)
+
+                Text("Shards are earned through gameplay. Use them to evolve your creatures.")
+                    .font(CardFont.body(size: 13))
+                    .foregroundColor(.textTertiary)
+            }
+            .padding(16)
+            .parchmentPanel()
+            .padding(.horizontal, 16)
         }
         .padding(.vertical, 16)
     }
@@ -306,7 +321,12 @@ struct SubscriptionCardItem: View {
         Group {
             switch tier {
             case .free:
-                Color.bgTertiary
+                ZStack {
+                    Color.bgTertiary
+                    Image("UIComponents/ui-panel-leather")
+                        .resizable()
+                        .opacity(0.3)
+                }
             case .mid:
                 LinearGradient(
                     colors: [Color(hex: "#0D47A1"), Color(hex: "#1565C0")],
@@ -346,15 +366,17 @@ struct PackRow: View {
     let name: String
     let description: String
     let price: String
-    let icon: String
+    let iconAsset: String
     let color: Color
     var canAfford: Bool = true
     var onPurchase: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 22))
+            Image(iconAsset)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
                 .foregroundColor(color)
                 .frame(width: 40, height: 40)
                 .background(color.opacity(0.15))
@@ -373,18 +395,23 @@ struct PackRow: View {
             Spacer()
 
             Button(action: onPurchase) {
-                Text(price)
-                    .font(CardFont.bodyBold(size: 13))
-                    .foregroundColor(canAfford ? .white : .textDisabled)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(canAfford ? color : Color.bgQuaternary)
-                    .cornerRadius(8)
+                HStack(spacing: 4) {
+                    Image("StatIcons/chaos-mote-ironwright")
+                        .resizable()
+                        .frame(width: 14, height: 14)
+                    Text(price)
+                        .font(CardFont.bodyBold(size: 13))
+                }
+                .foregroundColor(canAfford ? .white : .textDisabled)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(canAfford ? color : Color.bgQuaternary)
+                .cornerRadius(8)
             }
             .disabled(!canAfford)
         }
         .padding(12)
-        .cardBackground()
+        .leatherPanel()
     }
 }
 

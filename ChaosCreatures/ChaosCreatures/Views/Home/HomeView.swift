@@ -51,7 +51,7 @@ struct HomeView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: HomeDestination.settings) {
-                    Image(systemName: "gearshape")
+                    Image(systemName: "gearshape.fill")
                         .foregroundColor(.textSecondary)
                 }
             }
@@ -95,7 +95,11 @@ struct HomeView: View {
                 .fill(Color.bgTertiary)
                 .frame(width: 48, height: 48)
                 .overlay(
-                    Image(systemName: "person.fill")
+                    Image("FactionIcons/ui-profile")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
                         .foregroundColor(.textTertiary)
                 )
 
@@ -134,7 +138,7 @@ struct HomeView: View {
             }
         }
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
         .padding(.top, 8)
     }
 
@@ -197,23 +201,15 @@ struct HomeView: View {
                         .foregroundColor(.textSecondary)
                 }
                 Spacer()
-                Image(systemName: "play.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(.ironwright)
+                Image("FactionIcons/ui-battle")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .foregroundColor(.appAccent)
             }
             .padding(20)
-            .background(
-                LinearGradient(
-                    colors: [Color.ironwright.opacity(0.2), Color.bgSecondary],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.ironwright.opacity(0.5), lineWidth: 1)
-            )
+            .metalPanel(texture: "CardTextures/metal-bronze", cornerRadius: 16)
         }
     }
 
@@ -233,25 +229,26 @@ struct HomeView: View {
                 StatTile(
                     title: "Wins",
                     value: "\(appState.player?.totalWins ?? 0)",
-                    icon: "trophy.fill",
+                    icon: "FactionIcons/ui-battle",
                     color: .tauntGold
                 )
                 StatTile(
                     title: "Cards",
                     value: "\(appState.player?.totalGames ?? 0)",
-                    icon: "rectangle.stack.fill",
+                    icon: "FactionIcons/ui-collection",
                     color: .orderBlue
                 )
                 StatTile(
                     title: "Dust",
                     value: "\(appState.player?.chaosDust ?? 0)",
-                    icon: "sparkle",
-                    color: .ironwright
+                    icon: "StatIcons/chaos-mote-ironwright",
+                    color: .ironwright,
+                    isTemplate: false
                 )
             }
         }
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 }
 
@@ -262,12 +259,23 @@ struct StatTile: View {
     let value: String
     let icon: String
     let color: Color
+    var isTemplate: Bool = true
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
+            if isTemplate {
+                Image(icon)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 22, height: 22)
+                    .foregroundColor(color)
+            } else {
+                Image(icon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 22, height: 22)
+            }
 
             Text(value)
                 .font(CardFont.stats(size: 18))

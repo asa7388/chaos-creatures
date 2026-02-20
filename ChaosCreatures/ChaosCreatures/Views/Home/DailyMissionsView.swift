@@ -43,7 +43,7 @@ struct DailyMissionsView: View {
             }
         }
         .padding(16)
-        .cardBackground()
+        .parchmentPanel()
     }
 
     private var completedCount: Int {

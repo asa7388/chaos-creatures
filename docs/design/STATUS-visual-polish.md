@@ -1,6 +1,6 @@
 # Visual Polish — Status Log
 
-## Current Phase: Wave 4 complete, Wave 5+6 next
+## Current Phase: Wave 5 complete, Wave 6+ next
 ## Started: 2026-02-19
 ## Plan: [PLAN-visual-polish.md](PLAN-visual-polish.md)
 
@@ -17,10 +17,10 @@
 | **2** | SpriteKit card parity | **COMPLETE** | a3baf91 | CreatureNode + HandCardNode texture layers |
 | **3** | Screen backgrounds | **COMPLETE** | a2fdce4 | 8 screens textured, CardDetailView rewritten |
 | **4** | Faction-specific card frames | **COMPLETE** | main | Faction borders, text panels, stat icons, decorative accents |
-| **5** | UI chrome | READY | — | |
+| **5** | UI chrome | **COMPLETE** | main + 3 agents | Panel modifiers, button styles, custom icons, audit fixes |
 | **6** | Card states + interactions | READY | — | |
-| **7** | Rarity treatments | BLOCKED (needs 4) | — | |
-| **8** | Settings + final polish | BLOCKED (needs 5/6/7) | — | |
+| **7** | Rarity treatments | READY | — | |
+| **8** | Settings + final polish | BLOCKED (needs 6/7) | — | |
 
 ## Audit Status
 
@@ -30,6 +30,7 @@
 | Visual parity | 2 | PENDING | — |
 | Screen texture | 3 | PENDING | — |
 | Faction identity | 4 | PENDING | — |
+| UI chrome consistency | 5 | PASS | 4 issues found and fixed |
 | Performance | 2, 4, 6, 7 | PENDING | — |
 | Immersion (final) | 8 | PENDING | — |
 
@@ -205,6 +206,40 @@ Added mandatory iterative protocol section to plan:
 - CardFrameView MedallionBadge now uses Bebas Neue for stat numbers
 - Build verified: ** BUILD SUCCEEDED **
 
+**Wave 5: UI Chrome — COMPLETE**
+
+Foundation (main context):
+- Created 3 panel view modifiers: `.leatherPanel()`, `.parchmentPanel()`, `.metalPanel()`
+- Created 2 button styles: `CardstockButtonStyle`, `MetalButtonStyle`
+- Added `AppTab.customIconName` for custom tab bar icons
+- Updated ContentView tab items to use custom FactionIcons/ assets
+- Changed tab tint from `.ironwright` to `.appAccent`
+- Redesigned ModeSelectionView with custom icons, leather panels, felt background
+
+Agent 1 — ShopView polish:
+- PackRow: renamed `icon` to `iconAsset`, asset catalog icons, `.leatherPanel()`
+- Purchase button: chaos dust icon next to price
+- Free tier subscription card: leather texture overlay
+- Shards section: parchment panel + instability diamond icon
+
+Agent 2 — HomeView + ProfileView polish:
+- HomeView: greeting (`.leatherPanel()` + profile icon), play button (`.metalPanel()` + battle icon), stats (`.leatherPanel()` + asset icons), toolbar `gearshape.fill`
+- ProfileView: player card (`.leatherPanel()` + profile icon), rank (`.parchmentPanel()` + battle icon), stats (`.leatherPanel()`), faction mastery (`.leatherPanel()` + emblem assets), achievements (`.leatherPanel()` + battle icon), toolbar `gearshape.fill`
+- StatTile: added `isTemplate` parameter for tintable vs pre-colored icons
+
+Agent 3 — Remaining views:
+- CollectionView: toolbar `gearshape.fill`
+- DailyMissionsView: `.cardBackground()` → `.parchmentPanel()`
+- DeckListView: DeckRowView `.cardBackground()` → `.leatherPanel()`
+
+Audit (consistency agent):
+- Found 4 issues, all fixed:
+  1. CardDetailView: 5x `.cardBackground()` → `.leatherPanel()`
+  2. ShopView toolbar: `gearshape` → `gearshape.fill`
+  3. DeckListView toolbar: `gearshape` → `gearshape.fill`
+  4. DeckListView: added `bg-dark-leather` background texture
+- Build: passed after `.foregroundStyle` → `.foregroundColor` fix in ShopView
+
 ---
 
 ## Budget Tracking
@@ -259,3 +294,15 @@ Added mandatory iterative protocol section to plan:
 - `ChaosCreatures/Config/CardFont.swift` — statNumber, uiLabel, uiLabelBold accessors
 - `ChaosCreatures/SpriteKit/Utilities/SpriteKitConstants.swift` — SK.Fonts extensions
 - `ChaosCreatures/Views/Components/CardFrameView.swift` — MedallionBadge uses Bebas Neue
+
+### Wave 5 (UI Chrome)
+- `ChaosCreatures/Extensions/View+Loading.swift` — 3 panel modifiers, 2 button styles
+- `ChaosCreatures/App/AppState.swift` — AppTab.customIconName property
+- `ChaosCreatures/App/ContentView.swift` — Custom tab icons, tint, ModeSelectionView redesign
+- `ChaosCreatures/Views/Shop/ShopView.swift` — Pack rows, currency, shards, subscription, toolbar
+- `ChaosCreatures/Views/Home/HomeView.swift` — All sections textured, custom icons, StatTile refactor
+- `ChaosCreatures/Views/Profile/ProfileView.swift` — All sections textured, emblem assets, toolbar
+- `ChaosCreatures/Views/Collection/CollectionView.swift` — Toolbar icon
+- `ChaosCreatures/Views/Home/DailyMissionsView.swift` — Parchment panel
+- `ChaosCreatures/Views/Collection/DeckListView.swift` — Leather panel, toolbar, background texture
+- `ChaosCreatures/Views/Collection/CardDetailView.swift` — 5x cardBackground → leatherPanel

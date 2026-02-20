@@ -279,7 +279,7 @@ struct CardDetailView: View {
         )
         .tint(.textTertiary)
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 
     // MARK: - Triggered Abilities Section (Expandable)
@@ -333,7 +333,7 @@ struct CardDetailView: View {
         )
         .tint(.textTertiary)
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 
     // MARK: - Applied Modifiers Section (Expandable, default collapsed)
@@ -411,7 +411,7 @@ struct CardDetailView: View {
         )
         .tint(.textTertiary)
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 
     // MARK: - Evolution Section (Expandable)
@@ -584,7 +584,7 @@ struct CardDetailView: View {
         )
         .tint(.textTertiary)
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 
     // MARK: - Evolution History (Expandable, default collapsed)
@@ -646,7 +646,7 @@ struct CardDetailView: View {
         )
         .tint(.textTertiary)
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 
     // MARK: - Action Bar

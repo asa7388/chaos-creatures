@@ -26,7 +26,12 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label(AppTab.home.rawValue, systemImage: AppTab.home.iconName)
+                Label {
+                    Text(AppTab.home.rawValue)
+                } icon: {
+                    Image(AppTab.home.customIconName)
+                        .renderingMode(.template)
+                }
             }
             .tag(AppTab.home)
 
@@ -43,7 +48,12 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label(AppTab.collection.rawValue, systemImage: AppTab.collection.iconName)
+                Label {
+                    Text(AppTab.collection.rawValue)
+                } icon: {
+                    Image(AppTab.collection.customIconName)
+                        .renderingMode(.template)
+                }
             }
             .tag(AppTab.collection)
 
@@ -60,7 +70,12 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label(AppTab.decks.rawValue, systemImage: AppTab.decks.iconName)
+                Label {
+                    Text(AppTab.decks.rawValue)
+                } icon: {
+                    Image(AppTab.decks.customIconName)
+                        .renderingMode(.template)
+                }
             }
             .tag(AppTab.decks)
 
@@ -77,7 +92,12 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label(AppTab.profile.rawValue, systemImage: AppTab.profile.iconName)
+                Label {
+                    Text(AppTab.profile.rawValue)
+                } icon: {
+                    Image(AppTab.profile.customIconName)
+                        .renderingMode(.template)
+                }
             }
             .tag(AppTab.profile)
 
@@ -96,11 +116,16 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label(AppTab.shop.rawValue, systemImage: AppTab.shop.iconName)
+                Label {
+                    Text(AppTab.shop.rawValue)
+                } icon: {
+                    Image(AppTab.shop.customIconName)
+                        .renderingMode(.template)
+                }
             }
             .tag(AppTab.shop)
         }
-        .tint(.ironwright)
+        .tint(.appAccent)
         .fullScreenCover(isPresented: $router.showBattle) {
             if let matchID = router.matchID {
                 BattleContainerView(matchId: matchID)
@@ -135,7 +160,7 @@ struct ModeSelectionView: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("Choose Mode")
-                .font(.system(size: 24, weight: .bold))
+                .font(CardFont.displayTitle(size: 24))
                 .foregroundColor(.textPrimary)
                 .padding(.top, 20)
 
@@ -144,12 +169,19 @@ struct ModeSelectionView: View {
                     router.startMatchmaking(mode: mode)
                 }) {
                     HStack {
+                        Image(modeIconName(mode))
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(modeColor(mode))
+
                         VStack(alignment: .leading, spacing: 4) {
                             Text(mode.displayName)
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(CardFont.cardName(size: 18))
                                 .foregroundColor(.textPrimary)
                             Text(modeDescription(mode))
-                                .font(.system(size: 13))
+                                .font(CardFont.body(size: 13))
                                 .foregroundColor(.textSecondary)
                         }
                         Spacer()
@@ -157,7 +189,7 @@ struct ModeSelectionView: View {
                             .foregroundColor(.textTertiary)
                     }
                     .padding(16)
-                    .cardBackground()
+                    .leatherPanel()
                 }
                 .padding(.horizontal, 16)
             }
@@ -165,7 +197,16 @@ struct ModeSelectionView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-play-mat-felt")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.3)
+            }
+        )
         .navigationTitle("Play")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -175,6 +216,22 @@ struct ModeSelectionView: View {
         case .ranked: return "Compete for rank. Earn bonus rewards."
         case .casual: return "Play without rank changes."
         case .practice: return "Play against AI. No rewards."
+        }
+    }
+
+    private func modeIconName(_ mode: GameMode) -> String {
+        switch mode {
+        case .ranked: return "FactionIcons/ui-battle"
+        case .casual: return "FactionIcons/ui-battle"
+        case .practice: return "FactionIcons/ui-battle"
+        }
+    }
+
+    private func modeColor(_ mode: GameMode) -> Color {
+        switch mode {
+        case .ranked: return .tauntGold
+        case .casual: return .orderBlue
+        case .practice: return .textSecondary
         }
     }
 }

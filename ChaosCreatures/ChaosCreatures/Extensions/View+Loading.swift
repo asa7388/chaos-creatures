@@ -264,4 +264,114 @@ extension View {
                     .stroke(Color.borderDefault, lineWidth: 1)
             )
     }
+
+    /// Leather-textured panel background
+    func leatherPanel(cornerRadius: CGFloat = 12) -> some View {
+        self
+            .background(
+                ZStack {
+                    Color.bgSecondary
+                    Image("UIComponents/ui-panel-leather")
+                        .resizable()
+                        .opacity(0.5)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(Color.borderDefault.opacity(0.6), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+    }
+
+    /// Parchment-textured panel background
+    func parchmentPanel(cornerRadius: CGFloat = 12) -> some View {
+        self
+            .background(
+                ZStack {
+                    Color(hex: "#2A2318")
+                    Image("CardTextures/tex-parchment")
+                        .resizable()
+                        .opacity(0.35)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(Color.tauntGold.opacity(0.2), lineWidth: 0.5)
+            )
+    }
+
+    /// Metal-textured panel (for premium/highlighted sections)
+    func metalPanel(texture: String = "CardTextures/metal-bronze", cornerRadius: CGFloat = 12) -> some View {
+        self
+            .background(
+                ZStack {
+                    Color.bgTertiary
+                    Image(texture)
+                        .resizable()
+                        .opacity(0.3)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(Color.tauntGold.opacity(0.3), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
+    }
+}
+
+// MARK: - Button Styles
+
+/// Embossed cardstock button — default for most UI actions
+struct CardstockButtonStyle: ButtonStyle {
+    var tintColor: Color = .textPrimary
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                ZStack {
+                    Color.bgTertiary
+                    Image(configuration.isPressed
+                          ? "UIComponents/ui-button-cardstock-pressed"
+                          : "UIComponents/ui-button-cardstock")
+                        .resizable()
+                        .opacity(0.6)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.borderDefault.opacity(0.5), lineWidth: 0.5)
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+/// Metal-accented button for primary CTAs
+struct MetalButtonStyle: ButtonStyle {
+    var metalColor: Color = .tauntGold
+    var metalTexture: String = "CardTextures/metal-bronze"
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                ZStack {
+                    metalColor.opacity(0.8)
+                    Image(metalTexture)
+                        .resizable()
+                        .opacity(configuration.isPressed ? 0.5 : 0.35)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(metalColor.opacity(0.6), lineWidth: 1)
+            )
+            .shadow(color: metalColor.opacity(configuration.isPressed ? 0.1 : 0.3), radius: 4, y: 2)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
 }

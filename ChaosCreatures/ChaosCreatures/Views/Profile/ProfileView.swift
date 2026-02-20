@@ -27,7 +27,11 @@ struct ProfileView: View {
                 // Achievements link
                 NavigationLink(value: ProfileDestination.achievements) {
                     HStack {
-                        Image(systemName: "medal.fill")
+                        Image("FactionIcons/ui-battle")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
                             .foregroundColor(.tauntGold)
                         Text("Achievements")
                             .font(CardFont.bodyBold(size: 16))
@@ -37,7 +41,7 @@ struct ProfileView: View {
                             .foregroundColor(.textTertiary)
                     }
                     .padding(16)
-                    .cardBackground()
+                    .leatherPanel()
                 }
             }
             .padding(.horizontal, 16)
@@ -58,7 +62,7 @@ struct ProfileView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: ProfileDestination.settings) {
-                    Image(systemName: "gearshape")
+                    Image(systemName: "gearshape.fill")
                         .foregroundColor(.textSecondary)
                 }
             }
@@ -77,8 +81,11 @@ struct ProfileView: View {
                 .fill(Color.bgTertiary)
                 .frame(width: 72, height: 72)
                 .overlay(
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 28))
+                    Image("FactionIcons/ui-profile")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 32, height: 32)
                         .foregroundColor(.textTertiary)
                 )
 
@@ -116,7 +123,7 @@ struct ProfileView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(20)
-        .cardBackground()
+        .leatherPanel()
         .padding(.top, 8)
     }
 
@@ -136,8 +143,11 @@ struct ProfileView: View {
                             .fill(Color.rankColor(rank))
                             .frame(width: 48, height: 48)
                             .overlay(
-                                Image(systemName: "trophy.fill")
-                                    .font(.system(size: 20))
+                                Image("FactionIcons/ui-battle")
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 22, height: 22)
                                     .foregroundColor(.black.opacity(0.6))
                             )
                         Text(rank.displayName)
@@ -191,7 +201,7 @@ struct ProfileView: View {
             }
         }
         .padding(16)
-        .cardBackground()
+        .parchmentPanel()
     }
 
     // MARK: - Battle Stats
@@ -213,7 +223,7 @@ struct ProfileView: View {
             }
         }
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 
     // MARK: - Faction Mastery
@@ -226,9 +236,10 @@ struct ProfileView: View {
 
             ForEach(FactionShortName.allCases) { faction in
                 HStack(spacing: 12) {
-                    Image(systemName: faction.systemIconName)
-                        .font(.system(size: 18))
-                        .foregroundColor(faction.swiftUIColor)
+                    Image(factionEmblemAsset(faction))
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
                         .frame(width: 32, height: 32)
                         .background(faction.swiftUIColor.opacity(0.15))
                         .cornerRadius(8)
@@ -266,10 +277,20 @@ struct ProfileView: View {
             }
         }
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 
     // MARK: - Helpers
+
+    private func factionEmblemAsset(_ faction: FactionShortName) -> String {
+        switch faction {
+        case .ironwright: return "FactionEmblems/emblem-ironwright"
+        case .feyCourts: return "FactionEmblems/emblem-fey"
+        case .demonicKingdoms: return "FactionEmblems/emblem-demonic"
+        case .celestialCrusade: return "FactionEmblems/emblem-celestial"
+        case .theEndless: return "FactionEmblems/emblem-endless"
+        }
+    }
 
     private func profileStatRow(_ title: String, value: String) -> some View {
         HStack {

@@ -118,7 +118,7 @@ struct CollectionView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: CollectionDestination.settings) {
-                    Image(systemName: "gearshape")
+                    Image(systemName: "gearshape.fill")
                         .foregroundColor(.textSecondary)
                 }
             }

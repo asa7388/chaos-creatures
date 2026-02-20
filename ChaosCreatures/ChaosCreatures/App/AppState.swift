@@ -284,4 +284,14 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .shop: return "bag.fill"
         }
     }
+
+    var customIconName: String {
+        switch self {
+        case .home: return "FactionIcons/ui-home"
+        case .collection: return "FactionIcons/ui-collection"
+        case .decks: return "FactionIcons/ui-deck"
+        case .profile: return "FactionIcons/ui-profile"
+        case .shop: return "FactionIcons/ui-shop"
+        }
+    }
 }

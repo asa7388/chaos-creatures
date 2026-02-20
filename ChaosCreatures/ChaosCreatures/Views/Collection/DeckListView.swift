@@ -38,7 +38,16 @@ struct DeckListView: View {
                 deckList
             }
         }
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-dark-leather")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.35)
+            }
+        )
         .navigationTitle("My Decks")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -53,7 +62,7 @@ struct DeckListView: View {
                         }
                     }
                     NavigationLink(value: DecksDestination.settings) {
-                        Image(systemName: "gearshape")
+                        Image(systemName: "gearshape.fill")
                             .foregroundColor(.textSecondary)
                     }
                 }
@@ -189,7 +198,7 @@ struct DeckRowView: View {
                 .foregroundColor(.textTertiary)
         }
         .padding(16)
-        .cardBackground()
+        .leatherPanel()
     }
 }
 
