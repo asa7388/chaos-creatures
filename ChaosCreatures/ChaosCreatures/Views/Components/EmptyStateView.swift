@@ -13,7 +13,7 @@ struct EmptyStateView: View {
     let action: (() -> Void)?
 
     init(
-        icon: String = "tray",
+        icon: String = "UIIcons/ui-tray",
         message: String,
         description: String? = nil,
         actionTitle: String? = nil,

@@ -155,8 +155,11 @@ struct SignInView: View {
                     Task { await appState.auth.signInWithApple() }
                 }) {
                     HStack(spacing: 8) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 18))
+                        Image("UIIcons/ui-account")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 18, height: 18)
                         Text("Sign in with Apple")
                             .font(CardFont.uiLabelBold(size: 17))
                     }

@@ -63,6 +63,32 @@ struct ThemedGlyph: View {
             return "UIIcons/ui-evolution-sparkle"
         case "photo":
             return "UIIcons/ui-hero"
+        case "rectangle.portrait.fill":
+            return "UIIcons/ui-hand-cards"
+        case "person.fill", "person.circle.fill", "person":
+            return "UIIcons/ui-account"
+        case "rectangle.portrait.and.arrow.right":
+            return "UIIcons/ui-sign-out"
+        case "trash", "trash.fill":
+            return "UIIcons/ui-trash"
+        case "speaker.wave.2.fill", "speaker.wave.2", "speaker":
+            return "UIIcons/ui-audio"
+        case "eye.fill", "eye":
+            return "UIIcons/ui-visuals"
+        case "gamecontroller.fill", "gamecontroller":
+            return "UIIcons/ui-gameplay"
+        case "bell.fill", "bell":
+            return "UIIcons/ui-notifications"
+        case "lock.shield.fill", "lock.shield":
+            return "UIIcons/ui-privacy"
+        case "doc.text", "doc.text.fill", "doc":
+            return "UIIcons/ui-document"
+        case "square.and.arrow.up", "square.and.arrow.up.fill":
+            return "UIIcons/ui-export"
+        case "info.circle.fill", "info.circle", "info":
+            return "UIIcons/ui-info"
+        case "tray", "tray.fill":
+            return "UIIcons/ui-tray"
         case "shield.fill", "exclamationmark.shield.fill":
             return "KeywordIcons/kw-shield"
         default:
