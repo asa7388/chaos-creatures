@@ -84,7 +84,7 @@ struct ModifierPickerView: View {
                         Text("ORDER")
                             .font(CardFont.bodyBold(size: 14))
                     }
-                    .foregroundColor(channelDirection == .order ? .white : .orderBlue)
+                    .foregroundColor(channelDirection == .order ? .textPrimary : .orderBlue)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(channelDirection == .order ? Color.orderBlue : Color.clear)
                 }
@@ -104,7 +104,7 @@ struct ModifierPickerView: View {
                         Text("CHAOS")
                             .font(CardFont.bodyBold(size: 14))
                     }
-                    .foregroundColor(channelDirection == .chaos ? .white : .chaosRed)
+                    .foregroundColor(channelDirection == .chaos ? .textPrimary : .chaosRed)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(channelDirection == .chaos ? Color.chaosRed : Color.clear)
                 }

@@ -25,6 +25,7 @@
 		193540074882D560F4A4D8FA /* ChaosRollScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DFCC544B7863CDD6F551CA4 /* ChaosRollScene.swift */; };
 		1E02794BB52FF384415C397D /* DamageNumberNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57B18654ABEEDFE02FF0950 /* DamageNumberNode.swift */; };
 		1F6385903F199F0C0E31AE55 /* ManaGemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF9BC3783B4BAD2770ED8A91 /* ManaGemView.swift */; };
+		CD01A2B3E4F56789AB012345 /* ChaosDustView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD01A2B3E4F56789AB012346 /* ChaosDustView.swift */; };
 		20347703EF5C227E29C76D4F /* EvolutionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B0BF751EF17523C3F897BB /* EvolutionRevealView.swift */; };
 		28A7B575C65EAF9C1226DC13 /* KeywordBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989E1235853D35C321E96662 /* KeywordBadgeView.swift */; };
 		2A843FE5CFB4BAEA111BEE6A /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1DC1EA14BB53FE59FCAFBDB /* OnboardingView.swift */; };
@@ -272,6 +273,7 @@
 		BA7599BFB694CB5A2477BEBD /* ChaosCreaturesUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ChaosCreaturesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE801104B9DC084C46BED4B5 /* AvatarNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarNode.swift; sourceTree = "<group>"; };
 		BF9BC3783B4BAD2770ED8A91 /* ManaGemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManaGemView.swift; sourceTree = "<group>"; };
+		CD01A2B3E4F56789AB012346 /* ChaosDustView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaosDustView.swift; sourceTree = "<group>"; };
 		C14C7B374344960D8C2F7E72 /* PlayerAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerAction.swift; sourceTree = "<group>"; };
 		C532C40E79E074F1A72DCCB3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C75315E95A7B7A3FD15514A5 /* EvolutionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvolutionService.swift; sourceTree = "<group>"; };
@@ -677,6 +679,7 @@
 			children = (
 				7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */,
 				4B487311E9E0110DA6121F9A /* CardView.swift */,
+				CD01A2B3E4F56789AB012346 /* ChaosDustView.swift */,
 				5AE64322615B77DD0D2F9A62 /* EmptyStateView.swift */,
 				A4688B60BDB611CE942CEFC5 /* ErrorView.swift */,
 				989E1235853D35C321E96662 /* KeywordBadgeView.swift */,
@@ -954,6 +957,7 @@
 				28A7B575C65EAF9C1226DC13 /* KeywordBadgeView.swift in Sources */,
 				F7B31BBDECADA2563B932C8F /* LoadingView.swift in Sources */,
 				5A77BBF50206859F29831FDF /* ManaBarNode.swift in Sources */,
+				CD01A2B3E4F56789AB012345 /* ChaosDustView.swift in Sources */,
 				1F6385903F199F0C0E31AE55 /* ManaGemView.swift in Sources */,
 				011251E18ECE5C181762C220 /* MatchEvent.swift in Sources */,
 				A548679095F68BD1EF3E7970 /* MatchService.swift in Sources */,

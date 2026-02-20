@@ -66,7 +66,7 @@ struct ErrorOverlayModifier: ViewModifier {
                         Button(action: onRetry) {
                             Text("Retry")
                                 .font(CardFont.bodyBold(size: 14))
-                                .foregroundColor(.white)
+                                .foregroundColor(.textPrimary)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 10)
                                 .background(Color.borderActive)
@@ -110,7 +110,7 @@ struct EmptyStateModifier: ViewModifier {
                     Button(action: action) {
                         Text(actionTitle)
                             .font(CardFont.bodyBold(size: 14))
-                            .foregroundColor(.white)
+                            .foregroundColor(.textPrimary)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 10)
                             .background(Color.borderActive)
@@ -156,7 +156,7 @@ struct ToastModifier: ViewModifier {
             if isPresented {
                 Text(message)
                     .font(CardFont.body(size: 14))
-                    .foregroundColor(.white)
+                    .foregroundColor(.textPrimary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .background(type.color)

@@ -1,6 +1,6 @@
 # Visual Polish — Status Log
 
-## Current Phase: Audit remediation complete, Wave 6+ next
+## Current Phase: Wave 8 in progress (final wave)
 ## Started: 2026-02-19
 ## Plan: [PLAN-visual-polish.md](PLAN-visual-polish.md)
 
@@ -18,9 +18,9 @@
 | **3** | Screen backgrounds | **COMPLETE** | a2fdce4 | 8 screens textured, CardDetailView rewritten |
 | **4** | Faction-specific card frames | **COMPLETE** | main | Faction borders, text panels, stat icons, decorative accents |
 | **5** | UI chrome | **COMPLETE** | main + 3 agents | Panel modifiers, button styles, custom icons, audit fixes |
-| **6** | Card states + interactions | READY | — | |
-| **7** | Rarity treatments | READY | — | |
-| **8** | Settings + final polish | BLOCKED (needs 6/7) | — | |
+| **6** | Card states + interactions | **COMPLETE** | 3 agents | Parallax, expand, destruction, damage stamps, lava pulse, exhausted state |
+| **7** | Rarity treatments | **COMPLETE** | 3 agents | Holographic foil, GyroscopeManager, 5-tier SwiftUI + SpriteKit treatments |
+| **8** | Settings + final polish | **IN PROGRESS** | 3 agents | Settings redesign, CardFrameView polish, currency display, off-white sweep |
 
 ## Audit Status
 
@@ -378,3 +378,32 @@ Audit (consistency agent):
 - `SpriteKit/Actions/DeathAction.swift` — Wired to new playDestruction()
 - `SpriteKit/Scenes/BattleScene.swift` — Stat change detection, lava pulse setup, exhausted state
 - `Views/Battle/BattleContainerView.swift` — SwiftUI hand parallax, long-press card expand overlay
+
+### Wave 7: Rarity Treatments — COMPLETE
+
+**3 parallel implementation agents:**
+1. Holographic foil asset (a0785bc): 512x512 procedural ImageMagick texture (plasma + emboss + metallic sheen)
+2. SwiftUI rarity treatments (a5da338): GyroscopeManager singleton (CMMotion + Simulator sine fallback), RarityBorderModifier with 5 tiers, RarityFoilBorderMask shape, legendaryArtBleed, canvasWeaveOpacity per tier
+3. SpriteKit rarity treatments (a84b582): applyRarityTreatment() in CreatureNode + HandCardNode, 5 tiers using SKShapeNode + SKAction.colorize (no CIFilter, no SKEmitterNode)
+
+**Audit: ALL 11 items PASS.** No unwired features, no performance violations.
+
+**Rarity tier summary:**
+- Common: matte (no treatment)
+- Uncommon: 1px silver inner border (#C0C0C0, 0.6α)
+- Rare: 1.5px gold inner border (#FFD700, 0.7α) + pulsing glow
+- Epic: rainbow shimmer + holographic foil overlay (gyroscope-driven in SwiftUI, SKAction.colorize in SpriteKit)
+- Legendary: gold prismatic border + full foil + extended art (+4pt) + sparkle dots + dual golden shadow
+
+**Files created:**
+- `Services/GyroscopeManager.swift` — CoreMotion singleton
+- `Resources/Assets.xcassets/RarityEffects/holographic-foil.imageset/` — procedural foil texture
+
+**Files modified:**
+- `SpriteKit/Utilities/SpriteKitConstants.swift` — SK.RarityEffects tier-specific constants
+- `SpriteKit/Nodes/CreatureNode.swift` — applyRarityTreatment(), spawnLegendarySparkles()
+- `SpriteKit/Nodes/HandCardNode.swift` — applyRarityEffect() rewrite for 5 tiers
+- `Views/Components/CardFrameView.swift` — RarityBorderModifier, RarityFoilBorderMask
+- `ChaosCreatures.xcodeproj/project.pbxproj` — GyroscopeManager + CoreMotion framework
+
+**Commit:** `03b2a2a` — build(polish): Wave 7 — rarity treatments across SwiftUI + SpriteKit

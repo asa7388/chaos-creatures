@@ -62,15 +62,8 @@ struct ShopView: View {
 
     private var currencyHeader: some View {
         HStack {
-            // Chaos Dust
-            HStack(spacing: 6) {
-                Image("StatIcons/chaos-mote-ironwright")
-                    .resizable()
-                    .frame(width: 22, height: 22)
-                Text("\(appState.player?.chaosDust ?? 0)")
-                    .font(CardFont.statNumber(size: 20))
-                    .foregroundColor(.tauntGold)
-            }
+            // Chaos Dust — embossed metal plate
+            ChaosDustView(amount: appState.player?.chaosDust ?? 0)
 
             Spacer()
 
@@ -285,7 +278,7 @@ struct SubscriptionCardItem: View {
             Button(action: onUpgrade) {
                 Text(isCurrent ? "Current Tier" : "Upgrade")
                     .font(CardFont.bodyBold(size: 14))
-                    .foregroundColor(isCurrent ? .textTertiary : .white)
+                    .foregroundColor(isCurrent ? .textTertiary : .textPrimary)
                     .frame(maxWidth: .infinity, minHeight: 40)
                     .background(isCurrent ? Color.bgQuaternary : tierAccentColor)
                     .cornerRadius(8)
@@ -407,7 +400,7 @@ struct PackRow: View {
                     Text(price)
                         .font(CardFont.bodyBold(size: 13))
                 }
-                .foregroundColor(canAfford ? .white : .textDisabled)
+                .foregroundColor(canAfford ? .textPrimary : .textDisabled)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(canAfford ? color : Color.bgQuaternary)

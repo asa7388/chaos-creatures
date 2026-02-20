@@ -152,7 +152,7 @@ struct CollectionView: View {
                         VStack(spacing: 4) {
                             Text(faction.displayName)
                                 .font(CardFont.body(size: 14))
-                                .foregroundColor(selectedFaction == faction ? .white : .textTertiary)
+                                .foregroundColor(selectedFaction == faction ? .textPrimary : .textTertiary)
 
                             Rectangle()
                                 .fill(selectedFaction == faction ? faction.color : Color.clear)

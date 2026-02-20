@@ -241,13 +241,17 @@ struct HomeView: View {
                     icon: "FactionIcons/ui-collection",
                     color: .orderBlue
                 )
-                StatTile(
-                    title: "Dust",
-                    value: "\(appState.player?.chaosDust ?? 0)",
-                    icon: "StatIcons/chaos-mote-ironwright",
-                    color: .ironwright,
-                    isTemplate: false
-                )
+                // Dust — embossed metal plate display
+                VStack(spacing: 6) {
+                    ChaosDustView(amount: appState.player?.chaosDust ?? 0, size: .compact)
+                    Text("Dust")
+                        .font(CardFont.body(size: 11))
+                        .foregroundColor(.textTertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.bgTertiary)
+                .cornerRadius(10)
             }
         }
         .padding(16)

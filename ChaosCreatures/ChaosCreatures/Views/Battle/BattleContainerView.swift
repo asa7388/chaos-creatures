@@ -362,7 +362,7 @@ struct OpponentHUDView: View {
     private var instabilityColor: Color {
         if instability >= 15 { return .chaosRed }
         if instability <= 4 { return .orderBlue }
-        return .white
+        return .textPrimary
     }
 }
 

@@ -208,11 +208,14 @@ struct CardPackOpeningView: View {
                     .foregroundColor(.tauntGold)
             }
 
-            // Balance
+            // Balance — embossed metal plate
             if let dust = appState.player?.chaosDust {
-                Text("Your balance: \(dust)")
-                    .font(CardFont.body(size: 12))
-                    .foregroundColor(.textTertiary)
+                HStack(spacing: 6) {
+                    Text("Balance:")
+                        .font(CardFont.body(size: 12))
+                        .foregroundColor(.textTertiary)
+                    ChaosDustView(amount: dust, size: .compact)
+                }
             }
         }
     }

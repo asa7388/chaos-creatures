@@ -62,7 +62,7 @@ struct AchievementsView: View {
         Button(action: action) {
             Text(label)
                 .font(isSelected ? CardFont.bodyBold(size: 13) : CardFont.body(size: 13))
-                .foregroundColor(isSelected ? .white : .textSecondary)
+                .foregroundColor(isSelected ? .textPrimary : .textSecondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .background(isSelected ? Color.ironwright : Color.bgTertiary)

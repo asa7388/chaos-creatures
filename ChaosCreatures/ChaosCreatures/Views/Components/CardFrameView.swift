@@ -253,7 +253,7 @@ private struct MedallionBadge: View {
             // Number stamped into the medallion — Bebas Neue for bold, impactful numerals
             Text("\(value)")
                 .font(CardFont.statNumber(size: size * 0.50))
-                .foregroundColor(Color(hex: "#F0E6D2"))
+                .foregroundColor(Color(hex: "#F0EAD6"))
                 .shadow(color: .black.opacity(0.9), radius: 1.5, x: 0, y: 1)
                 .shadow(color: tintColor.opacity(0.3), radius: 3, x: 0, y: 0)
         }
@@ -634,6 +634,16 @@ struct CardFrameView: View {
 
     // MARK: - Contained Text Panel
 
+    /// The name bar bridge lifts the text panel slightly into the art area,
+    /// creating a visual "bridge" between art and text at the name bar.
+    private var nameBarBridgeOffset: CGFloat {
+        switch size {
+        case .grid: return 3
+        case .hand: return 2
+        case .detail, .fullscreen: return 5
+        }
+    }
+
     private var textPanel: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -645,6 +655,8 @@ struct CardFrameView: View {
                 // Text content
                 panelContent
             }
+            // Shift panel upward so the name bar bridges into the art area
+            .offset(y: -nameBarBridgeOffset)
         }
         .frame(width: size.width, height: size.height)
     }
@@ -751,8 +763,9 @@ struct CardFrameView: View {
         }
     }
 
-    /// Warm cream text color — like ink on aged parchment, not digital white.
-    private var parchmentTextColor: Color { Color(hex: "#F0E6D2") }
+    /// Off-white text color — like ink on aged parchment, not digital white.
+    /// Matches design spec #F0EAD6 throughout all card text.
+    private var parchmentTextColor: Color { Color(hex: "#F0EAD6") }
 
     // MARK: - Grid Panel (112x157) -- Name only, minimal
 
@@ -827,7 +840,7 @@ struct CardFrameView: View {
 
                 Text(data.typeLine)
                     .font(CardFont.body(size: 12))
-                    .foregroundColor(Color(hex: "#BBBBBB"))
+                    .foregroundColor(parchmentTextColor.opacity(0.70))
                     .lineLimit(1)
 
                 Spacer()
@@ -842,7 +855,7 @@ struct CardFrameView: View {
             if !data.flavorText.isEmpty {
                 Text(data.flavorText)
                     .font(CardFont.flavorText(size: 12))
-                    .foregroundColor(Color(hex: "#999999"))
+                    .foregroundColor(parchmentTextColor.opacity(0.55))
                     .multilineTextAlignment(.leading)
                     .lineLimit(3)
                     .padding(.top, 2)
@@ -855,12 +868,38 @@ struct CardFrameView: View {
 
     // MARK: - Keyword Badges Row (Detail only)
 
+    /// Maximum visible keywords before showing "more" indicator.
+    private let maxVisibleKeywords = 2
+
     private var keywordBadgesRow: some View {
         HStack(spacing: 4) {
-            ForEach(data.keywords) { keyword in
+            ForEach(Array(data.keywords.prefix(maxVisibleKeywords))) { keyword in
                 keywordBadge(keyword: keyword)
             }
+
+            // "More" chevron when keywords exceed the visible limit
+            if data.keywords.count > maxVisibleKeywords {
+                let extraCount = data.keywords.count - maxVisibleKeywords
+                HStack(spacing: 2) {
+                    Text("+\(extraCount)")
+                        .font(CardFont.body(size: 10))
+                        .lineLimit(1)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .semibold))
+                }
+                .foregroundColor(factionAccentColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(factionAccentColor.opacity(0.12))
+                .cornerRadius(4)
+            }
         }
+    }
+
+    /// Faction accent color for the "more" keywords chevron.
+    private var factionAccentColor: Color {
+        guard let faction = data.faction else { return parchmentTextColor }
+        return Color.factionAccent(faction)
     }
 
     private func keywordBadge(keyword: Keyword) -> some View {
@@ -1122,7 +1161,7 @@ struct CardFrameView: View {
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: size.width * 0.22, height: size.width * 0.22)
-                            .opacity(0.06)
+                            .opacity(0.07)
                             .blendMode(.screen)
                         Spacer()
                     }
@@ -1598,7 +1637,7 @@ extension Keyword {
                             instability: tier.tierIndex,
                             tier: tier,
                             faction: faction,
-                            keywords: [.shield, .taunt],
+                            keywords: [.shield, .taunt, .lifesteal, .haste],
                             flavorText: "A warrior forged in \(tier.displayName) fire."
                         ),
                         size: .detail

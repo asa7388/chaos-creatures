@@ -102,7 +102,7 @@ struct DeckBuilderView: View {
                     Button(action: { withAnimation { showDeckPanel = false } }) {
                         Text("Available Cards")
                             .font(CardFont.bodyBold(size: 13))
-                            .foregroundColor(showDeckPanel ? .textTertiary : .white)
+                            .foregroundColor(showDeckPanel ? .textTertiary : .textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
                             .background(showDeckPanel ? Color.clear : Color.orderBlue.opacity(0.3))
@@ -115,7 +115,7 @@ struct DeckBuilderView: View {
                             Text("(\(totalCards))")
                                 .font(CardFont.stats(size: 12))
                         }
-                        .foregroundColor(showDeckPanel ? .white : .textTertiary)
+                        .foregroundColor(showDeckPanel ? .textPrimary : .textTertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(showDeckPanel ? Color.orderBlue.opacity(0.3) : Color.clear)
@@ -299,7 +299,7 @@ struct DeckBuilderView: View {
         }) {
             Text(label)
                 .font(CardFont.bodyBold(size: 12))
-                .foregroundColor(isSelected ? .white : .textTertiary)
+                .foregroundColor(isSelected ? .textPrimary : .textTertiary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(isSelected ? Color.orderBlue.opacity(0.4) : Color.bgTertiary)
