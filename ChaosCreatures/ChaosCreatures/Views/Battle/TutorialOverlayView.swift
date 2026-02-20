@@ -159,7 +159,7 @@ struct TutorialOverlayView: View {
                 VStack(spacing: 16) {
                     // Icon
                     Image(systemName: step.iconName)
-                        .font(.system(size: 36))
+                        .font(.system(size: 36))  // SF Symbol icon size - keep as-is
                         .foregroundColor(step.iconColor)
 
                     // Title
@@ -193,7 +193,7 @@ struct TutorialOverlayView: View {
                     }) {
                         Text(step == .complete ? "Start Playing!" : "Got It")
                             .font(CardFont.bodyBold(size: 15))
-                            .foregroundColor(.white)
+                            .foregroundColor(.textPrimary)
                             .frame(maxWidth: 200)
                             .padding(.vertical, 12)
                             .background(step.iconColor)

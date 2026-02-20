@@ -12,7 +12,7 @@ struct ErrorView: View {
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 44))
+                .font(.system(size: 44))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.warningYellow)
 
             Text("Something went wrong")
@@ -31,7 +31,7 @@ struct ErrorView: View {
                     Text("Retry")
                 }
                 .font(CardFont.bodyBold(size: 15))
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .padding(.horizontal, 28)
                 .padding(.vertical, 12)
                 .background(Color.borderActive)
@@ -46,6 +46,6 @@ struct ErrorView: View {
 
 #Preview {
     ErrorView(message: "Failed to load collection. Check your connection and try again.") {
-        print("Retry tapped")
+        // no-op
     }
 }

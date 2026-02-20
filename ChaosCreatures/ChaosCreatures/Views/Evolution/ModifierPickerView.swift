@@ -77,7 +77,7 @@ struct ModifierPickerView: View {
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "shield.lefthalf.filled")
-                            .font(.system(size: 14))
+                            .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                         Text("ORDER")
                             .font(CardFont.bodyBold(size: 14))
                     }
@@ -94,7 +94,7 @@ struct ModifierPickerView: View {
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "flame.fill")
-                            .font(.system(size: 14))
+                            .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                         Text("CHAOS")
                             .font(CardFont.bodyBold(size: 14))
                     }
@@ -159,7 +159,7 @@ struct ModifierPickerView: View {
                     // Attunement badge
                     HStack(spacing: 4) {
                         Image(systemName: modifier.attunement == .order ? "shield.lefthalf.filled" : "flame.fill")
-                            .font(.system(size: 10))
+                            .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                         Text(modifier.attunement == .order ? "Order" : "Chaos")
                             .font(CardFont.bodyBold(size: 11))
                     }
@@ -182,7 +182,7 @@ struct ModifierPickerView: View {
                     if let keyword = modifier.grantsKeyword {
                         HStack(spacing: 4) {
                             Image(systemName: keyword.iconName)
-                                .font(.system(size: 11))
+                                .font(.system(size: 11))  // SF Symbol icon size - keep as-is
                             Text(keyword.displayName)
                                 .font(CardFont.body(size: 12))
                         }
@@ -194,7 +194,7 @@ struct ModifierPickerView: View {
                     if instAdj != 0 {
                         HStack(spacing: 3) {
                             Image(systemName: instAdj > 0 ? "arrow.up" : "arrow.down")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 10, weight: .bold))  // SF Symbol icon size - keep as-is
                             Text("\(abs(instAdj)) Instability")
                                 .font(CardFont.body(size: 12))
                         }
@@ -206,7 +206,7 @@ struct ModifierPickerView: View {
                     // Power rating
                     HStack(spacing: 3) {
                         Image(systemName: "bolt.fill")
-                            .font(.system(size: 10))
+                            .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                         Text("Power \(modifier.powerRating)")
                             .font(CardFont.body(size: 11))
                     }
@@ -217,7 +217,7 @@ struct ModifierPickerView: View {
                 if modifier.hasPenalty {
                     HStack(spacing: 4) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 10))
+                            .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                         Text("Has penalty effect")
                             .font(CardFont.body(size: 11))
                     }
@@ -309,7 +309,7 @@ struct ModifierPickerView: View {
                 }) {
                     Text("Confirm Evolution")
                         .font(CardFont.bodyBold(size: 15))
-                        .foregroundColor(selectedModifier != nil ? .black : .textDisabled)
+                        .foregroundColor(selectedModifier != nil ? .textDark : .textDisabled)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(selectedModifier != nil ? Color.tauntGold : Color.bgQuaternary)
                         .cornerRadius(12)

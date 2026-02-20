@@ -179,7 +179,7 @@ struct CardPackOpeningView: View {
                     .frame(width: 120, height: 120)
 
                 Image(systemName: packType.iconName)
-                    .font(.system(size: 48))
+                    .font(.system(size: 48))  // SF Symbol icon size - keep as-is
                     .foregroundColor(packType.color)
             }
 
@@ -230,7 +230,7 @@ struct CardPackOpeningView: View {
                 .frame(width: 160, height: 160)
 
             Image(systemName: packType.iconName)
-                .font(.system(size: 64))
+                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
                 .foregroundColor(packType.color)
                 .scaleEffect(packScale)
                 .rotationEffect(.degrees(packRotation))
@@ -262,7 +262,7 @@ struct CardPackOpeningView: View {
                     HStack(spacing: 8) {
                         Text(card.tier.displayName)
                             .font(CardFont.bodyBold(size: 13))
-                            .foregroundColor(.white)
+                            .foregroundColor(.textPrimary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
                             .background(Color.tierColor(card.tier))
@@ -319,7 +319,7 @@ struct CardPackOpeningView: View {
 
         return ZStack {
             // Card back (using card-back-universal asset)
-            Image("card-back-universal")
+            Image("CardBacks/card-back-universal")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .frame(width: 90, height: 130)
@@ -392,7 +392,7 @@ struct CardPackOpeningView: View {
                     }) {
                         Text("Tap to Reveal Next")
                             .font(CardFont.bodyBold(size: 16))
-                            .foregroundColor(.white)
+                            .foregroundColor(.textPrimary)
                             .frame(maxWidth: .infinity, minHeight: 50)
                             .background(packType.color)
                             .cornerRadius(12)
@@ -413,7 +413,7 @@ struct CardPackOpeningView: View {
                     }) {
                         Text("Continue")
                             .font(CardFont.bodyBold(size: 16))
-                            .foregroundColor(.white)
+                            .foregroundColor(.textPrimary)
                             .frame(maxWidth: .infinity, minHeight: 50)
                             .background(packType.color)
                             .cornerRadius(12)
@@ -426,7 +426,7 @@ struct CardPackOpeningView: View {
                 Button(action: { dismiss() }) {
                     Text("Done")
                         .font(CardFont.bodyBold(size: 16))
-                        .foregroundColor(.white)
+                        .foregroundColor(.textPrimary)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(packType.color)
                         .cornerRadius(12)

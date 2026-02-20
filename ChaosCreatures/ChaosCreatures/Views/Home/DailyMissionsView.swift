@@ -61,7 +61,7 @@ struct MissionRowView: View {
             HStack {
                 // Mission icon
                 Image(systemName: missionIcon(mission.missionType))
-                    .font(.system(size: 16))
+                    .font(.system(size: 16))  // SF Symbol icon size - keep as-is
                     .foregroundColor(mission.isCompleted ? .healGreen : .orderBlue)
                     .frame(width: 28, height: 28)
                     .background(

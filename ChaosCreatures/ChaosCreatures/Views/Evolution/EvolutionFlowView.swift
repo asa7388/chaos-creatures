@@ -181,7 +181,7 @@ struct EvolutionFlowView: View {
             if let modifier = selectedModifier {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkle")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.tauntGold)
                     Text("Applying: \(modifier.name)")
                         .font(CardFont.bodyBold(size: 13))
@@ -232,7 +232,7 @@ struct EvolutionFlowView: View {
         HStack(spacing: 10) {
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 16))
+                    .font(.system(size: 16))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.healGreen)
             } else if isActive {
                 ProgressView()
@@ -288,7 +288,7 @@ struct EvolutionFlowView: View {
             HStack(spacing: 8) {
                 Text(card.tier.displayName)
                     .font(CardFont.bodyBold(size: 12))
-                    .foregroundColor(.white)
+                    .foregroundColor(.textPrimary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
                     .background(Color.tierColor(card.tier))
@@ -296,12 +296,12 @@ struct EvolutionFlowView: View {
 
                 if let nextTier = card.tier.nextTier {
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 10))
+                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.textDisabled)
 
                     Text(nextTier.displayName)
                         .font(CardFont.bodyBold(size: 12))
-                        .foregroundColor(.white)
+                        .foregroundColor(.textPrimary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(Color.tierColor(nextTier))
@@ -317,7 +317,7 @@ struct EvolutionFlowView: View {
         VStack(spacing: 6) {
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
-                    .font(.system(size: 12))
+                    .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.tauntGold)
                 Text("Chaos Energy: \(card.chaosEnergy)")
                     .font(CardFont.body(size: 13))
@@ -357,7 +357,7 @@ struct EvolutionFlowView: View {
     private func errorView(message: String) -> some View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
+                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.warningYellow)
 
             Text("Evolution Failed")
@@ -377,7 +377,7 @@ struct EvolutionFlowView: View {
                 }) {
                     Text("Try Again")
                         .font(CardFont.bodyBold(size: 15))
-                        .foregroundColor(.black)
+                        .foregroundColor(.textDark)
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(Color.tauntGold)
                         .cornerRadius(12)

@@ -113,7 +113,8 @@ struct CardDetailView: View {
     private var closeButton: some View {
         Button(action: { dismiss() }) {
             Image(systemName: "xmark")
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                .fontWeight(.bold)
                 .foregroundColor(.white.opacity(0.9))
                 .frame(width: 32, height: 32)
                 .background(Color.black.opacity(0.6))
@@ -133,7 +134,7 @@ struct CardDetailView: View {
                     size: .detail
                 )
                 .frame(width: 320, height: 448) // 320pt wide, 5:7 ratio
-                .shadow(color: .black.opacity(0.5), radius: 16, x: 0, y: 8)
+                .contactShadow(opacity: 0.6)
                 .onTapGesture {
                     showFullscreen = true
                 }
@@ -151,7 +152,7 @@ struct CardDetailView: View {
             .cornerRadius(14)
             .overlay(
                 Image(systemName: "photo")
-                    .font(.system(size: 40))
+                    .font(.system(size: 40))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.textDisabled)
             )
             .frame(maxWidth: 320)
@@ -212,7 +213,7 @@ struct CardDetailView: View {
     private func statCell(iconName: String, value: Int, color: Color, label: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: iconName)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))  // SF Symbol icon size - keep as-is
                 .foregroundColor(color)
                 .frame(width: 24, height: 24)
                 .background(color.opacity(0.15))
@@ -240,7 +241,7 @@ struct CardDetailView: View {
                     ForEach(card.effectiveKeywords) { keyword in
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: keyword.sfSymbolName)
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 14, weight: .semibold))  // SF Symbol icon size - keep as-is
                                 .foregroundColor(keywordColor(keyword))
                                 .frame(width: 28, height: 28)
                                 .background(keywordColor(keyword).opacity(0.15))
@@ -265,7 +266,7 @@ struct CardDetailView: View {
             label: {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkle")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.textTertiary)
                     Text("Keywords")
                         .font(CardFont.bodyBold(size: 14))
@@ -292,7 +293,7 @@ struct CardDetailView: View {
                     ForEach(card.triggeredAbilities) { ability in
                         HStack(spacing: 8) {
                             Image(systemName: triggerIcon(ability.trigger))
-                                .font(.system(size: 14))
+                                .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                                 .foregroundColor(triggerColor(ability.trigger))
                                 .frame(width: 24, height: 24)
                                 .background(triggerColor(ability.trigger).opacity(0.15))
@@ -319,7 +320,7 @@ struct CardDetailView: View {
             label: {
                 HStack(spacing: 6) {
                     Image(systemName: "bolt.circle")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.textTertiary)
                     Text("Triggered Abilities")
                         .font(CardFont.bodyBold(size: 14))
@@ -346,7 +347,7 @@ struct CardDetailView: View {
                     ForEach(card.modifiers) { modifier in
                         HStack(spacing: 8) {
                             Image(systemName: modifier.attunement == .order ? "sun.max.fill" : "flame.fill")
-                                .font(.system(size: 12))
+                                .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                                 .foregroundColor(modifier.attunement == .order ? .orderBlue : .chaosRed)
                                 .frame(width: 22, height: 22)
                                 .background(
@@ -363,7 +364,7 @@ struct CardDetailView: View {
                                     if let keyword = modifier.grantsKeyword {
                                         Text(keyword.displayName)
                                             .font(CardFont.bodyBold(size: 10))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(.textPrimary)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 1)
                                             .background(Color.ironwright)
@@ -397,7 +398,7 @@ struct CardDetailView: View {
             label: {
                 HStack(spacing: 6) {
                     Image(systemName: "gearshape.2")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.textTertiary)
                     Text("Applied Modifiers")
                         .font(CardFont.bodyBold(size: 14))
@@ -437,7 +438,7 @@ struct CardDetailView: View {
                         if let nextTier = card.tier.nextTier {
                             HStack(spacing: 4) {
                                 Image(systemName: "arrow.right")
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                                     .foregroundColor(.textTertiary)
                                 Text(nextTier.displayName)
                                     .font(CardFont.bodyBold(size: 13))
@@ -542,7 +543,7 @@ struct CardDetailView: View {
                                 Text("Evolve Now")
                             }
                             .font(CardFont.bodyBold(size: 15))
-                            .foregroundColor(.black)
+                            .foregroundColor(.textDark)
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .background(
                                 LinearGradient(
@@ -564,7 +565,7 @@ struct CardDetailView: View {
             label: {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.circle")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
                         .foregroundColor(isReady ? .tauntGold : .textTertiary)
                     Text("Evolution")
                         .font(CardFont.bodyBold(size: 14))
@@ -632,7 +633,7 @@ struct CardDetailView: View {
             label: {
                 HStack(spacing: 6) {
                     Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.textTertiary)
                     Text("Evolution History")
                         .font(CardFont.bodyBold(size: 14))
@@ -663,11 +664,11 @@ struct CardDetailView: View {
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 16))
+                            .font(.system(size: 16))  // SF Symbol icon size - keep as-is
                         Text("Evolve")
                             .font(CardFont.bodyBold(size: 15))
                     }
-                    .foregroundColor(.black)
+                    .foregroundColor(.textDark)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(
                         LinearGradient(
@@ -691,11 +692,11 @@ struct CardDetailView: View {
             }) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.rectangle.on.rectangle")
-                        .font(.system(size: 14))
+                        .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                     Text("Add to Deck")
                         .font(CardFont.bodyBold(size: 15))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(
                     LinearGradient(

@@ -114,7 +114,7 @@ struct EvolutionRevealView: View {
 
             // Arrow
             Image(systemName: "arrow.right")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 18, weight: .bold))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.tauntGold)
 
             // New tier
@@ -165,7 +165,7 @@ struct EvolutionRevealView: View {
             // Tier badge
             Text(result.tier.displayName)
                 .font(CardFont.bodyBold(size: 13))
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 5)
                 .background(Color.tierColor(result.tier))
@@ -184,7 +184,7 @@ struct EvolutionRevealView: View {
             if let modName = modifierName {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkle")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.tauntGold)
                     Text("Modifier: \(modName)")
                         .font(CardFont.bodyBold(size: 13))
@@ -257,7 +257,7 @@ struct EvolutionRevealView: View {
         Button(action: onContinue) {
             Text("Continue")
                 .font(CardFont.bodyBold(size: 16))
-                .foregroundColor(.black)
+                .foregroundColor(.textDark)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(Color.tauntGold)
                 .cornerRadius(12)
@@ -277,7 +277,7 @@ struct EvolutionRevealView: View {
                     let y = sin(angle * .pi / 180) * radius
 
                     Image(systemName: "sparkle")
-                        .font(.system(size: CGFloat.random(in: 6...14)))
+                        .font(.system(size: CGFloat.random(in: 6...14)))  // SF Symbol icon size - keep as-is
                         .foregroundColor(Color.tierColor(result.tier).opacity(Double.random(in: 0.3...0.8)))
                         .offset(x: x, y: y)
                 }

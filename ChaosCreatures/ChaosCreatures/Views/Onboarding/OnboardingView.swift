@@ -108,7 +108,7 @@ struct IntroCinematicView: View {
 
                 // Panel icon
                 Image(systemName: panels[currentPanelIndex].iconName)
-                    .font(.system(size: 80))
+                    .font(.system(size: 80))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.ironwright)
                     .opacity(panelOpacity)
 
@@ -201,7 +201,7 @@ struct ReadyToPlayView: View {
             Spacer()
 
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
+                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.healGreen)
 
             Text("You're Ready!")
@@ -218,7 +218,7 @@ struct ReadyToPlayView: View {
             Button(action: onStart) {
                 Text("Start Playing")
                     .font(CardFont.bodyBold(size: 17))
-                    .foregroundColor(.black)
+                    .foregroundColor(.textDark)
                     .frame(width: 200, height: 52)
                     .background(Color.tauntGold)
                     .cornerRadius(12)

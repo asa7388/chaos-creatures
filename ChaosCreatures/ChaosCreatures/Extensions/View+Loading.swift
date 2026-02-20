@@ -32,7 +32,7 @@ struct LoadingOverlayModifier: ViewModifier {
                 .padding(24)
                 .background(Color.bgTertiary.opacity(0.95))
                 .cornerRadius(16)
-                .shadow(color: .black.opacity(0.4), radius: 12)
+                .contactShadow()
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
@@ -319,6 +319,15 @@ extension View {
                     .stroke(Color.tauntGold.opacity(0.3), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
+    }
+
+    // MARK: - Contact Shadow
+
+    /// Contact shadow — dark at base, fades quickly. Cards rest on surface, don't float.
+    func contactShadow(opacity: Double = 0.5, yOffset: CGFloat = 2) -> some View {
+        self
+            .shadow(color: .black.opacity(opacity), radius: 1, x: 0, y: yOffset)
+            .shadow(color: .black.opacity(opacity * 0.3), radius: 3, x: 0, y: yOffset + 1)
     }
 }
 

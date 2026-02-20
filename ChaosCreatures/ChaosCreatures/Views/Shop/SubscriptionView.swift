@@ -87,7 +87,7 @@ struct SubscriptionView: View {
     private var heroHeader: some View {
         VStack(spacing: 12) {
             Image(systemName: "sparkles")
-                .font(.system(size: 44))
+                .font(.system(size: 44))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.tauntGold)
 
             Text("Unlock Your Potential")
@@ -124,7 +124,7 @@ struct SubscriptionView: View {
             VStack(spacing: 8) {
                 // Tier icon
                 Image(systemName: tierIcon(tier))
-                    .font(.system(size: 24))
+                    .font(.system(size: 24))  // SF Symbol icon size - keep as-is
                     .foregroundColor(tierColor(tier))
 
                 // Tier name
@@ -141,7 +141,7 @@ struct SubscriptionView: View {
                 if isCurrent {
                     Text("CURRENT")
                         .font(CardFont.bodyBold(size: 9))
-                        .foregroundColor(.black)
+                        .foregroundColor(.textDark)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.tauntGold)
@@ -243,7 +243,7 @@ struct SubscriptionView: View {
             if let value {
                 if value == "check" {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.healGreen)
                 } else {
                     Text(value)
@@ -335,7 +335,7 @@ struct SubscriptionView: View {
                             } else {
                                 Text("Subscribe to \(selectedTier.displayName) - \(tierPriceLabel(selectedTier))")
                                     .font(CardFont.bodyBold(size: 16))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.textDark)
                             }
                         }
                         .frame(maxWidth: .infinity, minHeight: 50)

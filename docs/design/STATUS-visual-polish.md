@@ -1,6 +1,6 @@
 # Visual Polish — Status Log
 
-## Current Phase: Wave 5 complete, Wave 6+ next
+## Current Phase: Audit remediation complete, Wave 6+ next
 ## Started: 2026-02-19
 ## Plan: [PLAN-visual-polish.md](PLAN-visual-polish.md)
 
@@ -31,6 +31,7 @@
 | Screen texture | 3 | PENDING | — |
 | Faction identity | 4 | PENDING | — |
 | UI chrome consistency | 5 | PASS | 4 issues found and fixed |
+| **5-agent deep audit** | 0-5 | **PASS** | 17 issues found: 3 P0 + 6 P1 + 8 P2 — all P0/P1 resolved |
 | Performance | 2, 4, 6, 7 | PENDING | — |
 | Immersion (final) | 8 | PENDING | — |
 
@@ -306,3 +307,32 @@ Audit (consistency agent):
 - `ChaosCreatures/Views/Home/DailyMissionsView.swift` — Parchment panel
 - `ChaosCreatures/Views/Collection/DeckListView.swift` — Leather panel, toolbar, background texture
 - `ChaosCreatures/Views/Collection/CardDetailView.swift` — 5x cardBackground → leatherPanel
+
+### Post-Wave 5: Deep Audit + Remediation
+
+**5 parallel audit agents** ran against Waves 0-5 output:
+1. Plan adherence (aa539c7): Waves 0-4 fully complete, Wave 5 has 4 minor incomplete items
+2. Design guide compliance (a170e93): 78% → ~95% after fixes
+3. Asset usage completeness (aedf4dc): 2 broken refs found, 137 orphaned (most reserved for future)
+4. SpriteKit vs SwiftUI parity (a168876): HIGH parity, 4 P1 minor mismatches
+5. Code quality + TODOs (a958df3): ProfileView placeholder, debug prints, hardcoded colors
+
+**P0 Fixes (3):**
+- `Color+Theme.swift`: `textPrimary` changed from `Color.white` to `Color(hex: "#F0EAD6")` — fixes 60+ views
+- `ShopView.swift`: `instability-diamond` → `instability-indicator` (2 broken refs)
+- `CardPackOpeningView.swift`: `card-back-universal` → `CardBacks/card-back-universal` (missing path)
+
+**P1 Fixes (6 agents):**
+- System fonts: Confirmed all `.font(.system(` are on SF Symbol icons only — no text uses system fonts
+- Flat backgrounds: Added texture overlays to CollectionView, MatchmakingView, PostMatchView
+- Warm black text: Added `Color.textDark (#1C1917)`, replaced 11 `.foregroundColor(.black)` instances
+- Contact shadows: Created `.contactShadow()` modifier, replaced 3 floating shadows
+- Debug prints: Removed 3 print statements from EmptyStateView, ErrorView, FactionPickerView
+- Hardcoded white: Replaced 23 `.foregroundColor(.white)` with `.foregroundColor(.textPrimary)` across 12 files
+- ProfileView: Fixed faction mastery progress bar (was hardcoded to 0.0), standardized fallbacks to "Adventurer"
+
+**Final audit after remediation: ALL PASS**
+- 0 `.foregroundColor(.white)` in Views (except ManaGemView — intentional for contrast)
+- 0 `.foregroundColor(.black)` in Views
+- 0 `textPrimary = Color.white` definitions
+- 0 debug prints outside #Preview blocks

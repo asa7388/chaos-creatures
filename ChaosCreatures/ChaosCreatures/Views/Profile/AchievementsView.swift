@@ -154,7 +154,7 @@ struct AchievementsView: View {
         VStack(spacing: 16) {
             Spacer()
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 40))
+                .font(.system(size: 40))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.warningYellow)
             Text(message)
                 .font(CardFont.body(size: 14))
@@ -165,7 +165,7 @@ struct AchievementsView: View {
                 Task { await loadAchievements() }
             }
             .font(CardFont.bodyBold(size: 15))
-            .foregroundColor(.white)
+            .foregroundColor(.textPrimary)
             .padding(.horizontal, 24)
             .padding(.vertical, 10)
             .background(Color.ironwright)
@@ -178,7 +178,7 @@ struct AchievementsView: View {
         VStack(spacing: 12) {
             Spacer()
             Image(systemName: "medal")
-                .font(.system(size: 48))
+                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.textDisabled)
             Text("No achievements available yet")
                 .font(CardFont.body(size: 16))
@@ -332,7 +332,7 @@ struct AchievementRowView: View {
                 .frame(width: 44, height: 44)
 
             Image(systemName: categoryIcon(achievement.category))
-                .font(.system(size: 20))
+                .font(.system(size: 20))  // SF Symbol icon size - keep as-is
                 .foregroundColor(isUnlocked ? .tauntGold : .textDisabled)
         }
     }
@@ -340,7 +340,7 @@ struct AchievementRowView: View {
     private var rewardLabel: some View {
         HStack(spacing: 4) {
             Image(systemName: rewardIconName)
-                .font(.system(size: 10))
+                .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.ironwright)
 
             Text(rewardText)

@@ -47,13 +47,21 @@ struct PostMatchView: View {
     // MARK: - Background
 
     private var backgroundGradient: some View {
-        LinearGradient(
-            colors: isVictory
-                ? [Color.orderBlue.opacity(0.3), Color.bgPrimary]
-                : [Color.chaosRed.opacity(0.3), Color.bgPrimary],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        ZStack {
+            LinearGradient(
+                colors: isVictory
+                    ? [Color.orderBlue.opacity(0.3), Color.bgPrimary]
+                    : [Color.chaosRed.opacity(0.3), Color.bgPrimary],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            Image("UIBackgrounds/bg-dark-leather")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .ignoresSafeArea()
+                .opacity(0.35)
+        }
     }
 
     // MARK: - Loading View
@@ -78,7 +86,7 @@ struct PostMatchView: View {
             Spacer()
 
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
+                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.warningYellow)
 
             Text("Could not load match results")
@@ -138,7 +146,7 @@ struct PostMatchView: View {
         VStack(spacing: 12) {
             // Icon
             Image(systemName: isVictory ? "crown.fill" : "xmark.circle.fill")
-                .font(.system(size: 64))
+                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
                 .foregroundColor(isVictory ? .tauntGold : .chaosRed)
 
             // Title
@@ -219,7 +227,7 @@ struct PostMatchView: View {
             // Still show energy earned (all 20 deck cards gain energy even in practice)
             HStack(spacing: 6) {
                 Image(systemName: "bolt.fill")
-                    .font(.system(size: 14))
+                    .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.warningYellow)
                 Text("All deck cards earned +\(energyEarned) Chaos Energy")
                     .font(CardFont.body(size: 13))
@@ -263,7 +271,7 @@ struct PostMatchView: View {
                 HStack(spacing: 8) {
                     Image(systemName: isVictory ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
                         .foregroundColor(isVictory ? .orderBlue : .chaosRed)
-                        .font(.system(size: 16))
+                        .font(.system(size: 16))  // SF Symbol icon size - keep as-is
                     Text(isVictory ? "Rank Points +15" : "Rank Points -10")
                         .font(CardFont.bodyBold(size: 14))
                         .foregroundColor(isVictory ? .orderBlue : .chaosRed)
@@ -282,7 +290,7 @@ struct PostMatchView: View {
     private func rewardItem(icon: String, label: String, value: String, color: Color) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 24))
+                .font(.system(size: 24))  // SF Symbol icon size - keep as-is
                 .foregroundColor(color)
 
             Text(value)
@@ -304,7 +312,7 @@ struct PostMatchView: View {
         }) {
             Text("Continue")
                 .font(CardFont.bodyBold(size: 18))
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background(Color.ironwright)

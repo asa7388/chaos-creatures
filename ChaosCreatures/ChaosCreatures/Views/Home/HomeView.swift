@@ -104,7 +104,7 @@ struct HomeView: View {
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Welcome back, \(appState.player?.displayName ?? "Player")")
+                Text("Welcome back, \(appState.player?.displayName ?? "Adventurer")")
                     .font(CardFont.bodyBold(size: 16))
                     .foregroundColor(.textPrimary)
 
@@ -148,7 +148,7 @@ struct HomeView: View {
         VStack(spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 20))
+                    .font(.system(size: 20))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.warningYellow)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -167,11 +167,11 @@ struct HomeView: View {
             }) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.rectangle.on.rectangle")
-                        .font(.system(size: 14))
+                        .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                     Text("Create Deck")
                         .font(CardFont.bodyBold(size: 15))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .background(Color.orderBlue)

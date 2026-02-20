@@ -89,7 +89,7 @@ struct SplashView: View {
                 .scaleEffect(logoScale)
 
             Text("Chaos Creatures")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(CardFont.displayTitle(size: 28))
                 .foregroundColor(.textPrimary)
                 .opacity(logoOpacity)
 
@@ -126,11 +126,11 @@ struct SignInView: View {
                     .foregroundColor(.ironwright)
 
                 Text("Chaos Creatures")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(CardFont.displayTitle(size: 32))
                     .foregroundColor(.textPrimary)
 
                 Text("AI-Generated Card Game")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(CardFont.uiLabel(size: 16))
                     .foregroundColor(.textSecondary)
             }
 
@@ -145,7 +145,7 @@ struct SignInView: View {
                         Image(systemName: "apple.logo")
                             .font(.system(size: 18))
                         Text("Sign in with Apple")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(CardFont.uiLabelBold(size: 17))
                     }
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity, minHeight: 52)
@@ -162,7 +162,7 @@ struct SignInView: View {
 
                 if let error = appState.auth.error {
                     Text(error)
-                        .font(.system(size: 13))
+                        .font(CardFont.body(size: 13))
                         .foregroundColor(.chaosRed)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
@@ -177,7 +177,7 @@ struct SignInView: View {
                     Image(systemName: "hammer.fill")
                         .font(.system(size: 14))
                     Text("Dev Mode (Skip Auth)")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(CardFont.uiLabel(size: 14))
                 }
                 .foregroundColor(.textSecondary)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -190,16 +190,16 @@ struct SignInView: View {
             // Legal links
             HStack(spacing: 4) {
                 Text("By signing in, you agree to our")
-                    .font(.system(size: 11))
+                    .font(CardFont.body(size: 11))
                     .foregroundColor(.textTertiary)
                 Link("Terms", destination: URL(string: "https://chaoscreatures.app/terms")!)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(CardFont.bodyBold(size: 11))
                     .foregroundColor(.textSecondary)
                 Text("and")
-                    .font(.system(size: 11))
+                    .font(CardFont.body(size: 11))
                     .foregroundColor(.textTertiary)
                 Link("Privacy Policy", destination: URL(string: "https://chaoscreatures.app/privacy")!)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(CardFont.bodyBold(size: 11))
                     .foregroundColor(.textSecondary)
             }
             .padding(.bottom, 40)

@@ -51,7 +51,7 @@ struct FactionCardView: View {
         VStack(spacing: 20) {
             // Faction icon
             Image(systemName: faction.systemIconName)
-                .font(.system(size: 64))
+                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
                 .foregroundColor(faction.swiftUIColor)
 
             // Faction name
@@ -62,7 +62,7 @@ struct FactionCardView: View {
             // Mechanic badge
             Text(faction.mechanic.rawValue)
                 .font(CardFont.bodyBold(size: 13))
-                .foregroundColor(.black)
+                .foregroundColor(.textDark)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
                 .background(faction.swiftUIColor)
@@ -95,7 +95,7 @@ struct FactionCardView: View {
             Button(action: onChoose) {
                 Text("Choose \(faction.shortDisplayName)")
                     .font(CardFont.bodyBold(size: 17))
-                    .foregroundColor(.black)
+                    .foregroundColor(.textDark)
                     .frame(width: 200, height: 52)
                     .background(faction.swiftUIColor)
                     .cornerRadius(12)
@@ -162,7 +162,7 @@ extension FactionShortName {
 }
 
 #Preview {
-    FactionPickerView { faction in
-        print("Selected: \(faction)")
+    FactionPickerView { _ in
+        // no-op
     }
 }

@@ -74,7 +74,7 @@ struct BattleContainerView: View {
 
                         Button(action: { showBattleLog.toggle() }) {
                             Image(systemName: "text.bubble.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                                 .foregroundColor(.textSecondary)
                                 .padding(6)
                                 .background(Color.bgPrimary.opacity(0.7))
@@ -320,7 +320,7 @@ struct OpponentHUDView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "rectangle.portrait.fill")
                         .foregroundColor(.textSecondary)
-                        .font(.system(size: 10))
+                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                     Text("\(handCount)")
                         .font(CardFont.stats(size: 12))
                         .foregroundColor(.textSecondary)
@@ -330,7 +330,7 @@ struct OpponentHUDView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "square.stack.fill")
                         .foregroundColor(.textSecondary)
-                        .font(.system(size: 10))
+                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                     Text("\(deckCount)")
                         .font(CardFont.stats(size: 12))
                         .foregroundColor(.textSecondary)
@@ -340,7 +340,7 @@ struct OpponentHUDView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "bolt.fill")
                         .foregroundColor(instabilityColor)
-                        .font(.system(size: 10))
+                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                     Text("\(instability)")
                         .font(CardFont.stats(size: 12))
                         .foregroundColor(instabilityColor)
@@ -385,10 +385,10 @@ struct PlayerHUDView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "diamond.fill")
                         .foregroundColor(.timerBlue)
-                        .font(.system(size: 12))
+                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                     Text("\(mana)/\(manaCap)")
                         .font(CardFont.stats(size: 13))
-                        .foregroundColor(.white)
+                        .foregroundColor(.textPrimary)
                 }
 
                 Spacer()
@@ -398,7 +398,7 @@ struct PlayerHUDView: View {
                     Button(action: onChaosSpark) {
                         Image(systemName: "bolt.circle.fill")
                             .foregroundColor(.warningYellow)
-                            .font(.system(size: 22))
+                            .font(.system(size: 22))  // SF Symbol icon size - keep as-is
                     }
                 }
 
@@ -406,7 +406,7 @@ struct PlayerHUDView: View {
                 Button(action: onGraveyard) {
                     HStack(spacing: 2) {
                         Image(systemName: "archivebox.fill")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11))  // SF Symbol icon size - keep as-is
                         Text("\(graveyardCount)")
                             .font(CardFont.stats(size: 11))
                     }
@@ -416,7 +416,7 @@ struct PlayerHUDView: View {
                 // Deck count
                 HStack(spacing: 2) {
                     Image(systemName: "square.stack.fill")
-                        .font(.system(size: 11))
+                        .font(.system(size: 11))  // SF Symbol icon size - keep as-is
                     Text("\(deckCount)")
                         .font(CardFont.stats(size: 11))
                 }
@@ -426,7 +426,7 @@ struct PlayerHUDView: View {
                 Button(action: onSurrender) {
                     Image(systemName: "flag.fill")
                         .foregroundColor(.textTertiary)
-                        .font(.system(size: 14))
+                        .font(.system(size: 14))  // SF Symbol icon size - keep as-is
                 }
             }
         }
@@ -492,7 +492,7 @@ struct HandCardView: View {
             // Name
             Text(card.name.prefix(8))
                 .font(CardFont.bodyBold(size: 8))
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .lineLimit(1)
 
             // Stats
@@ -524,7 +524,7 @@ struct HandCardView: View {
             // CM cost badge
             Text("\(card.manaCost)")
                 .font(CardFont.stats(size: 10))
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .frame(width: 18, height: 18)
                 .background(canAfford ? Color.timerBlue : Color.textDisabled)
                 .clipShape(Circle())
@@ -547,7 +547,7 @@ struct PrimaryActionButton: View {
         Button(action: action) {
             Text(label)
                 .font(CardFont.bodyBold(size: 15))
-                .foregroundColor(.white)
+                .foregroundColor(.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .background(Color.orderBlue)
@@ -567,7 +567,7 @@ struct ConnectionLostOverlay: View {
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 Text("Reconnecting...")
                     .font(CardFont.bodyBold(size: 16))
-                    .foregroundColor(.white)
+                    .foregroundColor(.textPrimary)
             }
         }
         .ignoresSafeArea()
@@ -598,7 +598,7 @@ struct HPBarView: View {
         HStack(spacing: 4) {
             Image(systemName: "heart.fill")
                 .foregroundColor(.chaosRed)
-                .font(.system(size: fontSize))
+                .font(.system(size: fontSize))  // SF Symbol icon size - keep as-is
 
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
@@ -624,7 +624,7 @@ struct HPBarView: View {
             if showLabel {
                 Text("\(current)")
                     .font(CardFont.stats(size: fontSize))
-                    .foregroundColor(.white)
+                    .foregroundColor(.textPrimary)
                     .frame(minWidth: 20, alignment: .trailing)
             }
         }
@@ -652,7 +652,7 @@ struct TurnTimerBar: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "clock.fill")
-                .font(.system(size: 10))
+                .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                 .foregroundColor(timerColor)
 
             GeometryReader { geometry in
@@ -693,7 +693,7 @@ struct GraveyardSheetView: View {
                     VStack(spacing: 12) {
                         Spacer()
                         Image(systemName: "archivebox")
-                            .font(.system(size: 40))
+                            .font(.system(size: 40))  // SF Symbol icon size - keep as-is
                             .foregroundColor(.textDisabled)
                         Text("No cards in graveyard")
                             .font(CardFont.body(size: 15))
@@ -743,7 +743,7 @@ struct BattleLogSheetView: View {
                         ForEach(entries) { entry in
                             HStack(spacing: 8) {
                                 Image(systemName: entry.type.iconName)
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                                     .foregroundColor(entry.type.color)
                                     .frame(width: 16)
 
@@ -793,7 +793,7 @@ struct ConnectionQualityIndicator: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: quality.iconName)
-                .font(.system(size: 12))
+                .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                 .foregroundColor(indicatorColor)
 
             if quality == .poor || quality == .disconnected {

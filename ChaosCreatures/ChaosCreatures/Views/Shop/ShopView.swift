@@ -96,7 +96,7 @@ struct ShopView: View {
 
     private func shardCounter(tier: ShardTier, count: Int) -> some View {
         HStack(spacing: 3) {
-            Image("StatIcons/instability-diamond")
+            Image("StatIcons/instability-indicator")
                 .resizable()
                 .frame(width: 14, height: 14)
                 .foregroundStyle(shardColor(tier))
@@ -215,7 +215,7 @@ struct ShopView: View {
                 .padding(.horizontal, 16)
 
             HStack(spacing: 12) {
-                Image("StatIcons/instability-diamond")
+                Image("StatIcons/instability-indicator")
                     .resizable()
                     .frame(width: 28, height: 28)
                     .foregroundColor(.appAccent)
@@ -252,7 +252,7 @@ struct SubscriptionCardItem: View {
                 if isCurrent {
                     Text("CURRENT")
                         .font(CardFont.bodyBold(size: 10))
-                        .foregroundColor(.black)
+                        .foregroundColor(.textDark)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(Color.tauntGold)
@@ -301,7 +301,7 @@ struct SubscriptionCardItem: View {
     private func benefitRow(_ text: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark")
-                .font(.system(size: 10, weight: .bold))
+                .font(.system(size: 10, weight: .bold))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.healGreen)
             Text(text)
                 .font(CardFont.body(size: 12))

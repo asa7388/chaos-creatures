@@ -108,7 +108,7 @@ struct DeckListView: View {
                     }) {
                         HStack {
                             Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20))
+                                .font(.system(size: 20))  // SF Symbol icon size - keep as-is
                             Text("Create New Deck")
                                 .font(CardFont.body(size: 15))
                         }
@@ -161,7 +161,7 @@ struct DeckRowView: View {
             // Faction icon
             if let faction = FactionShortName(rawValue: deck.factionId.uuidString) {
                 Image(systemName: faction.systemIconName)
-                    .font(.system(size: 20))
+                    .font(.system(size: 20))  // SF Symbol icon size - keep as-is
                     .foregroundColor(faction.swiftUIColor)
                     .frame(width: 40, height: 40)
                     .background(faction.swiftUIColor.opacity(0.15))
@@ -194,7 +194,7 @@ struct DeckRowView: View {
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 13))
+                .font(.system(size: 13))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.textTertiary)
         }
         .padding(16)

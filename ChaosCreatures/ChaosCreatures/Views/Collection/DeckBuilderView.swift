@@ -216,7 +216,7 @@ struct DeckBuilderView: View {
                 VStack(spacing: 8) {
                     Spacer()
                     Image(systemName: "rectangle.stack")
-                        .font(.system(size: 28))
+                        .font(.system(size: 28))  // SF Symbol icon size - keep as-is
                         .foregroundColor(.textDisabled)
                     Text("Tap cards to add")
                         .font(CardFont.body(size: 13))

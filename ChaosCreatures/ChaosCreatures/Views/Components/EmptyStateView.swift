@@ -29,7 +29,7 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.system(size: 48))
+                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.textTertiary)
 
             Text(message)
@@ -48,7 +48,7 @@ struct EmptyStateView: View {
                 Button(action: action) {
                     Text(actionTitle)
                         .font(CardFont.bodyBold(size: 14))
-                        .foregroundColor(.white)
+                        .foregroundColor(.textPrimary)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 10)
                         .background(Color.borderActive)
@@ -69,6 +69,6 @@ struct EmptyStateView: View {
         description: "Visit the Shop to get your first cards.",
         actionTitle: "Visit Shop"
     ) {
-        print("Action tapped")
+        // no-op
     }
 }

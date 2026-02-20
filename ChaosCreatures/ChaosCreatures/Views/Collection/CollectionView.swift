@@ -105,12 +105,12 @@ struct CollectionView: View {
         .background(
             ZStack {
                 Color.bgPrimary
-                // Felt table texture — cards laid out on a game table
-                Image("UIBackgrounds/felt-table")
+                // Dark leather texture — card collection
+                Image("UIBackgrounds/bg-dark-leather")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .ignoresSafeArea()
-                    .opacity(0.5)
+                    .opacity(0.35)
             }
         )
         .navigationTitle("Collection")
@@ -180,7 +180,7 @@ struct CollectionView: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                     Text(sortOption.rawValue)
                         .font(CardFont.body(size: 12))
                 }

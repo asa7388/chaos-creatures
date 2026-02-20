@@ -77,10 +77,11 @@ extension Color {
     static let bgQuaternary = Color(hex: "#2A2A2A")
     static let bgElevated = Color(hex: "#3A3A3A")
 
-    static let textPrimary = Color.white
+    static let textPrimary = Color(hex: "#F0EAD6")
     static let textSecondary = Color(hex: "#AAAAAA")
     static let textTertiary = Color(hex: "#888888")
     static let textDisabled = Color(hex: "#555555")
+    static let textDark = Color(hex: "#1C1917")  // Warm black for light-context text
 
     // Battle HUD
     static let orderBlue = Color(hex: "#5BC0EB")

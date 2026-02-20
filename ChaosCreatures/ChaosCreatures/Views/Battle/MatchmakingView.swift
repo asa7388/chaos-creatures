@@ -67,7 +67,16 @@ struct MatchmakingView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgPrimary)
+        .background(
+            ZStack {
+                Color.bgPrimary
+                Image("UIBackgrounds/bg-play-mat-felt")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.35)
+            }
+        )
         .task {
             await joinQueue()
         }
@@ -107,7 +116,7 @@ struct MatchmakingView: View {
 
                 // Inner pulsing icon
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 32, weight: .medium))
+                    .font(.system(size: 32, weight: .medium))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.ironwright)
                     .scaleEffect(pulseScale)
             }
@@ -141,7 +150,7 @@ struct MatchmakingView: View {
     private var matchFoundView: some View {
         VStack(spacing: 20) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
+                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.orderBlue)
                 .transition(.scale.combined(with: .opacity))
 
@@ -164,7 +173,7 @@ struct MatchmakingView: View {
     private func errorView(_ error: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
+                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
                 .foregroundColor(.warningYellow)
 
             Text("Queue Error")
@@ -189,7 +198,7 @@ struct MatchmakingView: View {
                         Text("Build a Deck")
                     }
                     .font(CardFont.bodyBold(size: 16))
-                    .foregroundColor(.white)
+                    .foregroundColor(.textPrimary)
                     .padding(.horizontal, 32)
                     .padding(.vertical, 12)
                     .background(Color.orderBlue)
@@ -202,7 +211,7 @@ struct MatchmakingView: View {
                 Task { await joinQueue() }
             }
             .font(CardFont.bodyBold(size: 16))
-            .foregroundColor(.white)
+            .foregroundColor(.textPrimary)
             .padding(.horizontal, 32)
             .padding(.vertical, 12)
             .background(Color.ironwright)

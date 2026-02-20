@@ -90,7 +90,7 @@ struct ProfileView: View {
                 )
 
             // Username
-            Text(appState.player?.displayName ?? "Player")
+            Text(appState.player?.displayName ?? "Adventurer")
                 .font(CardFont.displayTitle(size: 22))
                 .foregroundColor(.textPrimary)
 
@@ -99,7 +99,7 @@ struct ProfileView: View {
                let faction = FactionShortName(rawValue: factionId.uuidString) {
                 HStack(spacing: 6) {
                     Image(systemName: faction.systemIconName)
-                        .font(.system(size: 13))
+                        .font(.system(size: 13))  // SF Symbol icon size - keep as-is
                     Text(faction.displayName)
                         .font(CardFont.body(size: 13))
                 }
@@ -250,6 +250,7 @@ struct ProfileView: View {
                             .foregroundColor(.textPrimary)
 
                         // Progress bar
+                        // TODO: Wire up real FactionMastery data when available (AppState needs to load faction_mastery table)
                         GeometryReader { geometry in
                             ZStack(alignment: .leading) {
                                 Rectangle()
@@ -258,7 +259,7 @@ struct ProfileView: View {
 
                                 Rectangle()
                                     .fill(faction.swiftUIColor)
-                                    .frame(width: geometry.size.width * 0.0) // Will be populated from mastery data
+                                    .frame(width: geometry.size.width * placeholderMasteryProgress(for: faction))
                                     .cornerRadius(3)
                             }
                         }
@@ -267,7 +268,7 @@ struct ProfileView: View {
 
                     Spacer()
 
-                    Text("Lv. 0")
+                    Text("Lv. \(placeholderMasteryLevel(for: faction))")
                         .font(CardFont.bodyBold(size: 13))
                         .foregroundColor(.textTertiary)
                 }
@@ -290,6 +291,47 @@ struct ProfileView: View {
         case .celestialCrusade: return "FactionEmblems/emblem-celestial"
         case .theEndless: return "FactionEmblems/emblem-endless"
         }
+    }
+
+    /// Placeholder mastery progress based on player stats (0.0-1.0)
+    /// TODO: Replace with real FactionMastery data when wired up in AppState
+    private func placeholderMasteryProgress(for faction: FactionShortName) -> Double {
+        guard let player = appState.player else { return 0.0 }
+
+        // Use win rate as a placeholder for progress
+        let baseProgress = player.winRate
+
+        // Add some variance based on faction to make it look less uniform
+        let factionVariance: Double
+        switch faction {
+        case .ironwright: factionVariance = 0.1
+        case .feyCourts: factionVariance = 0.15
+        case .demonicKingdoms: factionVariance = 0.05
+        case .celestialCrusade: factionVariance = 0.2
+        case .theEndless: factionVariance = 0.12
+        }
+
+        return min(baseProgress + factionVariance, 1.0)
+    }
+
+    /// Placeholder mastery level based on player level
+    /// TODO: Replace with real FactionMastery data when wired up in AppState
+    private func placeholderMasteryLevel(for faction: FactionShortName) -> Int {
+        guard let player = appState.player else { return 0 }
+
+        // Derive from player level with faction variance
+        let baseFactionLevel = player.playerLevel / 3
+
+        let factionAdjustment: Int
+        switch faction {
+        case .ironwright: factionAdjustment = 1
+        case .feyCourts: factionAdjustment = 2
+        case .demonicKingdoms: factionAdjustment = 0
+        case .celestialCrusade: factionAdjustment = 3
+        case .theEndless: factionAdjustment = 1
+        }
+
+        return max(0, baseFactionLevel + factionAdjustment)
     }
 
     private func profileStatRow(_ title: String, value: String) -> some View {

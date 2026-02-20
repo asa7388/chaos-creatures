@@ -454,7 +454,7 @@ struct CardFrameView: View {
         // Rarity treatment on top of base border
         .modifier(RarityBorderModifier(tier: data.tier, faction: data.faction, cornerRadius: cornerRadius))
         // Card shadow for physical depth
-        .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+        .contactShadow(opacity: 0.6, yOffset: 3)
     }
 
     // MARK: - Corner Radius & Border
@@ -603,7 +603,7 @@ struct CardFrameView: View {
             .frame(width: artWidth, height: artHeight)
             .overlay(
                 Image(systemName: "photo")
-                    .font(.system(size: max(artWidth * 0.2, 12)))
+                    .font(.system(size: max(artWidth * 0.2, 12)))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.textDisabled)
             )
     }
@@ -842,7 +842,7 @@ struct CardFrameView: View {
     private func keywordBadge(keyword: Keyword) -> some View {
         HStack(spacing: 3) {
             Image(systemName: keyword.sfSymbolName)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))  // SF Symbol icon size - keep as-is
 
             Text(keyword.displayName)
                 .font(CardFont.body(size: 10))
@@ -1067,7 +1067,7 @@ struct CardFrameView: View {
             HStack {
                 Spacer()
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: size == .grid ? 14 : 12))
+                    .font(.system(size: size == .grid ? 14 : 12))  // SF Symbol icon size - keep as-is
                     .foregroundColor(.tauntGold)
                     .shadow(color: .tauntGold.opacity(0.5), radius: 3)
                     .padding(4)
