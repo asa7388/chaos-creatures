@@ -138,7 +138,7 @@ struct CollectionView: View {
             }
         }
         .sheet(item: $selectedCard) { card in
-            CardDetailView()
+            CardDetailView(card: card, faction: factionForCard(card))
         }
         .fullScreenCover(item: $fullscreenCard) { card in
             FullscreenCardView(card: card, faction: factionForCard(card))

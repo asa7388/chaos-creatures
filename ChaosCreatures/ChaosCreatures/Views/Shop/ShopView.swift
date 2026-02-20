@@ -323,15 +323,15 @@ struct SubscriptionCardItem: View {
                 }
             case .mid:
                 ZStack {
-                    Color(hex: "#182332")
+                    Color(hex: "#1D2024")
                     Image("CardTextures/metal-iron")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .opacity(0.42)
+                        .opacity(0.34)
                     Image("CardTextures/tex-cardstock-grain")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .opacity(0.14)
+                        .opacity(0.12)
                 }
             case .high:
                 ZStack {
@@ -352,7 +352,7 @@ struct SubscriptionCardItem: View {
     private var tierBorderColor: Color {
         switch tier {
         case .free: return .borderDefault
-        case .mid: return Color(hex: "#5D7DA0")
+        case .mid: return Color(hex: "#65707D")
         case .high: return Color(hex: "#A9823B")
         }
     }
@@ -360,7 +360,7 @@ struct SubscriptionCardItem: View {
     private var tierAccentColor: Color {
         switch tier {
         case .free: return Color(hex: "#8C6A2A")
-        case .mid: return Color(hex: "#355E8A")
+        case .mid: return Color(hex: "#556477")
         case .high: return Color(hex: "#9A6A2A")
         }
     }
@@ -368,7 +368,7 @@ struct SubscriptionCardItem: View {
     private var tierPrimaryTextColor: Color {
         switch tier {
         case .free: return .textPrimary
-        case .mid: return Color(hex: "#E8EEF7")
+        case .mid: return Color(hex: "#E3E0D7")
         case .high: return Color(hex: "#F2E5CF")
         }
     }
@@ -376,7 +376,7 @@ struct SubscriptionCardItem: View {
     private var tierSecondaryTextColor: Color {
         switch tier {
         case .free: return .textSecondary
-        case .mid: return Color(hex: "#C6D4E6")
+        case .mid: return Color(hex: "#CFC6B7")
         case .high: return Color(hex: "#DECCAD")
         }
     }
@@ -384,7 +384,7 @@ struct SubscriptionCardItem: View {
     private var tierBenefitColor: Color {
         switch tier {
         case .free: return .healGreen
-        case .mid: return Color(hex: "#8EC0FF")
+        case .mid: return Color(hex: "#93A8BF")
         case .high: return Color(hex: "#E4B85A")
         }
     }
@@ -436,8 +436,25 @@ struct PackRow: View {
                 .foregroundColor(canAfford ? .textPrimary : .textDisabled)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(canAfford ? color : Color.bgQuaternary)
-                .cornerRadius(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.bgTertiary)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(canAfford ? color.opacity(0.62) : Color.bgQuaternary)
+                        )
+                        .overlay(
+                            Image("CardTextures/tex-cardstock-grain")
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .opacity(0.10)
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(canAfford ? color.opacity(0.45) : Color.borderDefault.opacity(0.5), lineWidth: 0.8)
+                )
             }
             .disabled(!canAfford)
         }

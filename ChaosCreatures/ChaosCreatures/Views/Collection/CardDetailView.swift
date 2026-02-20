@@ -13,15 +13,27 @@ struct CardDetailView: View {
     @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
 
+    private let fixedCard: CardInstance?
+    private let fixedFaction: FactionShortName?
+
     @State private var showFullscreen = false
-    @State private var keywordsExpanded = true
     @State private var modifiersExpanded = false
     @State private var abilitiesExpanded = false
-    @State private var evolutionExpanded = true
     @State private var historyExpanded = false
     @State private var shimmerOffset: CGFloat = -1.0
 
+    init(card: CardInstance? = nil, faction: FactionShortName? = nil) {
+        self.fixedCard = card
+        self.fixedFaction = faction
+    }
+
+    private var displayCard: CardInstance? {
+        fixedCard ?? router.selectedCardInstance
+    }
+
     var body: some View {
+        let card = displayCard
+
         ZStack(alignment: .topLeading) {
             // Background: subtle radial gradient from faction color
             backgroundGradient
@@ -33,28 +45,37 @@ struct CardDetailView: View {
                         Spacer().frame(height: 8)
 
                         // Card frame — tap for fullscreen
-                        cardFrameSection
+                        cardFrameSection(card: card)
 
                         // Stats ribbon (ATK, HP, Instability) — creatures only
-                        if let card = router.selectedCardInstance, card.currentAttack != nil {
+                        if let card, card.currentAttack != nil {
                             statsRibbon(card: card)
                         }
 
                         // Expandable sections
-                        if let card = router.selectedCardInstance {
+                        if let card {
+                            let hasKeywords = !card.effectiveKeywords.isEmpty
+                            let hasAbilities = !card.triggeredAbilities.isEmpty
+                            let hasModifiers = !card.modifiers.isEmpty
+
                             // Keywords with full descriptions
-                            if !card.effectiveKeywords.isEmpty {
+                            if hasKeywords {
                                 keywordsSection(card: card)
                             }
 
                             // Triggered abilities
-                            if !card.triggeredAbilities.isEmpty {
+                            if hasAbilities {
                                 triggeredAbilitiesSection(card: card)
                             }
 
                             // Applied modifiers
-                            if !card.modifiers.isEmpty {
+                            if hasModifiers {
                                 modifiersSection(card: card)
+                            }
+
+                            // Always keep at least one explanatory panel in view.
+                            if !hasKeywords && !hasAbilities && !hasModifiers {
+                                cardNotesSection(card: card)
                             }
 
                             // Evolution progress
@@ -71,7 +92,7 @@ struct CardDetailView: View {
                 }
 
                 // Sticky bottom action bar
-                if let card = router.selectedCardInstance {
+                if let card {
                     actionBar(card: card)
                 }
             }
@@ -80,8 +101,8 @@ struct CardDetailView: View {
             closeButton
         }
         .fullScreenCover(isPresented: $showFullscreen) {
-            if let card = router.selectedCardInstance {
-                FullscreenCardView(card: card, faction: router.selectedCardFaction)
+            if let card {
+                FullscreenCardView(card: card, faction: factionForCard(card))
             }
         }
     }
@@ -92,7 +113,7 @@ struct CardDetailView: View {
         ZStack {
             Color.bgPrimary.ignoresSafeArea()
 
-            if let card = router.selectedCardInstance,
+            if let card = displayCard,
                let faction = factionForCard(card) {
                 RadialGradient(
                     colors: [
@@ -123,14 +144,20 @@ struct CardDetailView: View {
 
     // MARK: - Card Frame Section
 
-    private var cardFrameSection: some View {
-        Group {
-            if let card = router.selectedCardInstance {
+    private func cardFrameSection(card: CardInstance?) -> some View {
+        let detailScale: CGFloat = 0.86
+
+        return Group {
+            if let card {
                 CardFrameView(
                     data: CardDisplayData(instance: card, faction: factionForCard(card)),
                     size: .detail
                 )
-                .frame(width: 320, height: 448) // 320pt wide, 5:7 ratio
+                .scaleEffect(detailScale)
+                .frame(
+                    width: CardDisplaySize.detail.width * detailScale,
+                    height: CardDisplaySize.detail.height * detailScale
+                )
                 .contactShadow(opacity: 0.6)
                 .onTapGesture {
                     showFullscreen = true
@@ -205,6 +232,50 @@ struct CardDetailView: View {
         .cornerRadius(12)
     }
 
+    // MARK: - Notes Section (fallback when no dynamic sections)
+
+    private func cardNotesSection(card: CardInstance) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Card Notes")
+                .font(CardFont.bodyBold(size: 14))
+                .foregroundColor(.textPrimary)
+
+            HStack(spacing: 8) {
+                noteChip(title: "Type", value: card.cardType?.displayName ?? "Creature")
+                noteChip(title: "Tier", value: card.tier.displayName)
+                noteChip(title: "Decks", value: "\(card.inDeckIds.count)")
+            }
+
+            if !card.flavorText.isEmpty {
+                Text(card.flavorText)
+                    .font(CardFont.flavorText(size: 12))
+                    .foregroundColor(.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("No active keywords or modifiers on this card yet.")
+                    .font(CardFont.body(size: 12))
+                    .foregroundColor(.textTertiary)
+            }
+        }
+        .padding(16)
+        .leatherPanel()
+    }
+
+    private func noteChip(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title.uppercased())
+                .font(CardFont.uiLabel(size: 10))
+                .foregroundColor(.textTertiary)
+            Text(value)
+                .font(CardFont.bodyBold(size: 12))
+                .foregroundColor(.textPrimary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.bgTertiary)
+        .cornerRadius(8)
+    }
+
     private func statCell(iconName: String, value: Int, color: Color, label: String) -> some View {
         HStack(spacing: 8) {
             Image("StatIcons/\(iconName)")
@@ -229,59 +300,59 @@ struct CardDetailView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Keywords Section (Expandable)
+    // MARK: - Keywords Section
 
     private func keywordsSection(card: CardInstance) -> some View {
-        DisclosureGroup(
-            isExpanded: $keywordsExpanded,
-            content: {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(card.effectiveKeywords) { keyword in
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(keyword.customIconName)
-                                .renderingMode(.template)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .foregroundColor(keywordColor(keyword))
-                                .frame(width: 28, height: 28)
-                                .background(keywordColor(keyword).opacity(0.15))
-                                .cornerRadius(7)
+        let keywords = resolvedKeywords(from: card)
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(keyword.displayName)
-                                    .font(CardFont.bodyBold(size: 14))
-                                    .foregroundColor(.textPrimary)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image("UIIcons/ui-evolution-sparkle")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 12, height: 12)
+                    .foregroundColor(.textTertiary)
+                Text("Keywords")
+                    .font(CardFont.bodyBold(size: 14))
+                    .foregroundColor(.textPrimary)
+                Spacer()
+                Text("\(keywords.count)")
+                    .font(CardFont.body(size: 12))
+                    .foregroundColor(.textTertiary)
+            }
 
-                                Text(keyword.description)
-                                    .font(CardFont.body(size: 12))
-                                    .foregroundColor(.textSecondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+            if keywords.isEmpty {
+                Text("No keyword abilities are active on this card.")
+                    .font(CardFont.body(size: 12))
+                    .foregroundColor(.textTertiary)
+            } else {
+                ForEach(keywords, id: \.rawValue) { keyword in
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(keyword.customIconName)
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundColor(keywordColor(keyword))
+                            .frame(width: 28, height: 28)
+                            .background(keywordColor(keyword).opacity(0.15))
+                            .cornerRadius(7)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(keyword.displayName)
+                                .font(CardFont.bodyBold(size: 14))
+                                .foregroundColor(.textPrimary)
+
+                            Text(keyword.description)
+                                .font(CardFont.body(size: 12))
+                                .foregroundColor(.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .padding(.vertical, 4)
                     }
-                }
-                .padding(.top, 8)
-            },
-            label: {
-                HStack(spacing: 6) {
-                    Image("UIIcons/ui-evolution-sparkle")
-                        .renderingMode(.template)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 12, height: 12)
-                        .foregroundColor(.textTertiary)
-                    Text("Keywords")
-                        .font(CardFont.bodyBold(size: 14))
-                        .foregroundColor(.textPrimary)
-                    Spacer()
-                    Text("\(card.effectiveKeywords.count)")
-                        .font(CardFont.body(size: 12))
-                        .foregroundColor(.textTertiary)
+                    .padding(.vertical, 2)
                 }
             }
-        )
-        .tint(.textTertiary)
+        }
         .padding(16)
         .leatherPanel()
     }
@@ -420,176 +491,159 @@ struct CardDetailView: View {
         .leatherPanel()
     }
 
-    // MARK: - Evolution Section (Expandable)
+    // MARK: - Evolution Section
 
     private func evolutionSection(card: CardInstance) -> some View {
         let isReady = card.isEvolutionReady
 
-        return DisclosureGroup(
-            isExpanded: .init(
-                get: { isReady ? true : evolutionExpanded },
-                set: { evolutionExpanded = $0 }
-            ),
-            content: {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Tier info
-                    HStack {
-                        Text(card.tier.displayName)
-                            .font(CardFont.body(size: 13))
-                            .foregroundColor(.textSecondary)
-
-                        Spacer()
-
-                        if let nextTier = card.tier.nextTier {
-                            HStack(spacing: 4) {
-                                ThemedGlyph(symbol: "arrow.right", size: 10, color: .textTertiary)
-                                Text(nextTier.displayName)
-                                    .font(CardFont.bodyBold(size: 13))
-                                    .foregroundColor(Color.tierColor(nextTier))
-                            }
-                        } else {
-                            Text("Max Tier")
-                                .font(CardFont.bodyBold(size: 13))
-                                .foregroundColor(.rarityLegendary)
-                        }
-                    }
-
-                    // Energy progress bar
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Chaos Energy")
-                                .font(CardFont.body(size: 13))
-                                .foregroundColor(.textSecondary)
-                            Spacer()
-                            Text("\(card.chaosEnergy)/\(card.nextEnergyThreshold ?? 0)")
-                                .font(CardFont.bodyBold(size: 13))
-                                .foregroundColor(.textPrimary)
-                        }
-
-                        // Progress bar with rounded caps and glowing leading edge
-                        GeometryReader { geometry in
-                            let barWidth = geometry.size.width
-                            let fillWidth = barWidth * CGFloat(card.evolutionProgress)
-
-                            ZStack(alignment: .leading) {
-                                // Background track
-                                Capsule()
-                                    .fill(Color.bgQuaternary)
-
-                                // Fill bar with rounded caps
-                                if fillWidth > 0 {
-                                    Capsule()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    factionAccentColor(card).opacity(0.7),
-                                                    factionAccentColor(card)
-                                                ],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .frame(width: max(fillWidth, 10))
-
-                                    // Glowing leading edge
-                                    if fillWidth > 10 {
-                                        Circle()
-                                            .fill(Color.textPrimary.opacity(0.7))
-                                            .frame(width: 6, height: 6)
-                                            .shadow(color: factionAccentColor(card), radius: 4)
-                                            .offset(x: fillWidth - 6)
-                                    }
-                                }
-
-                                // Shimmer overlay (only when evolution is ready)
-                                if isReady {
-                                    Capsule()
-                                        .fill(
-                                            LinearGradient(
-                                                stops: [
-                                                    .init(color: .clear, location: 0.0),
-                                                    .init(color: Color.textPrimary.opacity(0.3), location: 0.5),
-                                                    .init(color: .clear, location: 1.0)
-                                                ],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .frame(width: barWidth * 0.3)
-                                        .offset(x: shimmerOffset * barWidth)
-                                        .mask(
-                                            Capsule()
-                                                .frame(width: max(fillWidth, 10))
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                        )
-                                        .onAppear {
-                                            withAnimation(
-                                                .linear(duration: 2.0)
-                                                .repeatForever(autoreverses: false)
-                                            ) {
-                                                shimmerOffset = 1.3
-                                            }
-                                        }
-                                }
-                            }
-                        }
-                        .frame(height: 10)
-                    }
-
-                    // Evolve button (inside section, only if ready)
-                    if isReady {
-                        Button(action: {
-                            router.navigateToEvolution(card, faction: factionForCard(card))
-                        }) {
-                            HStack {
-                                ThemedGlyph(symbol: "arrow.up.circle.fill", size: 16, color: .textDark)
-                                Text("Evolve Now")
-                            }
-                            .font(CardFont.bodyBold(size: 15))
-                            .foregroundColor(.textDark)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.tauntGold, Color(hex: "#FFB300")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.textPrimary.opacity(0.15), lineWidth: 1)
-                            )
-                            .cornerRadius(10)
-                        }
-                    }
-                }
-                .padding(.top, 8)
-            },
-            label: {
-                HStack(spacing: 6) {
-                    ThemedGlyph(
-                        symbol: "arrow.up.circle",
-                        size: 12,
-                        weight: .semibold,
-                        color: isReady ? .tauntGold : .textTertiary
-                    )
-                    Text("Evolution")
-                        .font(CardFont.bodyBold(size: 14))
-                        .foregroundColor(.textPrimary)
-                    Spacer()
-                    if isReady {
-                        Text("READY")
-                            .font(CardFont.bodyBold(size: 10))
-                            .foregroundColor(.tauntGold)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.tauntGold.opacity(0.15))
-                            .cornerRadius(4)
-                    }
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                ThemedGlyph(
+                    symbol: "arrow.up.circle",
+                    size: 12,
+                    weight: .semibold,
+                    color: isReady ? .tauntGold : .textTertiary
+                )
+                Text("Evolution")
+                    .font(CardFont.bodyBold(size: 14))
+                    .foregroundColor(.textPrimary)
+                Spacer()
+                if isReady {
+                    Text("READY")
+                        .font(CardFont.bodyBold(size: 10))
+                        .foregroundColor(.tauntGold)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.tauntGold.opacity(0.15))
+                        .cornerRadius(4)
                 }
             }
-        )
-        .tint(.textTertiary)
+
+            // Tier info
+            HStack {
+                Text(card.tier.displayName)
+                    .font(CardFont.body(size: 13))
+                    .foregroundColor(.textSecondary)
+
+                Spacer()
+
+                if let nextTier = card.tier.nextTier {
+                    HStack(spacing: 4) {
+                        ThemedGlyph(symbol: "arrow.right", size: 10, color: .textTertiary)
+                        Text(nextTier.displayName)
+                            .font(CardFont.bodyBold(size: 13))
+                            .foregroundColor(Color.tierColor(nextTier))
+                    }
+                } else {
+                    Text("Max Tier")
+                        .font(CardFont.bodyBold(size: 13))
+                        .foregroundColor(.rarityLegendary)
+                }
+            }
+
+            // Energy progress bar
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Chaos Energy")
+                        .font(CardFont.body(size: 13))
+                        .foregroundColor(.textSecondary)
+                    Spacer()
+                    Text(energyProgressText(card))
+                        .font(CardFont.bodyBold(size: 13))
+                        .foregroundColor(.textPrimary)
+                }
+
+                GeometryReader { geometry in
+                    let barWidth = geometry.size.width
+                    let fillWidth = barWidth * CGFloat(card.evolutionProgress)
+
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.bgQuaternary)
+
+                        if fillWidth > 0 {
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            factionAccentColor(card).opacity(0.7),
+                                            factionAccentColor(card)
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: max(fillWidth, 10))
+
+                            if fillWidth > 10 {
+                                Circle()
+                                    .fill(Color.textPrimary.opacity(0.7))
+                                    .frame(width: 6, height: 6)
+                                    .shadow(color: factionAccentColor(card), radius: 4)
+                                    .offset(x: fillWidth - 6)
+                            }
+                        }
+
+                        if isReady {
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        stops: [
+                                            .init(color: .clear, location: 0.0),
+                                            .init(color: Color.textPrimary.opacity(0.3), location: 0.5),
+                                            .init(color: .clear, location: 1.0)
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: barWidth * 0.3)
+                                .offset(x: shimmerOffset * barWidth)
+                                .mask(
+                                    Capsule()
+                                        .frame(width: max(fillWidth, 10))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                )
+                                .onAppear {
+                                    withAnimation(
+                                        .linear(duration: 2.0)
+                                        .repeatForever(autoreverses: false)
+                                    ) {
+                                        shimmerOffset = 1.3
+                                    }
+                                }
+                        }
+                    }
+                }
+                .frame(height: 10)
+            }
+
+            if isReady {
+                Button(action: {
+                    router.navigateToEvolution(card, faction: factionForCard(card))
+                }) {
+                    HStack {
+                        ThemedGlyph(symbol: "arrow.up.circle.fill", size: 16, color: .textDark)
+                        Text("Evolve Now")
+                    }
+                    .font(CardFont.bodyBold(size: 15))
+                    .foregroundColor(.textDark)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.tauntGold, Color(hex: "#FFB300")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.textPrimary.opacity(0.15), lineWidth: 1)
+                    )
+                    .cornerRadius(10)
+                }
+            }
+        }
         .padding(16)
         .leatherPanel()
     }
@@ -768,6 +822,9 @@ struct CardDetailView: View {
 
     /// Get the faction for theming (from appState template-faction map, or fallback).
     private func factionForCard(_ card: CardInstance) -> FactionShortName? {
+        if let fixedFaction {
+            return fixedFaction
+        }
         if let selectedFaction = router.selectedCardFaction {
             return selectedFaction
         }
@@ -783,6 +840,29 @@ struct CardDetailView: View {
             return Color.factionPrimary(faction)
         }
         return .ironwright
+    }
+
+    private func resolvedKeywords(from card: CardInstance) -> [Keyword] {
+        let rawKeywords = card.innateKeywords + card.modifierKeywords
+        var seen: Set<String> = []
+        var resolved: [Keyword] = []
+
+        for raw in rawKeywords {
+            let normalized = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            guard !normalized.isEmpty, !seen.contains(normalized) else { continue }
+            guard let keyword = Keyword(rawValue: normalized) else { continue }
+            seen.insert(normalized)
+            resolved.append(keyword)
+        }
+
+        return resolved
+    }
+
+    private func energyProgressText(_ card: CardInstance) -> String {
+        guard let threshold = card.nextEnergyThreshold else {
+            return "MAX"
+        }
+        return "\(card.chaosEnergy)/\(threshold)"
     }
 }
 

@@ -1,8 +1,25 @@
 # Visual Polish — Status Log
 
-## Current Phase: COMPLETE — All 9 waves (0-8) done
+## Current Phase: IN PROGRESS — Post-wave visual regression pass
 ## Started: 2026-02-19
 ## Plan: [PLAN-visual-polish.md](PLAN-visual-polish.md)
+
+---
+
+## 2026-02-20 Visual Reality Check (Screenshots vs Guide)
+
+The implementation is materially improved, but not at final "professional collectible" parity yet.
+
+**What now meets the guide better**
+- Collection uses binder/table material layering and recessed card pockets.
+- Card detail no longer opens with a blank section block under stats (keyword row now visible).
+- Shop subscription and pack purchase controls moved toward lower-saturation material tones.
+- Deck list loading regression fixed (owner-based service path + dev fallback).
+
+**Still below target quality**
+- Shop mid-tier subscription card and pack CTAs still read slightly app-like (cool digital blue bias remains).
+- Card detail hierarchy still spends too much vertical space on frame vs explanatory sections on smaller phones.
+- Cross-screen "collector workspace" cohesion is improved but still uneven between Home/Profile and Shop/Detail.
 
 ---
 
