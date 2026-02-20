@@ -96,8 +96,10 @@ struct ShopView: View {
 
     private func shardCounter(tier: ShardTier, count: Int) -> some View {
         HStack(spacing: 3) {
-            Image("StatIcons/instability-indicator")
+            Image("UIIcons/ui-crystal-shard")
+                .renderingMode(.template)
                 .resizable()
+                .aspectRatio(contentMode: .fit)
                 .frame(width: 14, height: 14)
                 .foregroundStyle(shardColor(tier))
             Text("\(count)")
@@ -176,7 +178,7 @@ struct ShopView: View {
                     name: "Starter Pack",
                     description: "5 random cards from your faction",
                     price: "100",
-                    iconAsset: "StatIcons/rarity-common",
+                    iconAsset: "UIIcons/ui-chest-basic",
                     color: .rarityUncommon,
                     canAfford: (appState.player?.chaosDust ?? 0) >= 100,
                     onPurchase: { selectedPackType = .starter }
@@ -185,7 +187,7 @@ struct ShopView: View {
                     name: "Rare Pack",
                     description: "3 cards, guaranteed 1 Rare or better",
                     price: "250",
-                    iconAsset: "StatIcons/rarity-rare",
+                    iconAsset: "UIIcons/ui-chest-rare",
                     color: .rarityRare,
                     canAfford: (appState.player?.chaosDust ?? 0) >= 250,
                     onPurchase: { selectedPackType = .rare }
@@ -194,7 +196,7 @@ struct ShopView: View {
                     name: "Epic Pack",
                     description: "3 cards, guaranteed 1 Epic or better",
                     price: "500",
-                    iconAsset: "StatIcons/rarity-epic",
+                    iconAsset: "UIIcons/ui-chest-epic",
                     color: .rarityEpic,
                     canAfford: (appState.player?.chaosDust ?? 0) >= 500,
                     onPurchase: { selectedPackType = .epic }
@@ -215,8 +217,10 @@ struct ShopView: View {
                 .padding(.horizontal, 16)
 
             HStack(spacing: 12) {
-                Image("StatIcons/instability-indicator")
+                Image("UIIcons/ui-crystal-shard")
+                    .renderingMode(.template)
                     .resizable()
+                    .aspectRatio(contentMode: .fit)
                     .frame(width: 28, height: 28)
                     .foregroundColor(.appAccent)
 
@@ -374,6 +378,7 @@ struct PackRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(iconAsset)
+                .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 28, height: 28)

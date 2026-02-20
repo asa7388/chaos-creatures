@@ -428,13 +428,21 @@ enum BattleLogEntryType: String {
         switch self {
         case .turnStart: return "arrow.clockwise"
         case .phaseChange: return "arrow.right"
-        case .chaosRoll: return "die.face.5.fill"
-        case .cardPlayed: return "rectangle.portrait.fill"
-        case .creatureDied: return "xmark.circle.fill"
-        case .hpChange: return "heart.fill"
-        case .combat: return "bolt.fill"
-        case .eventTriggered: return "sparkles"
+        case .chaosRoll: return "UIIcons/ui-chaos-rift"
+        case .cardPlayed: return "UIIcons/ui-mission-cards"
+        case .creatureDied: return "UIIcons/ui-trigger-death"
+        case .hpChange: return "StatIcons/heart-hp"
+        case .combat: return "UIIcons/ui-trigger-attack"
+        case .eventTriggered: return "UIIcons/ui-chaos-spark"
         case .system: return "gearshape"
+        }
+    }
+
+    /// Whether this entry type uses a custom asset icon (true) or SF Symbol (false)
+    var isCustomIcon: Bool {
+        switch self {
+        case .turnStart, .phaseChange, .system: return false
+        default: return true
         }
     }
 

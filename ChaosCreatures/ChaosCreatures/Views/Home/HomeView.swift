@@ -166,8 +166,11 @@ struct HomeView: View {
                 router.decksNavigationPath.append(DecksDestination.deckBuilder(nil))
             }) {
                 HStack(spacing: 6) {
-                    Image(systemName: "plus.rectangle.on.rectangle")
-                        .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                    Image("UIIcons/ui-mission-cards")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 14, height: 14)
                     Text("Create Deck")
                         .font(CardFont.bodyBold(size: 15))
                 }

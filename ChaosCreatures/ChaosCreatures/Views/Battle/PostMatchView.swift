@@ -145,8 +145,11 @@ struct PostMatchView: View {
     private var resultBanner: some View {
         VStack(spacing: 12) {
             // Icon
-            Image(systemName: isVictory ? "crown.fill" : "xmark.circle.fill")
-                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
+            Image(isVictory ? "UIIcons/ui-victory" : "UIIcons/ui-defeat")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
                 .foregroundColor(isVictory ? .tauntGold : .chaosRed)
 
             // Title
@@ -226,8 +229,11 @@ struct PostMatchView: View {
 
             // Still show energy earned (all 20 deck cards gain energy even in practice)
             HStack(spacing: 6) {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                Image("StatIcons/chaos-motes")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 14, height: 14)
                     .foregroundColor(.warningYellow)
                 Text("All deck cards earned +\(energyEarned) Chaos Energy")
                     .font(CardFont.body(size: 13))
@@ -245,24 +251,27 @@ struct PostMatchView: View {
 
             HStack(spacing: 20) {
                 rewardItem(
-                    icon: "star.fill",
+                    icon: "UIIcons/ui-mission-trophy",
                     label: "XP",
                     value: "+\(xpEarned)",
-                    color: .orderBlue
+                    color: .orderBlue,
+                    isCustomAsset: true
                 )
 
                 rewardItem(
-                    icon: "sparkle",
+                    icon: "UIIcons/ui-crystal-shard",
                     label: "Dust",
                     value: "+\(dustEarned)",
-                    color: .ironwright
+                    color: .ironwright,
+                    isCustomAsset: true
                 )
 
                 rewardItem(
-                    icon: "bolt.fill",
+                    icon: "StatIcons/chaos-motes",
                     label: "Energy",
                     value: "+\(energyEarned)/card",
-                    color: .warningYellow
+                    color: .warningYellow,
+                    isCustomAsset: true
                 )
             }
 
@@ -287,11 +296,20 @@ struct PostMatchView: View {
         }
     }
 
-    private func rewardItem(icon: String, label: String, value: String, color: Color) -> some View {
+    private func rewardItem(icon: String, label: String, value: String, color: Color, isCustomAsset: Bool) -> some View {
         VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 24))  // SF Symbol icon size - keep as-is
-                .foregroundColor(color)
+            if isCustomAsset {
+                Image(icon)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(color)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(color)
+            }
 
             Text(value)
                 .font(CardFont.stats(size: 18))

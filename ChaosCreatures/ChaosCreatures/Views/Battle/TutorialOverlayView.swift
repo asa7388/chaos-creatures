@@ -45,12 +45,20 @@ enum TutorialStep: Int, CaseIterable {
 
     var iconName: String {
         switch self {
-        case .welcome: return "sparkles"
-        case .chaosMoteExplain: return "drop.fill"
-        case .playCard: return "rectangle.portrait.fill"
-        case .chaosRoll: return "die.face.5.fill"
-        case .attackPhase: return "bolt.fill"
+        case .welcome: return "UIIcons/ui-chaos-spark"
+        case .chaosMoteExplain: return "UIIcons/ui-chaos-mana"
+        case .playCard: return "UIIcons/ui-mission-cards"
+        case .chaosRoll: return "UIIcons/ui-chaos-rift"
+        case .attackPhase: return "UIIcons/ui-trigger-attack"
         case .complete: return "checkmark.circle.fill"
+        }
+    }
+
+    /// Whether this step uses a custom asset (true) or SF Symbol (false)
+    var isCustomIcon: Bool {
+        switch self {
+        case .complete: return false
+        default: return true
         }
     }
 
@@ -158,9 +166,18 @@ struct TutorialOverlayView: View {
                 // Tutorial tooltip
                 VStack(spacing: 16) {
                     // Icon
-                    Image(systemName: step.iconName)
-                        .font(.system(size: 36))  // SF Symbol icon size - keep as-is
-                        .foregroundColor(step.iconColor)
+                    if step.isCustomIcon {
+                        Image(step.iconName)
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 36, height: 36)
+                            .foregroundColor(step.iconColor)
+                    } else {
+                        Image(systemName: step.iconName)
+                            .font(.system(size: 36))
+                            .foregroundColor(step.iconColor)
+                    }
 
                     // Title
                     Text(step.title)

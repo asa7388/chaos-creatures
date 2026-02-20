@@ -183,8 +183,11 @@ struct EvolutionRevealView: View {
             // Modifier applied
             if let modName = modifierName {
                 HStack(spacing: 6) {
-                    Image(systemName: "sparkle")
-                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
+                    Image("UIIcons/ui-evolution-sparkle")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
                         .foregroundColor(.tauntGold)
                     Text("Modifier: \(modName)")
                         .font(CardFont.bodyBold(size: 13))
@@ -276,8 +279,11 @@ struct EvolutionRevealView: View {
                     let x = cos(angle * .pi / 180) * radius
                     let y = sin(angle * .pi / 180) * radius
 
-                    Image(systemName: "sparkle")
-                        .font(.system(size: CGFloat.random(in: 6...14)))  // SF Symbol icon size - keep as-is
+                    Image("UIIcons/ui-evolution-sparkle")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: CGFloat.random(in: 6...14), height: CGFloat.random(in: 6...14))
                         .foregroundColor(Color.tierColor(result.tier).opacity(Double.random(in: 0.3...0.8)))
                         .offset(x: x, y: y)
                 }

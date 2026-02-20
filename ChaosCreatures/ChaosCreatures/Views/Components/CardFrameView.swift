@@ -1067,8 +1067,11 @@ struct CardFrameView: View {
         VStack {
             HStack {
                 Spacer()
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: size == .grid ? 14 : 12))  // SF Symbol icon size - keep as-is
+                Image("UIIcons/ui-evolution-sparkle")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: size == .grid ? 14 : 12, height: size == .grid ? 14 : 12)
                     .foregroundColor(.tauntGold)
                     .shadow(color: .tauntGold.opacity(0.5), radius: 3)
                     .padding(4)

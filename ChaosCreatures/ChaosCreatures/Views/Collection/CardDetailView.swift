@@ -269,8 +269,11 @@ struct CardDetailView: View {
             },
             label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "sparkle")
-                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
+                    Image("UIIcons/ui-evolution-sparkle")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
                         .foregroundColor(.textTertiary)
                     Text("Keywords")
                         .font(CardFont.bodyBold(size: 14))
@@ -296,8 +299,18 @@ struct CardDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(card.triggeredAbilities) { ability in
                         HStack(spacing: 8) {
-                            Image(systemName: triggerIcon(ability.trigger))
-                                .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                            Group {
+                                if isCustomTriggerIcon(ability.trigger) {
+                                    Image(triggerIcon(ability.trigger))
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 14, height: 14)
+                                } else {
+                                    Image(systemName: triggerIcon(ability.trigger))
+                                        .font(.system(size: 14))
+                                }
+                            }
                                 .foregroundColor(triggerColor(ability.trigger))
                                 .frame(width: 24, height: 24)
                                 .background(triggerColor(ability.trigger).opacity(0.15))
@@ -323,8 +336,11 @@ struct CardDetailView: View {
             },
             label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "bolt.circle")
-                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
+                    Image("UIIcons/ui-trigger-attack")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
                         .foregroundColor(.textTertiary)
                     Text("Triggered Abilities")
                         .font(CardFont.bodyBold(size: 14))
@@ -350,8 +366,11 @@ struct CardDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(card.modifiers) { modifier in
                         HStack(spacing: 8) {
-                            Image(systemName: modifier.attunement == .order ? "sun.max.fill" : "flame.fill")
-                                .font(.system(size: 12))  // SF Symbol icon size - keep as-is
+                            Image(modifier.attunement == .order ? "UIIcons/ui-attune-order" : "UIIcons/ui-attune-chaos")
+                                .renderingMode(.template)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 12, height: 12)
                                 .foregroundColor(modifier.attunement == .order ? .orderBlue : .chaosRed)
                                 .frame(width: 22, height: 22)
                                 .background(
@@ -636,8 +655,11 @@ struct CardDetailView: View {
             },
             label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 12, weight: .semibold))  // SF Symbol icon size - keep as-is
+                    Image("UIIcons/ui-evolution-sparkle")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
                         .foregroundColor(.textTertiary)
                     Text("Evolution History")
                         .font(CardFont.bodyBold(size: 14))
@@ -728,13 +750,21 @@ struct CardDetailView: View {
 
     private func triggerIcon(_ trigger: TriggerType) -> String {
         switch trigger {
-        case .onOrder: return "sun.max.fill"
-        case .onChaos: return "flame.fill"
-        case .onPlay: return "rectangle.portrait.arrowtriangle.2.outward"
-        case .onDeath: return "xmark.circle.fill"
-        case .onDamageTaken: return "bolt.heart.fill"
-        case .onAttack: return "arrowshape.right.fill"
+        case .onOrder: return "UIIcons/ui-trigger-order"
+        case .onChaos: return "UIIcons/ui-trigger-chaos"
+        case .onPlay: return "UIIcons/ui-trigger-play"
+        case .onDeath: return "UIIcons/ui-trigger-death"
+        case .onDamageTaken: return "UIIcons/ui-trigger-damage"
+        case .onAttack: return "UIIcons/ui-trigger-attack"
         case .onBlock: return "shield.fill"
+        }
+    }
+
+    /// Whether the trigger icon is a custom asset (true) or SF Symbol (false)
+    private func isCustomTriggerIcon(_ trigger: TriggerType) -> Bool {
+        switch trigger {
+        case .onBlock: return false
+        default: return true
         }
     }
 

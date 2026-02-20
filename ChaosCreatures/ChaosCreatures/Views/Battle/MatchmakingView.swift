@@ -194,7 +194,11 @@ struct MatchmakingView: View {
                     router.decksNavigationPath.append(DecksDestination.deckBuilder(nil))
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "plus.rectangle.on.rectangle")
+                        Image("UIIcons/ui-mission-cards")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16, height: 16)
                         Text("Build a Deck")
                     }
                     .font(CardFont.bodyBold(size: 16))

@@ -19,9 +19,13 @@ enum CollectionSortOption: String, CaseIterable {
         case .newest: return "clock.arrow.circlepath"
         case .oldest: return "clock"
         case .name: return "textformat"
-        case .manaCost: return "diamond.fill"
+        case .manaCost: return "chaos-motes"  // custom asset
         case .rarity: return "star.fill"
         }
+    }
+
+    var isCustomAsset: Bool {
+        self == .manaCost
     }
 }
 
@@ -174,7 +178,16 @@ struct CollectionView: View {
                     Button(action: {
                         sortOption = option
                     }) {
-                        Label(option.rawValue, systemImage: option.iconName)
+                        if option.isCustomAsset {
+                            Label {
+                                Text(option.rawValue)
+                            } icon: {
+                                Image("StatIcons/\(option.iconName)")
+                                    .renderingMode(.template)
+                            }
+                        } else {
+                            Label(option.rawValue, systemImage: option.iconName)
+                        }
                     }
                 }
             } label: {

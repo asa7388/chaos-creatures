@@ -160,8 +160,11 @@ struct DeckRowView: View {
         HStack(spacing: 12) {
             // Faction icon
             if let faction = FactionShortName(rawValue: deck.factionId.uuidString) {
-                Image(systemName: faction.systemIconName)
-                    .font(.system(size: 20))  // SF Symbol icon size - keep as-is
+                Image(faction.emblemAssetName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
                     .foregroundColor(faction.swiftUIColor)
                     .frame(width: 40, height: 40)
                     .background(faction.swiftUIColor.opacity(0.15))

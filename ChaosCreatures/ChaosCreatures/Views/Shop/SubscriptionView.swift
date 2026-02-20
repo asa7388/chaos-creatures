@@ -86,8 +86,11 @@ struct SubscriptionView: View {
 
     private var heroHeader: some View {
         VStack(spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 44))  // SF Symbol icon size - keep as-is
+            Image("UIIcons/ui-evolution-sparkle")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 44, height: 44)
                 .foregroundColor(.tauntGold)
 
             Text("Unlock Your Potential")
@@ -123,8 +126,11 @@ struct SubscriptionView: View {
         }) {
             VStack(spacing: 8) {
                 // Tier icon
-                Image(systemName: tierIcon(tier))
-                    .font(.system(size: 24))  // SF Symbol icon size - keep as-is
+                Image(tierIcon(tier))
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
                     .foregroundColor(tierColor(tier))
 
                 // Tier name
@@ -397,9 +403,9 @@ struct SubscriptionView: View {
 
     private func tierIcon(_ tier: SubscriptionTier) -> String {
         switch tier {
-        case .free: return "person.fill"
-        case .mid: return "bolt.fill"
-        case .high: return "crown.fill"
+        case .free: return "UIIcons/ui-tier-free"
+        case .mid: return "UIIcons/ui-tier-adept"
+        case .high: return "UIIcons/ui-tier-master"
         }
     }
 

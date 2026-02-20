@@ -50,9 +50,9 @@ enum PackType: String, CaseIterable, Identifiable {
 
     var iconName: String {
         switch self {
-        case .starter: return "gift.fill"
-        case .rare: return "star.fill"
-        case .epic: return "sparkles"
+        case .starter: return "UIIcons/ui-chest-basic"
+        case .rare: return "UIIcons/ui-chest-rare"
+        case .epic: return "UIIcons/ui-chest-epic"
         }
     }
 
@@ -178,8 +178,11 @@ struct CardPackOpeningView: View {
                     .fill(packType.color.opacity(0.15))
                     .frame(width: 120, height: 120)
 
-                Image(systemName: packType.iconName)
-                    .font(.system(size: 48))  // SF Symbol icon size - keep as-is
+                Image(packType.iconName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 48, height: 48)
                     .foregroundColor(packType.color)
             }
 
@@ -194,7 +197,11 @@ struct CardPackOpeningView: View {
 
             // Cost display
             HStack(spacing: 4) {
-                Image(systemName: "sparkle")
+                Image("UIIcons/ui-chaos-mana")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
                     .foregroundColor(.tauntGold)
                 Text("\(packType.dustCost) Chaos Dust")
                     .font(CardFont.bodyBold(size: 16))
@@ -229,8 +236,11 @@ struct CardPackOpeningView: View {
                 .fill(packType.color.opacity(0.15))
                 .frame(width: 160, height: 160)
 
-            Image(systemName: packType.iconName)
-                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
+            Image(packType.iconName)
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
                 .foregroundColor(packType.color)
                 .scaleEffect(packScale)
                 .rotationEffect(.degrees(packRotation))
@@ -362,7 +372,11 @@ struct CardPackOpeningView: View {
                     Task { await openPack() }
                 }) {
                     HStack(spacing: 8) {
-                        Image(systemName: "sparkle")
+                        Image("UIIcons/ui-chaos-mana")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16, height: 16)
                         Text("Open for \(packType.dustCost) Dust")
                     }
                     .font(CardFont.bodyBold(size: 16))

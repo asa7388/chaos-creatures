@@ -50,8 +50,11 @@ struct FactionCardView: View {
     var body: some View {
         VStack(spacing: 20) {
             // Faction icon
-            Image(systemName: faction.systemIconName)
-                .font(.system(size: 64))  // SF Symbol icon size - keep as-is
+            Image(faction.emblemAssetName)
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
                 .foregroundColor(faction.swiftUIColor)
 
             // Faction name
@@ -143,20 +146,6 @@ struct FactionCardView: View {
             return ["Exalt", "Divine Buffs", "Judgment"]
         case .theEndless:
             return ["Persist", "Undying", "Inevitability"]
-        }
-    }
-}
-
-// MARK: - FactionShortName Icon Extension
-
-extension FactionShortName {
-    var systemIconName: String {
-        switch self {
-        case .ironwright: return "gearshape.2.fill"
-        case .feyCourts: return "leaf.fill"
-        case .demonicKingdoms: return "flame.fill"
-        case .celestialCrusade: return "sun.max.fill"
-        case .theEndless: return "moon.fill"
         }
     }
 }

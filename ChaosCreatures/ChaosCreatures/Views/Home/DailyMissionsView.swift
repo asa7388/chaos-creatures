@@ -60,8 +60,11 @@ struct MissionRowView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 // Mission icon
-                Image(systemName: missionIcon(mission.missionType))
-                    .font(.system(size: 16))  // SF Symbol icon size - keep as-is
+                Image(missionIcon(mission.missionType))
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
                     .foregroundColor(mission.isCompleted ? .healGreen : .orderBlue)
                     .frame(width: 28, height: 28)
                     .background(
@@ -112,16 +115,16 @@ struct MissionRowView: View {
 
     private func missionIcon(_ type: MissionType) -> String {
         switch type {
-        case .winGames: return "trophy.fill"
-        case .playCards: return "rectangle.stack.fill"
-        case .playCreatures: return "person.3.fill"
-        case .playSpells: return "wand.and.stars"
-        case .evolveCard: return "arrow.up.circle.fill"
-        case .triggerOrderEvents: return "shield.fill"
-        case .triggerChaosEvents: return "bolt.fill"
-        case .dealDamage: return "flame.fill"
-        case .winWithStyle: return "star.fill"
-        case .playGames: return "gamecontroller.fill"
+        case .winGames: return "UIIcons/ui-mission-trophy"
+        case .playCards: return "UIIcons/ui-mission-cards"
+        case .playCreatures: return "UIIcons/ui-mission-creatures"
+        case .playSpells: return "UIIcons/ui-mission-spells"
+        case .evolveCard: return "UIIcons/ui-mission-evolve"
+        case .triggerOrderEvents: return "UIIcons/ui-attune-order"
+        case .triggerChaosEvents: return "UIIcons/ui-attune-chaos"
+        case .dealDamage: return "UIIcons/ui-trigger-damage"
+        case .winWithStyle: return "UIIcons/ui-mission-trophy"
+        case .playGames: return "UIIcons/ui-mission-games"
         }
     }
 

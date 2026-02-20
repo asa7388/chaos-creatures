@@ -76,8 +76,11 @@ struct ModifierPickerView: View {
                     }
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "shield.lefthalf.filled")
-                            .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                        Image("UIIcons/ui-attune-order")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 14, height: 14)
                         Text("ORDER")
                             .font(CardFont.bodyBold(size: 14))
                     }
@@ -93,8 +96,11 @@ struct ModifierPickerView: View {
                     }
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                        Image("UIIcons/ui-attune-chaos")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 14, height: 14)
                         Text("CHAOS")
                             .font(CardFont.bodyBold(size: 14))
                     }
@@ -158,8 +164,11 @@ struct ModifierPickerView: View {
 
                     // Attunement badge
                     HStack(spacing: 4) {
-                        Image(systemName: modifier.attunement == .order ? "shield.lefthalf.filled" : "flame.fill")
-                            .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+                        Image(modifier.attunement == .order ? "UIIcons/ui-attune-order" : "UIIcons/ui-attune-chaos")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 10, height: 10)
                         Text(modifier.attunement == .order ? "Order" : "Chaos")
                             .font(CardFont.bodyBold(size: 11))
                     }

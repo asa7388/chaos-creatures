@@ -73,8 +73,11 @@ struct BattleContainerView: View {
                         Spacer()
 
                         Button(action: { showBattleLog.toggle() }) {
-                            Image(systemName: "text.bubble.fill")
-                                .font(.system(size: 14))  // SF Symbol icon size - keep as-is
+                            Image("UIIcons/ui-battle-log")
+                                .renderingMode(.template)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 14, height: 14)
                                 .foregroundColor(.textSecondary)
                                 .padding(6)
                                 .background(Color.bgPrimary.opacity(0.7))
@@ -338,9 +341,12 @@ struct OpponentHUDView: View {
 
                 // Instability
                 HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
+                    Image("StatIcons/instability-indicator")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 10, height: 10)
                         .foregroundColor(instabilityColor)
-                        .font(.system(size: 10))  // SF Symbol icon size - keep as-is
                     Text("\(instability)")
                         .font(CardFont.stats(size: 12))
                         .foregroundColor(instabilityColor)
@@ -383,9 +389,12 @@ struct PlayerHUDView: View {
 
                 // Chaos Motes (CM)
                 HStack(spacing: 4) {
-                    Image(systemName: "diamond.fill")
+                    Image("StatIcons/chaos-motes")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
                         .foregroundColor(.timerBlue)
-                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
                     Text("\(mana)/\(manaCap)")
                         .font(CardFont.stats(size: 13))
                         .foregroundColor(.textPrimary)
@@ -396,9 +405,12 @@ struct PlayerHUDView: View {
                 // Chaos Spark button
                 if hasChaosSpark {
                     Button(action: onChaosSpark) {
-                        Image(systemName: "bolt.circle.fill")
+                        Image("UIIcons/ui-chaos-spark")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 22, height: 22)
                             .foregroundColor(.warningYellow)
-                            .font(.system(size: 22))  // SF Symbol icon size - keep as-is
                     }
                 }
 
@@ -596,9 +608,12 @@ struct HPBarView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "heart.fill")
+            Image("StatIcons/heart-hp")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: fontSize, height: fontSize)
                 .foregroundColor(.chaosRed)
-                .font(.system(size: fontSize))  // SF Symbol icon size - keep as-is
 
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
@@ -651,8 +666,11 @@ struct TurnTimerBar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "clock.fill")
-                .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+            Image("UIIcons/ui-hourglass")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 10, height: 10)
                 .foregroundColor(timerColor)
 
             GeometryReader { geometry in
@@ -742,8 +760,18 @@ struct BattleLogSheetView: View {
                     LazyVStack(spacing: 4) {
                         ForEach(entries) { entry in
                             HStack(spacing: 8) {
-                                Image(systemName: entry.type.iconName)
-                                    .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+                                Group {
+                                    if entry.type.isCustomIcon {
+                                        Image(entry.type.iconName)
+                                            .renderingMode(.template)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 10, height: 10)
+                                    } else {
+                                        Image(systemName: entry.type.iconName)
+                                            .font(.system(size: 10))
+                                    }
+                                }
                                     .foregroundColor(entry.type.color)
                                     .frame(width: 16)
 

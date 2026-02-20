@@ -180,8 +180,11 @@ struct EvolutionFlowView: View {
 
             if let modifier = selectedModifier {
                 HStack(spacing: 6) {
-                    Image(systemName: "sparkle")
-                        .font(.system(size: 12))  // SF Symbol icon size - keep as-is
+                    Image("UIIcons/ui-evolution-sparkle")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
                         .foregroundColor(.tauntGold)
                     Text("Applying: \(modifier.name)")
                         .font(CardFont.bodyBold(size: 13))
@@ -316,8 +319,11 @@ struct EvolutionFlowView: View {
     private var evolutionEligibilityInfo: some View {
         VStack(spacing: 6) {
             HStack(spacing: 4) {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 12))  // SF Symbol icon size - keep as-is
+                Image("StatIcons/chaos-motes")
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 12, height: 12)
                     .foregroundColor(.tauntGold)
                 Text("Chaos Energy: \(card.chaosEnergy)")
                     .font(CardFont.body(size: 13))

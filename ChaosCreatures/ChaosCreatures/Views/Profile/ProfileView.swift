@@ -98,8 +98,11 @@ struct ProfileView: View {
             if let factionId = appState.player?.primaryFactionId,
                let faction = FactionShortName(rawValue: factionId.uuidString) {
                 HStack(spacing: 6) {
-                    Image(systemName: faction.systemIconName)
-                        .font(.system(size: 13))  // SF Symbol icon size - keep as-is
+                    Image(faction.emblemAssetName)
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 13, height: 13)
                     Text(faction.displayName)
                         .font(CardFont.body(size: 13))
                 }

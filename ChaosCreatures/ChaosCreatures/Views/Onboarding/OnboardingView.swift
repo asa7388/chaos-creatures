@@ -92,11 +92,11 @@ struct IntroCinematicView: View {
     @State private var panelOpacity: Double = 0
 
     private let panels: [(iconName: String, text: String, duration: Double)] = [
-        ("globe.americas.fill", "The world was once a thriving land of many civilizations.", 4.0),
-        ("bolt.fill", "War tore open rents to the Plane of Chaos.", 4.0),
-        ("sparkles", "Chaos motes transform everything they touch.", 4.0),
-        ("diamond.fill", "Planar Shards hold the power of transformation.", 4.0),
-        ("person.fill", "Channel their power. Transform your creatures.", 4.0),
+        ("UIIcons/ui-world", "The world was once a thriving land of many civilizations.", 4.0),
+        ("UIIcons/ui-chaos-rift", "War tore open rents to the Plane of Chaos.", 4.0),
+        ("UIIcons/ui-chaos-motes-large", "Chaos motes transform everything they touch.", 4.0),
+        ("UIIcons/ui-crystal-shard", "Planar Shards hold the power of transformation.", 4.0),
+        ("UIIcons/ui-hero", "Channel their power. Transform your creatures.", 4.0),
     ]
 
     var body: some View {
@@ -107,8 +107,11 @@ struct IntroCinematicView: View {
                 Spacer()
 
                 // Panel icon
-                Image(systemName: panels[currentPanelIndex].iconName)
-                    .font(.system(size: 80))  // SF Symbol icon size - keep as-is
+                Image(panels[currentPanelIndex].iconName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 80, height: 80)
                     .foregroundColor(.ironwright)
                     .opacity(panelOpacity)
 

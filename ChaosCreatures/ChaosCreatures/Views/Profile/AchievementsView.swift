@@ -177,8 +177,11 @@ struct AchievementsView: View {
     private var emptyView: some View {
         VStack(spacing: 12) {
             Spacer()
-            Image(systemName: "medal")
-                .font(.system(size: 48))  // SF Symbol icon size - keep as-is
+            Image("UIIcons/ui-achievement-medal")
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 48, height: 48)
                 .foregroundColor(.textDisabled)
             Text("No achievements available yet")
                 .font(CardFont.body(size: 16))
@@ -331,16 +334,22 @@ struct AchievementRowView: View {
                 .fill(isUnlocked ? Color.tauntGold.opacity(0.2) : Color.bgQuaternary)
                 .frame(width: 44, height: 44)
 
-            Image(systemName: categoryIcon(achievement.category))
-                .font(.system(size: 20))  // SF Symbol icon size - keep as-is
+            Image(categoryIcon(achievement.category))
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
                 .foregroundColor(isUnlocked ? .tauntGold : .textDisabled)
         }
     }
 
     private var rewardLabel: some View {
         HStack(spacing: 4) {
-            Image(systemName: rewardIconName)
-                .font(.system(size: 10))  // SF Symbol icon size - keep as-is
+            Image(rewardIconName)
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 10, height: 10)
                 .foregroundColor(.ironwright)
 
             Text(rewardText)
@@ -358,9 +367,9 @@ struct AchievementRowView: View {
 
     private var rewardIconName: String {
         switch achievement.rewardType {
-        case .xp: return "star.fill"
-        case .shards: return "sparkle"
-        case .chaosEnergyBoost: return "bolt.fill"
+        case .xp: return "UIIcons/ui-mission-trophy"
+        case .shards: return "UIIcons/ui-crystal-shard"
+        case .chaosEnergyBoost: return "UIIcons/ui-chaos-spark"
         }
     }
 
@@ -374,11 +383,11 @@ struct AchievementRowView: View {
 
     private func categoryIcon(_ category: AchievementCategory) -> String {
         switch category {
-        case .evolution: return "arrow.up.circle.fill"
-        case .battle: return "bolt.circle.fill"
-        case .collection: return "rectangle.stack.fill"
-        case .chaosRoll: return "die.face.5.fill"
-        case .social: return "person.2.fill"
+        case .evolution: return "UIIcons/ui-achieve-evolution"
+        case .battle: return "UIIcons/ui-achieve-battle"
+        case .collection: return "UIIcons/ui-achieve-collection"
+        case .chaosRoll: return "UIIcons/ui-achieve-chaos"
+        case .social: return "UIIcons/ui-achieve-social"
         }
     }
 }

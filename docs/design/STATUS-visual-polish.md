@@ -336,3 +336,23 @@ Audit (consistency agent):
 - 0 `.foregroundColor(.black)` in Views
 - 0 `textPrimary = Color.white` definitions
 - 0 debug prints outside #Preview blocks
+
+### SF Symbol → Custom Icon Replacement
+
+**Phase 1 — Replace with existing Wave 1B assets (4 parallel agents):**
+- Keywords: 9 SF Symbols → `KeywordIcons/kw-*` (KeywordBadgeView, CardFrameView, CardDetailView, ModifierPickerView)
+- Factions: 5 SF Symbols → `FactionEmblems/emblem-*` (FactionPickerView, ProfileView, DeckListView)
+- Tab bar: 5 custom icons already wired via AppTab.customIconName
+- Battle HUD: HP/ATK/CM/instability stat icons → `StatIcons/*` (BattleContainerView, CollectionView, PostMatchView, EvolutionFlowView)
+
+**Phase 2 — Generate 39 new UI icons + wire up (5 parallel agents):**
+- Generated 39 icons via node-canvas (`scripts/generate-ui-icons.mjs`) at $0 cost
+- Categories: battle(4), post-match(2), onboarding(5), packs(3), subscriptions(3), missions(6), achievements(5), triggers(6), evolution(3), misc(2)
+- Wired across 16 files: OnboardingView, EvolutionFlowView, ModifierPickerView, EvolutionRevealView, ShopView, CardPackOpeningView, SubscriptionView, DailyMissionsView, AchievementsView, PostMatchView, TutorialOverlayView, BattleContainerView, BattleViewModel, CardDetailView, HomeView, MatchmakingView, CardFrameView
+
+**Final audit: 60 SF Symbols remaining**
+- 29 KEEP (standard UI chrome: checkmark, xmark, gearshape, chevron, arrow, magnifyingglass, etc.)
+- 23 BORDERLINE/low-priority (photo placeholders, archivebox graveyard, flag surrender, empty states)
+- 8 game-concept icons left as SF Symbols (no matching custom asset yet — future work)
+- 0 broken UIIcons/ references
+- 4 unused UIIcons (ui-sort-rarity — reserved for future)
