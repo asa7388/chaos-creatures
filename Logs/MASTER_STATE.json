@@ -1,0 +1,70 @@
+{
+  "phase": "pre-implementation",
+  "current_task": "Decision 3 — Generation Pipeline (pending owner resolution)",
+  "last_updated": "2026-02-21",
+  "setup_steps_complete": [
+    "1-verify-guides",
+    "1b-audit-claude-md",
+    "1b-iii-cleanup",
+    "1c-design-authority-block",
+    "2-read-guide",
+    "3a-audit-master-created",
+    "3b-audit-agent-a",
+    "3b-audit-agent-b",
+    "3b-audit-agent-c",
+    "4a-gap-analysis",
+    "4b-implementation-plan",
+    "decision-1-card-layout-RESOLVED",
+    "decision-2-typography-RESOLVED",
+    "commercial-license-gate-REVIEWED"
+  ],
+  "decisions": {
+    "card_layout": "Option A — zone-stack layout per guide Section 1.4. Full CardFrameView rewrite.",
+    "typography": "Option A — EBGaramond + Oswald-Bold per guide Section 1.5. Alegreya/Bebas Neue/Fira Sans retired from card rendering.",
+    "generation_pipeline": "Option 3A — Retrain LoRA on public domain artworks (pre-1953 approved artists) + SDXL base supplementary. New LoRA = chscrt-sdxl-lora-v2. Creatures via Replicate + v2 LoRA. Non-creatures via fal-ai/flux/dev. Existing 35 cards are placeholders, not retired. Old LoRA retired."
+  },
+  "commercial_license_gate": {
+    "model": "EldritchPaletteKnife (civitai.com/models/336656)",
+    "result": "FAILED",
+    "blocking_permission": "Run on services that generate for money — NOT permitted",
+    "consequence": "chscrt-sdxl-lora.safetensors cannot be used on Replicate",
+    "evidence_file": "Resources/LegalEvidence/eldritchpaletteknife_license_REVIEWED.md"
+  },
+  "audit_status": {
+    "Section_1_Visual_Design": "complete",
+    "Section_2_Card_Schema": "complete",
+    "Section_3_Asset_Strategy": "complete",
+    "Section_4_Environment": "complete",
+    "Section_5_Agent_Tools": "complete",
+    "Section_6_Effects_Animations": "complete",
+    "Section_7_Haptics": "complete",
+    "Section_8_Sound": "complete",
+    "Section_9_iPad": "complete",
+    "Section_10_Accessibility": "complete",
+    "Section_11_Production_Workflow": "complete",
+    "Section_12_Iterative_Testing": "complete",
+    "Section_13_Performance": "complete",
+    "Section_14_Quality_Bar": "complete"
+  },
+  "gap_counts": {
+    "CONFLICT": 18,
+    "PARTIAL": 11,
+    "ABSENT": 46,
+    "COMPLIANT": 8,
+    "TOTAL": 83
+  },
+  "budget": {
+    "total_allocated": 10.00,
+    "spent": 0.00,
+    "remaining": 10.00,
+    "currency": "USD"
+  },
+  "conflicts_pending_user_decision": [],
+  "hard_gates_passed": ["commercial-license-gate-reviewed", "all-decisions-resolved"],
+  "hard_gates_pending": [
+    "lora-retraining-complete",
+    "smoke-test-Section-4.9",
+    "haptic-verification-Section-7.3"
+  ],
+  "current_task": "Ready to begin Phase 0 — Environment & Toolchain Setup"
+}

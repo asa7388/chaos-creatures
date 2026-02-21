@@ -1,73 +1,3 @@
-## Design Authority — Read Before Any Design or Art Decision
-
-`docs/CARD_DESIGN_GUIDE.md` is the single source of truth for all card visual
-design, asset strategy, animation, haptics, sound, layout, and accessibility.
-`docs/CARD_DESIGN_QUICKREF.md` is a lookup-only companion for mid-implementation
-value lookups. If they conflict, the full guide is authoritative.
-
-RULES:
-1. If any file in this repo contradicts the design guide, the design guide wins.
-   Update or annotate the contradicting file to note the conflict.
-2. Any deviation from the guide requires explicit user approval before implementation.
-   State the conflict, your reason for the deviation, and wait for confirmation.
-3. At the start of every new session or after any context compaction event,
-   re-read the full guide before doing any work. Do not rely on memory.
-4. At the start of every implementation task, re-read the specific guide section
-   for that task — not just your notes about it. Use the Table of Contents.
-5. During active implementation, use CARD_DESIGN_QUICKREF.md for specific value
-   lookups (measurements, timings, tables) without re-reading the full guide.
-6. When in doubt: stop, re-read, then proceed.
-
-COMPACTION RECOVERY PROTOCOL:
-If you detect that your context has been compacted or summarized, or if you
-are unsure whether compaction has occurred (assume it has if uncertain):
-  a. Stop all implementation work immediately
-  b. Read docs/CARD_DESIGN_GUIDE.md in full
-  c. Read Logs/MASTER_STATE.json
-  d. Read Logs/iteration_log.md (last 10 entries)
-  e. Write a brief recovery confirmation to Logs/iteration_log.md noting
-     what you re-read and your current understanding of state
-  f. Only then resume work
-
-## Implementation Rules — Design Overhaul (Active)
-
-SESSION START PROTOCOL (every session, no exceptions):
-1. Read Logs/MASTER_STATE.json — confirm current phase and next task
-2. Read Logs/iteration_log.md — last 10 entries minimum
-3. Read the specific guide section relevant to today's task
-4. Write a one-line confirmation to iteration_log.md before writing any code
-
-COMPACTION DETECTION:
-If you are unsure whether compaction has occurred, assume it has.
-Run the full compaction recovery protocol from the Design Authority block above.
-
-PHASE DISCIPLINE:
-- Complete one phase fully before starting the next
-- A phase is complete only when its exit criteria from Section 12.5 of the
-  guide are met — not when it "looks right"
-- Take simulator screenshots at the end of every phase
-- Write a structured critique using the Section 12.3 template before marking
-  any phase done
-- Never mark a phase complete without running the exit criteria checklist
-
-CONFLICT HANDLING:
-If you encounter a conflict between the guide and existing implementation:
-- Do not resolve it unilaterally
-- Write the conflict to Logs/CONFLICTS.md: file, line number, what exists,
-  what the guide requires, your recommended resolution
-- Flag it in iteration_log.md
-- Proceed to the next non-conflicted task and return when the user responds
-
-NEVER:
-- Rely on in-context memory of the guide — always re-read the relevant section
-- Skip the screenshot and critique step at the end of a phase
-- Proceed past a hard gate (smoke test, haptic gate) without user sign-off
-- Make a design decision not covered by the guide without user approval
-- Bundle multiple phases into a single session without explicit user permission
-- Mark a haptic interaction as complete without physical device verification
-
----
-
 # Chaos Creatures — AI-Generated Card Game
 
 ## Project Overview
@@ -93,11 +23,11 @@ If a process requires more than 3 clicks or one terminal command from the owner,
 
 These are the actual services the project uses. Do not recommend alternatives or say "consider X." These are decided.
 
-- **Client**: Native iOS app. Swift + SwiftUI for UI, SpriteKit for battlefield/card animations. iOS 16+ minimum target.
+- **Client**: Native iOS app. Swift + SwiftUI for UI, SpriteKit for battlefield/card animations. iOS 17+ minimum target.
 - **Backend**: Supabase (Postgres database, Auth, Edge Functions for serverless game logic, Storage for non-art assets)
 - **Game Server**: Railway (Node.js/TypeScript server for authoritative match resolution — the turn engine. Communicates with clients via direct WebSocket.)
 - **Admin Dashboard**: Vercel (Next.js web app for owner workflows — card generation, balance review, analytics. Free tier.)
-- **AI Image Generation**: fal.ai (card art generation)
+- **AI Image Generation**: fal.ai (FLUX Kontext API for card art generation and evolution img2img)
 - **AI Text Generation**: OpenAI API (GPT-4o Mini for card names, flavor text, evolution narratives)
 - **Card Art Storage + CDN**: Cloudflare R2 (stores generated card art, serves globally via built-in CDN)
 - **Analytics**: PostHog (player behavior, retention, match data, economy health)
@@ -175,7 +105,12 @@ All visual assets should be AI-generated or free/open-source. Optional paid asse
 
 ### Polish Budget (~$100 remaining)
 
-Approximately $185-209 has been spent on infrastructure. The remaining ~$100 covers AI-generated visual assets, free CC0 audio, and optional itch.io SFX/music packs ($15-30 each if free options are insufficient).
+Approximately $185-209 has been spent on infrastructure. The remaining ~$100 is allocated to polish assets:
+- Visual assets (frames, icons, card backs): AI-generated via fal.ai (~$4 total)
+- Fonts: Google Fonts, free (Cinzel + Alegreya)
+- SFX: freesound.org CC0 licensed sounds, free
+- Music: Suno.ai free tier for faction battle tracks, free
+- Optional upgrades: itch.io SFX/music packs ($15-30 each if free options are insufficient)
 
 ## Monetization Principle
 
@@ -204,17 +139,31 @@ Card art and visual quality must match professional fantasy card game quality. E
 
 The locked style anchor (v5) references only public domain artists (all died pre-1953): Gustave Dore and N.C. Wyeth (base anchor), and faction-specific: Giovanni Battista Piranesi + John Martin (Ironwright), Arthur Rackham and Edmund Dulac (Fey Courts), Hieronymus Bosch (Demonic), Gustave Dore + William Blake (Celestial Crusade), Gustave Dore + Francisco Goya (The Endless). No copyrighted brand names or living artist references in any prompt. This produces traditional media aesthetics with heavy impasto brushstrokes, ink linework, crosshatching. Colors can be vivid and saturated within the palette knife oil painting aesthetic — faction identity is expressed through color.
 
+## Art Consistency
+
+All card art must look like it belongs in the same game. The visual style anchor is locked — a base prompt prefix that every single card image uses to enforce consistent rendering style, lighting, color palette, and framing. Individual cards vary in subject matter but share the same artistic DNA. If a card looks like it came from a different game, it's a failed generation and must be rejected/regenerated.
+
+## Composition Variety
+
+Card art must use varied compositions — not every card should be a centered three-quarter portrait. The prompt system includes 25 composition templates (portraits, action shots, environmental, dramatic, narrative) selected automatically based on card tier, keywords, and mana cost. No two cards in a batch should have the same pose/composition. Each faction has 13 specific environment descriptions for rich, atmospheric backgrounds. Additional variety dimensions: 8 weather modifiers (applied ~30% of the time), 6 time-of-day modifiers (applied ~40% of the time), and scale modifiers mapped to mana cost (TINY for CM 1, SMALL for CM 2, LARGE for CM 5-6, COLOSSAL for CM 7+).
+
 ## Card Visual System
 
-- **Card Visual System**: See docs/CARD_DESIGN_GUIDE.md (Sections 1.4, 1.5, 1.8) — the single authority for card layout, typography, and rarity treatment.
+Decided asset strategy for professional card appearance:
+
+- **Card Frames**: Full-art cards with no bordered frames. Art fills the entire card face. A translucent text panel at the bottom contains card name (Cinzel font), stat icons (chaos-motes, sword-atk, heart-hp), faction icon, and flavor text. Rarity treatment applied as a thin edge glow at the card border.
+- **Fonts**: Cinzel (card names, headers — classical display font) + Alegreya (body text, flavor text, stats — readable serif). Both from Google Fonts, free, OFL license.
 - **Keyword Icons**: 9 AI-generated icons (Shield, Lifesteal, Flying, Reach, Deathtouch, Taunt, Piercing, Haste, Ward). 256x256, transparent background.
 - **Faction Icons**: 5 AI-generated emblems (Ironwright, Fey, Demonic, Celestial, Endless). 512x512.
 - **Card Backs**: 1 universal + 5 faction-specific, AI-generated.
+- **Rarity Treatments**: Common (matte), Uncommon (metallic sheen), Rare (energy glow, SKAction pulse), Epic (purple shimmer, SKShader), Legendary (gold prismatic, particle emitter).
 
 ## Animation & Polish
 
 The game must feel polished, not like a prototype. The tech architecture and UI specs must commit to:
-- **Animation engine**: SwiftUI + Metal shaders for all card state transitions (summoning, damaged, inGraveyard, focused, selected, tapped, previewed). SpriteKit for particle effects and ambient battlefield scenes only. See docs/CARD_DESIGN_GUIDE.md Sections 1.6 and 6 for complete animation specs.
+- SpriteKit for all battlefield animations (card play, attacks, damage, death, chaos roll, events)
+- SwiftUI animations for all menu/UI transitions
+- Specific animation specs for: card play (hand to board), attack declaration (glow + movement), damage numbers (floating text), creature death (fade/shatter), chaos roll (D20 spin), event popup (slide in/out), evolution reveal (dramatic unveil)
 - Loading states, error states, and empty states for every screen — no blank screens ever
 
 ## Testing & Validation
@@ -260,7 +209,6 @@ These design files are the source of truth for game design. They are the authori
 - docs/design/00-game-design-master.md
 - docs/design/01-battle-mechanics.md
 - docs/design/02-card-data-model.md
-- docs/CARD_DESIGN_GUIDE.md — Visual rendering authority. Governs card layout, typography, colors, animations, shaders, haptics, sound, iPad layout, and accessibility. This file takes precedence over all other documents for any visual/rendering decision. Never modify.
 
 If a downstream doc (03-10) contradicts a protected file, the downstream doc is wrong and must be fixed to match the protected file. Never the other way around.
 

@@ -1,255 +1,314 @@
 // CardFont.swift
 // Chaos Creatures
-// Typed font accessors for all app fonts:
-//   - Cinzel (card names, headers)
-//   - Alegreya (body, flavor text)
-//   - Bebas Neue (stat numerals, damage numbers, chaos roll, mana cost)
-//   - Fira Sans (UI labels, buttons, navigation, secondary text)
-// Source: CLAUDE.md Card Visual System — Fonts section
+//
+// Phase 0 rewrite — Section 1.5 typography spec (CARD_DESIGN_GUIDE.md).
+// Font set per Decision 2 (DEPENDENCY_DECISIONS.md):
+//   Cinzel-Regular / Cinzel-Bold     — card name, type line, collector number, headers
+//   EBGaramond-Regular               — ability text
+//   EBGaramond-Italic                — flavor text
+//   EBGaramond-SemiBold              — keyword ability names
+//   Oswald-Bold                      — ATK/HP stats, numbers, mana cost
+//
+// Previous font set (Alegreya, Bebas Neue, Fira Sans) retired from card rendering
+// per Decision 2. Their UIFont/SpriteKit helpers are preserved below for non-card
+// UI screens until those screens are audited in Phase 2.
+//
+// IMPORTANT — Variable font note:
+// The downloaded files are variable-weight TTFs (single file covers all weights).
+// UIFont(name: "Cinzel-Bold", size:) may return nil if the OS did not register
+// separate PostScript names. Use the family-descriptor path (cinzelUIFont) which
+// resolves weight via UIFontDescriptor.TraitKey.weight. The debugPrintRegisteredFonts()
+// call at app launch will confirm which names the OS registered.
+//
+// Fallback strategy per Section 1.5: Georgia (Cinzel fallback), Times New Roman
+// (EB Garamond fallback), Impact (Oswald fallback). Never fall back to San Francisco.
 
 import SwiftUI
 import UIKit
 
 enum CardFont {
 
-    // MARK: - Font Family Names
-    // These must match the family names registered by iOS from the .ttf files.
-    // Cinzel variable font (wght 400–900): family "Cinzel"
-    // Alegreya variable font (wght 400–900): family "Alegreya"
-    // Alegreya Italic variable font (wght 400–900): family "Alegreya"
-    // Bebas Neue (single weight): family "Bebas Neue"
-    // Fira Sans Regular + SemiBold: family "Fira Sans"
+    // MARK: - Section 1.5 SwiftUI Font Accessors
 
-    private static let cinzelFamily = "Cinzel"
-    private static let alegreyaFamily = "Alegreya"
-    private static let bebasNeueFamily = "Bebas Neue"
-    private static let firaSansFamily = "Fira Sans"
+    // --- Cinzel ---
 
-    // MARK: - SwiftUI Font Accessors (Card Names, Headers — Cinzel)
-
-    /// Card names on cards and in lists. Cinzel Bold (weight 700).
-    static func cardName(size: CGFloat) -> Font {
-        .custom(cinzelFamily, size: size).weight(.bold)
+    /// Card name bar, type line, collector number. Cinzel Regular.
+    static func cinzelRegular(size: CGFloat) -> Font {
+        .custom("Cinzel-Regular", size: size)
     }
 
-    /// Section headers, navigation titles. Cinzel Regular (weight 400).
-    static func header(size: CGFloat) -> Font {
-        .custom(cinzelFamily, size: size).weight(.regular)
+    /// Headers, emphasized labels. Cinzel Bold.
+    static func cinzelBold(size: CGFloat) -> Font {
+        .custom("Cinzel-Bold", size: size)
     }
 
-    /// Large display titles (e.g. game logo, splash). Cinzel Black (weight 900).
-    static func displayTitle(size: CGFloat) -> Font {
-        .custom(cinzelFamily, size: size).weight(.black)
+    // --- EB Garamond ---
+
+    /// Ability text, rules text. EBGaramond Regular.
+    static func ebGaramondRegular(size: CGFloat) -> Font {
+        .custom("EBGaramond-Regular", size: size)
     }
 
-    // MARK: - SwiftUI Font Accessors (Body, Flavor, Stats — Alegreya)
-
-    /// Body text, descriptions. Alegreya Regular (weight 400).
-    static func body(size: CGFloat) -> Font {
-        .custom(alegreyaFamily, size: size).weight(.regular)
+    /// Flavor text (italic). EBGaramond Italic.
+    static func ebGaramondItalic(size: CGFloat) -> Font {
+        .custom("EBGaramond-Italic", size: size)
     }
 
-    /// Emphasized body text, labels. Alegreya Bold (weight 700).
-    static func bodyBold(size: CGFloat) -> Font {
-        .custom(alegreyaFamily, size: size).weight(.bold)
+    /// Keyword ability names. EBGaramond SemiBold.
+    static func ebGaramondSemiBold(size: CGFloat) -> Font {
+        .custom("EBGaramond-SemiBold", size: size)
     }
 
-    /// Flavor text on cards. Alegreya Italic Regular (weight 400).
-    static func flavorText(size: CGFloat) -> Font {
-        .custom(alegreyaFamily, size: size).weight(.regular).italic()
+    // --- Oswald ---
+
+    /// ATK/HP stats, numbers, mana cost. Oswald Bold.
+    static func oswaldBold(size: CGFloat) -> Font {
+        .custom("Oswald-Bold", size: size)
     }
 
-    /// ATK/HP and other numeric stats. Alegreya Bold (weight 700).
-    /// NOTE: Prefer statNumber() for numeric stat displays — uses Bebas Neue for impact.
-    static func stats(size: CGFloat) -> Font {
-        .custom(alegreyaFamily, size: size).weight(.bold)
+    // MARK: - Semantic Aliases (Section 1.5 Zone Table)
+
+    /// Card name bar — Cinzel-Regular 13pt (spec: Cinzel-Bold 13pt; implemented as
+    /// regular via cinzelRegular to use the variable font; bold weight applied via
+    /// `.fontWeight(.bold)` at call site if variable font registered as "Cinzel").
+    static func cardName(size: CGFloat = 13) -> Font { cinzelBold(size: size) }
+
+    /// Type line — Cinzel-Regular 10pt
+    static func cardType(size: CGFloat = 10) -> Font { cinzelRegular(size: size) }
+
+    /// Mana cost text — Cinzel-Regular 10pt
+    static func manaCostText(size: CGFloat = 10) -> Font { cinzelRegular(size: size) }
+
+    /// Collector number — Cinzel-Regular 7pt
+    static func collectorNumber(size: CGFloat = 7) -> Font { cinzelRegular(size: size) }
+
+    /// Ability text — EBGaramond-Regular 11pt
+    static func abilityText(size: CGFloat = 11) -> Font { ebGaramondRegular(size: size) }
+
+    /// Flavor text — EBGaramond-Italic 10pt
+    static func flavorText(size: CGFloat = 10) -> Font { ebGaramondItalic(size: size) }
+
+    /// Keyword ability name — EBGaramond-SemiBold 11pt
+    static func keywordName(size: CGFloat = 11) -> Font { ebGaramondSemiBold(size: size) }
+
+    /// ATK/HP stat numbers — Oswald-Bold 13pt
+    static func statNumber(size: CGFloat = 13) -> Font { oswaldBold(size: size) }
+
+    /// Mana cost numeral — Oswald-Bold 14pt
+    static func manaCost(size: CGFloat = 14) -> Font { oswaldBold(size: size) }
+
+    // MARK: - SpriteKit Font Name Strings (PostScript names for SKLabelNode.fontName)
+
+    /// Cinzel Bold PostScript name — use for card name labels in SpriteKit.
+    /// If the variable font registered as "Cinzel" only, use "Cinzel" and set weight via
+    /// SKLabelNode's attributed text with NSFontAttributeName + bold descriptor.
+    static let spriteKitCardName = "Cinzel-Bold"
+
+    /// Cinzel Regular PostScript name for SKLabelNode.
+    static let spriteKitCardType = "Cinzel-Regular"
+
+    /// EBGaramond Regular PostScript name for SKLabelNode.
+    static let spriteKitAbilityText = "EBGaramond-Regular"
+
+    /// EBGaramond Italic PostScript name for SKLabelNode.
+    static let spriteKitFlavorText = "EBGaramond-Italic"
+
+    /// EBGaramond SemiBold PostScript name for SKLabelNode.
+    static let spriteKitKeywordName = "EBGaramond-SemiBold"
+
+    /// Oswald-Bold PostScript name for SKLabelNode (stat numerals, mana cost).
+    static let spriteKitStatNumber = "Oswald-Bold"
+
+    // MARK: - UIFont Accessors for SpriteKit / UIKit
+
+    /// ATK/HP/CM numerals and chaos roll in SpriteKit. Oswald Bold.
+    static func statNumberUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "Oswald-Bold", size: size) { return font }
+        // Fallback per Section 1.5: Impact (closest system match to Oswald)
+        if let font = UIFont(name: "Impact", size: size) { return font }
+        return .systemFont(ofSize: size, weight: .heavy)
     }
 
-    // MARK: - SwiftUI Font Accessors (Stat Numerals — Bebas Neue)
-
-    /// ATK, HP, CM cost, damage numbers, chaos roll results. Bebas Neue Regular.
-    /// This is a display/impact font — visually bold despite being "Regular" weight.
-    static func statNumber(size: CGFloat) -> Font {
-        .custom(bebasNeueFamily, size: size)
-    }
-
-    // MARK: - SwiftUI Font Accessors (UI Labels — Fira Sans)
-
-    /// UI labels, button text, navigation, secondary info. Fira Sans Regular.
-    static func uiLabel(size: CGFloat) -> Font {
-        .custom(firaSansFamily, size: size).weight(.regular)
-    }
-
-    /// Emphasized UI labels, active nav items, button text. Fira Sans SemiBold.
-    static func uiLabelBold(size: CGFloat) -> Font {
-        .custom(firaSansFamily, size: size).weight(.semibold)
-    }
-
-    // MARK: - UIFont Accessors (for SpriteKit / UIKit)
-
-    /// Card names in SpriteKit. Cinzel Bold.
+    /// Card name in SpriteKit. Cinzel Bold.
     static func cardNameUI(size: CGFloat) -> UIFont {
         cinzelUIFont(size: size, weight: .bold)
     }
 
-    /// Headers in UIKit contexts. Cinzel Regular.
-    static func headerUI(size: CGFloat) -> UIFont {
+    /// Type line, headers in SpriteKit. Cinzel Regular.
+    static func cardTypeUI(size: CGFloat) -> UIFont {
         cinzelUIFont(size: size, weight: .regular)
     }
 
-    /// Display titles in UIKit contexts. Cinzel Black.
-    static func displayTitleUI(size: CGFloat) -> UIFont {
-        cinzelUIFont(size: size, weight: .black)
+    /// Ability/rules text in SpriteKit. EBGaramond Regular.
+    static func abilityTextUI(size: CGFloat) -> UIFont {
+        ebGaramondUIFont(size: size, italic: false, semiBold: false)
     }
 
-    /// Body text in SpriteKit. Alegreya Regular.
-    static func bodyUI(size: CGFloat) -> UIFont {
-        alegreyaUIFont(size: size, weight: .regular, italic: false)
-    }
-
-    /// Bold body text in SpriteKit. Alegreya Bold.
-    static func bodyBoldUI(size: CGFloat) -> UIFont {
-        alegreyaUIFont(size: size, weight: .bold, italic: false)
-    }
-
-    /// Flavor text in SpriteKit. Alegreya Italic.
+    /// Flavor text in SpriteKit. EBGaramond Italic.
     static func flavorTextUI(size: CGFloat) -> UIFont {
-        alegreyaUIFont(size: size, weight: .regular, italic: true)
+        ebGaramondUIFont(size: size, italic: true, semiBold: false)
     }
 
-    /// ATK/HP stats in SpriteKit. Alegreya Bold.
-    /// NOTE: Prefer statNumberUI() for numeric stat displays — uses Bebas Neue for impact.
-    static func statsUI(size: CGFloat) -> UIFont {
-        alegreyaUIFont(size: size, weight: .bold, italic: false)
+    /// Keyword names in SpriteKit. EBGaramond SemiBold.
+    static func keywordNameUI(size: CGFloat) -> UIFont {
+        ebGaramondUIFont(size: size, italic: false, semiBold: true)
     }
 
-    /// Stat numerals (ATK/HP/CM/damage) in SpriteKit. Bebas Neue.
-    static func statNumberUI(size: CGFloat) -> UIFont {
-        if let font = UIFont(name: "BebasNeue-Regular", size: size) {
-            return font
-        }
-        // Fallback: try family name descriptor
-        let descriptor = UIFontDescriptor(fontAttributes: [.family: bebasNeueFamily])
+    // MARK: - Legacy Accessors (Non-Card UI — Retired from Card Rendering)
+    // These remain active for non-card screens until those screens are audited in Phase 2.
+    // Do not use these for any new card view work.
+
+    // Bebas Neue — retired from cards, still used in non-card animations
+    /// Damage numbers and chaos roll result display in SpriteKit. Bebas Neue.
+    static func chaosRollNumberUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "BebasNeue-Regular", size: size) { return font }
+        let descriptor = UIFontDescriptor(fontAttributes: [.family: "Bebas Neue"])
         let font = UIFont(descriptor: descriptor, size: size)
-        if font.familyName == bebasNeueFamily {
-            return font
-        }
+        if font.familyName.contains("Bebas") { return font }
         return .systemFont(ofSize: size, weight: .bold)
     }
 
-    /// UI labels in SpriteKit. Fira Sans Regular.
-    static func uiLabelUI(size: CGFloat) -> UIFont {
-        firaSansUIFont(size: size, weight: .regular)
+    // Fira Sans — retired from cards, still used in UI chrome
+    /// UI labels, button text. Fira Sans Regular.
+    static func uiLabel(size: CGFloat) -> Font {
+        .custom("Fira Sans", size: size).weight(.regular)
     }
 
-    /// Emphasized UI labels in SpriteKit. Fira Sans SemiBold.
-    static func uiLabelBoldUI(size: CGFloat) -> UIFont {
-        firaSansUIFont(size: size, weight: .semibold)
+    /// Emphasized UI labels. Fira Sans SemiBold.
+    static func uiLabelBold(size: CGFloat) -> Font {
+        .custom("Fira Sans", size: size).weight(.semibold)
     }
 
-    // MARK: - SpriteKit Font Name Strings
-    // For SKLabelNode.fontName which requires a PostScript name string.
+    static func uiLabelUI(size: CGFloat) -> UIFont { firaSansUIFont(size: size, weight: .regular) }
+    static func uiLabelBoldUI(size: CGFloat) -> UIFont { firaSansUIFont(size: size, weight: .semibold) }
 
-    /// Cinzel Bold PostScript name for SKLabelNode.
-    static let spriteKitCardName = "Cinzel-Bold"
+    // Alegreya — retired from cards, still used in non-card UI
+    /// Body text in non-card screens. Alegreya Regular.
+    static func body(size: CGFloat) -> Font {
+        .custom("Alegreya", size: size).weight(.regular)
+    }
 
-    /// Cinzel Regular PostScript name for SKLabelNode.
+    static func bodyBold(size: CGFloat) -> Font {
+        .custom("Alegreya", size: size).weight(.bold)
+    }
+
+    /// ATK/HP and other numeric stats in non-card screens. Alegreya Bold.
+    /// Legacy accessor preserved for non-card UI. Prefer statNumber() for card rendering.
+    static func stats(size: CGFloat) -> Font {
+        .custom("Alegreya", size: size).weight(.bold)
+    }
+
+    /// Large display titles (e.g. onboarding, splash). Cinzel Black.
+    /// Legacy accessor preserved for non-card UI screens.
+    static func displayTitle(size: CGFloat) -> Font {
+        .custom("Cinzel", size: size).weight(.black)
+    }
+
+    /// Section headers, navigation titles. Cinzel Regular.
+    /// Legacy accessor preserved for non-card UI screens.
+    static func header(size: CGFloat) -> Font {
+        cinzelRegular(size: size)
+    }
+
+    // Legacy SpriteKit PostScript names — non-card screens only
     static let spriteKitHeader = "Cinzel-Regular"
-
-    /// Alegreya Regular PostScript name for SKLabelNode.
-    static let spriteKitBody = "Alegreya-Regular"
-
-    /// Alegreya Bold PostScript name for SKLabelNode.
-    static let spriteKitStats = "Alegreya-Bold"
-
-    /// Alegreya Italic PostScript name for SKLabelNode.
-    static let spriteKitFlavorText = "Alegreya-Italic"
-
-    /// Bebas Neue PostScript name for SKLabelNode (stat numerals, damage numbers).
-    static let spriteKitStatNumber = "BebasNeue-Regular"
-
-    /// Fira Sans Regular PostScript name for SKLabelNode (UI labels).
+    static let spriteKitBody = "Alegreya-Regular"        // legacy: Alegreya body text in SpriteKit
+    static let spriteKitStats = "Alegreya-Bold"          // legacy: Alegreya bold stats in SpriteKit
+    static let spriteKitStatNumberLegacy = "BebasNeue-Regular"
     static let spriteKitUILabel = "FiraSans-Regular"
-
-    /// Fira Sans SemiBold PostScript name for SKLabelNode (emphasized UI labels).
     static let spriteKitUILabelBold = "FiraSans-SemiBold"
 
-    // MARK: - Private Helpers
+    // MARK: - Private UIFont Helpers
 
     private static func cinzelUIFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        // Try PostScript name first (works if variable font registered weight-specific names)
+        let psName = weight == .bold ? "Cinzel-Bold" : "Cinzel-Regular"
+        if let font = UIFont(name: psName, size: size) { return font }
+        // Try family descriptor (works with variable fonts)
         let descriptor = UIFontDescriptor(fontAttributes: [
-            .family: cinzelFamily,
+            .family: "Cinzel",
             .traits: [UIFontDescriptor.TraitKey.weight: weight]
         ])
         let font = UIFont(descriptor: descriptor, size: size)
-        // Verify the font loaded from the custom family, not a system fallback
-        if font.familyName == cinzelFamily {
-            return font
-        }
-        // Fallback: try PostScript name directly
-        if let psFont = UIFont(name: "Cinzel-Regular", size: size) {
-            return psFont
-        }
+        if font.familyName.contains("Cinzel") { return font }
+        // Fallback per Section 1.5: Georgia
+        if let fallback = UIFont(name: "Georgia", size: size) { return fallback }
         return .systemFont(ofSize: size, weight: weight)
+    }
+
+    private static func ebGaramondUIFont(size: CGFloat, italic: Bool, semiBold: Bool) -> UIFont {
+        // Try PostScript name first
+        let psName: String
+        if italic { psName = "EBGaramond-Italic" }
+        else if semiBold { psName = "EBGaramond-SemiBold" }
+        else { psName = "EBGaramond-Regular" }
+        if let font = UIFont(name: psName, size: size) { return font }
+        // Try family descriptor
+        let baseDescriptor = UIFontDescriptor(fontAttributes: [
+            .family: "EB Garamond",
+            .traits: [UIFontDescriptor.TraitKey.weight: semiBold ? UIFont.Weight.semibold : UIFont.Weight.regular]
+        ])
+        let descriptor: UIFontDescriptor
+        if italic, let italicDesc = baseDescriptor.withSymbolicTraits(.traitItalic) {
+            descriptor = italicDesc
+        } else {
+            descriptor = baseDescriptor
+        }
+        let font = UIFont(descriptor: descriptor, size: size)
+        if font.familyName.contains("Garamond") { return font }
+        // Fallback per Section 1.5: Times New Roman
+        let fallbackName = italic ? "TimesNewRomanPS-ItalicMT" : "TimesNewRomanPSMT"
+        if let fallback = UIFont(name: fallbackName, size: size) { return fallback }
+        return italic ? .italicSystemFont(ofSize: size) : .systemFont(ofSize: size, weight: .regular)
     }
 
     private static func firaSansUIFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let psName = weight == .semibold ? "FiraSans-SemiBold" : "FiraSans-Regular"
+        if let font = UIFont(name: psName, size: size) { return font }
         let descriptor = UIFontDescriptor(fontAttributes: [
-            .family: firaSansFamily,
+            .family: "Fira Sans",
             .traits: [UIFontDescriptor.TraitKey.weight: weight]
         ])
         let font = UIFont(descriptor: descriptor, size: size)
-        if font.familyName == firaSansFamily {
-            return font
-        }
-        // Fallback: try PostScript name directly
-        let psName = weight == .semibold ? "FiraSans-SemiBold" : "FiraSans-Regular"
-        if let psFont = UIFont(name: psName, size: size) {
-            return psFont
-        }
+        if font.familyName.contains("Fira") { return font }
         return .systemFont(ofSize: size, weight: weight)
     }
 
-    private static func alegreyaUIFont(size: CGFloat, weight: UIFont.Weight, italic: Bool) -> UIFont {
-        let descriptor = UIFontDescriptor(fontAttributes: [
-            .family: alegreyaFamily,
-            .traits: [UIFontDescriptor.TraitKey.weight: weight]
-        ])
+    // MARK: - Debug: Verify Registered Font Names
 
-        let resolved: UIFontDescriptor
-        if italic, let italicDescriptor = descriptor.withSymbolicTraits(.traitItalic) {
-            resolved = italicDescriptor
-        } else {
-            resolved = descriptor
-        }
-
-        let font = UIFont(descriptor: resolved, size: size)
-        if font.familyName == alegreyaFamily {
-            return font
-        }
-        // Fallback: try PostScript name directly
-        let psName = italic ? "Alegreya-Italic" : "Alegreya-Regular"
-        if let psFont = UIFont(name: psName, size: size) {
-            return psFont
-        }
-        return italic ? .italicSystemFont(ofSize: size) : .systemFont(ofSize: size, weight: weight)
-    }
-
-    // MARK: - Debug: List Registered Font Names
-
-    /// Call this once at app launch (debug only) to verify fonts loaded correctly.
-    /// Prints all font names in the Cinzel, Alegreya, Bebas Neue, and Fira Sans families.
-    static func debugPrintRegisteredFonts() {
+    /// Call at app launch (DEBUG only) to confirm all required fonts loaded.
+    /// Prints "FONT OK" or "FONT NOT FOUND" for each required PostScript name.
+    /// Section 4.7: all six names must print OK before proceeding to Phase 1.
+    static func debugVerifyRequiredFonts() {
         #if DEBUG
-        let targetFamilies = ["Cinzel", "Alegreya", "Bebas", "Fira"]
+        let required = [
+            "Cinzel-Regular",
+            "Cinzel-Bold",
+            "EBGaramond-Regular",
+            "EBGaramond-Italic",
+            "EBGaramond-SemiBold",
+            "Oswald-Bold"
+        ]
+        print("=== CardFont Phase 0 Verification ===")
+        for name in required {
+            if UIFont(name: name, size: 14) != nil {
+                print("FONT OK: \(name)")
+            } else {
+                print("FONT NOT FOUND: \(name) — check Info.plist UIAppFonts and pbxproj bundle resources")
+            }
+        }
+        // Also print all registered families that match our target families
+        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira"]
+        print("--- Registered families ---")
         for family in UIFont.familyNames.sorted() {
             if targetFamilies.contains(where: { family.contains($0) }) {
-                print("Font family: \(family)")
+                print("Family: \(family)")
                 for name in UIFont.fontNames(forFamilyName: family) {
                     print("  - \(name)")
                 }
             }
         }
+        print("=== End CardFont Verification ===")
         #endif
     }
 }

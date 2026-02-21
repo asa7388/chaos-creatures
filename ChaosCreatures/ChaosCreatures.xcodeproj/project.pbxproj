@@ -117,6 +117,12 @@
 		BB44444444444444BBBBBBBB /* BebasNeue-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA44444444444444AAAAAAAA /* BebasNeue-Regular.ttf */; };
 		BB55555555555555BBBBBBBB /* FiraSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA55555555555555AAAAAAAA /* FiraSans-Regular.ttf */; };
 		BB66666666666666BBBBBBBB /* FiraSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA66666666666666AAAAAAAA /* FiraSans-SemiBold.ttf */; };
+		EE11111111111111EEEEEEEE /* Cinzel-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF11111111111111FFFFFFFF /* Cinzel-Regular.ttf */; };
+		EE22222222222222EEEEEEEE /* Cinzel-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF22222222222222FFFFFFFF /* Cinzel-Bold.ttf */; };
+		EE33333333333333EEEEEEEE /* EBGaramond-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF33333333333333FFFFFFFF /* EBGaramond-Regular.ttf */; };
+		EE44444444444444EEEEEEEE /* EBGaramond-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF44444444444444FFFFFFFF /* EBGaramond-Italic.ttf */; };
+		EE55555555555555EEEEEEEE /* EBGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF55555555555555FFFFFFFF /* EBGaramond-SemiBold.ttf */; };
+		EE66666666666666EEEEEEEE /* Oswald-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */; };
 		DD11111111111111DDDDDDDD /* CardFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11111111111111CCCCCCCC /* CardFont.swift */; };
 		SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */; };
 		SFX00002BBBBBBBBBBBBBB02 /* sfx_attack.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */; };
@@ -179,6 +185,12 @@
 		AA44444444444444AAAAAAAA /* BebasNeue-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BebasNeue-Regular.ttf"; sourceTree = "<group>"; };
 		AA55555555555555AAAAAAAA /* FiraSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FiraSans-Regular.ttf"; sourceTree = "<group>"; };
 		AA66666666666666AAAAAAAA /* FiraSans-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FiraSans-SemiBold.ttf"; sourceTree = "<group>"; };
+		FF11111111111111FFFFFFFF /* Cinzel-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Cinzel-Regular.ttf"; sourceTree = "<group>"; };
+		FF22222222222222FFFFFFFF /* Cinzel-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Cinzel-Bold.ttf"; sourceTree = "<group>"; };
+		FF33333333333333FFFFFFFF /* EBGaramond-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-Regular.ttf"; sourceTree = "<group>"; };
+		FF44444444444444FFFFFFFF /* EBGaramond-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-Italic.ttf"; sourceTree = "<group>"; };
+		FF55555555555555FFFFFFFF /* EBGaramond-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-SemiBold.ttf"; sourceTree = "<group>"; };
+		FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Oswald-Bold.ttf"; sourceTree = "<group>"; };
 		CC11111111111111CCCCCCCC /* CardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFont.swift; sourceTree = "<group>"; };
 		SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_card_play.wav; sourceTree = "<group>"; };
 		SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_attack.wav; sourceTree = "<group>"; };
@@ -390,6 +402,12 @@
 				AA22222222222222AAAAAAAA /* Alegreya-Variable.ttf */,
 				AA44444444444444AAAAAAAA /* BebasNeue-Regular.ttf */,
 				AA11111111111111AAAAAAAA /* Cinzel-Variable.ttf */,
+				FF11111111111111FFFFFFFF /* Cinzel-Regular.ttf */,
+				FF22222222222222FFFFFFFF /* Cinzel-Bold.ttf */,
+				FF33333333333333FFFFFFFF /* EBGaramond-Regular.ttf */,
+				FF44444444444444FFFFFFFF /* EBGaramond-Italic.ttf */,
+				FF55555555555555FFFFFFFF /* EBGaramond-SemiBold.ttf */,
+				FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */,
 				AA55555555555555AAAAAAAA /* FiraSans-Regular.ttf */,
 				AA66666666666666AAAAAAAA /* FiraSans-SemiBold.ttf */,
 			);
@@ -849,6 +867,12 @@
 				BB44444444444444BBBBBBBB /* BebasNeue-Regular.ttf in Resources */,
 				5B3816B072A4804A58FBAEFC /* Assets.xcassets in Resources */,
 				BB11111111111111BBBBBBBB /* Cinzel-Variable.ttf in Resources */,
+				EE11111111111111EEEEEEEE /* Cinzel-Regular.ttf in Resources */,
+				EE22222222222222EEEEEEEE /* Cinzel-Bold.ttf in Resources */,
+				EE33333333333333EEEEEEEE /* EBGaramond-Regular.ttf in Resources */,
+				EE44444444444444EEEEEEEE /* EBGaramond-Italic.ttf in Resources */,
+				EE55555555555555EEEEEEEE /* EBGaramond-SemiBold.ttf in Resources */,
+				EE66666666666666EEEEEEEE /* Oswald-Bold.ttf in Resources */,
 				BB55555555555555BBBBBBBB /* FiraSans-Regular.ttf in Resources */,
 				BB66666666666666BBBBBBBB /* FiraSans-SemiBold.ttf in Resources */,
 				SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */,

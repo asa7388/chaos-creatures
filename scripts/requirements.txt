@@ -1,0 +1,29 @@
+# Python package requirements for Chaos Creatures generation scripts
+# Phase 0 — Section 4 toolchain check (CARD_DESIGN_GUIDE.md)
+#
+# Install with: pip install -r Scripts/requirements.txt
+# Python 3.13+ required (detected: 3.13.5)
+#
+# Do NOT install system-wide without a virtualenv:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r Scripts/requirements.txt
+
+# Image processing — PIL (Pillow)
+# Used for: texture compositing, color correction, image validation, resize
+Pillow>=10.0.0
+
+# HTTP client — requests
+# Used for: museum API downloads (MET, Rijksmuseum, Wikimedia), Freesound API
+requests>=2.31.0
+
+# Replicate Python SDK
+# Used for: creature art generation via Replicate + new LoRA (Phase 5)
+#           LoRA training submission (Phase 3)
+# NOTE: Requires REPLICATE_API_TOKEN in .env
+replicate>=0.25.0
+
+# Optional but recommended
+# Pillow includes these; listed for clarity
+# numpy — required by some image processing scripts
+numpy>=1.24.0

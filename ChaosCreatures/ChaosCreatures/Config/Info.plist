@@ -51,6 +51,12 @@
         <string>BebasNeue-Regular.ttf</string>
         <string>FiraSans-Regular.ttf</string>
         <string>FiraSans-SemiBold.ttf</string>
+        <string>Cinzel-Regular.ttf</string>
+        <string>Cinzel-Bold.ttf</string>
+        <string>EBGaramond-Regular.ttf</string>
+        <string>EBGaramond-Italic.ttf</string>
+        <string>EBGaramond-SemiBold.ttf</string>
+        <string>Oswald-Bold.ttf</string>
     </array>
 </dict>
 </plist>
