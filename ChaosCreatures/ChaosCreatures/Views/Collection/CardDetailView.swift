@@ -12,7 +12,6 @@ struct CardDetailView: View {
     @Environment(AppState.self) private var appState
     @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private let fixedCard: CardInstance?
     private let fixedFaction: CardFaction?
@@ -144,7 +143,7 @@ struct CardDetailView: View {
     // MARK: - Card Frame Section
 
     private var detailCardScale: CGFloat {
-        if horizontalSizeClass == .regular {
+        if UIDevice.current.userInterfaceIdiom == .pad {
             // iPad — card should be ~380pt wide (vs 280pt detail base)
             return 1.36
         }
@@ -341,14 +340,23 @@ struct CardDetailView: View {
             } else {
                 ForEach(keywords, id: \.rawValue) { keyword in
                     HStack(alignment: .top, spacing: 10) {
-                        Image(keyword.customIconName)
-                            .renderingMode(.template)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(keywordColor(keyword))
-                            .frame(width: 28, height: 28)
-                            .background(keywordColor(keyword).opacity(0.15))
-                            .cornerRadius(7)
+                        Group {
+                            if UIImage(named: keyword.customIconName) != nil {
+                                Image(keyword.customIconName)
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .foregroundColor(keywordColor(keyword))
+                            } else {
+                                Image(systemName: "star.circle.fill")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                        .frame(width: 28, height: 28)
+                        .background(keywordColor(keyword).opacity(0.15))
+                        .cornerRadius(7)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(keyword.displayName)
@@ -855,18 +863,24 @@ struct CardDetailView: View {
     }
 
     private func resolvedKeywords(from card: CardInstance) -> [Keyword] {
-        let rawKeywords = card.innateKeywords + card.modifierKeywords
+        let stringKeywords = card.innateKeywords + card.modifierKeywords
+        if stringKeywords.isEmpty {
+            // Seed-data path: string arrays are empty, fall back to the already-resolved
+            // effectiveKeywords computed property (which is [Keyword]).
+            var seen: Set<String> = []
+            return card.effectiveKeywords.filter { seen.insert($0.rawValue).inserted }
+        }
+
+        // Normal path: parse the raw strings into Keyword values.
         var seen: Set<String> = []
         var resolved: [Keyword] = []
-
-        for raw in rawKeywords {
+        for raw in stringKeywords {
             let normalized = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
             guard !normalized.isEmpty, !seen.contains(normalized) else { continue }
             guard let keyword = Keyword(rawValue: normalized) else { continue }
             seen.insert(normalized)
             resolved.append(keyword)
         }
-
         return resolved
     }
 
