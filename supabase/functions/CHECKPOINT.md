@@ -1,8 +1,32 @@
 # Edge Functions — Build Checkpoint
 
 **Agent:** edge-functions
-**Date:** 2026-02-17
+**Date:** 2026-02-20 (stabilizer redesign update)
 **Status:** COMPLETE
+
+---
+
+## Stabilizer Redesign Update (2026-02-20)
+
+### Design Changes Applied
+- Deck size: 20 → 30 cards
+- Energy award rule: only CREATURE and PLANAR_RUIN card types earn evolution energy per match; STABILIZER and SPELL are excluded
+
+### Files Updated
+
+| File | Change | Status |
+|---|---|---|
+| `supabase/functions/_shared/types.ts` | `DECK_SIZE` constant changed from 20 to 30 | complete |
+| `supabase/functions/_shared/deck-validator.ts` | Comment updated (logic already used DECK_SIZE constant) | complete |
+| `packages/game-server/src/ws/handler.ts` | `awardEnergyToDeck` now joins card_instances → card_templates and filters to card_type CREATURE or PLANAR_RUIN before calling increment_chaos_energy RPC | complete |
+| `packages/game-server/src/engine/constants.ts` | `DECK_SIZE` already 30 (pre-updated) | confirmed |
+
+### Notes
+- The energy award logic is in the **game server** (`packages/game-server/src/ws/handler.ts`), not in a Supabase Edge Function.
+- `awardEnergyToDeck` uses a Supabase join query: `deck_cards` → `card_instances!inner` → `card_templates!inner(card_type)`, then filters client-side before passing IDs to the RPC.
+- Stabilizers going into a separate stability zone is a runtime/game-server concern and requires no DB or edge function changes.
+
+---
 
 ---
 

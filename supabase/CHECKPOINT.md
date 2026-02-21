@@ -1,4 +1,25 @@
-# Supabase Schema — Build Checkpoint
+# Supabase Stabilizer Redesign Checkpoint
+## Status: complete
+
+## Files Created
+- migrations/00019_stabilizer_redesign.sql — complete
+
+## Notes
+- `activated_effect JSONB` added to `card_templates` with `ADD COLUMN IF NOT EXISTS` (idempotent).
+- Column is nullable: CREATURE and SPELL rows remain NULL; STABILIZER rows should be populated
+  with a JSONB object describing trigger, cost, effect, cooldown_turns, and description.
+- `mana_cost` SET to 0 for all existing STABILIZER rows via plain UPDATE (idempotent on re-run).
+- DECK_SIZE change (20 → 30) is documented in the migration as a comment only — no DB constraint
+  exists for deck card count; enforcement lives in application code (game server, iOS client,
+  Edge Function). This is intentional and noted explicitly.
+- Stability zone is in-memory only on the game server (Railway). No DB table created. Rationale
+  documented in migration section 4.
+- Migration follows the same style as 00018: top-level comment block, numbered sections, idempotent
+  guards (IF NOT EXISTS), and a revision log at the bottom.
+
+---
+
+# Supabase Schema — Build Checkpoint (Wave 0, archived)
 
 **Agent:** supabase-schema
 **Phase:** Wave 0 (Foundation)

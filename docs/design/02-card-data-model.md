@@ -36,8 +36,10 @@ CardTemplate {
   base_keywords:     Keyword[]     // e.g., ["SHIELD", "FLYING"]. Most Commons have 0-1.
   
   // --- Spell/Stabilizer-specific ---
-  spell_effect?:     SpellEffect   // Spell/stabilizer effect definition (see Section 6)
-  stabilizer_type?:  StabilizerType // ORDER | CHAOS | HYBRID (stabilizers only)
+  spell_effect?:      SpellEffect      // Spell effect definition (see Section 6). Spells only.
+  stabilizer_type?:   StabilizerType   // ORDER | CHAOS | HYBRID (stabilizers only)
+  activated_effect?:  StabilizerEffect // Stabilizer activated ability definition (stabilizers only; see BattleStabilizer below)
+  // Note: mana_cost is always 0 for stabilizers. Stabilizers are free to play.
   
   // --- AI generation metadata ---
   art_prompt:        string        // Full prompt used to generate base art
@@ -76,7 +78,7 @@ StabilizerType:  ORDER | CHAOS | HYBRID
 - **Ward**: Cannot be targeted by opponent's modifier effects or targeted spells for 1 turn after deployment. Removed after the controlling player's next turn starts. Does not protect against combat damage or AoE effects.
 
 **Notes:**
-- Spells and stabilizers that sit on the board (like Chaos Anchor) use `card_type: STABILIZER` and have `base_health` set (they can be damaged/destroyed) but `base_attack: 0` (they cannot attack or block). Instant spells (like Binding Ward) use `card_type: SPELL` with null attack/health.
+- Stabilizers (like Chaos Anchor) use `card_type: STABILIZER`. They sit in the stability zone (not the creature board), have `mana_cost: 0` (always free to play), and `base_attack: null` / `base_health: null` (they cannot be damaged by creatures, cannot attack, and cannot block). They carry an `activated_effect` (StabilizerEffect) that the player taps to trigger. Instant spells (like Binding Ward) use `card_type: SPELL` with `mana_cost > 0` and null attack/health.
 - `base_keywords` is for innate keywords only. Keywords granted by modifiers live on the card instance, not the template.
 - Templates are shared globally — every player who owns "Ashscale Wyvern" references the same template ID. The player's unique copy is a CardInstance.
 
@@ -617,12 +619,12 @@ Deck {
   avatar_id:           string           // FK → Avatar — must be from same faction
   
   // --- Contents ---
-  card_entries:        DeckEntry[]      // Creature/spell card entries
+  card_entries:        DeckEntry[]      // Creature/spell/stabilizer card entries
   ruin_entries:        DeckRuinEntry[]  // 0-2 ruin entries (from deck_ruins table)
-  // Total deck size = sum(card_entry quantities) + count(ruin_entries) == 20
-  
+  // Total deck size = sum(card_entry quantities) + count(ruin_entries) == 30
+
   // --- Validation state ---
-  is_valid:            bool             // Meets all construction rules (20 cards, etc.)
+  is_valid:            bool             // Meets all construction rules (30 cards, etc.)
   validation_errors:   string[]         // List of current rule violations (empty if valid)
   
   // --- Metadata ---
@@ -644,7 +646,7 @@ DeckRuinEntry {
 ```
 
 **Validation rules (enforced at save and at queue):**
-- Total deck size: `sum(card_entry quantities) + count(deck_ruins) == 20`
+- Total deck size: `sum(card_entry quantities) + count(deck_ruins) == 30`
 - All `card_instance_id` references must belong to `owner_id`
 - All referenced CardInstances must have `template.faction_id == deck.faction_id`
 - No template appears more than 2 times across all entries
@@ -836,22 +838,26 @@ BattlePlayer {
   // --- Board ---
   board:               (BattleCreature | BattleRuin | null)[5] // 5 slots, each null, creature, or ruin
   ruin_on_field:       bool             // Convenience flag: true if any slot contains a BattleRuin
-  
+
+  // --- Stability Zone ---
+  stability_zone:      BattleStabilizer[] // All stabilizers the player has played (no slot limit)
+  stabilizers_played_this_turn: number    // Resets to 0 at start of each turn. Max 1 stabilizer may be played per turn.
+
   // --- Hand ---
   hand:                BattleCard[]     // Cards currently in hand
-  
+
   // --- Deck ---
   deck:                BattleCard[]     // Remaining cards in deck (order matters — top = next draw)
-  
+
   // --- Graveyard ---
   graveyard:           BattleCard[]     // Destroyed creatures, spent spells
-  
+
   // --- Chaos Spark ---
   has_chaos_spark:     bool             // Second player starts with this; consumed on use
-  
+
   // --- Last event tracking (for attunement) ---
   last_event_type?:    EventType        // ORDER | CHAOS — drives modifier attunement state
-  
+
   // --- Disconnect tracking ---
   consecutive_missed_turns: int         // Auto-forfeit at 3
   is_connected:        bool
@@ -925,6 +931,41 @@ BattleRuin {
   art_url:             string
 }
 
+BattleStabilizer {
+  instance_id:         string           // FK → CardInstance
+  template_id:         string           // FK → CardTemplate
+  name:                string
+  art_url:             string
+  stabilizer_type:     StabilizerType   // ORDER | CHAOS | HYBRID
+  activated_effect:    StabilizerEffect // The tap-to-use effect
+  is_on_cooldown:      boolean          // true after activation; resets at start of controlling player's next turn
+  zone_index:          number           // Position in stability zone (0-indexed, ordering only)
+}
+
+// StabilizerEffect — discriminated union of activated effect types:
+//
+//   ADJUST_INSTABILITY      { amount: number }
+//     Immediately adjusts player instability by (amount × creatures_on_board).
+//     Chaos Anchor uses amount=-1; Chaos Rift uses amount=+1.
+//     amount is per-creature on board at activation time.
+//
+//   DOUBLE_AVATAR_MODIFIER  { }
+//     Doubles the player's avatar instability modifier until start of next turn.
+//     Used by Warding Pillar.
+//
+//   CHOOSE_EVENT_TYPE       { }
+//     Before the next chaos roll this turn, the controlling player designates
+//     whether the roll result is treated as Order or Chaos.
+//     Cannot override "Nothing" (roll == instability) results.
+//     Must be activated before the chaos roll resolves.
+//     Used by Void Lens.
+//
+//   ON_CHAOS_BUFF_HIGHEST_ATK { amount: number }
+//     If last_event_type == CHAOS, the creature with the highest current ATK
+//     in the controlling player's board gains +amount ATK permanently.
+//     No effect if last event was ORDER or NOTHING.
+//     Used by Entropy Engine with amount=1.
+
 BattleModifier {
   definition_id:       string
   name:                string
@@ -990,6 +1031,8 @@ LogEntryType:  ROLL | EVENT_TRIGGERED | CARD_PLAYED | CARD_DRAWN
 - `GameState` is the **single source of truth** during a match. Client receives a projection of this state (hiding opponent's hand/deck contents). All mutations happen server-side and are broadcast to both clients.
 - **Ruin rules in battle:** A `BattleRuin` occupies a creature slot but has 0 ATK, cannot attack, and cannot block. Max 1 ruin on the field at a time. Opponents may declare attackers targeting a ruin (unlike stabilizers, which cannot be attacked by creatures). When a ruin's HP reaches 0, it is destroyed, its `destruction_penalty` effect fires immediately on the controlling player's side, and the slot is freed. The ruin's `passive_effect` is active for as long as the ruin is alive.
 - **Ruin instability:** Ruins contribute their `instability_value` (0-2) to the player's instability calculation, just like creatures. Ruins have no modifiers, so their instability is always their base value from the template.
+- **Stabilizer rules in battle:** A `BattleStabilizer` sits in `BattlePlayer.stability_zone`, NOT in a board slot. Stabilizers cannot be targeted or damaged by creature attacks. They have no HP (cannot be destroyed). A player may play at most 1 stabilizer per turn (`stabilizers_played_this_turn` is checked and incremented). During the Main Phase, the player may activate any ready (not on cooldown) stabilizer by setting `is_on_cooldown = true` and immediately resolving its `activated_effect`. Cooldown resets at the start of the controlling player's next turn (all `is_on_cooldown` flags in `stability_zone` reset to `false`).
+- **Evolution energy earning:** Only `CREATURE` and `PLANAR_RUIN` card types earn evolution chaos energy per completed game (2 energy per win, 1 energy per loss, earned by all creatures/ruins in the deck whether drawn or not). `STABILIZER` and `SPELL` card types earn no evolution energy. Stabilizers do not evolve.
 
 ---
 
@@ -1614,11 +1657,11 @@ CREATE POLICY "deck_ruins_delete" ON deck_ruins FOR DELETE
 
 ## 22. Starter Deck Card Templates
 
-Celestial Crusade and Endless starter deck card templates are fully defined in `PHASE1B-mechanics.md` (Sections 9 and 10). Each starter deck contains exactly 20 cards following the standard deck construction rules.
+Celestial Crusade and Endless starter deck card templates are partially defined in `PHASE1B-mechanics.md` (Sections 9 and 10). The 20-card core lists there require expansion to 30 cards per the updated deck size. Stabilizer entries in those lists now have `mana_cost: 0` and go into the stability zone rather than occupying board slots.
 
-**Celestial starter deck summary** (from PHASE1B Section 9): 20 cards across CM 1-6, emphasizing go-wide Exalt strategy with Shield/Ward/Taunt keyword affinity. Includes creatures with Exalt-ready stat lines (slightly below curve individually, strong with board presence), spells that protect and heal the formation, and stabilizers that complement the Exalt aura strategy.
+**Celestial starter deck summary** (from PHASE1B Section 9): 30 cards (20-card core defined; 10 additional cards pending content authoring) across CM 1-6, emphasizing go-wide Exalt strategy with Shield/Ward/Taunt keyword affinity. Includes creatures with Exalt-ready stat lines, spells that protect and heal the formation, and stabilizers (free, stability zone) that complement the Exalt aura strategy.
 
-**Endless starter deck summary** (from PHASE1B Section 10): 20 cards across CM 1-6, emphasizing Persist death-trigger attrition with Lifesteal/Deathtouch/Haste keyword affinity. Includes creatures with death-trigger abilities, spells that force trades or sacrifice for value, and stabilizers that benefit from creatures dying.
+**Endless starter deck summary** (from PHASE1B Section 10): 30 cards (20-card core defined; 10 additional cards pending content authoring) across CM 1-6, emphasizing Persist death-trigger attrition with Lifesteal/Deathtouch/Haste keyword affinity. Includes creatures with death-trigger abilities, spells that force trades or sacrifice for value, and stabilizers (free, stability zone) that reward Chaos play.
 
 Both starter deck definitions include full card names, CM costs, ATK/HP values, keywords, spell effects, and faction-specific flavor text. See PHASE1B-mechanics.md for the complete card-by-card specifications.
 
@@ -1630,3 +1673,4 @@ Both starter deck definitions include full card names, CM costs, ATK/HP values, 
 |---|---|---|
 | 2026-02-19 | v4.0 — Faction expansion: Added CELESTIAL/ENDLESS to FactionShortName enum. Added EXALT/PERSIST to FactionMechanic enum. Added HASTE/WARD to Keyword enum (7→9 keywords). Added PLANAR_RUIN to CardType enum. Added full Planar Ruins data model: RuinTemplate, RuinEffect, RuinEvolutionOption, PlayerRuin, DeckRuin tables with SQL schema and RLS policies. Updated BattlePlayer.board to support BattleRuin alongside BattleCreature. Added BattleRuin type. Updated Avatar section to 10 avatars (2 per faction). Updated Faction section to 5 factions with color palettes, sub-factions, mechanic descriptions. Updated modifier pool totals from 240→336. Added ruin-related TargetType values (FRIENDLY_RUIN, ENEMY_RUIN, ANY_RUIN). Updated Deck validation for ruins (max 2 ruins, 20-card total includes ruins). Updated Entity Relationship Summary and Key Indexes for ruins. Added Sections 21 (Planar Ruins Data Model) and 22 (Starter Deck Card Templates). | 1, 4, 6, 7, 9, 10, 11, 13, 14, 18, 19, 21 (new), 22 (new) |
 | 2026-02-16 | Platform-alignment pass: updated Avatar entity `frame_style` field comment from "CSS/asset reference" to "Asset reference" (removed CSS reference since client is now native iOS, not web). No game mechanics, numbers, or data structures were changed. | 9 (Avatar) |
+| 2026-02-20 | Stabilizer redesign: deck size updated 20→30. Updated Deck validation total from 20 to 30. Updated all references to 20-card deck. Updated CardTemplate stabilizer fields: added `activated_effect` JSONB field, noted `mana_cost` is always 0 for stabilizers. Added BattleStabilizer type and StabilizerEffect union type. Updated BattlePlayer: added `stability_zone: BattleStabilizer[]` and `stabilizers_played_this_turn: number`. Updated energy earning note to restrict to CREATURE and PLANAR_RUIN types only (stabilizers and spells earn no energy). Updated BattleCard note on stabilizers (no longer have HP/ATK — they are non-destructible and stay in stability zone). | 1, 11, 13, 14, 18, 19, 22 |

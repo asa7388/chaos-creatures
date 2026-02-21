@@ -358,7 +358,7 @@ AUTOMATIC:
 1. The turn counter advances.
 2. **Ward expires** on any of the active player's creatures that had Ward from the previous turn.
 3. **"Start of turn" effects fire** in this order:
-   a. Active player's board effects (Corruption self-damage, stabilizer auras, Planar Ruin passive effects, modifier start-of-turn triggers, Exalt aura recalculation)
+   a. Active player's board effects (Corruption self-damage, Planar Ruin passive effects, modifier start-of-turn triggers, Exalt aura recalculation)
    b. Effects resolve left-to-right by board slot (slot 1 → slot 5). Ruins fire in their slot position alongside creatures.
 4. Check for creature deaths from start-of-turn effects. Remove dead creatures. Trigger on-death effects (including Persist death triggers).
 5. **Recalculate player instability** after any board changes (creature deaths change the sum; ruins contribute base_instability to the calculation).
@@ -430,15 +430,16 @@ AUTOMATIC:
 
 - **Play creature cards** from hand onto empty board slots (costs chaos motes). Creatures enter the board immediately with full stats. No summoning sickness — they can attack this same turn.
 - **Play spell cards** from hand (costs chaos motes). Spells resolve immediately and are discarded.
-- **Play stabilizer cards** from hand onto empty board slots (costs chaos motes). Stabilizers occupy creature slots.
+- **Play stabilizer cards** from hand into the stability zone (**FREE — costs 0 chaos motes**). Maximum **1 stabilizer per turn**. Stabilizers go into the stability zone — a separate area distinct from the 5 creature board slots. They do not occupy a creature slot. No limit on how many stabilizers can be in the stability zone, but only 1 can be played per turn.
+- **Activate a stabilizer** (ACTIVATE_STABILIZER action): During the main phase, tap any **ready** (not on cooldown) stabilizer in your stability zone to trigger its activated effect. The effect resolves immediately and adjusts instability (if the effect adjusts instability) at that moment. After activating, the stabilizer goes **on cooldown** and cannot be activated again until your next turn. Multiple different stabilizers can be activated in one turn as long as each is individually not on cooldown.
 - **Play Planar Ruin cards** from hand onto empty board slots (costs chaos motes). Ruins occupy creature slots. Max 1 ruin on field at a time. If a ruin is already on the field, additional ruin cards in hand are dimmed and unplayable.
 - **Haste bonus attack:** When a creature with Haste is played, the controlling player may immediately declare it as attacking a specific enemy creature. Combat resolves instantly for that pair only (Shield check, damage, Deathtouch, Piercing, Lifesteal — full resolution). The Haste creature can still attack during the normal Declare Attackers phase that same turn.
-- **Actions can be done in any order.** Play a creature, then a spell, then another creature — as long as you have mana and board space.
-- **No spell response window.** The opponent cannot act during the active player's main phase. All spells resolve immediately without interaction.
+- **Actions can be done in any order.** Play a creature, then activate a stabilizer, then play a spell — as long as you have mana, board space, and legal targets.
+- **No spell response window.** The opponent cannot act during the active player's main phase. All spells and stabilizer activations resolve immediately without interaction.
 
 **Targeting spells:** When a targeted spell is played, valid targets highlight on the board. The player taps a target to confirm. Tapping outside cancels the spell back to hand (mana refunded).
 
-**Board slot limit:** 5 slots. If all 5 are occupied (by creatures, stabilizers, and/or ruins), no more cards that require board slots can be played. Spells (which don't occupy slots) can still be cast.
+**Board slot limit:** 5 slots. If all 5 are occupied (by creatures and/or ruins), no more cards that require board slots can be played. Spells and stabilizers (which don't occupy slots) can still be played. Stabilizers always go into the stability zone, never into board slots.
 
 **When finished:** The player taps "Attack" (transitions to Phase 6) or "End Turn" (skips directly to Phase 9). If the timer expires during main phase, the turn auto-ends with no attack.
 
@@ -1217,7 +1218,7 @@ Spells are non-creature, non-stabilizer cards. They are played from hand during 
 | Stabilizers | ~5–10 |
 | Planar Ruins | 8 neutral (shared) + faction-evolved variants |
 
-Decks are 20 cards. A typical deck runs 14-16 creatures, 2-4 spells, 0-2 stabilizers, and 0-2 Planar Ruins. Creature-heavy builds are the norm — spells, stabilizers, and ruins are support.
+Decks are 30 cards. A typical deck runs 22-25 creatures, 3-5 spells, 2-4 stabilizers, and 0-2 Planar Ruins. Creature-heavy builds are the norm — spells, stabilizers, and ruins are support. Stabilizers are free to play and do not occupy board slots, making them low-cost additions to any deck.
 
 ### Spell Rarity
 
@@ -1236,41 +1237,46 @@ The Chaos Spark given to the second player is a special spell:
 
 ## 11. Stabilizer & Manipulation Cards
 
-Stabilizers are cards that sit on the board and manipulate the instability/chaos roll system. They occupy creature slots — this is their primary cost. A player running 2 stabilizers has only 3 slots for creatures.
+Stabilizers are cards that manipulate the instability/chaos roll system. They sit in the **stability zone** — a dedicated area separate from the 5-slot creature board. Playing a stabilizer does not cost creature board presence.
 
-### Stabilizer Properties
+### Stability Zone Rules
 
-- **Occupy board slots.** A stabilizer takes one of the 5 creature slots.
-- **Have HP but no ATK.** Stabilizers can be damaged by spells, Chaos events (Upheaval, Maelstrom, Wildfire), and creature abilities. They can be destroyed.
-- **Cannot attack or block.** Stabilizers are not creatures — they don't participate in combat. They cannot be declared as attackers. They cannot be assigned as blockers. Taunt's forced-attack rule does not count stabilizers as "creatures that can attack."
-- **Aura effects are continuous.** A stabilizer's effect is active as long as it's on the board. When destroyed, the effect ends immediately.
-- **Don't contribute base instability.** Stabilizers have 0 base instability. They modify instability through their aura effect, not through the creature instability formula.
-- **Don't evolve.** Like spells, stabilizers are static cards.
+- **Free to play.** Stabilizers cost 0 chaos motes to play. No mana is spent.
+- **One per turn.** A player may play at most 1 stabilizer card per turn from hand into the stability zone.
+- **Separate zone.** The stability zone is distinct from the 5 creature board slots. Stabilizers never occupy creature slots. There is no limit on the number of stabilizers that can be in the stability zone at once (beyond the 1-per-turn play rate).
+- **Cannot be attacked by creatures.** Stabilizers in the stability zone are not on the board — opposing creatures cannot declare attacks against them. They cannot be damaged by creature attacks.
+- **Cannot attack or block.** Stabilizers are not creatures and do not participate in combat.
+- **Activated abilities (tap to use).** Each stabilizer has an activated effect. During the Main Phase, the controlling player may tap any ready stabilizer to trigger its effect. The effect resolves immediately.
+- **Per-card cooldown.** After a stabilizer is activated, it goes on cooldown and cannot be activated again until the controlling player's next turn. Multiple stabilizers can be activated in one turn if each is individually ready (not on cooldown).
+- **Instability adjustments are immediate.** When a stabilizer's activated effect adjusts instability, the adjustment applies at that instant (not passively). Instability is recalculated immediately after activation.
+- **Don't contribute to instability passively.** Stabilizers have 0 base instability and do not modify the instability formula while sitting in the stability zone. Only activation effects change instability, and only when triggered.
+- **Don't evolve.** Like spells, stabilizers are static cards — no evolution tiers.
+- **Don't earn evolution energy.** Only creatures and Planar Ruins earn chaos energy per game. Stabilizers earn no evolution energy.
 - **Faction-agnostic (Universal).** All launch stabilizers are available to all factions. Faction-specific stabilizers are reserved for future expansions.
 
 ### Launch Stabilizer Cards
 
 **Order-Leaning (Reduce Instability):**
 
-| Name | CM Cost | HP | Effect | Faction |
+| Name | CM Cost | Activated Effect | Cooldown | Faction |
 |---|---|---|---|---|
-| Chaos Anchor | 2 | 3 | While on field: each of your creatures contributes -1 to your instability (minimum 0 per creature). | Universal (all factions) |
-| Warding Pillar | 3 | 5 | While on field: your avatar's instability modifier is doubled (e.g., -4 becomes -8). | Universal |
+| Chaos Anchor | 0 | Activate → -1 instability per creature currently on your board (flat, immediate). Example: 4 creatures = -4 instability right now. | Until your next turn | Universal |
+| Warding Pillar | 0 | Activate → your avatar's instability modifier is doubled until your next turn. (Reverts at start of your next turn.) | Until your next turn | Universal |
 
 **Chaos-Leaning (Increase Instability):**
 
-| Name | CM Cost | HP | Effect | Faction |
+| Name | CM Cost | Activated Effect | Cooldown | Faction |
 |---|---|---|---|---|
-| Chaos Rift | 2 | 3 | While on field: each of your creatures contributes +1 to your instability. | Universal (all factions) |
-| Entropy Engine | 3 | 4 | While on field: when you roll a Chaos event, your highest-ATK creature gets +1 ATK permanently. | Universal |
+| Chaos Rift | 0 | Activate → +1 instability per creature currently on your board (flat, immediate). Example: 4 creatures = +4 instability right now. | Until your next turn | Universal |
+| Entropy Engine | 0 | Activate → if your last chaos roll result was a Chaos event, your highest-ATK creature gains +1 ATK permanently. No effect if your last roll was Order or Nothing. | Until your next turn | Universal |
 
-**Manipulation (Neither — Direct Control):**
+**Manipulation (Direct Control):**
 
-| Name | CM Cost | HP | Effect | Faction |
+| Name | CM Cost | Activated Effect | Cooldown | Faction |
 |---|---|---|---|---|
-| Void Lens | 3 | 2 | While on field: after seeing your chaos roll result, you may choose whether the event is treated as Order or Chaos (once per turn). "Nothing" results cannot be overridden. | Universal |
+| Void Lens | 0 | Activate BEFORE your chaos roll this turn → your next chaos roll result is treated as your choice: Order or Chaos. ("Nothing" results cannot be overridden — only applies when roll ≠ instability.) Must be activated before the roll; cannot be used after seeing the result. | Until your next turn | Universal |
 
-**Spell-Type Manipulation Cards** (these are spells, not stabilizers — one-shot use):
+**Spell-Type Manipulation Cards** (these are spells, not stabilizers — one-shot use, cost mana, go to graveyard):
 
 | Name | CM Cost | Effect | Faction |
 |---|---|---|---|
@@ -1279,14 +1285,15 @@ Stabilizers are cards that sit on the board and manipulate the instability/chaos
 
 ### Stabilizer Design Intent
 
-Stabilizers create strategic depth around the instability system:
-- **Chaos Anchor** is for Chaos players who want to dial back risk when they're ahead. Running one drops instability by 3-5 points (depending on board size) but costs a creature slot.
-- **Chaos Rift** is for Order players who want an occasional Chaos event for burst damage, or for Chaos players who want to push instability even higher.
-- **Void Lens** is the most powerful stabilizer — choosing your event type is extremely strong. But at 2 HP, it dies to Wildfire or Upheaval, and it costs a creature slot.
-- **Warding Pillar** is for dedicated Order builds that want near-guaranteed Order events every turn.
-- **Entropy Engine** rewards sustained Chaos play with permanent snowball.
+Stabilizers create strategic depth around the instability system without occupying creature board slots. Their activated nature means they reward deliberate timing — you choose when to shift instability, not just "set and forget":
 
-Stabilizer count at launch: 5 board stabilizers (universal) + 2 manipulation spells (universal) = 7 cards. Future expansions can add faction-specific stabilizers.
+- **Chaos Anchor** is for Chaos players who want to dial back risk at a key moment. Activating when you have 4 creatures on board drops instability by 4 — significant and immediate.
+- **Chaos Rift** is for Order players who want a burst of Chaos events for specific triggers, or Chaos players pushing instability even higher right before a chaos roll.
+- **Warding Pillar** is for dedicated Order builds. Doubling a -6 avatar modifier to -12 creates near-certain Order events this turn.
+- **Entropy Engine** rewards sustained Chaos play — activate after a Chaos roll to snowball your highest ATK creature permanently.
+- **Void Lens** is the most powerful stabilizer — guaranteeing your event type is extremely strong. Must be activated BEFORE the roll (not after seeing the result).
+
+Stabilizer count at launch: 5 stabilizers (universal) + 2 manipulation spells (universal) = 7 cards. Future expansions can add faction-specific stabilizers.
 
 ---
 
@@ -1323,17 +1330,17 @@ Stat ranges for Common base cards by chaos mote cost. These are the pre-evolutio
 
 ### Stabilizer/Manipulation Card Ranges
 
-These occupy creature board slots but manipulate instability rather than fighting.
+Stabilizers sit in the stability zone (separate from creature board slots). They are free to play (0 motes), activated once per turn, and go on cooldown after use.
 
-| Card | CM Cost | Effect | Instability Contribution |
-|---|---|---|---|
-| Chaos Anchor | 2 | While on field: your creatures contribute -1 instability each (minimum 0 per creature) | 0 |
-| Warding Pillar | 3 | While on field: your avatar's instability modifier is doubled (e.g., -4 becomes -8) | 0 |
-| Binding Ward | 2 | Spell: set your instability to 5 for one turn | N/A (spell) |
-| Chaos Rift | 2 | While on field: your creatures contribute +1 instability each | 0 |
-| Entropy Engine | 3 | While on field: when you roll a Chaos event, your highest-ATK creature gets +1 ATK permanently | 0 |
-| Entropy Spike | 2 | Spell: set your instability to 15 for one turn | N/A (spell) |
-| Void Lens | 3 | While on field: after seeing your chaos roll result, you may choose whether the event is treated as Order or Chaos (once per turn). "Nothing" results cannot be overridden. | 0 |
+| Card | CM Cost | Activated Effect | Zone | Passive Instability |
+|---|---|---|---|---|
+| Chaos Anchor | 0 | Activate → -1 instability per creature currently on board (immediate) | Stability zone | 0 |
+| Warding Pillar | 0 | Activate → avatar modifier doubled until your next turn | Stability zone | 0 |
+| Chaos Rift | 0 | Activate → +1 instability per creature currently on board (immediate) | Stability zone | 0 |
+| Entropy Engine | 0 | Activate → if last roll was Chaos, highest-ATK creature +1 ATK permanently | Stability zone | 0 |
+| Void Lens | 0 | Activate BEFORE roll → choose whether next chaos roll counts as Order or Chaos | Stability zone | 0 |
+| Binding Ward | 2 | Spell: set your instability to 5 for one turn | N/A (spell, graveyard) | N/A |
+| Entropy Spike | 2 | Spell: set your instability to 15 for one turn | N/A (spell, graveyard) | N/A |
 
 ---
 
@@ -1358,16 +1365,21 @@ Planar Ruins are ancient structures found in the Plane of Chaos, built by a vani
 | Property | Stabilizers | Planar Ruins |
 |---|---|---|
 | Card type | `STABILIZER` | `PLANAR_RUIN` |
-| Primary function | Manipulate instability/chaos roll system | Provide general passive battlefield benefits |
-| Instability contribution | 0 (modify instability via aura effects) | Low (0-2 base instability) |
+| Primary function | Manipulate instability/chaos roll system via activated abilities | Provide general passive battlefield benefits |
+| Mana cost | 0 (always free) | 2–6 chaos motes |
+| Play limit | 1 per turn | No special play limit (board slot limits apply) |
+| Zone | Stability zone (separate from creature board) | Creature board slots (occupies 1 of 5 slots) |
+| Instability contribution | 0 (no passive effect; only changes instability when activated) | Low (0-2 base instability, always-on) |
+| Activation | Activated ability (tap to use; per-card cooldown each turn) | Passive always-on effect; no activation |
 | Evolution | None — static cards | Neutral to Faction-Specific (1 evolution step) |
 | Faction | Universal (all factions) | Neutral OR faction-locked after evolution |
-| Destruction penalty | Effect simply ends | Negative penalty effect fires on own side for 1 turn |
-| Field limit | No special limit (just board slots) | Max 1 ruin on field at a time |
-| Deck limit | No special limit (just deck size) | Max 2 ruins per deck |
-| Combat targeting | Can be damaged by spells/events, not by creature attacks | Can be targeted by creature attacks (opponent assigns attackers) |
+| Destruction penalty | Cannot be destroyed by creature attacks; no destruction penalty | Negative penalty effect fires on own side for 1 turn |
+| Field limit | No limit on stability zone size | Max 1 ruin on field at a time |
+| Deck limit | No special limit (just deck size, max 30) | Max 2 ruins per deck |
+| Combat targeting | Cannot be targeted by creature attacks | Can be targeted by creature attacks (opponent assigns attackers) |
 | ATK | 0 | 0 |
 | Blocking | Cannot block | Cannot block |
+| Evolution energy | Does not earn energy | Earns 2 energy (win) / 1 energy (loss) alongside creatures |
 
 ### Ruin Interaction with Game Mechanics
 
@@ -1421,7 +1433,7 @@ Planar Ruins are ancient structures found in the Plane of Chaos, built by a vani
 
 ### Ruin Start-of-Turn and End-of-Turn Effects
 
-- Start-of-turn ruin effects resolve during Phase 1 alongside other board effects (Corruption self-damage, stabilizer auras, modifier triggers). Ruins resolve in board-slot order, left-to-right, intermixed with creature effects by slot position.
+- Start-of-turn ruin effects resolve during Phase 1 alongside other board effects (Corruption self-damage, modifier triggers). Ruins resolve in board-slot order, left-to-right, intermixed with creature effects by slot position.
 - End-of-turn ruin effects resolve during Phase 9, before "this turn" buffs expire.
 
 Full ruin design, faction evolution paths, and effect pools: see `docs/design/PHASE1C-planar-ruins.md`.
@@ -1474,7 +1486,7 @@ Starter decks for Ironwright Collective, Fey Courts, and Demonic Kingdoms are de
 
 ### Celestial Crusade Starter Deck
 
-20-card starter deck showcasing the Exalt mechanic. All cards are Common tier. Teaches go-wide formation play — cards are slightly below-curve individually but synergize when multiple creatures are on the board.
+30-card starter deck showcasing the Exalt mechanic. All cards are Common tier. Teaches go-wide formation play — cards are slightly below-curve individually but synergize when multiple creatures are on the board. (Note: the 20-card list below is a partial reference — final 30-card list requires 10 additional cards, pending content authoring.)
 
 | # | Name | Type | CM | ATK | HP | Instability | Keywords | Description |
 |---|---|---|---|---|---|---|---|---|
@@ -1497,15 +1509,15 @@ Starter decks for Ironwright Collective, Fey Courts, and Demonic Kingdoms are de
 | 17 | Archangel Vanguard | Creature | 5 | 3 | 7 | 1 | Flying | Winged commander leading from above. |
 | 18 | Divine Smite | Spell | 2 | -- | -- | 0 | -- | Deal 3 damage to target creature. |
 | 19 | Blessed Rally | Spell | 3 | -- | -- | 0 | -- | All friendly creatures get +1/+1 this turn. |
-| 20 | Warding Pillar | Stabilizer | 3 | 0 | 5 | 0 | -- | Avatar instability modifier doubled. |
+| 20 | Warding Pillar | Stabilizer | 0 | -- | -- | -- | -- | Activate: avatar modifier doubled until next turn. (Goes to stability zone; free to play.) |
 
-**Deck Statistics:** 17 creatures (85%), 2 spells (10%), 1 stabilizer (5%). Mana curve: 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2. Average CM: 2.65. Average instability (creatures): 1.71. Keywords: Taunt (2), Shield (1), Flying (1).
+**Deck Statistics (20-card core):** 17 creatures (85%), 2 spells (10%), 1 stabilizer. Mana curve (creatures/spells): 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2. Average CM: 2.65. Average instability (creatures): 1.71. Keywords: Taunt (2), Shield (1), Flying (1).
 
 **Play Pattern:** Turns 1-2: deploy cheap creatures for board presence. Turns 3-4: Temple Guardians protect the formation, Radiant Knights as flexible threats. Turns 5+: premium creatures complete the formation; 3-5 creatures positioned for Exalt auras once evolution begins. Avatar recommendation: Order-leaning (-5 or -6).
 
 ### The Endless Starter Deck
 
-20-card starter deck showcasing the Persist mechanic. All cards are Common tier. Teaches aggressive trading — creatures are expendable, the deck wants to trade and trigger death effects once evolved.
+30-card starter deck showcasing the Persist mechanic. All cards are Common tier. Teaches aggressive trading — creatures are expendable, the deck wants to trade and trigger death effects once evolved. (Note: the 20-card list below is a partial reference — final 30-card list requires 10 additional cards, pending content authoring.)
 
 | # | Name | Type | CM | ATK | HP | Instability | Keywords | Description |
 |---|---|---|---|---|---|---|---|---|
@@ -1528,9 +1540,9 @@ Starter decks for Ironwright Collective, Fey Courts, and Demonic Kingdoms are de
 | 17 | Dread Revenant | Creature | 5 | 6 | 5 | 4 | -- | Terrifying revenant. Glass cannon. |
 | 18 | Necrotic Bolt | Spell | 2 | -- | -- | 0 | -- | Deal 3 damage to target creature. |
 | 19 | Soul Drain | Spell | 3 | -- | -- | 0 | -- | Deal 2 damage to target creature. Heal avatar 2 HP. |
-| 20 | Chaos Rift | Stabilizer | 2 | 0 | 3 | 0 | -- | Each creature contributes +1 instability. |
+| 20 | Chaos Rift | Stabilizer | 0 | -- | -- | -- | -- | Activate: +1 instability per creature on board (immediate). (Goes to stability zone; free to play.) |
 
-**Deck Statistics:** 17 creatures (85%), 2 spells (10%), 1 stabilizer (5%). Mana curve: 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2. Average CM: 2.65. Average instability (creatures): 2.24. Keywords: Lifesteal (1), Taunt (1), Deathtouch (1).
+**Deck Statistics (20-card core):** 17 creatures (85%), 2 spells (10%), 1 stabilizer. Mana curve (creatures/spells): 1-cost: 3, 2-cost: 5, 3-cost: 5, 4-cost: 2, 5-cost: 2. Average CM: 2.65. Average instability (creatures): 2.24. Keywords: Lifesteal (1), Taunt (1), Deathtouch (1).
 
 **Play Pattern:** Turns 1-2: deploy cheap aggressive creatures (Shambling Corpses, Bone Collectors) for early pressure. Turns 3-4: Carrion Stalkers and Necromancer's Thralls trade aggressively; once evolved, deaths trigger Persist effects. Turns 5+: premium threats (Abomination, Lich Apprentice, Dread Revenant) trade up or push massive damage. Avatar recommendation: Chaos-leaning (-1 or -2).
 
@@ -1703,7 +1715,7 @@ Automated checks that should run against every card design to flag balance issue
 ### Deck-Level Checks
 
 ```
-1. Exactly 20 cards
+1. Exactly 30 cards
 2. Max 2 copies of any single CardTemplate
 3. Max 2 Legendary cards, max 1 copy of each
 4. All cards from a single faction/style (neutral ruins are allowed in any faction deck)
@@ -1764,3 +1776,4 @@ Mechanics and content categories that are intentionally NOT in the launch versio
 | 2026-02-16 | Targeted factual error correction (CRIT-03, CRIT-04): Section 12 summary table had Void Lens listed as a Spell — corrected to match its Section 11 stabilizer definition (board stabilizer, HP 2, instability contribution 0). Removed Probability Anchor from Section 12 — it only existed in this summary table, was absent from Section 11 and doc 00, and would have caused content pipeline confusion. | 12 |
 | 2026-02-16 | v3.2 targeted error corrections: (1) Section 11 property "Faction-locked" → "Faction-agnostic (Universal)" to match all 7 stabilizer cards being Universal in the table immediately below. (2) Section 12 summary table: added missing Warding Pillar and Entropy Engine rows (were in Section 11 but absent from Section 12). (3) Section 6 modifier table and Section 13 subscription benefits: "Top" → "High", stale "$5–8/mo" and "$10–15/mo" → canonical "$6.99/mo" and "$12.99/mo" per doc 09. | 6, 11, 12, 13 |
 | 2026-02-19 | v4.0 Faction expansion: Exalt (Celestial Crusade) and Persist (The Endless) faction mechanics added (Section 5). Haste and Ward keywords added (Section 4). Full 9x9 keyword interaction matrix with combat and stacking tables. 96 new faction modifiers (CF01-CF48, EF01-EF48) — total modifiers 240→336 (Section 6). Ironwright rethemed from Victorian steampunk to brutalist space-industrial with updated modifier examples. Planar Ruins battlefield mechanics system (Section 13) with 8 neutral ruins, ruin combat targeting, destruction penalties, and turn structure integration. Ruin evolution mechanics (Section 14) with familiarity thresholds and subscription tier selection. Celestial and Endless starter decks (Section 15). Game AI strategy notes for all 5 factions and ruins (Section 16). Updated instability calculation to include ruins. Updated Main Phase for ruin play and Haste bonus attack. Updated Declare Attackers for ruin targeting. Updated all faction/keyword counts (3→5 factions, 7→9 keywords). Sections renumbered (old 13-15 → 17-19). | 1-6, 13-16, 17-19 |
+| 2026-02-20 | Stabilizer redesign: stabilizers moved from creature board slots into a separate stability zone. Now free to play (0 mote cost), one per turn maximum, with activated abilities (tap to use) and per-card cooldown (unavailable next turn). Stabilizers no longer contribute to instability passively — effects apply immediately only when activated. Deck size updated 20→30. Evolution energy earning restricted to creatures and Planar Ruins only (stabilizers and spells earn no energy). Section 11 fully rewritten. Section 12 summary table updated. Phase 5 Main Phase updated with ACTIVATE_STABILIZER action and stability zone rules. Phase 1 Start of Turn reference to stabilizer auras removed. | 3, 11, 12 |

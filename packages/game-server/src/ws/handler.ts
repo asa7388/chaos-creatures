@@ -832,17 +832,26 @@ async function awardEnergyToDeck(
   deckId: string,
   energy: number
 ): Promise<void> {
-  // Get all card instance IDs in this deck
+  // Fetch deck cards with card_type so we can filter to eligible types.
+  // Only CREATURE and PLANAR_RUIN cards earn evolution energy.
+  // STABILIZER and SPELL cards are skipped.
   const { data: deckCards } = await supabase
     .from('deck_cards')
-    .select('card_instance_id')
+    .select('card_instance_id, card_instances!inner(card_templates!inner(card_type))')
     .eq('deck_id', deckId);
 
   if (!deckCards || deckCards.length === 0) return;
 
-  const instanceIds = deckCards.map((dc: { card_instance_id: string }) => dc.card_instance_id);
+  const instanceIds = deckCards
+    .filter((dc: any) => {
+      const cardType = dc.card_instances?.card_templates?.card_type;
+      return cardType === 'CREATURE' || cardType === 'PLANAR_RUIN';
+    })
+    .map((dc: { card_instance_id: string }) => dc.card_instance_id);
 
-  // Increment chaos_energy for each card instance via RPC for atomic increment
+  if (instanceIds.length === 0) return;
+
+  // Increment chaos_energy for eligible card instances via RPC for atomic increment
   const { error: rpcError } = await supabase.rpc('increment_chaos_energy', {
     instance_ids: instanceIds,
     amount: energy,

@@ -287,7 +287,7 @@ export const MAX_DECK_SLOTS: Record<SubscriptionTier, number> = {
 };
 
 /** Deck validation constants. */
-export const DECK_SIZE = 20;
+export const DECK_SIZE = 30;
 export const MAX_COPIES_PER_TEMPLATE = 2;
 export const MAX_LEGENDARIES = 2;
 

@@ -94,10 +94,10 @@ This means every legendary in a player's collection has a personal history. No l
 ### Onboarding Flow
 
 1. Player creates account, picks a username.
-2. **Trial phase:** player receives a premade 20-card Commons deck for each of the 5 factions (loaner decks — fixed lists, cannot be evolved).
+2. **Trial phase:** player receives a premade 30-card Commons deck for each of the 5 factions (loaner decks — fixed lists, cannot be evolved).
 3. Player plays 1–3 matches with each trial deck (vs. AI or new players).
-4. **Faction commitment:** player picks one faction. That trial deck becomes their real collection — those 20 Commons are now owned CardInstances, fully evolvable. Other trial decks are returned.
-5. Player starts with: 20 Commons in one faction, a starter avatar, enough shards to evolve 2–3 cards, and a small amount of Chaos Dust.
+4. **Faction commitment:** player picks one faction. That trial deck becomes their real collection — those 30 Commons are now owned CardInstances, fully evolvable. Other trial decks are returned.
+5. Player starts with: 30 Commons in one faction, a starter avatar, enough shards to evolve 2–3 cards, and a small amount of Chaos Dust.
 
 ### Card Acquisition — Chaos Dust
 
@@ -152,7 +152,7 @@ Each evolution requires:
 
 ### Chaos Energy Thresholds
 
-Cards accumulate chaos energy by being in a deck during completed games. ALL 20 cards in the deck receive energy per game, regardless of whether they were drawn.
+Cards accumulate chaos energy by being in a deck during completed games. ALL creatures and Planar Ruins in the deck receive energy per game, regardless of whether they were drawn. Stabilizers and spells earn no evolution energy.
 
 **Energy per game:**
 
@@ -171,7 +171,7 @@ Cards accumulate chaos energy by being in a deck during completed games. ALL 20 
 | Epic → Legendary | 75 | ~50 games |
 | **Total: Common → Legendary** | **170** | **~113 games** |
 
-A player who wins 50% of their games earns ~1.5 energy per game per card. All 20 cards in a deck progress simultaneously — after ~113 games with the same deck, every card in it can reach Legendary (if the player has enough shards). Players who swap cards in/out will have cards at different energy levels.
+A player who wins 50% of their games earns ~1.5 energy per game per card. All creatures and Planar Ruins in a deck progress simultaneously — after ~113 games with the same deck, every eligible card in it can reach Legendary (if the player has enough shards). Players who swap cards in/out will have cards at different energy levels.
 
 ### The Evolution Choice
 
@@ -419,13 +419,14 @@ Turn-based combat inspired by Magic: The Gathering, focused on creatures. The ce
 - Auto-gain 1 chaos mote per turn.
 - Cap at 10.
 - Every card has a chaos mote cost to play.
-- No land/resource cards. Your entire deck is creatures, spells, stabilizer/manipulation cards, and Planar Ruins.
+- No land/resource cards. Your entire deck is creatures, spells, stabilizers, and Planar Ruins.
 
 ### Board
 
 - 5 creature slots per side.
 - Forces meaningful decisions about what to play and when.
-- Stabilizer cards and Planar Ruins that sit on the board occupy creature slots — powerful stability effects and passive benefits cost board presence.
+- Planar Ruins occupy creature slots — powerful passive benefits cost board presence.
+- Stabilizers go into the stability zone (a separate area), never costing creature board slots. They are free to play and have activated abilities with cooldowns.
 
 ### Life Total
 
@@ -443,11 +444,11 @@ Creatures can attack the turn they are played. Games move fast, every creature m
 
 ### Turn Structure
 
-1. **Start of Turn** — Start-of-turn effects fire (Corruption self-damage, Exalt aura checks, Planar Ruin passive effects, stabilizer auras, modifier triggers).
+1. **Start of Turn** — Start-of-turn effects fire (Corruption self-damage, Exalt aura checks, Planar Ruin passive effects, modifier triggers). Stabilizer cooldowns reset.
 2. **Chaos Roll** — D20 rolls visually on screen. Compare to current instability. Update attunement state on all creatures.
 3. **Resolve Event** — Apply the Order or Chaos event. Fire triggered abilities.
 4. **Draw & Gain Mana** — Draw 1 card. Gain 1 chaos mote (up to cap of 10).
-5. **Main Phase** — Play creatures, spells, stabilizer cards, or Planar Ruins from hand. Any order, any number (mana permitting). All spells resolve immediately — no response window for the opponent.
+5. **Main Phase** — Play creatures, spells, or Planar Ruins from hand (mana cost applies). Play up to 1 stabilizer from hand into the stability zone (free). Activate ready stabilizers in the stability zone (tap). Any order. All spells and stabilizer activations resolve immediately — no response window for the opponent.
 6. **Declare Attackers** — Active player selects which creatures attack. Taunt on the opposing side forces minimum attackers. *(P1 skips this on turn 1.)*
 7. **Assign Blockers** — Defending player assigns their creatures to block attackers (1-to-1). Taunt creatures MUST block if able. Defending player's 60-second timer starts here.
 8. **Combat Resolution** — All damage is simultaneous. Unblocked attackers hit face. Shield → Damage → Deathtouch → Piercing → Lifesteal resolution. Dead creatures removed, on-death effects fire (including Persist triggers for Endless creatures). Planar Ruin destruction penalties fire if a ruin is destroyed.
@@ -497,7 +498,7 @@ No counterspells. No combat tricks (no spells during combat). Keeps the game flo
 
 ### Deck Construction Rules
 
-- **Deck size:** 20 cards.
+- **Deck size:** 30 cards.
 - **Max 2 copies** of any card.
 - **Legendaries:** Max 2 per deck, limited to 1 copy each.
 - **Planar Ruins:** Max 2 per deck. Max 1 on the field at a time (occupies a creature slot).
@@ -620,30 +621,32 @@ The player's avatar appears on their side of the battlefield and visually repres
 
 ## 11. Stabilizer & Manipulation Cards
 
-A card type alongside creatures, spells, and Planar Ruins. Stabilizers sit on the board, occupy creature slots, have HP (can be destroyed), but have no ATK and cannot attack or block. They manipulate the instability/chaos roll system. Unlike Planar Ruins, stabilizers cannot be targeted by creature attacks (only damaged by spells/events), do not evolve, and have no destruction penalties.
+A card type alongside creatures, spells, and Planar Ruins. Stabilizers sit in the **stability zone** — a dedicated area separate from the 5-slot creature board. They are **free to play** (0 chaos motes), with a maximum of **1 per turn**. Each stabilizer has an **activated ability**: tap it during your main phase to trigger its effect, then it goes on **cooldown** until your next turn. Multiple stabilizers can be activated in one turn if each is individually ready.
 
-### Board Stabilizers (Occupy Creature Slots)
+Stabilizers do not contribute to instability passively. They only affect instability when their activated effect is used. Stabilizers cannot be attacked by creatures (they are not on the board). They do not occupy creature board slots. They do not evolve and do not earn evolution energy.
 
-| Name | CM Cost | HP | Effect |
-|---|---|---|---|
-| Chaos Anchor | 2 | 3 | While on field: each of your creatures contributes -1 to instability (min 0 per creature). |
-| Warding Pillar | 3 | 5 | While on field: your avatar's instability modifier is doubled. |
-| Chaos Rift | 2 | 3 | While on field: each of your creatures contributes +1 to instability. |
-| Entropy Engine | 3 | 4 | While on field: when you roll a Chaos event, your highest-ATK creature gets +1 ATK permanently. |
-| Void Lens | 3 | 2 | While on field: after seeing your chaos roll, choose whether the event is Order or Chaos (once per turn). "Nothing" cannot be overridden. |
+### Board Stabilizers (Stability Zone — Free to Play)
 
-### Manipulation Spells (One-Shot, Don't Occupy Slots)
+| Name | CM Cost | Activated Effect |
+|---|---|---|
+| Chaos Anchor | 0 | Activate → -1 instability per creature currently on your board (immediate). |
+| Warding Pillar | 0 | Activate → your avatar's instability modifier is doubled until your next turn. |
+| Chaos Rift | 0 | Activate → +1 instability per creature currently on your board (immediate). |
+| Entropy Engine | 0 | Activate → if your last roll was Chaos, your highest-ATK creature gets +1 ATK permanently. |
+| Void Lens | 0 | Activate BEFORE your chaos roll → choose whether the roll counts as Order or Chaos. Cannot override "Nothing" results. |
+
+### Manipulation Spells (One-Shot, Cost Mana, Go to Graveyard)
 
 | Name | CM Cost | Effect |
 |---|---|---|
 | Binding Ward | 2 | Set your instability to 5 for this turn only. |
 | Entropy Spike | 2 | Set your instability to 15 for this turn only. |
 
-All 7 stabilizer cards are **universal** (available to all factions). Faction-specific stabilizers reserved for future expansions. For faction-specific battlefield structures, see **Planar Ruins** (Section 11a) — a distinct card type with different gameplay characteristics.
+All 5 stabilizers and 2 manipulation spells are **universal** (available to all factions). Faction-specific stabilizers reserved for future expansions. For faction-specific battlefield structures, see **Planar Ruins** (Section 11a) — a distinct card type with different gameplay characteristics.
 
 ### Strategic Role
 
-Running a board stabilizer costs a creature slot — powerful instability manipulation means fewer creatures fighting for you. Every slot is a tradeoff. Stabilizers can be targeted and destroyed by damage spells, Chaos events (Wildfire, Upheaval, Maelstrom), and creature abilities, making them fragile investments that the opponent can counter.
+Stabilizers go in the stability zone — they do not cost creature board slots. Their primary cost is the 1-per-turn play limit and the activation cooldown. Strategic timing is everything: activate Chaos Anchor when you have a full board for maximum instability reduction. Use Void Lens only before a roll where the event type matters. Because stabilizers are free and don't take board space, every deck can afford to include a few without compromising the creature curve.
 
 *(Full mechanical specification in `01-battle-mechanics.md` Section 11.)*
 
@@ -1136,7 +1139,7 @@ The deck builder is where strategy crystallizes. It must make it easy to underst
 - Each card shows: thumbnail art, name, tier badge, ATK/HP, chaos mote cost, and small icons for attunement breakdown (e.g., 3 Chaos-attuned modifiers shown as 3 small red dots, 1 Order as 1 blue dot).
 - Cards sorted by mana cost (default), with options to sort by tier, ATK, HP, or name.
 - Tap a card to view Card Detail. Long-press to remove from deck.
-- Running count: "14/20 cards" displayed prominently.
+- Running count: "22/30 cards" displayed prominently.
 - Legendary count: "1/2 Legendaries" when applicable.
 
 **Right panel (or bottom sheet on iOS) — Card pool:**
@@ -1182,7 +1185,7 @@ Each slot saves the full deck including avatar selection. Players can duplicate 
 
 The deck builder prevents invalid decks from being saved or queued:
 
-- Fewer than 20 cards → "Need X more cards" warning.
+- Fewer than 30 cards → "Need X more cards" warning.
 - More than 2 copies of any card → prevented at add time.
 - More than 2 Legendaries or 2 copies of a Legendary → prevented at add time.
 - Mixed factions → prevented by faction lock.
@@ -1330,11 +1333,11 @@ These are post-launch features but the architecture should account for them (gam
 
 ### Starter Deck Composition
 
-Each faction's starter deck is a pre-built 20-card deck with:
+Each faction's starter deck is a pre-built 30-card deck with:
 
-- 13 Common creatures (variety of mana costs)
+- 22 Common creatures (variety of mana costs)
 - 4 Common spells (1 removal, 1 buff, 1 heal, 1 draw)
-- 2 Common stabilizer/manipulation cards (1 Order-leaning, 1 Chaos-leaning)
+- 3 Common stabilizers (1 Order-leaning, 1 Chaos-leaning, 1 Manipulation — all free, go to stability zone)
 - 1 Neutral Planar Ruin (introduces the ruin mechanic during trial games)
 
 Plus a handful of additional cards not in the deck (so the player has something to swap in from the collection immediately).
@@ -1457,12 +1460,12 @@ Tracking confirmed design decisions and when they were made, for reference.
 | No real money on individual cards | Subscriptions only. Cards earned via Chaos Dust (gameplay currency). | ✅ Confirmed |
 | Chaos Dust economy | Single in-game currency for cards, shards, avatars. Earned from games, quests, milestones. | ✅ Confirmed |
 | Cross-faction unlocking | Buy a 150-Dust card pack from another faction to unlock it permanently. | ✅ Confirmed |
-| Onboarding: trial decks | Player tries 5 faction trial decks (20 Commons each), commits to one. | ✅ Confirmed |
+| Onboarding: trial decks | Player tries 5 faction trial decks (30 cards each — ~22 Commons + spells + stabilizers + 1 Ruin), commits to one. | ✅ Confirmed |
 | Paid asset budget | Under $100 total for particles, SFX, and similar polish assets | ✅ Confirmed |
 | Visual philosophy | Clean and stylish, Balatro/Slay the Spire tier, not Hearthstone AAA | ✅ Confirmed |
 | MVP approach | iOS only via Xcode Cloud | ✅ Confirmed |
 | Evolution probability | 70/30 split when channeling toward Order or Chaos | ✅ Confirmed |
-| Deck size | 20 cards, max 2 copies, max 2 Legendaries (1 copy each) | ✅ Confirmed |
+| Deck size | 30 cards, max 2 copies, max 2 Legendaries (1 copy each) | ✅ Confirmed |
 | Board size | 5 creature slots per side | ✅ Confirmed |
 | Life total | 20 HP | ✅ Confirmed |
 | Starting hand | 4 cards, 1 free mulligan | ✅ Confirmed |
@@ -1497,8 +1500,8 @@ Tracking confirmed design decisions and when they were made, for reference.
 | Triggered ability resolution: left-to-right | Multiple abilities fire slot 1→5. Dead creatures don't fire. | ✅ Confirmed |
 | Spells: main phase only, no evolution | Spells are static cards. 5 categories: Buff, Damage, Face Damage, Heal, Utility. ~15-20 per faction. | ✅ Confirmed |
 | Chaos Spark = spell | Costs 0, grants +1 mana, counts as spell cast. Cannot be mulliganed. | ✅ Confirmed |
-| Stabilizers: have HP, no ATK, can't attack/block | Occupy creature slots. Continuous aura effects. Can be destroyed. 0 base instability. Don't evolve. | ✅ Confirmed |
-| 5 stabilizers + 2 manipulation spells at launch | Chaos Anchor, Warding Pillar, Chaos Rift, Entropy Engine, Void Lens (board) + Binding Ward, Entropy Spike (spells). All universal. | ✅ Confirmed |
+| Stabilizers: free, stability zone, activated ability | Sit in stability zone (not board slots). Free to play (0 motes), 1 per turn. Activated ability with per-card cooldown. Affect instability only when activated (not passive). Can't be attacked by creatures. Don't evolve. Don't earn energy. | ✅ Confirmed |
+| 5 stabilizers + 2 manipulation spells at launch | Chaos Anchor, Warding Pillar, Chaos Rift, Entropy Engine, Void Lens (stability zone, free) + Binding Ward, Entropy Spike (spells, cost mana). All universal. | ✅ Confirmed |
 | 10 launch avatars | Korvax (-5), Vex (-3), Sylara (-5), Morrigan (-1), Kael (-4), Lilith (-2), Serevain (-6), Ophaniel (-1), Vothrak (-3), Thessaly (-2). 1 per sub-faction (2 per faction). | ✅ Confirmed |
 | Ironwright retheme | Victorian steampunk replaced with brutalist space-industrial empire. Concrete, iron, hydraulics, rebar, void industry. NOT brass/gears/steam/clockwork/Victorian. | ✅ Confirmed |
 | Planar Ruins card type | Ancient structures, high HP/0 ATK, passive benefits, destruction penalties, neutral-to-faction evolution. Max 2 in deck, max 1 on field. 8 neutral archetypes, 40 faction variants. | ✅ Confirmed |
@@ -1506,8 +1509,8 @@ Tracking confirmed design decisions and when they were made, for reference.
 | Persist mechanic (Endless) | Death triggers and lingering effects. Every kill against Endless is pyrrhic. Countered by fast aggro and effects preventing death triggers. | ✅ Confirmed |
 | Haste keyword | Creature can attack the turn it is played. Enables tempo and aggression. | ✅ Confirmed |
 | Ward keyword | Cannot be targeted by opponent modifier effects for 1 turn after deployment. Protects high-value creatures. | ✅ Confirmed |
-| Evolution energy: exact values | 15/30/50/75 energy per tier. 2 per win, 1 per loss. All 20 deck cards earn simultaneously. ~113 games to Legendary. | ✅ Confirmed |
-| Energy for all deck cards | All 20 cards in deck earn energy per game, whether drawn or not. Avoids optimization of only playing unique cards. | ✅ Confirmed |
+| Evolution energy: exact values | 15/30/50/75 energy per tier. 2 per win, 1 per loss. All creatures and ruins in deck earn simultaneously. Stabilizers and spells earn no energy. ~113 games to Legendary. | ✅ Confirmed |
+| Energy for creatures and ruins only | All creatures and Planar Ruins in deck earn energy per game (whether drawn or not). Stabilizers and spells earn no evolution energy. Avoids optimization of only playing unique cards. | ✅ Confirmed |
 
 ---
 
@@ -1540,3 +1543,4 @@ Tracking confirmed design decisions and when they were made, for reference.
 |---|---|---|
 | 2026-02-19 | v4.0 — Faction expansion: 3 to 5 factions (added The Celestial Crusade with Exalt mechanic and The Endless with Persist mechanic). Ironwright Collective rethemed from Victorian steampunk to brutalist space-industrial empire. All factions trimmed to 2 sub-factions each (10 total). Keywords expanded 7 to 9 (added Haste, Ward). Planar Ruins added as new card type (8 neutral archetypes, 40 faction-evolved variants). Avatars expanded 6 to 10 (1 per sub-faction; Aldric retired, Korvax added; 4 new avatars for Celestial/Endless). Color palettes added for all 5 factions. Art references expanded: William Blake (Celestial), Francisco Goya (Endless), Piranesi (Ironwright retheme). Modifier count updated 240 to 336. Document index updated with 11-lore-bible.md, 12-art-direction.md, PHASE1B-mechanics.md, PHASE1C-planar-ruins.md, PLAN-faction-expansion.md. All "3 factions" references updated to "5 factions" throughout. | 1, 2, 3, 5, 8, 10, 11, 11a (new), 12, 13a, 14, 15, 16, 21, 22, 25, 26, 27 |
 | 2026-02-16 | Platform-alignment pass: updated Section 13 infrastructure table from "React Native / Flutter / PWA with Phaser.js" to "Native iOS app (Swift + SwiftUI + SpriteKit)"; changed image gen provider from "Replicate or Fal.ai" to "fal.ai"; updated platform from "iOS primary, web prototype first" to "iOS only (Swift/SwiftUI/SpriteKit) via Xcode Cloud"; replaced "React Native / Flutter UI" with "Swift + SwiftUI"; replaced "Phaser.js, PixiJS, or CSS" particle references with "SpriteKit"; updated animation references from "CSS transforms, Lottie" to "SpriteKit actions"; changed Decisions Log entries: MVP approach to "iOS only via Xcode Cloud", AI image model provider to "fal.ai", spell timing to "iOS-friendly"; updated generic "mobile" references to "iOS" or "iOS mobile" throughout Sections 8, 14, 16, and 26. No game mechanics, numbers, or design decisions were changed. | 13, 13a (MVP Visual Approach), 8, 14, 16, 26 |
+| 2026-02-20 | Stabilizer redesign: stabilizers moved to separate stability zone (no longer occupy creature board slots). Now free to play (0 mote cost), one per turn, with activated abilities and per-card cooldown. Deck size updated 20→30 throughout. Updated Section 11 Board Stabilizers description. Updated all deck size references (onboarding, chaos energy, deck construction rules, starter deck descriptions, confirmed decisions table). Updated instability section to clarify stabilizers only affect instability when activated (not passive). Updated Section 4 Chaos Energy note to include only creatures and ruins earning energy. | 3, 4, 5, 11, 15, 22, 27 |

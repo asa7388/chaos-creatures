@@ -1,6 +1,6 @@
 // _shared/deck-validator.ts — Deck validation logic
 // Used by both save-deck and validate-deck functions.
-// Rules per REQ-164: exactly 20 cards, single faction, max 2 copies per template,
+// Rules per REQ-164: exactly 30 cards, single faction, max 2 copies per template,
 // max 2 Legendaries, exactly 1 avatar matching faction.
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
