@@ -434,6 +434,8 @@ struct CardFrameView: View {
     }
 
     private func handleTap() {
+        // In grid context, taps are handled by the parent collection view (opens CardDetailView)
+        guard size != .grid else { return }
         if cardState == .previewed {
             withAnimation(.easeIn(duration: 0.22)) {
                 cardState = .default
