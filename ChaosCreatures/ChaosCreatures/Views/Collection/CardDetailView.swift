@@ -12,6 +12,7 @@ struct CardDetailView: View {
     @Environment(AppState.self) private var appState
     @Environment(AppRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private let fixedCard: CardInstance?
     private let fixedFaction: CardFaction?
@@ -143,6 +144,11 @@ struct CardDetailView: View {
     // MARK: - Card Frame Section
 
     private var detailCardScale: CGFloat {
+        if horizontalSizeClass == .regular {
+            // iPad — card should be ~380pt wide (vs 280pt detail base)
+            return 1.36
+        }
+        // iPhone — existing height-based scaling
         let screenHeight = UIScreen.main.bounds.height
         if screenHeight <= 700 { return 0.70 }
         if screenHeight <= 780 { return 0.75 }
