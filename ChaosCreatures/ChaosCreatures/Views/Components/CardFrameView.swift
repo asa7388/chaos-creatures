@@ -513,7 +513,7 @@ struct CardFrameView: View {
     // MARK: - Creature Layout (standard — all zones present)
 
     private func creatureLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        let waxSealSize: CGFloat = 34
+        let sealSize: CGFloat = 34 * (cardWidth / 210.0)
         return VStack(spacing: 0) {
             nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
                 .frame(height: cardHeight * ZoneHeight.nameBars)
@@ -536,10 +536,10 @@ struct CardFrameView: View {
         .background(cardBaseColor)
         .overlay(alignment: .topLeading) {
             waxSeal
-                .frame(width: waxSealSize, height: waxSealSize)
+                .frame(width: sealSize, height: sealSize)
                 .offset(
-                    x: (164.0 / 210.0) * cardWidth - waxSealSize / 2,
-                    y: (258.0 / 294.0) * cardHeight - waxSealSize / 2
+                    x: (164.0 / 210.0) * cardWidth,
+                    y: (258.0 / 294.0) * cardHeight
                 )
                 .allowsHitTesting(false)
         }
@@ -592,7 +592,7 @@ struct CardFrameView: View {
     // MARK: - Planar Ruin Layout (HP only, passive + destruction panels)
 
     private func planarRuinLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        let waxSealSize: CGFloat = 34
+        let sealSize: CGFloat = 34 * (cardWidth / 210.0)
         return VStack(spacing: 0) {
             ruinNameBar(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.nameBars)
@@ -615,10 +615,10 @@ struct CardFrameView: View {
         .background(cardBaseColor)
         .overlay(alignment: .topLeading) {
             waxSeal
-                .frame(width: waxSealSize, height: waxSealSize)
+                .frame(width: sealSize, height: sealSize)
                 .offset(
-                    x: (164.0 / 210.0) * cardWidth - waxSealSize / 2,
-                    y: (258.0 / 294.0) * cardHeight - waxSealSize / 2
+                    x: (164.0 / 210.0) * cardWidth,
+                    y: (258.0 / 294.0) * cardHeight
                 )
                 .allowsHitTesting(false)
         }
@@ -1103,6 +1103,8 @@ struct CardFrameView: View {
                 Spacer(minLength: 0)
 
                 // ATK / HP (right-aligned, Oswald-Bold 13pt)
+                // 52pt trailing inset (scaled) keeps text clear of wax seal zone (x=164–198, Section 10.3b)
+                let statTrailingInset: CGFloat = 52 * (cardWidth / 210.0)
                 if data.cardType == .planarRuin {
                     // HP only for ruins
                     if let hp = data.health {
@@ -1110,14 +1112,14 @@ struct CardFrameView: View {
                             .font(CardFont.statNumber(size: 13))
                             .foregroundColor(theme.primaryText)
                             .letterpressShadow()
-                            .padding(.trailing, 8)
+                            .padding(.trailing, statTrailingInset)
                     }
                 } else if showAtk, let atk = data.attack, let hp = data.health {
                     Text("\(atk) / \(hp)")
                         .font(CardFont.statNumber(size: 13))
                         .foregroundColor(theme.primaryText)
                         .letterpressShadow()
-                        .padding(.trailing, 8)
+                        .padding(.trailing, statTrailingInset)
                 }
             }
         }
