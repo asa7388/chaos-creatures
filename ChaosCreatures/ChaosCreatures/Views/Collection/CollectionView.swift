@@ -365,11 +365,11 @@ struct CollectionView: View {
                                 .padding(3)
                         }
                         .frame(height: 164)
-                        .onTapGesture {
+                        .simultaneousGesture(TapGesture().onEnded {
                             router.selectedCardInstance = card
                             router.selectedCardFaction = faction
                             selectedCard = card
-                        }
+                        })
                         .onLongPressGesture(minimumDuration: 0.4) {
                             router.selectedCardFaction = faction
                             fullscreenCard = card
