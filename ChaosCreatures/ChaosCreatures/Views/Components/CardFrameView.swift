@@ -638,14 +638,14 @@ struct CardFrameView: View {
                     .letterpressShadow()
                 Spacer(minLength: 4)
                 if showCost {
-                    chaosMoteRow(cost: data.manaCost)
+                    chaosMoteRow(cost: data.manaCost, cardWidth: cardWidth)
                 }
             }
             .padding(.horizontal, 6)
         }
     }
 
-    /// Planar Ruin name bar — shows cost as number with label instead of symbols.
+    /// Planar Ruin name bar — uses the same N ⊕ unified cost display as creature/spell bars.
     private func ruinNameBar(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
         ZStack(alignment: .leading) {
             nameBarBackground
@@ -657,18 +657,7 @@ struct CardFrameView: View {
                     .minimumScaleFactor(0.7)
                     .letterpressShadow()
                 Spacer(minLength: 4)
-                // Ruin cost label
-                HStack(spacing: 2) {
-                    Text("Cost:")
-                        .font(CardFont.cardType(size: 9))
-                        .foregroundColor(theme.secondaryText)
-                        .letterpressShadow()
-                    Text("\(data.manaCost)")
-                        .font(CardFont.cardName(size: 11))
-                        .foregroundColor(theme.primaryText)
-                        .letterpressShadow()
-                }
-                .padding(.trailing, 4)
+                chaosMoteRow(cost: data.manaCost, cardWidth: cardWidth)
             }
             .padding(.horizontal, 6)
         }
@@ -685,40 +674,27 @@ struct CardFrameView: View {
             )
     }
 
-    // MARK: - 2.3 Chaos Mote Symbol Row
+    // MARK: - 2.3 N ⊕ Unified Chaos Mote Cost Display
 
-    private func chaosMoteRow(cost: Int) -> some View {
-        Group {
-            if cost > 7 {
-                Text("\(cost)+")
-                    .font(CardFont.cardType(size: 10))
-                    .foregroundColor(theme.primaryText)
-                    .letterpressShadow()
-                    .padding(.trailing, 6)
-            } else {
-                HStack(spacing: 2) {
-                    ForEach(0..<min(cost, 7), id: \.self) { _ in
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        Color("legendary-ember").opacity(0.9),
-                                        Color("epic-amethyst").opacity(0.85)
-                                    ],
-                                    center: .center,
-                                    startRadius: 1,
-                                    endRadius: 8
-                                )
-                            )
-                            .frame(width: 16, height: 16)
-                            .overlay(
-                                Circle().stroke(Color("aged-gold").opacity(0.6), lineWidth: 0.5)
-                            )
-                    }
-                }
-                .padding(.trailing, 6)
-            }
+    /// Renders the unified "N ⊕" cost indicator: cost numeral (Oswald-Bold 13pt) +
+    /// single chaos mote icon. Right-aligned in the name bar with 6pt trailing inset.
+    /// Scales proportionally with cardWidth/210.0.
+    /// Only shown when showCost is true (creature, spell, planarRuin); hidden for stabilizers.
+    private func chaosMoteRow(cost: Int, cardWidth: CGFloat = 210.0) -> some View {
+        let scale = cardWidth / 210.0
+        return HStack(spacing: 4 * scale) {
+            Text("\(cost)")
+                .font(CardFont.statNumber(size: 13 * scale))
+                .foregroundColor(theme.primaryText)
+                .letterpressShadow()
+            Image("chaos_mote_symbol")
+                .resizable()
+                .frame(
+                    width: 20 * scale,
+                    height: 20 * scale
+                )
         }
+        .padding(.trailing, 6 * scale)
     }
 
     // MARK: - Art Box Zone
