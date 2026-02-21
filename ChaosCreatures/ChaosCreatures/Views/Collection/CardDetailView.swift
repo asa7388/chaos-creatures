@@ -201,7 +201,7 @@ struct CardDetailView: View {
             HStack(spacing: 0) {
                 // ATK stat
                 statCell(
-                    iconName: "sword-atk",
+                    iconName: "UIIcons/ui-trigger-attack",
                     value: card.currentAttack ?? 0,
                     color: .chaosRed,
                     label: "ATK"
@@ -213,7 +213,7 @@ struct CardDetailView: View {
 
                 // HP stat
                 statCell(
-                    iconName: "heart-hp",
+                    iconName: "KeywordIcons/kw-shield",
                     value: card.currentHealth ?? 0,
                     color: .healGreen,
                     label: "HP"
@@ -225,7 +225,7 @@ struct CardDetailView: View {
 
                 // Instability stat
                 statCell(
-                    iconName: "instability-indicator",
+                    iconName: "UIIcons/ui-crystal-shard",
                     value: card.instabilityValue,
                     color: .warningYellow,
                     label: "INST"
@@ -284,7 +284,7 @@ struct CardDetailView: View {
 
     private func statCell(iconName: String, value: Int, color: Color, label: String) -> some View {
         HStack(spacing: 8) {
-            Image("StatIcons/\(iconName)")
+            Image(iconName)
                 .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)

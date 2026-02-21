@@ -864,10 +864,10 @@ struct CardFrameView: View {
 
     private var namePlateFontSize: CGFloat {
         switch size {
-        case .grid: return 10
+        case .grid: return 9
         case .hand: return 9
-        case .detail: return 18
-        case .fullscreen: return 22
+        case .detail: return 17
+        case .fullscreen: return 20
         }
     }
 
@@ -880,10 +880,10 @@ struct CardFrameView: View {
 
     private var namePlateMaxWidth: CGFloat {
         switch size {
-        case .grid: return size.width * 0.66
+        case .grid: return size.width * 0.62
         case .hand: return size.width * 0.68
-        case .detail: return size.width * 0.56
-        case .fullscreen: return size.width * 0.54
+        case .detail: return size.width * 0.52
+        case .fullscreen: return size.width * 0.50
         }
     }
 
@@ -993,9 +993,9 @@ struct CardFrameView: View {
 
     private var textPanelHeightRatio: CGFloat {
         switch size {
-        case .grid: return 0.25
+        case .grid: return 0.23
         case .hand: return 0.24
-        case .detail, .fullscreen: return 0.34
+        case .detail, .fullscreen: return 0.36
         }
     }
 
@@ -1017,53 +1017,12 @@ struct CardFrameView: View {
 
     // MARK: - Grid Panel (112x157) -- Faction icon + minimal info
 
-    private var gridPanel: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 4) {
-                Text(compactTypeLabel)
-                    .font(CardFont.uiLabel(size: 7))
-                    .foregroundColor(parchmentTextColor.opacity(0.68))
-                    .tracking(0.5)
-                    .lineLimit(1)
-
-                Spacer(minLength: 0)
-
-                if data.tier != .common {
-                    Image(tierPipIconAsset)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 8, height: 8)
-                        .opacity(0.95)
-                }
-            }
-        }
-        .padding(.horizontal, 7)
-        .padding(.top, 6)
-        .padding(.bottom, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.black.opacity(0.34))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(factionBorderColor.opacity(0.32), lineWidth: 0.6)
-                )
-        )
-    }
+    private var gridPanel: some View { EmptyView() }
 
     // MARK: - Hand Panel (90x130) -- Keyword dots
 
     private var handPanel: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 4) {
-                Text(compactTypeLabel)
-                    .font(CardFont.uiLabel(size: 6.5))
-                    .foregroundColor(parchmentTextColor.opacity(0.65))
-                    .tracking(0.45)
-                    .lineLimit(1)
-
-                Spacer(minLength: 0)
-            }
-
+        VStack(alignment: .leading, spacing: 2) {
             // Keyword dots (up to 3)
             if !data.keywords.isEmpty {
                 HStack(spacing: 3) {
@@ -1077,9 +1036,9 @@ struct CardFrameView: View {
                 }
             }
         }
-        .padding(.horizontal, 7)
-        .padding(.bottom, 6)
-        .padding(.top, 5)
+        .padding(.horizontal, 6)
+        .padding(.bottom, 5)
+        .padding(.top, 4)
     }
 
     // MARK: - Detail Panel (280x392 / 350x490) -- Full info (Redesigned)
@@ -1114,15 +1073,23 @@ struct CardFrameView: View {
                     .truncationMode(.tail)
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, detailPanelHorizontalPadding)
         .padding(.bottom, detailPanelBottomPadding)
         .padding(.top, 8)
     }
 
+    private var detailPanelHorizontalPadding: CGFloat {
+        switch size {
+        case .detail: return 20
+        case .fullscreen: return 24
+        case .grid, .hand: return 10
+        }
+    }
+
     private var detailPanelBottomPadding: CGFloat {
         switch size {
-        case .detail: return 24
-        case .fullscreen: return 28
+        case .detail: return 34
+        case .fullscreen: return 40
         case .grid, .hand: return 10
         }
     }
@@ -1375,8 +1342,8 @@ struct CardFrameView: View {
         switch size {
         case .grid: return 4
         case .hand: return 3
-        case .detail: return 9
-        case .fullscreen: return 11
+        case .detail: return 4
+        case .fullscreen: return 5
         }
     }
 
@@ -1619,25 +1586,6 @@ struct CardFrameView: View {
     }
 
     // MARK: - Card Metadata Helpers
-
-    private var compactTypeLabel: String {
-        switch data.cardType {
-        case .creature: return "CREATURE"
-        case .spell: return "SPELL"
-        case .stabilizer: return "STABILIZER"
-        case .planarRuin: return "RUIN"
-        }
-    }
-
-    private var tierPipIconAsset: String {
-        switch data.tier {
-        case .common: return "StatIcons/rarity-common"
-        case .uncommon: return "StatIcons/rarity-uncommon"
-        case .rare: return "StatIcons/rarity-rare"
-        case .epic: return "StatIcons/rarity-epic"
-        case .legendary: return "StatIcons/rarity-legendary"
-        }
-    }
 
     // MARK: - Helper Colors
 

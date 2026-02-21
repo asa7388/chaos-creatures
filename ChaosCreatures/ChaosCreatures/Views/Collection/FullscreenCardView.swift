@@ -103,8 +103,13 @@ struct FullscreenCardView: View {
 
     private func fullscreenCardScale(in size: CGSize) -> CGFloat {
         let horizontalScale = (size.width - 28) / CardDisplaySize.fullscreen.width
-        let verticalScale = (size.height * 0.84) / CardDisplaySize.fullscreen.height
-        return min(max(min(horizontalScale, verticalScale), 0.96), 1.34)
+        let verticalScale = (size.height * 0.88) / CardDisplaySize.fullscreen.height
+        #if os(iOS)
+        let maxScale: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 1.9 : 1.34
+        #else
+        let maxScale: CGFloat = 1.34
+        #endif
+        return min(max(min(horizontalScale, verticalScale), 0.96), maxScale)
     }
 
     private func dismissWithFade() {
