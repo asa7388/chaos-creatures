@@ -18,7 +18,7 @@ import { resetIds, createTestCard } from './helpers';
 import type { BattleCard } from '../src/types/game-state';
 
 function makeTestDeck(): BattleCard[] {
-  return Array.from({ length: 20 }, () => createTestCard());
+  return Array.from({ length: 30 }, () => createTestCard());
 }
 
 function makeParticipant(id: string): MatchParticipant {
@@ -131,14 +131,14 @@ describe('Match creation', () => {
     expect(getMatch(matchId)).toBeDefined();
   });
 
-  it('should set deck size = 20 - hand size for each player', () => {
+  it('should set deck size = 30 - hand size for each player', () => {
     const p1 = makeParticipant('player-1');
     const p2 = makeParticipant('player-2');
 
     const state = createMatch(matchId, 'RANKED', p1, p2);
 
-    expect(state.player_1.deck.length).toBe(16); // 20 - 4
-    expect(state.player_2.deck.length).toBe(15); // 20 - 5
+    expect(state.player_1.deck.length).toBe(26); // 30 - 4
+    expect(state.player_2.deck.length).toBe(25); // 30 - 5
   });
 });
 
@@ -270,8 +270,8 @@ describe('Client game state projection', () => {
 
     const clientState = createClientGameState(state, 'PLAYER_1');
 
-    expect(clientState.my_deck_count).toBe(16);
-    expect(clientState.opponent.deck_count).toBe(15);
+    expect(clientState.my_deck_count).toBe(26);
+    expect(clientState.opponent.deck_count).toBe(25);
   });
 
   it('should set my_side correctly', () => {

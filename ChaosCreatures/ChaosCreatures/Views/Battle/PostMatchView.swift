@@ -228,7 +228,7 @@ struct PostMatchView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
 
-            // Still show energy earned (all 20 deck cards gain energy even in practice)
+            // Still show energy earned (all deck cards gain energy even in practice)
             HStack(spacing: 6) {
                 Image("StatIcons/chaos-motes")
                     .renderingMode(.template)
@@ -293,7 +293,7 @@ struct PostMatchView: View {
             }
 
             // Energy explanation
-            Text("All 20 deck cards gained +\(energyEarned) Chaos Energy")
+            Text("All 30 deck cards gained +\(energyEarned) Chaos Energy")
                 .font(CardFont.body(size: 11))
                 .foregroundColor(.textTertiary)
                 .padding(.top, 2)

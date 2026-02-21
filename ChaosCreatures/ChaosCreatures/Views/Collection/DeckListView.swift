@@ -209,9 +209,9 @@ struct DeckRowView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
-                    Text("\(deck.totalCards)/20 cards")
+                    Text("\(deck.totalCards)/30 cards")
                         .font(CardFont.body(size: 12))
-                        .foregroundColor(deck.totalCards == 20 ? .textSecondary : .warningYellow)
+                        .foregroundColor(deck.totalCards == 30 ? .textSecondary : .warningYellow)
 
                     if deck.isValid {
                         Text("VALID")

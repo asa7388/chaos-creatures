@@ -3,7 +3,7 @@
 // See docs/design/01-battle-mechanics.md and 04-progression-economy.md.
 
 /** Maximum cards per deck */
-export const DECK_SIZE = 20;
+export const DECK_SIZE = 30;
 
 /** Maximum creatures on board per player */
 export const MAX_BOARD_SLOTS = 5;

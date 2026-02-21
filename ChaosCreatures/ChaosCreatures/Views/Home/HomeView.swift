@@ -156,7 +156,7 @@ struct HomeView: View {
                     Text("Build Your First Deck")
                         .font(CardFont.cardName(size: 16))
                         .foregroundColor(.textPrimary)
-                    Text("You need a valid 20-card deck before you can play. Create one now!")
+                    Text("You need a valid 30-card deck before you can play. Create one now!")
                         .font(CardFont.body(size: 13))
                         .foregroundColor(.textSecondary)
                 }
