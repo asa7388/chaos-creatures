@@ -216,59 +216,10 @@ private struct WaxSealBadge: View {
 
     var body: some View {
         ZStack {
-            // Layer 1: Seal image or fallback circle gradient
-            if let sealAsset = factionSealAsset {
-                Image(sealAsset)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: size, height: size)
-            } else {
-                // Neutral bronze circle fallback
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                tintColor.opacity(0.45),
-                                Color(hex: "#2D2215"),
-                                Color.black.opacity(0.94)
-                            ],
-                            center: .center,
-                            startRadius: 1,
-                            endRadius: size * 0.7
-                        )
-                    )
+            sealShadow
+            sealBody
 
-                Image("CardTextures/metal-bronze")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: size, height: size)
-                    .clipShape(Circle())
-                    .opacity(0.55)
-
-                // Embossed raised rim
-                Circle()
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color(hex: "#AA8A54"), Color(hex: "#23180B")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: size * 0.08
-                    )
-
-                // Inner highlight on upper rim
-                Circle()
-                    .stroke(Color(hex: "#D4B896").opacity(0.4), lineWidth: 0.5)
-                    .padding(size * 0.06)
-            }
-
-            // Layer 2: Faction tint overlay for color unification
-            Circle()
-                .fill(tintColor.opacity(0.25))
-                .blendMode(.overlay)
-                .frame(width: size, height: size)
-
-            // Layer 3: Stat icon stamp (behind number, watermark effect)
+            // Stat icon stamp (behind number, watermark effect)
             Image(iconName)
                 .renderingMode(.template)
                 .resizable()
@@ -276,21 +227,20 @@ private struct WaxSealBadge: View {
                 .frame(width: size * 0.62, height: size * 0.62)
                 .foregroundColor(Color(hex: "#F0EAD6").opacity(0.22))
                 .offset(y: -size * 0.03)
+                .mask(sealMask)
 
-            // Layer 4: Top-lit highlight crescent
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.25), Color.clear],
-                        startPoint: .top,
-                        endPoint: .center
-                    )
-                )
-                .frame(width: size * 0.85, height: size * 0.5)
-                .offset(y: -size * 0.15)
-                .blendMode(.overlay)
+            // Top-lit highlight
+            LinearGradient(
+                colors: [Color.white.opacity(0.30), Color.clear],
+                startPoint: .top,
+                endPoint: .center
+            )
+            .frame(width: size * 0.90, height: size * 0.56)
+            .offset(y: -size * 0.18)
+            .blendMode(.screen)
+            .mask(sealMask)
 
-            // Layer 5: Number stamped into the seal
+            // Number stamped into the seal
             Text("\(value)")
                 .font(CardFont.statNumber(size: size * 0.50))
                 .foregroundColor(Color(hex: "#F0EAD6"))
@@ -298,8 +248,108 @@ private struct WaxSealBadge: View {
                 .shadow(color: tintColor.opacity(0.3), radius: 2, x: 0, y: 0)
         }
         .frame(width: size, height: size)
-        // Contact shadow — warm, offset down
-        .shadow(color: Color.black.opacity(0.5), radius: size * 0.12, x: 0, y: size * 0.06)
+    }
+
+    @ViewBuilder
+    private var sealBody: some View {
+        if let sealAsset = factionSealAsset {
+            Image(sealAsset)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
+                .overlay(
+                    tintColor.opacity(0.20)
+                        .blendMode(.overlay)
+                        .mask(
+                            Image(sealAsset)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: size, height: size)
+                        )
+                )
+                .overlay(
+                    Image("CardTextures/tex-cardstock-grain")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: size, height: size)
+                        .opacity(0.10)
+                        .mask(
+                            Image(sealAsset)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: size, height: size)
+                        )
+                )
+        } else {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            tintColor.opacity(0.45),
+                            Color(hex: "#2D2215"),
+                            Color.black.opacity(0.94)
+                        ],
+                        center: .center,
+                        startRadius: 1,
+                        endRadius: size * 0.7
+                    )
+                )
+
+            Image("CardTextures/metal-bronze")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+                .opacity(0.55)
+
+            Circle()
+                .stroke(
+                    LinearGradient(
+                        colors: [Color(hex: "#AA8A54"), Color(hex: "#23180B")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: size * 0.08
+                )
+
+            Circle()
+                .stroke(Color(hex: "#D4B896").opacity(0.4), lineWidth: 0.5)
+                .padding(size * 0.06)
+        }
+    }
+
+    @ViewBuilder
+    private var sealMask: some View {
+        if let sealAsset = factionSealAsset {
+            Image(sealAsset)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
+        } else {
+            Circle()
+                .frame(width: size, height: size)
+        }
+    }
+
+    @ViewBuilder
+    private var sealShadow: some View {
+        if let sealAsset = factionSealAsset {
+            Image(sealAsset)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
+                .brightness(-1)
+                .colorMultiply(.black)
+                .opacity(0.48)
+                .blur(radius: size * 0.08)
+                .offset(y: size * 0.07)
+        } else {
+            Circle()
+                .fill(Color.black.opacity(0.45))
+                .frame(width: size * 0.92, height: size * 0.92)
+                .blur(radius: size * 0.09)
+                .offset(y: size * 0.07)
+        }
     }
 }
 
@@ -750,34 +800,66 @@ struct CardFrameView: View {
                     .foregroundColor(parchmentTextColor)
                     .lineLimit(namePlateMaxLines)
                     .minimumScaleFactor(0.65)
-                    .tracking(0.2)
+                    .tracking(0.35)
                     // Letterpress inner shadow effect
-                    .shadow(color: .black.opacity(0.6), radius: 0.5, x: 0, y: 0.5)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
+                    .shadow(color: .black.opacity(0.55), radius: 0.4, x: 0, y: 0.5)
+                    .padding(.horizontal, namePlatePaddingH)
+                    .padding(.vertical, namePlatePaddingV)
                     .background(
                         ZStack {
-                            Color.black.opacity(0.55)
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: "#3C301E").opacity(0.92),
+                                    Color.black.opacity(0.80)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+
                             Image(factionTextPanelAssetName)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .opacity(0.15)
+                                .opacity(0.18)
                         }
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 4))
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(factionBorderColor.opacity(0.40), lineWidth: 0.5)
+                            .stroke(factionBorderColor.opacity(0.56), lineWidth: 0.7)
                     )
+                    .overlay(alignment: .top) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.white.opacity(0.16), lineWidth: 0.35)
+                            .padding(0.45)
+                    }
                     .frame(maxWidth: namePlateMaxWidth, alignment: .leading)
                     .padding(.leading, namePlateInset)
                     .padding(.top, namePlateInset)
+                    .shadow(color: Color.black.opacity(0.5), radius: 1.2, x: 0, y: 1)
 
                 Spacer()
             }
             Spacer()
         }
         .frame(width: size.width, height: size.height)
+    }
+
+    private var namePlatePaddingH: CGFloat {
+        switch size {
+        case .grid: return 4
+        case .hand: return 3.5
+        case .detail: return 6
+        case .fullscreen: return 7
+        }
+    }
+
+    private var namePlatePaddingV: CGFloat {
+        switch size {
+        case .grid: return 2
+        case .hand: return 1.5
+        case .detail: return 3
+        case .fullscreen: return 3.5
+        }
     }
 
     private var namePlateFontSize: CGFloat {
@@ -797,15 +879,19 @@ struct CardFrameView: View {
     }
 
     private var namePlateMaxWidth: CGFloat {
-        // Leave room for CM seal on the right (~60% of card width)
-        size.width * 0.60
+        switch size {
+        case .grid: return size.width * 0.66
+        case .hand: return size.width * 0.68
+        case .detail: return size.width * 0.56
+        case .fullscreen: return size.width * 0.54
+        }
     }
 
     private var namePlateInset: CGFloat {
         switch size {
         case .grid: return 6
         case .hand: return 5
-        case .detail: return 8
+        case .detail: return 9
         case .fullscreen: return 10
         }
     }
@@ -839,7 +925,7 @@ struct CardFrameView: View {
                     .brightness(0.05)
 
                 // Darkening overlay for text readability
-                Color.black.opacity(0.30)
+                Color.black.opacity(size == .grid || size == .hand ? 0.34 : 0.42)
 
                 // Paper grain on text panel for extra print texture
                 Image("CardTextures/paper-texture")
@@ -909,13 +995,8 @@ struct CardFrameView: View {
         switch size {
         case .grid: return 0.25
         case .hand: return 0.24
-        case .detail, .fullscreen: return 0.35
+        case .detail, .fullscreen: return 0.34
         }
-    }
-
-    /// The vertical Y-position where the panel top begins (from card top).
-    private var panelTopY: CGFloat {
-        size.height * (1.0 - textPanelHeightRatio)
     }
 
     @ViewBuilder
@@ -939,13 +1020,6 @@ struct CardFrameView: View {
     private var gridPanel: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
-                Image(cardTypeIconAssetName)
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundColor(parchmentTextColor.opacity(0.78))
-                    .frame(width: 8, height: 8)
-
                 Text(compactTypeLabel)
                     .font(CardFont.uiLabel(size: 7))
                     .foregroundColor(parchmentTextColor.opacity(0.68))
@@ -981,13 +1055,6 @@ struct CardFrameView: View {
     private var handPanel: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
-                Image(cardTypeIconAssetName)
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundColor(parchmentTextColor.opacity(0.78))
-                    .frame(width: 7, height: 7)
-
                 Text(compactTypeLabel)
                     .font(CardFont.uiLabel(size: 6.5))
                     .foregroundColor(parchmentTextColor.opacity(0.65))
@@ -1041,27 +1108,28 @@ struct CardFrameView: View {
             if !data.flavorText.isEmpty {
                 Text("\u{201C}\(data.flavorText)\u{201D}")
                     .font(CardFont.flavorText(size: (size == .fullscreen ? 12 : 11) * iPadScale))
-                    .foregroundColor(parchmentTextColor.opacity(0.45))
+                    .foregroundColor(parchmentTextColor.opacity(0.58))
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
                     .truncationMode(.tail)
             }
         }
         .padding(.horizontal, 14)
-        .padding(.bottom, 14)
+        .padding(.bottom, detailPanelBottomPadding)
         .padding(.top, 8)
     }
 
-    /// Type line row: faction icon + type text (left), instability (right)
-    private var typeLineRow: some View {
-        HStack(spacing: 6) {
-            Image(cardTypeIconAssetName)
-                .renderingMode(.template)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .foregroundColor(parchmentTextColor.opacity(0.80))
-                .frame(width: typeLineIconSize * iPadScale, height: typeLineIconSize * iPadScale)
+    private var detailPanelBottomPadding: CGFloat {
+        switch size {
+        case .detail: return 24
+        case .fullscreen: return 28
+        case .grid, .hand: return 10
+        }
+    }
 
+    /// Type line row: type text (left), instability (right)
+    private var typeLineRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(data.typeLine.uppercased())
                 .font(CardFont.uiLabelBold(size: typeLineFontSize * iPadScale))
                 .foregroundColor(parchmentTextColor.opacity(0.80))
@@ -1073,17 +1141,13 @@ struct CardFrameView: View {
             if let instability = data.instability {
                 HStack(spacing: 2) {
                     Text("\u{25C6}")  // ◆ diamond
-                        .font(CardFont.uiLabel(size: (size == .fullscreen ? 10 : 9) * iPadScale))
+                    .font(CardFont.uiLabel(size: (size == .fullscreen ? 10 : 9) * iPadScale))
                     Text("INST \(instability)")
                         .font(CardFont.uiLabelBold(size: (size == .fullscreen ? 11 : 10) * iPadScale))
                 }
                 .foregroundColor(factionAccentColor.opacity(0.88))
             }
         }
-    }
-
-    private var typeLineIconSize: CGFloat {
-        size == .fullscreen ? 12 : 10
     }
 
     private var typeLineFontSize: CGFloat {
@@ -1102,7 +1166,20 @@ struct CardFrameView: View {
                 }
                 Text(keyword.displayName)
                     .font(CardFont.bodyBold(size: modifierNameFontSize * iPadScale))
-                    .foregroundColor(parchmentTextColor.opacity(0.75))
+                    .foregroundColor(parchmentTextColor.opacity(0.82))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.black.opacity(activeTooltipKeyword == keyword ? 0.42 : 0.18))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .stroke(
+                                        factionBorderColor.opacity(activeTooltipKeyword == keyword ? 0.48 : 0.20),
+                                        lineWidth: 0.45
+                                    )
+                            )
+                    )
                     .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             if activeTooltipKeyword == keyword {
@@ -1200,7 +1277,7 @@ struct CardFrameView: View {
                     value: data.manaCost,
                     size: cmBadgeSize * iPadScale,
                     factionSealAsset: factionSealAsset,
-                    tintColor: Color(hex: "#0D47A1"),
+                    tintColor: cmTintColor,
                     iconName: "UIIcons/ui-chaos-mana"
                 )
                 .padding(.trailing, cmInset)
@@ -1209,6 +1286,11 @@ struct CardFrameView: View {
             Spacer()
         }
         .frame(width: size.width, height: size.height)
+    }
+
+    private var cmTintColor: Color {
+        guard data.faction != nil else { return Color(hex: "#0D47A1") }
+        return factionBorderColor.opacity(0.80)
     }
 
     private var cmBadgeSize: CGFloat {
@@ -1232,11 +1314,8 @@ struct CardFrameView: View {
 
     private func atkBadgeOverlay(atk: Int) -> some View {
         let badgeSize = atkHpBadgeSize * iPadScale
-        // Straddle art/panel boundary: center badge at the panel top edge
-        let centerY = panelTopY
         return VStack {
             Spacer()
-                .frame(height: centerY - badgeSize / 2)
             HStack {
                 WaxSealBadge(
                     value: atk,
@@ -1246,9 +1325,9 @@ struct CardFrameView: View {
                     iconName: "UIIcons/ui-trigger-attack"
                 )
                 .padding(.leading, atkHpInset)
+                .padding(.bottom, statBadgeBottomInset)
                 Spacer()
             }
-            Spacer()
         }
         .frame(width: size.width, height: size.height)
     }
@@ -1257,11 +1336,8 @@ struct CardFrameView: View {
 
     private func hpBadgeOverlay(hp: Int) -> some View {
         let badgeSize = atkHpBadgeSize * iPadScale
-        // Straddle art/panel boundary: center badge at the panel top edge
-        let centerY = panelTopY
         return VStack {
             Spacer()
-                .frame(height: centerY - badgeSize / 2)
             HStack {
                 Spacer()
                 WaxSealBadge(
@@ -1272,8 +1348,8 @@ struct CardFrameView: View {
                     iconName: "KeywordIcons/kw-shield"
                 )
                 .padding(.trailing, atkHpInset)
+                .padding(.bottom, statBadgeBottomInset)
             }
-            Spacer()
         }
         .frame(width: size.width, height: size.height)
     }
@@ -1292,6 +1368,15 @@ struct CardFrameView: View {
         case .grid: return 6
         case .hand: return 5
         case .detail, .fullscreen: return 10
+        }
+    }
+
+    private var statBadgeBottomInset: CGFloat {
+        switch size {
+        case .grid: return 4
+        case .hand: return 3
+        case .detail: return 9
+        case .fullscreen: return 11
         }
     }
 
@@ -1436,31 +1521,22 @@ struct CardFrameView: View {
         .allowsHitTesting(false)
     }
 
-    /// Ironwright: bolt rivets at 4 corners.
+    /// Ironwright: subtle forged-metal inner edge.
     private var ironwrightAccents: some View {
-        let rivetSize: CGFloat = size == .fullscreen ? 7 : 5
-        let inset: CGFloat = borderWidth + 2
-        return ZStack {
-            ForEach(0..<4) { i in
-                Circle()
-                    .fill(Color(hex: "#6B7B8D").opacity(0.6))
-                    .frame(width: rivetSize, height: rivetSize)
-                    .overlay(
-                        Circle()
-                            .stroke(Color(hex: "#4A5568").opacity(0.8), lineWidth: 0.5)
-                    )
-                    .overlay(
-                        Circle()
-                            .fill(Color.white.opacity(0.2))
-                            .frame(width: rivetSize * 0.4, height: rivetSize * 0.4)
-                            .offset(x: -rivetSize * 0.12, y: -rivetSize * 0.12)
-                    )
-                    .position(
-                        x: i % 2 == 0 ? inset + rivetSize / 2 : size.width - inset - rivetSize / 2,
-                        y: i < 2 ? inset + rivetSize / 2 : size.height - inset - rivetSize / 2
-                    )
-            }
-        }
+        RoundedRectangle(cornerRadius: cornerRadius - 1)
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        Color(hex: "#89A1B8").opacity(0.12),
+                        Color(hex: "#4B5A68").opacity(0.06),
+                        Color(hex: "#89A1B8").opacity(0.10)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1
+            )
+            .padding(borderWidth + 1)
     }
 
     /// Fey Courts: tiny leaf-bud dots at corners + organic inner glow.
@@ -1543,15 +1619,6 @@ struct CardFrameView: View {
     }
 
     // MARK: - Card Metadata Helpers
-
-    private var cardTypeIconAssetName: String {
-        switch data.cardType {
-        case .creature: return "UIIcons/ui-mission-creatures"
-        case .spell: return "UIIcons/ui-mission-spells"
-        case .stabilizer: return "UIIcons/ui-check"
-        case .planarRuin: return "UIIcons/ui-world"
-        }
-    }
 
     private var compactTypeLabel: String {
         switch data.cardType {

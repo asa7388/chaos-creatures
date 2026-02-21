@@ -126,14 +126,14 @@ final class HandCardNode: SKSpriteNode {
         cmLabel.zPosition = 4
         cmLabel.text = "\(card.manaCost)"
 
-        // ATK badge (bottom-left, straddling art/panel boundary) — wax seal medallion
+        // ATK/HP badges (bottom corners, seated on lower card edge) — wax seal medallions
         let statRadius = SK.Card.handStatBadgeRadius
         let panelBottomY = -cardSize.height / 2
-        let sealStraddleY = panelBottomY + panelHeight * 0.5
+        let sealBottomY = panelBottomY + statRadius + 3
 
         let atkContainer = SKNode()
         atkContainer.position = CGPoint(x: -cardSize.width / 2 + statRadius + 4,
-                                        y: sealStraddleY)
+                                        y: sealBottomY)
         atkContainer.zPosition = 3
         atkBadge = atkContainer
 
@@ -148,7 +148,7 @@ final class HandCardNode: SKSpriteNode {
         // HP badge (bottom-right, straddling art/panel boundary) — wax seal medallion
         let hpContainer = SKNode()
         hpContainer.position = CGPoint(x: cardSize.width / 2 - statRadius - 4,
-                                       y: sealStraddleY)
+                                       y: sealBottomY)
         hpContainer.zPosition = 3
         hpBadge = hpContainer
 
@@ -275,7 +275,7 @@ final class HandCardNode: SKSpriteNode {
             typeLbl.fontColor = UIColor(hex: "#AAAAAA")
             typeLbl.horizontalAlignmentMode = .center
             typeLbl.verticalAlignmentMode = .center
-            typeLbl.position = CGPoint(x: 0, y: sealStraddleY)
+            typeLbl.position = CGPoint(x: 0, y: sealBottomY)
             typeLbl.zPosition = 3
             typeLbl.text = card.cardType == .spell ? "Spell" : "Stabilizer"
             addChild(typeLbl)
@@ -414,10 +414,12 @@ final class HandCardNode: SKSpriteNode {
         if hasFactionSeal, let assetName = sealAssetName {
             // --- Faction seal path ---
 
-            // 0. Contact shadow beneath the seal (subtle dark circle offset 1pt down)
-            let shadow = SKShapeNode(circleOfRadius: radius * 0.9)
-            shadow.fillColor = UIColor.black.withAlphaComponent(0.4)
-            shadow.strokeColor = .clear
+            // 0. Contact shadow beneath the seal, using the same shape as the seal asset.
+            let shadow = SKSpriteNode(imageNamed: assetName)
+            shadow.size = CGSize(width: diameter, height: diameter)
+            shadow.color = .black
+            shadow.colorBlendFactor = 1.0
+            shadow.alpha = 0.38
             shadow.position = CGPoint(x: 0, y: -1.5)
             shadow.zPosition = -0.5
             container.addChild(shadow)
@@ -428,13 +430,14 @@ final class HandCardNode: SKSpriteNode {
             sealSprite.zPosition = 0
             container.addChild(sealSprite)
 
-            // 2. Stat color tint overlay (circle at 0.25 alpha, alpha blend)
-            let tintCircle = SKShapeNode(circleOfRadius: radius)
-            tintCircle.fillColor = tintColor.withAlphaComponent(0.25)
-            tintCircle.strokeColor = .clear
-            tintCircle.blendMode = .alpha
-            tintCircle.zPosition = 1
-            container.addChild(tintCircle)
+            // 2. Stat color tint overlay, preserving faction shape silhouette.
+            let tintSprite = SKSpriteNode(imageNamed: assetName)
+            tintSprite.size = CGSize(width: diameter, height: diameter)
+            tintSprite.color = tintColor
+            tintSprite.colorBlendFactor = 1.0
+            tintSprite.alpha = 0.20
+            tintSprite.zPosition = 1
+            container.addChild(tintSprite)
 
             // 3. Stat icon stamp at 25% opacity behind the number
             let iconSprite = SKSpriteNode(imageNamed: iconName)

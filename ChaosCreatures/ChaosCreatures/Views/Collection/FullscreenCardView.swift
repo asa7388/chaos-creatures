@@ -40,7 +40,7 @@ struct FullscreenCardView: View {
                 dismissWithFade()
             }
             .overlay {
-                // Card — biased upward so it reads as "held close" instead of drifting low.
+                // Card centered in the viewport with slight upward bias.
                 CardFrameView(
                     data: CardDisplayData(instance: card, faction: faction),
                     size: .fullscreen
@@ -53,9 +53,9 @@ struct FullscreenCardView: View {
                 )
                 .offset(y: dragOffset)
                 .scaleEffect(cardScale * dragScale)
+                .offset(y: -geometry.size.height * 0.035)
                 .frame(width: CardDisplaySize.fullscreen.width, height: CardDisplaySize.fullscreen.height)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.top, max(geometry.size.height * 0.08, 52))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .gesture(
                     DragGesture()
                         .onChanged { value in
@@ -103,8 +103,8 @@ struct FullscreenCardView: View {
 
     private func fullscreenCardScale(in size: CGSize) -> CGFloat {
         let horizontalScale = (size.width - 28) / CardDisplaySize.fullscreen.width
-        let verticalScale = (size.height * 0.68) / CardDisplaySize.fullscreen.height
-        return min(max(min(horizontalScale, verticalScale), 0.95), 1.28)
+        let verticalScale = (size.height * 0.84) / CardDisplaySize.fullscreen.height
+        return min(max(min(horizontalScale, verticalScale), 0.96), 1.34)
     }
 
     private func dismissWithFade() {
