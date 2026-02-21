@@ -1,7 +1,34 @@
 # Game Server — Build Checkpoint
 
-## Status: COMPLETE
-All core systems implemented and tested. 319/319 tests passing.
+## Status: COMPLETE (Stabilizer Redesign applied 2026-02-20)
+All core systems implemented and tested. Stabilizer redesign complete.
+
+---
+
+## Stabilizer Redesign — 2026-02-20
+
+### Status: complete
+### Files Updated
+- constants.ts — complete (DECK_SIZE 20→30, added MAX_STABILIZERS_PER_TURN = 1)
+- types/game-state.ts — complete (BattleStabilizer interface, StabilizerEffect union, stability_zone + stabilizers_played_this_turn on BattlePlayer, transient fields avatar_instability_modifier_original + void_lens_choice)
+- turn.ts — complete (CREATURE-only board branch, new STABILIZER branch free/stability_zone, handleActivateStabilizer handler, createBattleStabilizer helper, start-of-turn resets, void_lens_choice chaos roll override)
+- instability.ts — complete (clarifying comment: stability_zone is never iterated, only player.board)
+- combat.ts — complete (removed STABILIZER exclusion from countTauntCreatures, countAttackableCreatures, validateDeclareAttackers, validateBlockerAssignments; PLANAR_RUIN exclusions retained)
+- effects.ts — no change needed (stabilizers were already not in board iteration path)
+- bot/ai.ts — complete (stabilizer deck query, deck size 30, PLAY_STABILIZER + ACTIVATE_STABILIZER bot actions, decideBotMainPhase plays stabilizers free then activates non-cooldown ones)
+- combat.test.ts — complete (removed 3 old stabilizer board tests; added 5 new stabilizer zone tests; helpers updated)
+- ws/handler.ts — already correct (awardEnergyToDeck already filters to CREATURE and PLANAR_RUIN only)
+- tests/helpers.ts — complete (createTestStabilizer, summoning_sick/ward_active defaults, stability_zone/stabilizers_played_this_turn on BattlePlayer, ruin_attack_targets on GameState)
+
+### Test Results
+- npm test: 329/331 passing
+- combat.test.ts: 47/47 PASS (5 new stabilizer tests all pass)
+- Pre-existing failures (unrelated to redesign):
+  - events.test.ts: C6 (Chaos Siphon) secondary_effect undefined — pre-existing
+  - fallback-art.test.ts: 'DEMONIC' faction name mismatch — pre-existing
+- TypeScript: compiles clean (npx tsc --noEmit = 0 errors)
+
+---
 
 ## What Was Built
 

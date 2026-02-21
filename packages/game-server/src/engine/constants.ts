@@ -14,7 +14,10 @@ export const MAX_BOARD_SLOTS = 5;
 export const MAX_HAND_SIZE = 10;
 
 /** Deck size */
-export const DECK_SIZE = 20;
+export const DECK_SIZE = 30;
+
+/** Maximum stabilizers that can be played per turn */
+export const MAX_STABILIZERS_PER_TURN = 1;
 
 /** Maximum mana (chaos mote cap) */
 export const MAX_MANA = 10;

@@ -147,6 +147,27 @@ export interface LingeringEffect {
   source_creature_id: string;
 }
 
+// ─── Stabilizer Effect (activated ability for stability_zone cards) ─────────────
+
+export type StabilizerEffect =
+  | { type: 'ADJUST_INSTABILITY'; amount: number }
+  | { type: 'DOUBLE_AVATAR_MODIFIER' }
+  | { type: 'CHOOSE_EVENT_TYPE' }
+  | { type: 'ON_CHAOS_BUFF_HIGHEST_ATK'; amount: number };
+
+// ─── Battle Stabilizer (in stability_zone — NOT a board slot) ─────────────
+
+export interface BattleStabilizer {
+  instance_id: string;
+  template_id: string;
+  name: string;
+  art_url: string;
+  stabilizer_type: 'ORDER' | 'CHAOS' | 'HYBRID';
+  activated_effect: StabilizerEffect;
+  is_on_cooldown: boolean;
+  zone_index: number;
+}
+
 // ─── Battle Ruin (Planar Ruin on board) ─────────────
 
 export interface BattleRuin extends BattleCard {
@@ -211,6 +232,12 @@ export interface BattlePlayer {
   // Whether a Planar Ruin is currently on the board
   ruin_on_board: boolean;
 
+  // Stability zone: stabilizers played go here (NOT board slots)
+  stability_zone: BattleStabilizer[];
+
+  // How many stabilizers have been played this turn (reset to 0 at start of each turn)
+  stabilizers_played_this_turn: number;
+
   // Lingering effects (from Persist mechanic — death triggers that persist after creature removal)
   lingering_effects: LingeringEffect[];
 
@@ -232,6 +259,12 @@ export interface BattlePlayer {
   // Disconnect tracking
   consecutive_missed_turns: number;
   is_connected: boolean;
+
+  // Transient: Warding Pillar stores original avatar modifier for end-of-turn restore
+  avatar_instability_modifier_original?: number;
+
+  // Transient: Void Lens choice overrides next chaos roll result
+  void_lens_choice?: 'ORDER' | 'CHAOS';
 
   // Deck info for match record
   deck_id: string;

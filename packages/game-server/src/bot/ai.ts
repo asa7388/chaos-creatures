@@ -5,7 +5,7 @@
 import type { BattleCard, BattleCreature, BattleRuin, BattlePlayer, GameState } from '../types/game-state';
 import type { Keyword, CardType, FactionId } from '../types/enums';
 import { getSupabase } from '../services/supabase';
-import { MAX_BOARD_SLOTS, MAX_RUINS_ON_FIELD } from '../engine/constants';
+import { MAX_BOARD_SLOTS, MAX_RUINS_ON_FIELD, MAX_STABILIZERS_PER_TURN } from '../engine/constants';
 import { isBattleCreature, isBattleRuin } from '../engine/effects';
 import { randomUUID } from 'crypto';
 
@@ -80,7 +80,7 @@ export function getBotFactionConfig(factionId: FactionId) {
 
 export interface BotDeckConfig {
   faction_id?: string;   // If provided, only use cards from this faction. Otherwise, use all factions.
-  card_count: number;    // Always 20
+  card_count: number;    // Always 30 (deck size changed from 20 to 30)
 }
 
 // ─── Bot Action Types ─────────────
@@ -91,7 +91,17 @@ export interface BotPlayCardAction {
   target_slot: number;
 }
 
-export type BotAction = BotPlayCardAction;
+export interface BotPlayStabilizerAction {
+  type: 'PLAY_STABILIZER';
+  card_id: string;
+}
+
+export interface BotActivateStabilizerAction {
+  type: 'ACTIVATE_STABILIZER';
+  instance_id: string;
+}
+
+export type BotAction = BotPlayCardAction | BotPlayStabilizerAction | BotActivateStabilizerAction;
 
 // ─── Bot Deck Builder ─────────────
 
@@ -109,17 +119,17 @@ export type BotAction = BotPlayCardAction;
  *
  * If no faction_id is provided, a random faction is chosen for variety.
  */
-export async function buildBotDeck(config: BotDeckConfig = { card_count: 20 }): Promise<BattleCard[]> {
+export async function buildBotDeck(config: BotDeckConfig = { card_count: 30 }): Promise<BattleCard[]> {
   const supabase = getSupabase();
 
   // If no faction specified, pick a random one for bot variety
   const factionId = config.faction_id ?? getBotFactionConfig(pickRandomBotFaction()).faction_id;
 
-  // Query all active card templates including PLANAR_RUIN
+  // Query all active card templates including PLANAR_RUIN and STABILIZER
   const { data: templates, error } = await supabase
     .from('card_templates')
-    .select('id, name, card_type, faction_id, mana_cost, base_attack, base_health, base_instability, base_keywords, art_url')
-    .in('card_type', ['CREATURE', 'SPELL', 'PLANAR_RUIN']);
+    .select('id, name, card_type, faction_id, mana_cost, base_attack, base_health, base_instability, base_keywords, art_url, stabilizer_type, activated_effect')
+    .in('card_type', ['CREATURE', 'SPELL', 'PLANAR_RUIN', 'STABILIZER']);
 
   if (error || !templates || templates.length === 0) {
     // Fallback: generate a hardcoded starter deck
@@ -138,11 +148,16 @@ export async function buildBotDeck(config: BotDeckConfig = { card_count: 20 }): 
   const creatures = pool.filter((t: any) => t.card_type === 'CREATURE');
   const spells = pool.filter((t: any) => t.card_type === 'SPELL');
   const ruins = pool.filter((t: any) => t.card_type === 'PLANAR_RUIN');
+  const stabilizers = pool.filter((t: any) => t.card_type === 'STABILIZER');
 
-  // Target: 15 creatures, 4 spells, 1 ruin (if available), total 20
+  // Target: 22 creatures, 4 spells, 1 ruin, 3 stabilizers (if available), total 30
   const targetRuins = Math.min(1, ruins.length);
   const targetSpells = Math.min(4, spells.length);
-  const targetCreatures = Math.min(config.card_count - targetSpells - targetRuins, creatures.length);
+  const targetStabilizers = Math.min(3, stabilizers.length);
+  const targetCreatures = Math.min(
+    config.card_count - targetSpells - targetRuins - targetStabilizers,
+    creatures.length
+  );
 
   // Build mana curve for creatures: prefer 2-4 cost range
   const sortedCreatures = [...creatures].sort((a: any, b: any) => {
@@ -197,6 +212,16 @@ export async function buildBotDeck(config: BotDeckConfig = { card_count: 20 }): 
     selectedCards.push(ruin);
   }
 
+  // Select stabilizers (up to 3 for bot decks)
+  for (const stabilizer of stabilizers) {
+    if (selectedCards.length >= targetCreatures + targetSpells + targetRuins + targetStabilizers) break;
+    const count = templateCounts[stabilizer.id] || 0;
+    if (count < 2) {
+      selectedCards.push(stabilizer);
+      templateCounts[stabilizer.id] = count + 1;
+    }
+  }
+
   // Fill remaining slots with any cards
   if (selectedCards.length < config.card_count) {
     for (const card of sortedCreatures) {
@@ -245,13 +270,13 @@ function generateFallbackDeck(): BattleCard[] {
   const cards: BattleCard[] = [];
   const fallbackFaction = 'a0000000-0000-0000-0000-000000000001'; // Ironwright
 
-  // Mana curve: 4x 1-cost, 4x 2-cost, 4x 3-cost, 4x 4-cost, 2x 5-cost, 2x 6-cost
+  // Mana curve: 6x 1-cost, 6x 2-cost, 6x 3-cost, 6x 4-cost, 4x 5-cost, 2x 6-cost (total 30)
   const curve = [
-    { cost: 1, atk: 1, hp: 2, count: 4 },
-    { cost: 2, atk: 2, hp: 2, count: 4 },
-    { cost: 3, atk: 3, hp: 3, count: 4 },
-    { cost: 4, atk: 4, hp: 4, count: 4 },
-    { cost: 5, atk: 5, hp: 5, count: 2 },
+    { cost: 1, atk: 1, hp: 2, count: 6 },
+    { cost: 2, atk: 2, hp: 2, count: 6 },
+    { cost: 3, atk: 3, hp: 3, count: 6 },
+    { cost: 4, atk: 4, hp: 4, count: 6 },
+    { cost: 5, atk: 5, hp: 5, count: 4 },
     { cost: 6, atk: 6, hp: 6, count: 2 },
   ];
 
@@ -304,6 +329,28 @@ export function decideBotMainPhase(state: GameState): BotAction[] {
   const emptySlotCount = bot.board.filter(s => s === null).length;
   const opponentCreatureCount = opponent.board.filter(s => s !== null && isBattleCreature(s)).length;
 
+  // Play stabilizer first (free, one per turn, goes to stability_zone)
+  const hasStabilizerAvailable = bot.hand.some(c => c.card_type === 'STABILIZER');
+  if (hasStabilizerAvailable && bot.stabilizers_played_this_turn < MAX_STABILIZERS_PER_TURN) {
+    const stabCard = bot.hand.find(c => c.card_type === 'STABILIZER');
+    if (stabCard) {
+      actions.push({
+        type: 'PLAY_STABILIZER',
+        card_id: stabCard.instance_id,
+      });
+    }
+  }
+
+  // Activate any non-cooldown stabilizers in stability_zone (simple strategy: always activate)
+  for (const stabilizer of bot.stability_zone) {
+    if (!stabilizer.is_on_cooldown) {
+      actions.push({
+        type: 'ACTIVATE_STABILIZER',
+        instance_id: stabilizer.instance_id,
+      });
+    }
+  }
+
   // Sort hand by priority: ruins first (if no ruin on field), then creatures by mana cost descending
   const playableCards = [...bot.hand]
     .filter((card) => {
@@ -313,15 +360,16 @@ export function decideBotMainPhase(state: GameState): BotAction[] {
         // Can only play if no ruin on field and there's an empty slot
         return !bot.ruin_on_board && !ruinPlayed && emptySlotCount > 0;
       }
-      if (card.card_type === 'CREATURE' || card.card_type === 'STABILIZER') {
+      if (card.card_type === 'CREATURE') {
         // Need an empty board slot
         return bot.board.some((slot) => slot === null);
       }
+      // Stabilizers are handled above (free, no mana cost check needed)
       // Skip spells for now (targeting is complex)
       return false;
     })
     .sort((a, b) => {
-      // Ruins first (strategic placement)
+      // Ruins first (strategic placement), then creatures by mana cost
       if (a.card_type === 'PLANAR_RUIN' && b.card_type !== 'PLANAR_RUIN') return -1;
       if (b.card_type === 'PLANAR_RUIN' && a.card_type !== 'PLANAR_RUIN') return 1;
 
@@ -394,8 +442,8 @@ export function decideBotAttackers(state: GameState): { attackerIds: string[]; r
   for (const entity of bot.board) {
     if (!entity) continue;
     if (!entity.is_alive) continue;
-    // Ruins and stabilizers cannot attack
-    if (entity.card_type === 'STABILIZER' || entity.card_type === 'PLANAR_RUIN') continue;
+    // Ruins cannot attack (0 ATK structures). Stabilizers are in stability_zone, not on the board.
+    if (entity.card_type === 'PLANAR_RUIN') continue;
     if (!isBattleCreature(entity)) continue;
     // Summoning sickness: can't attack unless Haste
     if (entity.summoning_sick && !entity.active_keywords.includes('HASTE')) continue;
@@ -453,13 +501,14 @@ export function decideBotBlockers(
   const usedBlockers = new Set<string>();
   const usedAttackers = new Set<string>();
 
-  // Get all available blockers (alive creatures, not Stabilizer, not Ruin)
+  // Get all available blockers (alive creatures, not Ruins)
+  // Stabilizers are in stability_zone, never on the board.
   const availableBlockers: BattleCreature[] = [];
   for (const entity of bot.board) {
     if (!entity) continue;
     if (!entity.is_alive) continue;
     if (!isBattleCreature(entity)) continue;
-    if (entity.card_type === 'STABILIZER' || entity.card_type === 'PLANAR_RUIN') continue;
+    if (entity.card_type === 'PLANAR_RUIN') continue;
     availableBlockers.push(entity);
   }
 

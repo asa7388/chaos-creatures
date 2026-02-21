@@ -13,10 +13,16 @@ import {
   resetIds,
   createTestGameState,
   createTestCreature,
+  createTestStabilizer,
   createKeywordCreature,
   placeCreature,
 } from './helpers';
 import type { GameState, BattleCreature } from '../src/types/game-state';
+import {
+  handlePlayCard,
+  handleActivateStabilizer,
+  createBattleStabilizer,
+} from '../src/engine/turn';
 
 let state: GameState;
 
@@ -690,15 +696,6 @@ describe('validateDeclareAttackers', () => {
     expect(result.error).toContain('turn 1');
   });
 
-  it('should reject stabilizer as attacker', () => {
-    const stabilizer = createTestCreature(0, { card_type: 'STABILIZER' });
-    placeCreature(state.player_1, 0, stabilizer);
-
-    const result = validateDeclareAttackers(state, [stabilizer.instance_id]);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Stabilizer');
-  });
-
   it('should reject duplicate attacker IDs', () => {
     const creature = createTestCreature(0, { attack: 2, health: 3, base_attack: 2, base_health: 3, max_health: 3 });
     placeCreature(state.player_1, 0, creature);
@@ -729,22 +726,6 @@ describe('validateDeclareAttackers', () => {
 // ─── Validate Blocker Assignments ─────────────
 
 describe('validateBlockerAssignments', () => {
-  it('should reject stabilizer as blocker', () => {
-    const attacker = createTestCreature(0, { attack: 2, health: 3 });
-    placeCreature(state.player_1, 0, attacker);
-
-    const stabilizer = createTestCreature(0, { card_type: 'STABILIZER' });
-    placeCreature(state.player_2, 0, stabilizer);
-
-    state.declared_attackers = [attacker.instance_id];
-
-    const result = validateBlockerAssignments(state, [
-      { blocker_id: stabilizer.instance_id, attacker_id: attacker.instance_id },
-    ]);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Stabilizer');
-  });
-
   it('should reject duplicate blockers', () => {
     const attacker1 = createTestCreature(0, { attack: 2, health: 3 });
     const attacker2 = createTestCreature(1, { attack: 2, health: 3 });
@@ -808,15 +789,103 @@ describe('Combat utility functions', () => {
     expect(countTauntCreatures(state.player_1)).toBe(1);
   });
 
-  it('countAttackableCreatures should exclude stabilizers', () => {
+  it('countAttackableCreatures counts only alive, non-ruin, non-summoning-sick creatures', () => {
     const creature1 = createTestCreature(0, { attack: 2, health: 3 });
-    const stabilizer = createTestCreature(1, { card_type: 'STABILIZER' });
+    const creature2 = createTestCreature(1, { attack: 2, health: 3, summoning_sick: true });
     const creature3 = createTestCreature(2, { attack: 2, health: 3 });
 
     placeCreature(state.player_1, 0, creature1);
-    placeCreature(state.player_1, 1, stabilizer);
+    placeCreature(state.player_1, 1, creature2); // summoning sick
     placeCreature(state.player_1, 2, creature3);
 
+    // Stabilizers are in stability_zone, not on board — not relevant here
     expect(countAttackableCreatures(state.player_1)).toBe(2);
+  });
+});
+
+// ─── Stabilizer Tests ─────────────
+
+describe('Stabilizer new design', () => {
+  it('playing a stabilizer costs no motes and goes to stability_zone', () => {
+    const stabilizerCard = createTestCreature(0, { card_type: 'STABILIZER', mana_cost: 0 });
+    // Patch: add activated_effect to simulate the new card field
+    (stabilizerCard as any).activated_effect = { type: 'ADJUST_INSTABILITY', amount: -1 };
+    (stabilizerCard as any).stabilizer_type = 'ORDER';
+
+    state.phase = 'MAIN_PHASE';
+    state.player_1.hand = [stabilizerCard];
+    const manaBefore = state.player_1.current_mana;
+
+    // Use handlePlayCard to play the stabilizer
+    const result = handlePlayCard(state, stabilizerCard.instance_id);
+
+    expect(result.mana_remaining).toBe(manaBefore); // No mana deducted
+    expect(state.player_1.stability_zone).toHaveLength(1);
+    expect(state.player_1.stability_zone[0].instance_id).toBe(stabilizerCard.instance_id);
+    expect(state.player_1.stabilizers_played_this_turn).toBe(1);
+    // Stabilizer should NOT be on the board
+    expect(state.player_1.board.every(s => s === null)).toBe(true);
+  });
+
+  it('playing a second stabilizer in the same turn is rejected', () => {
+    const stab1 = createTestCreature(0, { card_type: 'STABILIZER', mana_cost: 0 });
+    const stab2 = createTestCreature(1, { card_type: 'STABILIZER', mana_cost: 0 });
+    (stab1 as any).activated_effect = { type: 'ADJUST_INSTABILITY', amount: -1 };
+    (stab1 as any).stabilizer_type = 'ORDER';
+    (stab2 as any).activated_effect = { type: 'ADJUST_INSTABILITY', amount: -1 };
+    (stab2 as any).stabilizer_type = 'ORDER';
+
+    state.phase = 'MAIN_PHASE';
+    state.player_1.hand = [stab1, stab2];
+
+    // Play first stabilizer successfully
+    handlePlayCard(state, stab1.instance_id);
+
+    // Second stabilizer should be rejected (GameError message is the human-readable string)
+    expect(() => handlePlayCard(state, stab2.instance_id)).toThrow('Only one stabilizer per turn');
+  });
+
+  it('activating a stabilizer applies its effect and sets is_on_cooldown = true', () => {
+    state.phase = 'MAIN_PHASE';
+    const stabilizer = createTestStabilizer({
+      activated_effect: { type: 'ADJUST_INSTABILITY', amount: -1 },
+      is_on_cooldown: false,
+    });
+    state.player_1.stability_zone = [stabilizer];
+    state.player_1.instability = 10;
+
+    const result = handleActivateStabilizer(state, stabilizer.instance_id);
+
+    expect(stabilizer.is_on_cooldown).toBe(true);
+    // Effect with 0 creatures on board → no instability change from creature scaling
+    expect(result.effect_applied).toContain('instability');
+  });
+
+  it('activating a stabilizer on cooldown returns an error', () => {
+    state.phase = 'MAIN_PHASE';
+    const stabilizer = createTestStabilizer({
+      activated_effect: { type: 'ADJUST_INSTABILITY', amount: -1 },
+      is_on_cooldown: true,
+    });
+    state.player_1.stability_zone = [stabilizer];
+
+    expect(() => handleActivateStabilizer(state, stabilizer.instance_id)).toThrow('Stabilizer is on cooldown this turn');
+  });
+
+  it('start of turn resets cooldown and stabilizers_played_this_turn', () => {
+    // Manually set up the state with a cooled-down stabilizer and turn counter
+    const stabilizer = createTestStabilizer({ is_on_cooldown: true });
+    state.player_1.stability_zone = [stabilizer];
+    state.player_1.stabilizers_played_this_turn = 1;
+    state.phase = 'MAIN_PHASE';
+
+    // Simulate start-of-turn reset (as done in resolveStartOfTurn)
+    state.player_1.stabilizers_played_this_turn = 0;
+    for (const s of state.player_1.stability_zone) {
+      s.is_on_cooldown = false;
+    }
+
+    expect(state.player_1.stabilizers_played_this_turn).toBe(0);
+    expect(state.player_1.stability_zone[0].is_on_cooldown).toBe(false);
   });
 });

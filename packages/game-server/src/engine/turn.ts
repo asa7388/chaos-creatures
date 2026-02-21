@@ -6,6 +6,7 @@ import type {
   BattlePlayer,
   BattleCreature,
   BattleRuin,
+  BattleStabilizer,
   BattleCard,
   ChaosRollResult,
   EventResolutionResult,
@@ -19,6 +20,9 @@ import {
   MAX_MANA,
   MAX_BOARD_SLOTS,
   MAX_RUINS_ON_FIELD,
+  MAX_STABILIZERS_PER_TURN,
+  INSTABILITY_MIN,
+  INSTABILITY_MAX,
   D20_MIN,
   D20_MAX,
 } from './constants';
@@ -78,6 +82,20 @@ export function resolveStartOfTurn(state: GameState): StartOfTurnResult {
   const activePlayer = getActivePlayer(state);
   const corruptionDamage: Array<{ creature_id: string; damage: number }> = [];
   const deaths: string[] = [];
+
+  // Reset stabilizer-per-turn counter
+  activePlayer.stabilizers_played_this_turn = 0;
+
+  // Reset cooldown on all stabilizers in stability_zone
+  for (const stabilizer of activePlayer.stability_zone) {
+    stabilizer.is_on_cooldown = false;
+  }
+
+  // Restore avatar modifier if Warding Pillar doubled it last turn
+  if (activePlayer.avatar_instability_modifier_original !== undefined) {
+    activePlayer.avatar_instability_modifier = activePlayer.avatar_instability_modifier_original;
+    delete activePlayer.avatar_instability_modifier_original;
+  }
 
   // Clear Ward from active player's creatures (Ward expires at start of controller's next turn)
   expireWard(activePlayer);
@@ -147,7 +165,12 @@ export function resolveChaosRoll(state: GameState): ChaosRollResult {
   state.last_roll_value = roll;
 
   let result: 'ORDER' | 'CHAOS' | 'NOTHING';
-  if (roll < activePlayer.instability) {
+
+  // Void Lens override: player chose event type last turn via ACTIVATE_STABILIZER
+  if (activePlayer.void_lens_choice) {
+    result = activePlayer.void_lens_choice;
+    delete activePlayer.void_lens_choice;
+  } else if (roll < activePlayer.instability) {
     result = 'CHAOS';
   } else if (roll > activePlayer.instability) {
     result = 'ORDER';
@@ -259,7 +282,7 @@ export function handlePlayCard(
   let ruin: BattleRuin | undefined;
   const effectResults: EffectResult[] = [];
 
-  if (card.card_type === 'CREATURE' || card.card_type === 'STABILIZER') {
+  if (card.card_type === 'CREATURE') {
     if (targetSlot === undefined) {
       throw new GameError('NO_SLOT', 'Must specify board slot');
     }
@@ -286,6 +309,20 @@ export function handlePlayCard(
     recheckExaltAuras(state, activePlayer);
 
     recalculateInstability(activePlayer);
+  } else if (card.card_type === 'STABILIZER') {
+    // Stabilizers are FREE (no mana deduction) and go to stability_zone — not a board slot
+    if (activePlayer.stabilizers_played_this_turn >= MAX_STABILIZERS_PER_TURN) {
+      throw new GameError('STABILIZER_LIMIT', 'Only one stabilizer per turn');
+    }
+
+    const stabilizer = createBattleStabilizer(card);
+    stabilizer.zone_index = activePlayer.stability_zone.length;
+    activePlayer.stability_zone.push(stabilizer);
+    activePlayer.stabilizers_played_this_turn += 1;
+
+    // No instability recalc on play — stabilizers have no passive instability contribution
+    // Restore mana that was deducted below (stabilizers are free)
+    activePlayer.current_mana += card.mana_cost;
   } else if (card.card_type === 'PLANAR_RUIN') {
     // Validate ruin placement
     if (activePlayer.ruin_on_board) {
@@ -346,6 +383,121 @@ export function handlePlayCard(
     creature,
     mana_remaining: activePlayer.current_mana,
     effect_results: effectResults,
+  };
+}
+
+// ─── Phase 5: Activate Stabilizer ─────────────
+
+export interface ActivateStabilizerResult {
+  stabilizer: BattleStabilizer;
+  effect_applied: string;
+  instability?: number;
+}
+
+/**
+ * Handle ACTIVATE_STABILIZER action during Main Phase.
+ * Resolves the stabilizer's activated_effect and sets is_on_cooldown = true.
+ *
+ * Payload must include instance_id of the stabilizer to activate.
+ * For CHOOSE_EVENT_TYPE effects, the payload must also include choice: 'ORDER' | 'CHAOS'.
+ */
+export function handleActivateStabilizer(
+  state: GameState,
+  instanceId: string,
+  choice?: 'ORDER' | 'CHAOS'
+): ActivateStabilizerResult {
+  if (state.phase !== 'MAIN_PHASE') {
+    throw new GameError('WRONG_PHASE', 'Can only activate stabilizers during Main Phase');
+  }
+
+  const activePlayer = getActivePlayer(state);
+
+  const stabilizer = activePlayer.stability_zone.find(s => s.instance_id === instanceId);
+  if (!stabilizer) {
+    throw new GameError('STABILIZER_NOT_FOUND', 'Stabilizer not in stability zone');
+  }
+
+  if (stabilizer.is_on_cooldown) {
+    throw new GameError('STABILIZER_ON_COOLDOWN', 'Stabilizer is on cooldown this turn');
+  }
+
+  let effectApplied = '';
+
+  const effect = stabilizer.activated_effect;
+
+  switch (effect.type) {
+    case 'ADJUST_INSTABILITY': {
+      // Scale amount by number of alive creatures on board
+      const creatureCount = activePlayer.board.filter(
+        e => e !== null && e.is_alive && e.card_type === 'CREATURE'
+      ).length;
+      const adjustment = effect.amount < 0
+        ? -Math.abs(effect.amount) * creatureCount
+        : Math.abs(effect.amount) * creatureCount;
+      activePlayer.instability = Math.max(
+        INSTABILITY_MIN,
+        Math.min(INSTABILITY_MAX, activePlayer.instability + adjustment)
+      );
+      recalculateInstability(activePlayer);
+      effectApplied = `Adjusted instability by ${adjustment} (${creatureCount} creatures)`;
+      break;
+    }
+
+    case 'DOUBLE_AVATAR_MODIFIER': {
+      // Store original so it can be restored at start of next turn
+      if (activePlayer.avatar_instability_modifier_original === undefined) {
+        activePlayer.avatar_instability_modifier_original = activePlayer.avatar_instability_modifier;
+      }
+      activePlayer.avatar_instability_modifier = activePlayer.avatar_instability_modifier * 2;
+      recalculateInstability(activePlayer);
+      effectApplied = `Avatar modifier doubled to ${activePlayer.avatar_instability_modifier} (restores at start of next turn)`;
+      break;
+    }
+
+    case 'CHOOSE_EVENT_TYPE': {
+      if (!choice || (choice !== 'ORDER' && choice !== 'CHAOS')) {
+        throw new GameError('MISSING_CHOICE', 'Must provide choice: ORDER or CHAOS for Void Lens');
+      }
+      // Store the choice — it overrides the next chaos roll result
+      activePlayer.void_lens_choice = choice;
+      effectApplied = `Next chaos roll result overridden to ${choice}`;
+      break;
+    }
+
+    case 'ON_CHAOS_BUFF_HIGHEST_ATK': {
+      if (activePlayer.last_event_type === 'CHAOS') {
+        // Find highest ATK alive creature and permanently buff it
+        let highest: BattleCreature | null = null;
+        for (const entity of activePlayer.board) {
+          if (!entity || !entity.is_alive || entity.card_type !== 'CREATURE') continue;
+          const creature = entity as BattleCreature;
+          if (!highest || creature.attack > highest.attack) {
+            highest = creature;
+          }
+        }
+        if (highest) {
+          highest.attack += effect.amount;
+          highest.base_attack = (highest.base_attack ?? 0) + effect.amount;
+          effectApplied = `${highest.name} gained +${effect.amount} ATK permanently`;
+        } else {
+          effectApplied = 'No creatures on board to buff';
+        }
+      } else {
+        effectApplied = 'No effect (last event was not CHAOS)';
+      }
+      break;
+    }
+
+    default:
+      effectApplied = 'Unknown effect type';
+  }
+
+  stabilizer.is_on_cooldown = true;
+
+  return {
+    stabilizer,
+    effect_applied: effectApplied,
+    instability: activePlayer.instability,
   };
 }
 
@@ -650,4 +802,33 @@ export function createBattleRuin(card: BattleCard, slot: number): BattleRuin {
 /** Find a creature on either player's board */
 function findTargetCreature(state: GameState, creatureId: string): BattleCreature | null {
   return findOnBoard(state.player_1, creatureId) || findOnBoard(state.player_2, creatureId);
+}
+
+// ─── Helper: Create BattleStabilizer from BattleCard ─────────────
+
+/**
+ * Create a BattleStabilizer from a BattleCard.
+ * The card's activated_effect is read from the card template JSONB field (stored in triggered_abilities
+ * as a convention, or directly from card.activated_effect if the card template exposes it).
+ *
+ * activated_effect is stored as a JSON object on the card template.
+ * For runtime, we cast it from the card's extra data.
+ */
+export function createBattleStabilizer(card: BattleCard): BattleStabilizer {
+  // activated_effect is expected to be in a custom field on the card template.
+  // Since BattleCard doesn't have this field, we read it from triggered_abilities
+  // using the ON_PLAY trigger as a convention, or fall back to a no-op.
+  // The DB stores activated_effect as JSONB which gets passed through card template loading.
+  const rawEffect = (card as any).activated_effect ?? { type: 'ADJUST_INSTABILITY', amount: 0 };
+
+  return {
+    instance_id: card.instance_id,
+    template_id: card.template_id,
+    name: card.name,
+    art_url: card.art_url,
+    stabilizer_type: ((card as any).stabilizer_type as 'ORDER' | 'CHAOS' | 'HYBRID') ?? 'HYBRID',
+    activated_effect: rawEffect,
+    is_on_cooldown: false,
+    zone_index: 0, // Will be set by caller
+  };
 }

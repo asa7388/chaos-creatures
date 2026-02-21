@@ -8,6 +8,7 @@ import type { GameState } from '../types/game-state';
 import { getMatch } from '../engine/match';
 import {
   handlePlayCard,
+  handleActivateStabilizer,
   handleDeclareAttackersAction,
   handleAssignBlockersAction,
   resolveCombatPhase,
@@ -100,28 +101,58 @@ export async function executeBotTurn(matchId: string): Promise<void> {
     if (!currentState || currentState.winner) return;
 
     try {
-      const result = handlePlayCard(currentState, action.card_id, action.target_slot);
+      if (action.type === 'PLAY_STABILIZER') {
+        // Stabilizers go to stability_zone, not a board slot
+        const result = handlePlayCard(currentState, action.card_id);
 
-      broadcastToRoom(matchId, {
-        type: 'CARD_PLAYED',
-        player: 'PLAYER_2',
-        card: result.card,
-        slot: result.slot,
-        creature: result.creature,
-        mana_remaining: result.mana_remaining,
-        effect_results: result.effect_results,
-      });
+        broadcastToRoom(matchId, {
+          type: 'CARD_PLAYED',
+          player: 'PLAYER_2',
+          card: result.card,
+          slot: undefined,
+          creature: undefined,
+          mana_remaining: result.mana_remaining,
+          effect_results: result.effect_results,
+        });
 
-      // Send opponent hand count update to human
-      sendToPlayer(matchId, currentState.player_1.player_id, {
-        type: 'OPPONENT_HAND_UPDATE',
-        count: currentState.player_2.hand.length,
-      });
+        sendToPlayer(matchId, currentState.player_1.player_id, {
+          type: 'OPPONENT_HAND_UPDATE',
+          count: currentState.player_2.hand.length,
+        });
+      } else if (action.type === 'ACTIVATE_STABILIZER') {
+        const result = handleActivateStabilizer(currentState, action.instance_id);
+
+        broadcastToRoom(matchId, {
+          type: 'STABILIZER_ACTIVATED',
+          player: 'PLAYER_2',
+          stabilizer: result.stabilizer,
+          effect_applied: result.effect_applied,
+          instability: result.instability,
+        });
+      } else {
+        // PLAY_CARD — creature or planar ruin going to a board slot
+        const result = handlePlayCard(currentState, action.card_id, action.target_slot);
+
+        broadcastToRoom(matchId, {
+          type: 'CARD_PLAYED',
+          player: 'PLAYER_2',
+          card: result.card,
+          slot: result.slot,
+          creature: result.creature,
+          mana_remaining: result.mana_remaining,
+          effect_results: result.effect_results,
+        });
+
+        sendToPlayer(matchId, currentState.player_1.player_id, {
+          type: 'OPPONENT_HAND_UPDATE',
+          count: currentState.player_2.hand.length,
+        });
+      }
     } catch (err) {
       // Bot failed to play card (e.g., not enough mana, slot occupied)
       // Log and continue
       if (err instanceof GameError) {
-        console.warn(`Bot play card error in ${matchId}: ${err.code} - ${err.message}`);
+        console.warn(`Bot action error in ${matchId}: ${err.code} - ${err.message}`);
       }
     }
   }

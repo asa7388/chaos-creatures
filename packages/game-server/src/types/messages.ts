@@ -16,6 +16,7 @@ import type {
   BattleCreature,
   BattleRuin,
   BattleCard,
+  BattleStabilizer,
   EventDefinition,
   CombatPairResult,
   UnblockedResult,
@@ -78,6 +79,12 @@ export const EndTurnSchema = z.object({
   type: z.literal('END_TURN'),
 });
 
+export const ActivateStabilizerSchema = z.object({
+  type: z.literal('ACTIVATE_STABILIZER'),
+  instance_id: z.string().uuid(),
+  choice: z.enum(['ORDER', 'CHAOS']).optional(), // Required for CHOOSE_EVENT_TYPE stabilizers (Void Lens)
+});
+
 export const ClientActionSchema = z.discriminatedUnion('type', [
   PlayCardActionSchema,
   UseChaosSparkSchema,
@@ -89,6 +96,7 @@ export const ClientActionSchema = z.discriminatedUnion('type', [
   MulliganSchema,
   ReconnectSchema,
   EndTurnSchema,
+  ActivateStabilizerSchema,
 ]);
 
 export type ClientAction = z.infer<typeof ClientActionSchema>;
@@ -259,6 +267,15 @@ export interface OpponentHandUpdateEvent {
   count: number;
 }
 
+/** A stabilizer was activated by a player */
+export interface StabilizerActivatedEvent {
+  type: 'STABILIZER_ACTIVATED';
+  player: PlayerSide;
+  stabilizer: BattleStabilizer;
+  effect_applied: string;
+  instability?: number;
+}
+
 /** Error from the server */
 export interface ServerErrorEvent {
   type: 'SERVER_ERROR';
@@ -287,6 +304,7 @@ export type ServerEvent =
   | PhaseChangedEvent
   | ChaosSparkUsedEvent
   | OpponentHandUpdateEvent
+  | StabilizerActivatedEvent
   | ServerErrorEvent;
 
 // ═══════════════════════════════════════════════════

@@ -6,6 +6,7 @@ import type {
   BattlePlayer,
   BattleCreature,
   BattleCard,
+  BattleStabilizer,
   BattleModifier,
   TriggeredAbility,
   Effect,
@@ -74,6 +75,8 @@ export function createTestCreature(
     shield_active: card.innate_keywords.includes('SHIELD'),
     temp_buffs: [],
     board_slot: slot,
+    summoning_sick: false,
+    ward_active: false,
     ...overrides,
   };
 }
@@ -113,6 +116,10 @@ export function createTestPlayer(
     mana_cap: MAX_MANA,
     instability: 1,
     board: Array(MAX_BOARD_SLOTS).fill(null),
+    ruin_on_board: false,
+    stability_zone: [],
+    stabilizers_played_this_turn: 0,
+    lingering_effects: [],
     hand: [],
     deck: [],
     graveyard: [],
@@ -123,6 +130,21 @@ export function createTestPlayer(
     deck_id: nextId(),
     faction_id: 'test-faction',
     season_rank: 'BRONZE_3' as SeasonRank,
+    ...overrides,
+  };
+}
+
+/** Create a minimal BattleStabilizer for testing */
+export function createTestStabilizer(overrides: Partial<BattleStabilizer> = {}): BattleStabilizer {
+  return {
+    instance_id: nextId(),
+    template_id: nextId(),
+    name: 'Test Stabilizer',
+    art_url: '',
+    stabilizer_type: 'ORDER',
+    activated_effect: { type: 'ADJUST_INSTABILITY', amount: -1 },
+    is_on_cooldown: false,
+    zone_index: 0,
     ...overrides,
   };
 }
@@ -145,6 +167,7 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     first_player: 'PLAYER_1',
     declared_attackers: [],
     blocker_assignments: [],
+    ruin_attack_targets: {},
     last_roll_value: null,
     last_roll_event: null,
     last_roll_event_id: null,

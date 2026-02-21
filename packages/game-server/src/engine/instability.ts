@@ -48,10 +48,16 @@ function isCreatureEntity(entity: unknown): entity is BattleCreature {
  *   + sum(ruin base_instability for each ruin on board)
  *
  * Clamped to [1, 20] (D20 range).
+ *
+ * Stabilizers in stability_zone contribute NO passive instability.
+ * Their effects are applied only when explicitly activated via ACTIVATE_STABILIZER action.
+ * This function only iterates player.board (creature slots), never stability_zone.
  */
 export function calculatePlayerInstability(player: BattlePlayer): number {
   let total = player.avatar_instability_modifier;
 
+  // Only board entities (creatures and ruins) contribute instability.
+  // Stabilizers are in player.stability_zone — they are intentionally NOT iterated here.
   for (const entity of player.board) {
     if (!entity || !entity.is_alive) continue;
 

@@ -63,19 +63,21 @@ export function countTauntCreatures(player: BattlePlayer): number {
   for (const entity of player.board) {
     if (!entity || !entity.is_alive) continue;
     if (!isBattleCreature(entity)) continue;
-    if (entity.card_type === 'STABILIZER' || entity.card_type === 'PLANAR_RUIN') continue;
+    // Planar Ruins cannot block (they have no ATK and are structures, not creatures)
+    if (entity.card_type === 'PLANAR_RUIN') continue;
+    // Stabilizers are no longer on the board — this check is kept for safety but will never fire
     if (hasKeyword(entity, 'TAUNT')) count++;
   }
   return count;
 }
 
-/** Count creatures that can attack (not stabilizers, not ruins, alive, not summoning sick unless Haste) */
+/** Count creatures that can attack (not ruins, alive, not summoning sick unless Haste) */
 export function countAttackableCreatures(player: BattlePlayer): number {
   let count = 0;
   for (const entity of player.board) {
     if (!entity || !entity.is_alive) continue;
     if (!isBattleCreature(entity)) continue;
-    if (entity.card_type === 'STABILIZER') continue;
+    // Planar Ruins have 0 ATK and cannot attack
     if (entity.card_type === 'PLANAR_RUIN') continue;
     // Summoning sick creatures can't attack unless they have Haste
     if (entity.summoning_sick && !entity.active_keywords.includes('HASTE')) continue;
@@ -106,12 +108,12 @@ export function validateDeclareAttackers(
     if (!creature || !creature.is_alive) {
       return { valid: false, error: `Invalid attacker: ${id}` };
     }
-    if (creature.card_type === 'STABILIZER') {
-      return { valid: false, error: 'Stabilizers cannot attack' };
-    }
+    // Planar Ruins have 0 ATK and cannot attack
     if (creature.card_type === 'PLANAR_RUIN') {
       return { valid: false, error: 'Ruins cannot attack' };
     }
+    // Stabilizers are no longer placed on the board, so this path cannot be reached.
+    // They live in player.stability_zone. No explicit check needed.
     // Summoning sickness: creatures cannot attack on deployment turn unless they have Haste
     if (creature.summoning_sick && !creature.active_keywords.includes('HASTE')) {
       return { valid: false, error: `Creature ${id} has summoning sickness and cannot attack without Haste` };
@@ -163,12 +165,12 @@ export function validateBlockerAssignments(
     if (!attacker || !state.declared_attackers.includes(attacker.instance_id)) {
       return { valid: false, error: `Invalid attacker target: ${assignment.attacker_id}` };
     }
-    if (blocker.card_type === 'STABILIZER') {
-      return { valid: false, error: 'Stabilizers cannot block' };
-    }
+    // Planar Ruins cannot block (structures, no combat ability)
     if (blocker.card_type === 'PLANAR_RUIN') {
       return { valid: false, error: 'Ruins cannot block' };
     }
+    // Stabilizers are no longer on the board — they are in stability_zone, so this check
+    // is unreachable, but leaving the Ruin check above is sufficient for safety.
     if (usedBlockers.has(blocker.instance_id)) {
       return { valid: false, error: `Blocker already assigned: ${assignment.blocker_id}` };
     }
@@ -192,7 +194,7 @@ export function validateBlockerAssignments(
     if (!entity || !entity.is_alive) continue;
     if (!isBattleCreature(entity)) continue;
     if (!hasKeyword(entity, 'TAUNT')) continue;
-    if (entity.card_type === 'STABILIZER') continue;
+    // Stabilizers are in stability_zone, not on the board — no exclusion needed here
     if (usedBlockers.has(entity.instance_id)) continue;
 
     // Check if any unblocked attacker can be legally blocked by this Taunt creature
