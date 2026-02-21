@@ -151,6 +151,7 @@
 		BB11111111111111AAAAAA03 /* TutorialOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */; };
 		BB11111111111111AAAAAA04 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB11111111111111AAAAAA02 /* AchievementsView.swift */; };
 		W7B0000000000001CCCCCC01 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = W7B0000000000001AAAAAA01 /* PrivacyInfo.xcprivacy */; };
+		SMOKE0AA111111111111BBBBBB01 /* SmokeTestCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SMOKE0CC111111111111DDDDDD01 /* SmokeTestCardView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -329,6 +330,7 @@
 		BB11111111111111AAAAAA02 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
 		W7B0000000000001AAAAAA01 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		W7B0000000000002AAAAAA01 /* ChaosCreatures.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ChaosCreatures.entitlements; sourceTree = "<group>"; };
+		SMOKE0CC111111111111DDDDDD01 /* SmokeTestCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTestCardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -570,6 +572,7 @@
 				9F41D92E979AE0B014B3D059 /* Onboarding */,
 				420625B698DA05E2745FAE67 /* Profile */,
 				351A595EB8C48EFBCF75A2FB /* Shop */,
+				SMOKE0GRP00000000000VIEWS001 /* Debug */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -769,6 +772,14 @@
 				BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */,
 			);
 			path = Battle;
+			sourceTree = "<group>";
+		};
+		SMOKE0GRP00000000000VIEWS001 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				SMOKE0CC111111111111DDDDDD01 /* SmokeTestCardView.swift */,
+			);
+			path = Debug;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1034,6 +1045,7 @@
 				51429FFB6A2F68F6BBCC704F /* SubscriptionView.swift in Sources */,
 				E6A0E10CF5D789AA31A15711 /* SupabaseService.swift in Sources */,
 				BB11111111111111AAAAAA03 /* TutorialOverlayView.swift in Sources */,
+				SMOKE0AA111111111111BBBBBB01 /* SmokeTestCardView.swift in Sources */,
 				BB11111111111111AAAAAA04 /* AchievementsView.swift in Sources */,
 				BA1CB07B97965E89C653F43A /* TimerNode.swift in Sources */,
 				2D420C70835D5AA68DE2D07E /* View+Loading.swift in Sources */,
