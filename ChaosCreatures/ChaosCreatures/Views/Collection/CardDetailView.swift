@@ -142,31 +142,41 @@ struct CardDetailView: View {
 
     // MARK: - Card Frame Section
 
+    private var detailCardWidth: CGFloat {
+        let screenWidth = UIScreen.main.bounds.width
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return min(screenWidth * 0.40, 350)
+        } else {
+            return min(screenWidth * 0.85, 260)
+        }
+    }
+
     private func cardFrameSection(card: CardInstance?) -> some View {
-        // Offer the full available width to CardFrameView so that
-        // computedCardWidth can apply the spec formula directly:
-        //   iPhone (compact):  min(availableWidth * 0.85, 260)
-        //   iPad (regular):    min(availableWidth * 0.40, 350)
-        // The aspectRatio modifier sets the section height to match
-        // the 5:7 card ratio (210 × 294pt reference).
-        Group {
+        // Use direct screen-width-based dimensions to avoid the
+        // GeometryReader-in-ScrollView infinite-height problem on iPad.
+        // offeredWidth = cardWidth / multiplier so that computedCardWidth
+        // inside CardFrameView multiplies back to exactly cardWidth.
+        let cardWidth = detailCardWidth
+        let cardHeight = cardWidth * (294.0 / 210.0)
+        let multiplier: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 0.40 : 0.85
+        let offeredWidth = cardWidth / multiplier
+
+        return Group {
             if let card {
-                GeometryReader { geometry in
-                    CardFrameView(
-                        data: CardDisplayData(instance: card, faction: factionForCard(card)),
-                        size: .detail
-                    )
-                    .frame(width: geometry.size.width)
-                    .contactShadow(opacity: 0.6)
-                    .onTapGesture {
-                        showFullscreen = true
-                    }
+                CardFrameView(
+                    data: CardDisplayData(instance: card, faction: factionForCard(card)),
+                    size: .detail
+                )
+                .frame(width: offeredWidth, height: cardHeight)
+                .contactShadow(opacity: 0.6)
+                .onTapGesture {
+                    showFullscreen = true
                 }
-                .aspectRatio(210.0 / 294.0, contentMode: .fit)
             } else {
                 artPlaceholder
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var artPlaceholder: some View {
