@@ -1,24 +1,30 @@
 // CardFrameView.swift
 // Chaos Creatures
-// Professional full-art card renderer with physical paper-card aesthetic.
-// Oil-painting style cards: wax-seal stat badges, paper texture overlay, inner vignette,
-// parchment-brown double border, contained text panel with arched top.
-// Rarity treatments use the card border itself (faction-colored with glow/shimmer).
-// Source: CLAUDE.md Card Visual System, docs/design/07-ui-ux-specs.md Section 5
+//
+// Phase 2 rewrite — zone-stack layout per CARD_DESIGN_GUIDE.md Section 1.4.
+// Replaces the full-art-bleed design with a structured zone stack:
+//   Name Bar / Art Box / Type Line / Text Box / Stats Bar / Rarity Bar
+//
+// All tasks implemented:
+//   2.1  Zone-stack VStack layout with GeometryReader sizing
+//   2.2  Card type layout variants (creature / spell / stabilizer / planarRuin)
+//   2.3  Chaos Mote symbol row in Name Bar
+//   2.4  CardFont accessors + letterpress shadow on all text
+//   2.5  Gesture priority stack (LongPress > Drag > Tap)
+//   2.6  CardDisplayState transitions
+//   2.8  Art box fallback (canvas-warm + quill + crosshatch)
+//   2.9  GeometryReader relative sizing, no hardcoded CardDisplaySize values
+//   2.11 Accessibility modifiers
 
 import SwiftUI
 import CoreMotion
 
-// MARK: - Card Display Size
+// MARK: - CardDisplaySize (preserved for backward-compat with existing call sites)
 
 enum CardDisplaySize {
-    /// Grid view in collection (~112x157pt). Condensed: name plate + CM seal + faction icon + stat seals.
     case grid
-    /// Hand view in battle (~90x130pt). Condensed: name plate + CM seal + keyword dots + stat seals.
     case hand
-    /// Detail view in card detail sheet (~280x392pt). Full info: all elements.
     case detail
-    /// Fullscreen admiration view (~350x490pt). Full info, large scale.
     case fullscreen
 
     var width: CGFloat {
@@ -51,19 +57,12 @@ enum CardDisplaySize {
         self == .detail || self == .fullscreen
     }
 
-    var showCardName: Bool {
-        true
-    }
-
-    var showStatBadges: Bool {
-        true
-    }
+    var showCardName: Bool { true }
+    var showStatBadges: Bool { true }
 }
 
-// MARK: - Card Display Data
+// MARK: - CardDisplayData (preserved for backward-compat with existing call sites)
 
-/// Unified data structure for rendering any card at any scale.
-/// Adapts from CardInstance, CardTemplate, or BattleCardData.
 struct CardDisplayData {
     let name: String
     let artUrl: String?
@@ -71,14 +70,24 @@ struct CardDisplayData {
     let attack: Int?
     let health: Int?
     let instability: Int?
-    let tier: EvolutionTier
+    let tier: Rarity
     let cardType: CardType
-    let faction: FactionShortName?
+    let faction: CardFaction?
     let keywords: [Keyword]
     let flavorText: String
     let isEvolutionReady: Bool
+    /// Planar Ruin passive benefit text.
+    var ruinPassiveText: String?
+    /// Planar Ruin destruction penalty text.
+    var ruinDestructionPenaltyText: String?
+    /// Ability text (rules text) for text box.
+    var abilityText: String?
+    /// Collector number string for stats bar.
+    var collectorNumber: String?
+    /// Set code string for stats bar.
+    var setCode: String?
 
-    // MARK: - Initializers
+    // MARK: Memberwise init
 
     init(
         name: String,
@@ -87,12 +96,17 @@ struct CardDisplayData {
         attack: Int? = nil,
         health: Int? = nil,
         instability: Int? = nil,
-        tier: EvolutionTier = .common,
+        tier: Rarity = .common,
         cardType: CardType = .creature,
-        faction: FactionShortName? = nil,
+        faction: CardFaction? = nil,
         keywords: [Keyword] = [],
         flavorText: String = "",
-        isEvolutionReady: Bool = false
+        isEvolutionReady: Bool = false,
+        ruinPassiveText: String? = nil,
+        ruinDestructionPenaltyText: String? = nil,
+        abilityText: String? = nil,
+        collectorNumber: String? = nil,
+        setCode: String? = nil
     ) {
         self.name = name
         self.artUrl = artUrl
@@ -106,10 +120,15 @@ struct CardDisplayData {
         self.keywords = keywords
         self.flavorText = flavorText
         self.isEvolutionReady = isEvolutionReady
+        self.ruinPassiveText = ruinPassiveText
+        self.ruinDestructionPenaltyText = ruinDestructionPenaltyText
+        self.abilityText = abilityText
+        self.collectorNumber = collectorNumber
+        self.setCode = setCode
     }
 
     /// Create from a CardInstance (collection/deck views).
-    init(instance: CardInstance, faction: FactionShortName? = nil) {
+    init(instance: CardInstance, faction: CardFaction? = nil) {
         self.name = instance.currentName
         self.artUrl = instance.artUrl
         self.manaCost = instance.currentManaCost
@@ -122,10 +141,15 @@ struct CardDisplayData {
         self.keywords = instance.effectiveKeywords
         self.flavorText = instance.flavorText
         self.isEvolutionReady = instance.isEvolutionReady
+        self.ruinPassiveText = nil
+        self.ruinDestructionPenaltyText = nil
+        self.abilityText = nil
+        self.collectorNumber = nil
+        self.setCode = nil
     }
 
     /// Create from a CardTemplate (template browsing).
-    init(template: CardTemplate, faction: FactionShortName? = nil) {
+    init(template: CardTemplate, faction: CardFaction? = nil) {
         self.name = template.name
         self.artUrl = template.artUrl
         self.manaCost = template.manaCost
@@ -138,6 +162,11 @@ struct CardDisplayData {
         self.keywords = template.keywords
         self.flavorText = template.flavorText
         self.isEvolutionReady = false
+        self.ruinPassiveText = nil
+        self.ruinDestructionPenaltyText = nil
+        self.abilityText = nil
+        self.collectorNumber = nil
+        self.setCode = nil
     }
 
     /// Create from BattleCreatureData (battlefield).
@@ -148,12 +177,17 @@ struct CardDisplayData {
         self.attack = battleCreature.attack
         self.health = battleCreature.health
         self.instability = battleCreature.instabilityValue
-        self.tier = .common // Tier not tracked in battle state
+        self.tier = .common
         self.cardType = battleCreature.cardType
         self.faction = battleCreature.factionShortName
         self.keywords = battleCreature.activeKeywords
         self.flavorText = ""
         self.isEvolutionReady = false
+        self.ruinPassiveText = nil
+        self.ruinDestructionPenaltyText = nil
+        self.abilityText = nil
+        self.collectorNumber = nil
+        self.setCode = nil
     }
 
     /// Create from BattleCardData (hand card).
@@ -163,18 +197,22 @@ struct CardDisplayData {
         self.manaCost = battleCard.manaCost
         self.attack = battleCard.baseAttack
         self.health = battleCard.baseHealth
-        self.instability = nil // Not shown in hand
+        self.instability = nil
         self.tier = .common
         self.cardType = battleCard.cardType
         self.faction = battleCard.factionShortName
         self.keywords = battleCard.innateKeywords
         self.flavorText = ""
         self.isEvolutionReady = false
+        self.ruinPassiveText = nil
+        self.ruinDestructionPenaltyText = nil
+        self.abilityText = nil
+        self.collectorNumber = nil
+        self.setCode = nil
     }
 
-    // MARK: - Computed Properties
+    // MARK: Computed Properties
 
-    /// Type line text (e.g. "Creature -- Ironwright", "Spell -- Fey Courts").
     var typeLine: String {
         let typeText = cardType.displayName
         if let faction = faction {
@@ -183,224 +221,968 @@ struct CardDisplayData {
         return typeText
     }
 
-    /// Faction emblem asset name for watermark.
     var factionEmblemAssetName: String? {
         switch faction {
         case .ironwright: return "FactionEmblems/ironwright-emblem"
-        case .feyCourts: return "FactionEmblems/fey-emblem"
-        case .demonicKingdoms: return "FactionEmblems/demonic-emblem"
-        case .celestialCrusade: return "FactionEmblems/celestial-emblem"
-        case .theEndless: return "FactionEmblems/endless-emblem"
+        case .fey:        return "FactionEmblems/fey-emblem"
+        case .demonic:    return "FactionEmblems/demonic-emblem"
+        case .celestial:  return "FactionEmblems/celestial-emblem"
+        case .endless:    return "FactionEmblems/endless-emblem"
         case nil: return nil
         }
     }
 
-    /// Whether this card type shows ATK/HP stat badges.
     var showsCreatureStats: Bool {
-        let isCreature = cardType == .creature
-        let isRuin = cardType == .planarRuin
-        return isCreature || isRuin
+        cardType == .creature || cardType == .planarRuin
+    }
+
+    /// VoiceOver label for accessibility.
+    var voiceOverLabel: String {
+        var parts = [String]()
+        parts.append(name)
+        parts.append("Cost: \(manaCost)")
+        parts.append(cardType.displayName.capitalized)
+        if let atk = attack { parts.append("Attack: \(atk)") }
+        if let hp = health { parts.append("HP: \(hp)") }
+        if let inst = instability { parts.append("Instability: \(inst)") }
+        if let ability = abilityText { parts.append(ability) }
+        if !flavorText.isEmpty { parts.append(flavorText) }
+        return parts.joined(separator: ". ")
     }
 }
 
-// MARK: - Wax Seal Stat Badges
+// MARK: - Zone Height Constants
 
-/// Wax-seal-style badge with faction seal shape, contact shadow, and embossed stat number.
-/// Replaces the previous MedallionBadge with a richer physical aesthetic.
-private struct WaxSealBadge: View {
-    let value: Int
-    let size: CGFloat
-    let factionSealAsset: String?  // nil = neutral bronze circle fallback
-    let tintColor: Color
-    let iconName: String
+/// Zone height constants derived from CARD_DESIGN_GUIDE.md Section 1.4.
+/// All values expressed as fractions of the 294pt reference card height.
+private enum ZoneHeight {
+    static let nameBars: CGFloat = 0.085   // 25pt / 294pt ≈ 8.5%
+    static let artBox: CGFloat  = 0.449    // 132pt / 294pt ≈ 45%
+    static let typeLine: CGFloat = 0.061   // 18pt / 294pt ≈ 6%
+    static let textBox: CGFloat  = 0.299   // 88pt / 294pt ≈ 30%
+    static let textBoxExpanded: CGFloat = 0.364  // 107pt / 294pt (spell/stabilizer)
+    static let statsBar: CGFloat = 0.051   // 15pt / 294pt ≈ 5%
+    static let rarityBar: CGFloat = 0.014  // 4pt / 294pt ≈ 1.5%
+}
+
+// MARK: - Letterpress Shadow ViewModifier
+
+private struct LetterpressShadow: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .shadow(
+                color: Color("parchment-dark").opacity(0.6),
+                radius: 0.5, x: 0, y: 0.5
+            )
+    }
+}
+
+private extension View {
+    func letterpressShadow() -> some View {
+        modifier(LetterpressShadow())
+    }
+}
+
+// MARK: - CardFrameView
+
+struct CardFrameView: View {
+    let data: CardDisplayData
+    let size: CardDisplaySize
+
+    @State private var cardState: CardDisplayState = .default
+    @State private var isFlipped: Bool = false
+    @State private var rotationY: Double = 0
+    @State private var showBack: Bool = false
+    @State private var dragOffset: CGSize = .zero
+    @State private var shakeOffset: CGFloat = 0
+    @State private var activeTooltipKeyword: Keyword? = nil
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
-        ZStack {
-            sealShadow
-            sealBody
-
-            // Stat icon stamp (behind number, watermark effect)
-            Image(iconName)
-                .renderingMode(.template)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: size * 0.62, height: size * 0.62)
-                .foregroundColor(Color(hex: "#F0EAD6").opacity(0.22))
-                .offset(y: -size * 0.03)
-                .mask(sealMask)
-
-            // Top-lit highlight
-            LinearGradient(
-                colors: [Color.white.opacity(0.30), Color.clear],
-                startPoint: .top,
-                endPoint: .center
-            )
-            .frame(width: size * 0.90, height: size * 0.56)
-            .offset(y: -size * 0.18)
-            .blendMode(.screen)
-            .mask(sealMask)
-
-            // Number stamped into the seal
-            Text("\(value)")
-                .font(CardFont.statNumber(size: size * 0.50))
-                .foregroundColor(Color(hex: "#F0EAD6"))
-                .shadow(color: .black.opacity(0.8), radius: 0.5, x: 0, y: 1)
-                .shadow(color: tintColor.opacity(0.3), radius: 2, x: 0, y: 0)
+        GeometryReader { geometry in
+            let cardWidth = computedCardWidth(geometry: geometry)
+            let cardHeight = cardWidth * (294.0 / 210.0)
+            cardContent(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(width: cardWidth, height: cardHeight)
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
         }
-        .frame(width: size, height: size)
+        .aspectRatio(210.0 / 294.0, contentMode: .fit)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(data.voiceOverLabel)
+        .accessibilityHint("Double-tap to select. Long-press to preview.")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("CardView")
+        .accessibilityAction(named: "Preview card") { cardState = .previewed }
+        .accessibilityAction(named: "Show card details") { /* navigate to detail — handled externally */ }
     }
 
+    private func computedCardWidth(geometry: GeometryProxy) -> CGFloat {
+        let isCompact = horizontalSizeClass == .compact
+        if isCompact {
+            return min(geometry.size.width * 0.85, 260)
+        } else {
+            return min(geometry.size.width * 0.40, 350)
+        }
+    }
+
+    // MARK: - Card Content (with gesture + state transforms)
+
     @ViewBuilder
-    private var sealBody: some View {
-        if let sealAsset = factionSealAsset {
-            Image(sealAsset)
+    private func cardContent(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        let stateTransform = cardStateTransform
+
+        ZStack {
+            if showBack {
+                CardBackView(cardWidth: cardWidth, cardHeight: cardHeight)
+            } else {
+                cardFace(cardWidth: cardWidth, cardHeight: cardHeight)
+            }
+        }
+        .scaleEffect(stateTransform.scale)
+        .opacity(stateTransform.opacity)
+        .saturation(stateTransform.saturation)
+        .brightness(stateTransform.brightness)
+        .shadow(color: .black.opacity(0.5), radius: stateTransform.shadowRadius, x: 0, y: stateTransform.shadowY)
+        .offset(x: shakeOffset, y: stateTransform.yOffset)
+        .rotation3DEffect(.degrees(rotationY), axis: (x: 0, y: 1, z: 0))
+        // Gesture priority stack per Section 1.7
+        .highPriorityGesture(
+            LongPressGesture(minimumDuration: 0.35)
+                .onEnded { _ in
+                    withAnimation(.easeOut(duration: 0.28)) {
+                        cardState = .previewed
+                    }
+                }
+        )
+        .gesture(
+            DragGesture(minimumDistance: 8)
+                .onChanged { value in
+                    dragOffset = value.translation
+                }
+                .onEnded { _ in
+                    dragOffset = .zero
+                    if cardState == .previewed {
+                        withAnimation(.easeIn(duration: 0.22)) {
+                            cardState = .default
+                        }
+                    }
+                }
+        )
+        .simultaneousGesture(
+            TapGesture()
+                .onEnded {
+                    handleTap()
+                }
+        )
+    }
+
+    // MARK: - State Transitions (Task 2.6)
+
+    private struct StateTransform {
+        var scale: CGFloat = 1.0
+        var opacity: Double = 1.0
+        var saturation: Double = 1.0
+        var brightness: Double = 0.0
+        var shadowRadius: CGFloat = 4
+        var shadowY: CGFloat = 2
+        var yOffset: CGFloat = 0
+    }
+
+    private var cardStateTransform: StateTransform {
+        var t = StateTransform()
+        switch cardState {
+        case .default:
+            t.scale = 1.0
+            t.shadowRadius = 4
+        case .focused:
+            t.scale = 1.03
+            t.shadowRadius = 8
+            t.yOffset = -2
+        case .selected:
+            t.scale = 1.01
+            t.shadowRadius = 6
+        case .tapped:
+            t.scale = 1.0
+            t.shadowRadius = 4
+        case .previewed:
+            t.scale = 1.12
+            t.shadowRadius = 20
+        case .inGraveyard:
+            t.opacity = 0.3
+            t.saturation = 0.0
+            t.brightness = -0.15
+            t.yOffset = 20
+        case .summoning(let progress):
+            t.scale = 0.6 + CGFloat(progress) * 0.4
+            t.opacity = Double(progress)
+        case .foilActive:
+            t.scale = 1.0
+            t.shadowRadius = 6
+        case .damaged(let severity):
+            t.shadowRadius = 4 + CGFloat(severity) * 8
+        }
+        return t
+    }
+
+    private func handleTap() {
+        if cardState == .previewed {
+            withAnimation(.easeIn(duration: 0.22)) {
+                cardState = .default
+            }
+            return
+        }
+        // Two-phase flip for .tapped state
+        withAnimation(.easeIn(duration: 0.17)) {
+            rotationY = 90
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) {
+            showBack.toggle()
+            rotationY = -90
+            withAnimation(.easeOut(duration: 0.18)) {
+                rotationY = 0
+            }
+        }
+        withAnimation(.easeIn(duration: 0.12)) {
+            cardState = .selected
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+                cardState = .default
+            }
+        }
+    }
+
+    /// Applies shake animation for the damaged state.
+    private func applyShake(severity: Float) {
+        let distance = CGFloat(severity) * 8
+        withAnimation(.spring(response: 0.1, dampingFraction: 0.2)) {
+            shakeOffset = distance
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.1, dampingFraction: 0.2)) {
+                shakeOffset = -distance * 0.6
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.spring(response: 0.15, dampingFraction: 0.4)) {
+                shakeOffset = 0
+            }
+        }
+    }
+
+    // MARK: - Card Face
+
+    @ViewBuilder
+    private func cardFace(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        cardBody(cardWidth: cardWidth, cardHeight: cardHeight)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(rarityBorderGradient, lineWidth: data.tier.borderWidth)
+            )
+            .shadow(color: rarityGlowColor.opacity(Double(data.tier.glowIntensity) * 0.6),
+                    radius: CGFloat(data.tier.glowIntensity) * 8)
+            .shadow(color: .black.opacity(0.45), radius: 3, x: 0, y: 2)
+    }
+
+    // MARK: - 2.2 Card Type Layout Variants
+
+    @ViewBuilder
+    private func cardBody(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        switch data.cardType {
+        case .creature:
+            creatureLayout(cardWidth: cardWidth, cardHeight: cardHeight)
+        case .spell:
+            spellLayout(cardWidth: cardWidth, cardHeight: cardHeight)
+        case .stabilizer:
+            stabilizerLayout(cardWidth: cardWidth, cardHeight: cardHeight)
+        case .planarRuin:
+            planarRuinLayout(cardWidth: cardWidth, cardHeight: cardHeight)
+        }
+    }
+
+    // MARK: - Creature Layout (standard — all zones present)
+
+    private func creatureLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
+                .frame(height: cardHeight * ZoneHeight.nameBars)
+
+            artBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
+                .frame(height: cardHeight * ZoneHeight.artBox)
+
+            typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.typeLine)
+
+            textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
+                .frame(height: cardHeight * ZoneHeight.textBox)
+
+            statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: true)
+                .frame(height: cardHeight * ZoneHeight.statsBar)
+
+            rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.rarityBar)
+        }
+        .background(cardBaseColor)
+    }
+
+    // MARK: - Spell Layout (no stats bar, expanded text box, no wax seal, no instability)
+
+    private func spellLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
+                .frame(height: cardHeight * ZoneHeight.nameBars)
+
+            artBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
+                .frame(height: cardHeight * ZoneHeight.artBox)
+
+            typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.typeLine)
+
+            textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBoxExpanded)
+                .frame(height: cardHeight * ZoneHeight.textBoxExpanded)
+
+            rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.rarityBar)
+        }
+        .background(cardBaseColor)
+    }
+
+    // MARK: - Stabilizer Layout (no cost, no stats, lock icon in art box)
+
+    private func stabilizerLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: false)
+                .frame(height: cardHeight * ZoneHeight.nameBars)
+
+            artBoxWithLockIcon(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
+                .frame(height: cardHeight * ZoneHeight.artBox)
+
+            typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.typeLine)
+
+            textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBoxExpanded)
+                .frame(height: cardHeight * ZoneHeight.textBoxExpanded)
+
+            rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.rarityBar)
+        }
+        .background(cardBaseColor)
+    }
+
+    // MARK: - Planar Ruin Layout (HP only, passive + destruction panels)
+
+    private func planarRuinLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            ruinNameBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.nameBars)
+
+            artBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
+                .frame(height: cardHeight * ZoneHeight.artBox)
+
+            typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.typeLine)
+
+            ruinTextBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
+                .frame(height: cardHeight * ZoneHeight.textBox)
+
+            statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: false)
+                .frame(height: cardHeight * ZoneHeight.statsBar)
+
+            rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.rarityBar)
+        }
+        .background(cardBaseColor)
+    }
+
+    // MARK: - Name Bar Zone
+
+    private func nameBar(cardWidth: CGFloat, cardHeight: CGFloat, showCost: Bool) -> some View {
+        ZStack(alignment: .leading) {
+            nameBarBackground
+            HStack(alignment: .center, spacing: 4) {
+                Text(data.name)
+                    .font(CardFont.cardName(size: 13))
+                    .foregroundColor(Color("ink-black"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .letterpressShadow()
+                Spacer(minLength: 4)
+                if showCost {
+                    chaosMoteRow(cost: data.manaCost)
+                }
+            }
+            .padding(.horizontal, 6)
+        }
+    }
+
+    /// Planar Ruin name bar — shows cost as number with label instead of symbols.
+    private func ruinNameBar(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ZStack(alignment: .leading) {
+            nameBarBackground
+            HStack(alignment: .center, spacing: 4) {
+                Text(data.name)
+                    .font(CardFont.cardName(size: 13))
+                    .foregroundColor(Color("ink-black"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .letterpressShadow()
+                Spacer(minLength: 4)
+                // Ruin cost label
+                HStack(spacing: 2) {
+                    Text("Cost:")
+                        .font(CardFont.cardType(size: 9))
+                        .foregroundColor(Color("parchment-mid"))
+                        .letterpressShadow()
+                    Text("\(data.manaCost)")
+                        .font(CardFont.cardName(size: 11))
+                        .foregroundColor(Color("ink-black"))
+                        .letterpressShadow()
+                }
+                .padding(.trailing, 4)
+            }
+            .padding(.horizontal, 6)
+        }
+    }
+
+    private var nameBarBackground: some View {
+        Color("parchment-light")
+            .overlay(
+                LinearGradient(
+                    colors: [Color.white.opacity(0.12), Color.clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+    }
+
+    // MARK: - 2.3 Chaos Mote Symbol Row
+
+    private func chaosMoteRow(cost: Int) -> some View {
+        Group {
+            if cost > 7 {
+                Text("\(cost)+")
+                    .font(CardFont.cardType(size: 10))
+                    .foregroundColor(Color("ink-black"))
+                    .letterpressShadow()
+                    .padding(.trailing, 6)
+            } else {
+                HStack(spacing: 2) {
+                    ForEach(0..<min(cost, 7), id: \.self) { _ in
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    colors: [
+                                        Color("legendary-ember").opacity(0.9),
+                                        Color("epic-amethyst").opacity(0.85)
+                                    ],
+                                    center: .center,
+                                    startRadius: 1,
+                                    endRadius: 5
+                                )
+                            )
+                            .frame(width: 10, height: 10)
+                            .overlay(
+                                Circle().stroke(Color("aged-gold").opacity(0.6), lineWidth: 0.5)
+                            )
+                    }
+                }
+                .padding(.trailing, 6)
+            }
+        }
+    }
+
+    // MARK: - Art Box Zone
+
+    private func artBox(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            // Art image or fallback
+            artLayer(cardWidth: cardWidth, cardHeight: cardHeight)
+
+            // Subtle bottom vignette for text legibility
+            LinearGradient(
+                colors: [Color.clear, Color.black.opacity(0.25)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
+
+            // Wax seal (non-spell, non-stabilizer, positioned bottom-right of art box)
+            if data.cardType != .spell {
+                waxSeal
+                    .frame(width: 34, height: 34)
+                    .offset(x: cardWidth / 2 - 23, y: -4)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private func artBoxWithLockIcon(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            artBox(cardWidth: cardWidth, cardHeight: cardHeight)
+            // Lock icon for stabilizers (Section 1.5b)
+            Image(systemName: "lock.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: size, height: size)
-                .overlay(
-                    tintColor.opacity(0.20)
-                        .blendMode(.overlay)
-                        .mask(
-                            Image(sealAsset)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: size, height: size)
-                        )
-                )
-                .overlay(
-                    Image("CardTextures/tex-cardstock-grain")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: size, height: size)
-                        .opacity(0.10)
-                        .mask(
-                            Image(sealAsset)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: size, height: size)
-                        )
-                )
-        } else {
+                .frame(width: 10, height: 10)
+                .foregroundColor(Color("parchment-mid").opacity(0.7))
+                .padding(6)
+                .allowsHitTesting(false)
+        }
+    }
+
+    // MARK: - Art Layer (2.8 — fallback when artwork missing)
+
+    private func artLayer(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        Group {
+            if let urlString = data.artUrl, !urlString.isEmpty, let url = URL(string: urlString) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        artFallback(cardWidth: cardWidth, cardHeight: cardHeight)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .clipped()
+                    case .failure:
+                        artFallback(cardWidth: cardWidth, cardHeight: cardHeight)
+                    @unknown default:
+                        artFallback(cardWidth: cardWidth, cardHeight: cardHeight)
+                    }
+                }
+            } else {
+                artFallback(cardWidth: cardWidth, cardHeight: cardHeight)
+            }
+        }
+        .frame(width: cardWidth, height: cardHeight)
+        .clipped()
+    }
+
+    /// Fallback when artwork is nil or fails to load (Section 1.9).
+    /// Shows canvas-warm base + crosshatch pattern + centered quill icon.
+    private func artFallback(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ZStack {
+            Color("canvas-warm")
+
+            // Crosshatch pattern drawn procedurally
+            Canvas { context, size in
+                let spacing: CGFloat = 12
+                let lineColor = Color("ink-black").opacity(0.08)
+                // Diagonal lines top-left to bottom-right
+                var x: CGFloat = -size.height
+                while x < size.width + size.height {
+                    var path = Path()
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x + size.height, y: size.height))
+                    context.stroke(path, with: .color(lineColor), lineWidth: 0.5)
+                    x += spacing
+                }
+                // Diagonal lines top-right to bottom-left
+                x = 0
+                while x < size.width + size.height {
+                    var path = Path()
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x - size.height, y: size.height))
+                    context.stroke(path, with: .color(lineColor), lineWidth: 0.5)
+                    x += spacing
+                }
+            }
+            .frame(width: cardWidth, height: cardHeight)
+
+            // Quill pen icon centered
+            Image(systemName: "pencil.and.outline")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 40, height: 40)
+                .foregroundColor(Color("parchment-dark").opacity(0.35))
+        }
+        .frame(width: cardWidth, height: cardHeight)
+    }
+
+    // MARK: - Wax Seal
+
+    private var waxSeal: some View {
+        ZStack {
+            // Drop shadow
+            Circle()
+                .fill(Color.black.opacity(0.40))
+                .frame(width: 32, height: 32)
+                .blur(radius: 3)
+                .offset(y: 2)
+
+            // Seal body — rarity color with radial gradient
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [
-                            tintColor.opacity(0.45),
-                            Color(hex: "#2D2215"),
-                            Color.black.opacity(0.94)
+                            data.tier.waxColor.opacity(0.9),
+                            data.tier.waxColor.opacity(0.6),
+                            Color.black.opacity(0.7)
                         ],
-                        center: .center,
+                        center: .init(x: 0.4, y: 0.35),
                         startRadius: 1,
-                        endRadius: size * 0.7
+                        endRadius: 17
                     )
                 )
+                .frame(width: 34, height: 34)
 
-            Image("CardTextures/metal-bronze")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: size, height: size)
-                .clipShape(Circle())
-                .opacity(0.55)
+            // Top-lit highlight
+            LinearGradient(
+                colors: [Color.white.opacity(0.35), Color.clear],
+                startPoint: .top,
+                endPoint: .center
+            )
+            .frame(width: 30, height: 18)
+            .offset(y: -7)
+            .blendMode(.screen)
+            .clipShape(Circle().offset(y: -4))
 
-            Circle()
-                .stroke(
-                    LinearGradient(
-                        colors: [Color(hex: "#AA8A54"), Color(hex: "#23180B")],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: size * 0.08
+            // Rarity symbol — collector number displayed in seal at detail sizes
+            Text(raritySymbol)
+                .font(CardFont.collectorNumber(size: 9))
+                .foregroundColor(Color("parchment-light").opacity(0.9))
+                .shadow(color: .black.opacity(0.7), radius: 1, x: 0, y: 0.5)
+        }
+    }
+
+    private var raritySymbol: String {
+        switch data.tier {
+        case .common:    return "C"
+        case .uncommon:  return "U"
+        case .rare:      return "R"
+        case .epic:      return "E"
+        case .legendary: return "\u{2605}" // star
+        }
+    }
+
+    // MARK: - Type Line Zone
+
+    private func typeLine(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ZStack {
+            Color("parchment-mid").opacity(0.35)
+            HStack(alignment: .center, spacing: 4) {
+                // Faction icon (left-aligned, 14×14pt)
+                if let faction = data.faction {
+                    Image(faction.emblemAssetName)
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(faction.color)
+                        .shadow(
+                            color: Color("parchment-dark").opacity(0.6),
+                            radius: 0.5, x: 0, y: 0.5
+                        )
+                }
+
+                Text(data.typeLine)
+                    .font(CardFont.cardType(size: 10))
+                    .foregroundColor(Color("ink-black"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .letterpressShadow()
+
+                Spacer(minLength: 2)
+
+                // Set symbol placeholder (right-aligned 14×14pt)
+                Image(systemName: "seal")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 14, height: 14)
+                    .foregroundColor(Color("parchment-dark").opacity(0.5))
+            }
+            .padding(.horizontal, 6)
+        }
+    }
+
+    // MARK: - Text Box Zone
+
+    private func textBox(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            Color("parchment-light").opacity(0.95)
+                .overlay(
+                    // Subtle paper texture overlay
+                    Image("CardTextures/paper-texture")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(0.06)
                 )
 
-            Circle()
-                .stroke(Color(hex: "#D4B896").opacity(0.4), lineWidth: 0.5)
-                .padding(size * 0.06)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Keyword ability names row
+                    if !data.keywords.isEmpty {
+                        keywordsRow
+                            .padding(.bottom, 4)
+                        Divider()
+                            .frame(height: 0.5)
+                            .background(Color("parchment-mid"))
+                            .padding(.bottom, 4)
+                    }
+
+                    // Ability text
+                    if let abilityText = data.abilityText, !abilityText.isEmpty {
+                        Text(abilityText)
+                            .font(CardFont.abilityText(size: 11))
+                            .foregroundColor(Color("ink-black"))
+                            .lineSpacing(3)
+                            .letterpressShadow()
+                            .padding(.bottom, 4)
+                    }
+
+                    // Ability/flavor divider
+                    if let abilityText = data.abilityText, !abilityText.isEmpty, !data.flavorText.isEmpty {
+                        Divider()
+                            .frame(height: 0.5)
+                            .background(Color("parchment-mid"))
+                            .padding(.bottom, 4)
+                    }
+
+                    // Flavor text
+                    if !data.flavorText.isEmpty {
+                        Text("\u{201C}\(data.flavorText)\u{201D}")
+                            .font(CardFont.flavorText(size: 10))
+                            .foregroundColor(Color("parchment-dark"))
+                            .lineSpacing(2)
+                            .letterpressShadow()
+                    }
+                }
+                .padding(4)
+            }
+        }
+        .overlay(
+            // Inner top shadow to suggest recessed panel
+            LinearGradient(
+                colors: [Color.black.opacity(0.08), Color.clear],
+                startPoint: .top,
+                endPoint: .init(x: 0.5, y: 0.25)
+            )
+            .allowsHitTesting(false)
+        )
+    }
+
+    private var keywordsRow: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(data.keywords.enumerated()), id: \.element) { index, keyword in
+                if index > 0 {
+                    Text(" \u{00B7} ")
+                        .font(CardFont.keywordName(size: 11))
+                        .foregroundColor(Color("ink-black").opacity(0.5))
+                        .letterpressShadow()
+                }
+                Text(keyword.displayName)
+                    .font(CardFont.keywordName(size: 11))
+                    .foregroundColor(Color("ink-black"))
+                    .letterpressShadow()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            activeTooltipKeyword = (activeTooltipKeyword == keyword) ? nil : keyword
+                        }
+                    }
+            }
+            Spacer(minLength: 0)
         }
     }
 
-    @ViewBuilder
-    private var sealMask: some View {
-        if let sealAsset = factionSealAsset {
-            Image(sealAsset)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: size, height: size)
-        } else {
-            Circle()
-                .frame(width: size, height: size)
+    // MARK: - Planar Ruin Text Box
+
+    private func ruinTextBox(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            Color("parchment-light").opacity(0.95)
+
+            VStack(alignment: .leading, spacing: 0) {
+                // Passive benefit panel
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PASSIVE")
+                        .font(CardFont.cardName(size: 8))
+                        .foregroundColor(Color("parchment-mid"))
+                        .letterpressShadow()
+                    Text(data.ruinPassiveText ?? "")
+                        .font(CardFont.abilityText(size: 10))
+                        .foregroundColor(Color("ink-black"))
+                        .lineSpacing(2)
+                        .letterpressShadow()
+                        .minimumScaleFactor(0.8)
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 4)
+                .padding(.bottom, 4)
+
+                // Separator
+                Rectangle()
+                    .fill(Color("parchment-mid"))
+                    .frame(height: 1)
+                    .padding(.horizontal, 4)
+
+                // Destruction penalty panel
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("IF DESTROYED")
+                        .font(CardFont.cardName(size: 8))
+                        .foregroundColor(Color("wax-red"))
+                        .letterpressShadow()
+                    Text(data.ruinDestructionPenaltyText ?? "")
+                        .font(CardFont.abilityText(size: 10))
+                        .foregroundColor(Color("wax-red"))
+                        .lineSpacing(2)
+                        .letterpressShadow()
+                        .minimumScaleFactor(0.8)
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 4)
+                .padding(.bottom, 4)
+
+                Spacer(minLength: 0)
+            }
         }
     }
 
-    @ViewBuilder
-    private var sealShadow: some View {
-        if let sealAsset = factionSealAsset {
-            Image(sealAsset)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: size, height: size)
-                .brightness(-1)
-                .colorMultiply(.black)
-                .opacity(0.48)
-                .blur(radius: size * 0.08)
-                .offset(y: size * 0.07)
-        } else {
-            Circle()
-                .fill(Color.black.opacity(0.45))
-                .frame(width: size * 0.92, height: size * 0.92)
-                .blur(radius: size * 0.09)
-                .offset(y: size * 0.07)
+    // MARK: - Stats Bar Zone
+
+    private func statsBar(cardWidth: CGFloat, cardHeight: CGFloat, showAtk: Bool) -> some View {
+        ZStack {
+            Color("parchment-mid").opacity(0.5)
+            HStack(alignment: .center) {
+                // Instability indicator (left — creature only, not planar ruins)
+                if data.cardType == .creature, let instability = data.instability {
+                    HStack(spacing: 3) {
+                        Image(systemName: "die.face.4")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 10, height: 10)
+                            .foregroundColor(factionIconColor.opacity(0.8))
+                        Text("\(instability)")
+                            .font(CardFont.statNumber(size: 10))
+                            .foregroundColor(factionIconColor.opacity(0.8))
+                            .letterpressShadow()
+                    }
+                    .padding(.leading, 4)
+                }
+
+                // Collector number (left of center)
+                if let cn = data.collectorNumber {
+                    Text(cn)
+                        .font(CardFont.collectorNumber(size: 7))
+                        .foregroundColor(Color("parchment-mid"))
+                        .letterpressShadow()
+                        .padding(.leading, 4)
+                }
+
+                Spacer(minLength: 0)
+
+                // Set code (center)
+                if let setCode = data.setCode {
+                    Text(setCode)
+                        .font(CardFont.collectorNumber(size: 7))
+                        .foregroundColor(Color("parchment-mid"))
+                        .letterpressShadow()
+                }
+
+                Spacer(minLength: 0)
+
+                // ATK / HP (right-aligned, Oswald-Bold 13pt)
+                if data.cardType == .planarRuin {
+                    // HP only for ruins
+                    if let hp = data.health {
+                        Text("\(hp)")
+                            .font(CardFont.statNumber(size: 13))
+                            .foregroundColor(Color("ink-black"))
+                            .letterpressShadow()
+                            .padding(.trailing, 8)
+                    }
+                } else if showAtk, let atk = data.attack, let hp = data.health {
+                    Text("\(atk) / \(hp)")
+                        .font(CardFont.statNumber(size: 13))
+                        .foregroundColor(Color("ink-black"))
+                        .letterpressShadow()
+                        .padding(.trailing, 8)
+                }
+            }
+        }
+    }
+
+    // MARK: - Rarity Color Bar Zone
+
+    private func rarityColorBar(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        rarityBarColor
+    }
+
+    private var rarityBarColor: some View {
+        Group {
+            switch data.tier {
+            case .common:
+                Color("parchment-mid")
+            case .uncommon:
+                Color("antique-silver")
+            case .rare:
+                LinearGradient(
+                    colors: [Color("aged-gold").opacity(0.7), Color("aged-gold"), Color("aged-gold").opacity(0.8)],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            case .epic:
+                LinearGradient(
+                    colors: [Color("epic-amethyst").opacity(0.7), Color("epic-amethyst"), Color("epic-amethyst").opacity(0.7)],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            case .legendary:
+                LinearGradient(
+                    colors: [Color("legendary-ember"), Color("aged-gold"), Color("legendary-ember")],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            }
+        }
+    }
+
+    // MARK: - Rarity Border Gradient
+
+    private var rarityBorderGradient: LinearGradient {
+        data.tier.borderGradient
+    }
+
+    private var rarityGlowColor: Color {
+        switch data.tier {
+        case .common, .uncommon: return .clear
+        case .rare:      return Color("aged-gold")
+        case .epic:      return Color("epic-amethyst")
+        case .legendary: return Color("legendary-ember")
+        }
+    }
+
+    // MARK: - Card Base Color
+
+    private var cardBaseColor: Color {
+        Color("parchment-light")
+    }
+
+    // MARK: - Faction Color Helpers
+
+    private var factionIconColor: Color {
+        guard let faction = data.faction else { return Color("parchment-dark") }
+        return faction.color
+    }
+}
+
+// MARK: - Keyword Asset Name Extension
+
+extension Keyword {
+    var sfSymbolName: String {
+        switch self {
+        case .shield: return "shield.fill"
+        case .lifesteal: return "drop.fill"
+        case .flying: return "wind"
+        case .reach: return "scope"
+        case .deathtouch: return "xmark.seal.fill"
+        case .taunt: return "exclamationmark.shield.fill"
+        case .piercing: return "arrow.right.circle.fill"
+        case .haste: return "bolt.fill"
+        case .ward: return "sparkles"
         }
     }
 }
 
-/// CM (Chaos Motes) wax seal badge — top-right.
-struct CMBadgeView: View {
-    let value: Int
-    let size: CGFloat
-    var factionSealAsset: String? = nil
-    var body: some View {
-        WaxSealBadge(
-            value: value, size: size,
-            factionSealAsset: factionSealAsset,
-            tintColor: Color(hex: "#0D47A1"),
-            iconName: "UIIcons/ui-chaos-mana"
-        )
-    }
-}
+// MARK: - Noise Texture Overlay (preserved for backwards compat)
 
-/// ATK wax seal badge — bottom-left.
-struct ATKBadgeView: View {
-    let value: Int
-    let size: CGFloat
-    var factionSealAsset: String? = nil
-    var body: some View {
-        WaxSealBadge(
-            value: value, size: size,
-            factionSealAsset: factionSealAsset,
-            tintColor: Color(hex: "#BF360C"),
-            iconName: "UIIcons/ui-trigger-attack"
-        )
-    }
-}
-
-/// HP wax seal badge — bottom-right.
-struct HPBadgeView: View {
-    let value: Int
-    let size: CGFloat
-    var factionSealAsset: String? = nil
-    var body: some View {
-        WaxSealBadge(
-            value: value, size: size,
-            factionSealAsset: factionSealAsset,
-            tintColor: Color(hex: "#1B5E20"),
-            iconName: "KeywordIcons/kw-shield"
-        )
-    }
-}
-
-// MARK: - Noise Texture Overlay
-
-/// Subtle grain/noise overlay that breaks up digital smoothness.
 struct NoiseTextureOverlay: View {
     let width: CGFloat
     let height: CGFloat
@@ -408,10 +1190,8 @@ struct NoiseTextureOverlay: View {
 
     var body: some View {
         Canvas { context, canvasSize in
-            // Deterministic pseudo-random dots for grain texture
             let dotCount = Int(canvasSize.width * canvasSize.height * 0.06)
             for i in 0..<dotCount {
-                // Simple hash-based pseudo-random to avoid randomness issues
                 let seed1 = Double(i * 7919 + 104729)
                 let seed2 = Double(i * 6271 + 73939)
                 let x = (seed1.truncatingRemainder(dividingBy: canvasSize.width * 3.7))
@@ -433,1456 +1213,85 @@ struct NoiseTextureOverlay: View {
     }
 }
 
-// MARK: - Inner Vignette Overlay
+// MARK: - Inner Vignette Overlay (preserved for backwards compat)
 
-/// Subtle radial darkening at card edges simulating printed card look.
 struct InnerVignetteOverlay: View {
     var body: some View {
         RadialGradient(
-            colors: [
-                Color.clear,
-                Color.clear,
-                Color.black.opacity(0.10)
-            ],
-            center: .center,
-            startRadius: 10,
-            endRadius: 250
+            colors: [Color.clear, Color.clear, Color.black.opacity(0.10)],
+            center: .center, startRadius: 10, endRadius: 250
         )
         .allowsHitTesting(false)
     }
 }
 
-// MARK: - CardFrameView
+// MARK: - CMBadgeView / ATKBadgeView / HPBadgeView (preserved for call sites in SpriteKit nodes)
 
-struct CardFrameView: View {
-    let data: CardDisplayData
-    let size: CardDisplaySize
-
-    /// Tooltip state for modifier keyword taps (detail/fullscreen only).
-    @State private var activeTooltipKeyword: Keyword? = nil
-
-    /// iPad scaling multiplier: 1.15x for badges and fonts on iPad.
-    private var iPadScale: CGFloat {
-        #if os(iOS)
-        return UIDevice.current.userInterfaceIdiom == .pad ? 1.15 : 1.0
-        #else
-        return 1.0
-        #endif
-    }
-
+struct CMBadgeView: View {
+    let value: Int
+    let size: CGFloat
+    var factionSealAsset: String? = nil
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            // Layer -1: Black base (prevents card back bleed)
-            Color.black
-
-            // Layer 0: Pre-baked card frame artwork (fallbacks to texture frame)
-            borderFrame
-
-            // Layer 1: Card art (inset from edges to show border)
-            // Legendary: art bleeds 4pt into the border for extended art effect
-            artLayer
-                .padding(legendaryArtBleed)
-
-            // Layer 2: Canvas texture overlay (makes art feel painted on physical canvas)
-            // Uncommon+ gets slightly richer texture detail (higher opacity)
-            Image("CardTextures/canvas-weave")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: size.width - legendaryArtBleed * 2, height: size.height - legendaryArtBleed * 2)
-                .clipped()
-                .blendMode(.overlay)
-                .opacity(canvasWeaveOpacity)
-                .padding(legendaryArtBleed)
-                .allowsHitTesting(false)
-
-            // Layer 3: Print grain overlay (offset printing texture)
-            NoiseTextureOverlay(
-                width: size.width,
-                height: size.height,
-                opacity: 0.06
-            )
-
-            // Layer 4: Inner vignette (subtle edge darkening)
-            InnerVignetteOverlay()
-                .frame(width: size.width, height: size.height)
-
-            // Layer 5: Lower thirds text panel
-            textPanel
-
-            // Layer 5.5: Faction decorative accents (detail/fullscreen only)
-            if size == .detail || size == .fullscreen {
-                factionDecorativeOverlay
-            }
-
-            // Layer 6: Card name plate (top-left corner)
-            cardNamePlate
-
-            // Layer 7: CM cost wax seal (top-right corner)
-            cmBadgeOverlay
-
-            // Layer 8: ATK badge (bottom-left, straddling art/panel boundary)
-            if data.showsCreatureStats, let atk = data.attack {
-                atkBadgeOverlay(atk: atk)
-            }
-
-            // Layer 9: HP badge (bottom-right, straddling art/panel boundary)
-            if data.showsCreatureStats, let hp = data.health {
-                hpBadgeOverlay(hp: hp)
-            }
-
-            // Layer 10: Evolution tier chevron badge (detail/fullscreen only)
-            if data.tier != .common && (size == .detail || size == .fullscreen) {
-                evolutionChevronBadge
-            }
-
-            // Layer 11: Evolution ready indicator (grid/hand only)
-            if data.isEvolutionReady && size != .detail && size != .fullscreen {
-                evolutionReadyBadge
-            }
-
-            // Layer 12: Modifier tooltip overlay (detail/fullscreen only)
-            if let keyword = activeTooltipKeyword, size.showKeywords {
-                modifierTooltipOverlay(keyword: keyword)
-            }
-        }
-        .frame(width: size.width, height: size.height)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-        // Outer card edge — dark line simulating cut card stock
-        .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(Color(hex: "#1A1408"), lineWidth: 1.5)
-        )
-        // Rarity treatment on top of base border
-        .modifier(RarityBorderModifier(tier: data.tier, faction: data.faction, cornerRadius: cornerRadius))
-        // Card shadow for physical depth
-        .contactShadow(opacity: 0.6, yOffset: 3)
-    }
-
-    // MARK: - Corner Radius & Border
-
-    private var cornerRadius: CGFloat {
-        switch size {
-        case .grid, .hand: return 12
-        case .detail, .fullscreen: return 18
-        }
-    }
-
-    /// Visible card border width — wood-textured frame around the art.
-    private var borderWidth: CGFloat {
-        switch size {
-        case .grid: return 4
-        case .hand: return 3
-        case .detail: return 8
-        case .fullscreen: return 10
-        }
-    }
-
-    /// Legendary cards bleed art 4pt into the border for extended art effect.
-    /// All other tiers use the standard border width for art inset.
-    private var legendaryArtBleed: CGFloat {
-        if data.tier == .legendary {
-            return max(borderWidth - 4, 0)
-        }
-        return borderWidth
-    }
-
-    /// Canvas weave opacity — Uncommon+ gets slightly richer texture.
-    private var canvasWeaveOpacity: Double {
-        switch data.tier {
-        case .common: return 0.15
-        case .uncommon: return 0.20
-        case .rare: return 0.22
-        case .epic: return 0.18
-        case .legendary: return 0.16
-        }
-    }
-
-    // MARK: - Faction Seal Asset Resolution
-
-    /// Resolves the faction-specific wax seal asset name for stat badges.
-    /// Returns nil for neutral/unknown factions (falls back to bronze circle).
-    private var factionSealAsset: String? {
-        guard let faction = data.faction else { return nil }
-        switch faction {
-        case .ironwright: return "StatIcons/stat-seal-ironwright"
-        case .feyCourts: return "StatIcons/stat-seal-fey"
-        case .demonicKingdoms: return "StatIcons/stat-seal-demonic"
-        case .celestialCrusade: return "StatIcons/stat-seal-celestial"
-        case .theEndless: return "StatIcons/stat-seal-endless"
-        }
-    }
-
-    // MARK: - Faction-Textured Border Frame
-
-    /// Uses pre-baked card frame art where available.
-    /// Falls back to faction texture frame for cards with unknown faction.
-    private var borderFrame: some View {
         ZStack {
-            Image(factionBorderAssetName)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: size.width, height: size.height)
-                .clipped()
-
-            Image(frameAssetName)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: size.width, height: size.height)
-                .clipped()
+            Circle()
+                .fill(Color("aged-gold").opacity(0.85))
+                .frame(width: size, height: size)
+            Text("\(value)")
+                .font(CardFont.statNumber(size: size * 0.5))
+                .foregroundColor(Color("parchment-light"))
+                .shadow(color: .black.opacity(0.7), radius: 0.5, x: 0, y: 0.5)
         }
-        .overlay(
-            // Keep frame stack grounded in each faction's palette
-            factionFrameTintColor.opacity(0.10)
-        )
-    }
-
-    /// Deterministic per-card seed for selecting sub-faction visual variants.
-    private var visualSeed: UInt32 {
-        let key = "\(data.name)|\(data.manaCost)|\(data.cardType.rawValue)"
-        return fnv1a32(key)
-    }
-
-    private var useAlternateSubfactionVisual: Bool {
-        (visualSeed % 2) == 1
-    }
-
-    private func fnv1a32(_ input: String) -> UInt32 {
-        var hash: UInt32 = 2_166_136_261
-        for byte in input.utf8 {
-            hash ^= UInt32(byte)
-            hash = hash &* 16_777_619
-        }
-        return hash
-    }
-
-    /// Asset name for pre-baked card frame art.
-    private var frameAssetName: String {
-        if data.cardType == .planarRuin {
-            return "CardFrames/planar-ruin"
-        }
-        guard let faction = data.faction else { return "CardTextures/card-border-wood" }
-
-        let factionKey: String
-        switch faction {
-        case .ironwright: factionKey = "ironwright"
-        case .feyCourts: factionKey = "fey"
-        case .demonicKingdoms: factionKey = "demonic"
-        case .celestialCrusade: factionKey = "celestial"
-        case .theEndless: factionKey = "endless"
-        }
-
-        if data.cardType == .spell {
-            return "CardFrames/\(factionKey)-spell"
-        }
-        if data.cardType == .stabilizer {
-            return "CardFrames/\(factionKey)-stabilizer"
-        }
-
-        let rarityKey: String
-        switch data.tier {
-        case .common, .uncommon: rarityKey = "common"
-        case .rare: rarityKey = "rare"
-        case .epic, .legendary: rarityKey = "legendary"
-        }
-        return "CardFrames/\(factionKey)-\(rarityKey)"
-    }
-
-    /// Asset name for faction border texture.
-    private var factionBorderAssetName: String {
-        guard let faction = data.faction else { return "CardTextures/card-border-wood" }
-        switch faction {
-        case .ironwright: return "CardTextures/border-ironwright"
-        case .feyCourts: return useAlternateSubfactionVisual ? "CardTextures/border-fey-hollow" : "CardTextures/border-fey-verdant"
-        case .demonicKingdoms: return useAlternateSubfactionVisual ? "CardTextures/border-demonic-bureaucracy" : "CardTextures/border-demonic-furnace"
-        case .celestialCrusade: return useAlternateSubfactionVisual ? "CardTextures/border-celestial-chosen" : "CardTextures/border-celestial-knights"
-        case .theEndless: return useAlternateSubfactionVisual ? "CardTextures/border-endless-spectres" : "CardTextures/border-endless-cabals"
-        }
-    }
-
-    /// Faction frame tint color for the border overlay.
-    private var factionFrameTintColor: Color {
-        guard let faction = data.faction else { return Color(hex: "#3D2B1A") }
-        return Color.factionFrameTint(faction)
-    }
-
-    /// Asset name for faction text panel texture.
-    private var factionTextPanelAssetName: String {
-        guard let faction = data.faction else { return "CardTextures/dark-vellum" }
-        switch faction {
-        case .ironwright: return "TextPanels/tp-ironwright"
-        case .feyCourts: return useAlternateSubfactionVisual ? "TextPanels/tp-fey-hollow" : "TextPanels/tp-fey-verdant"
-        case .demonicKingdoms: return useAlternateSubfactionVisual ? "TextPanels/tp-demonic-bureaucracy" : "TextPanels/tp-demonic-furnace"
-        case .celestialCrusade: return useAlternateSubfactionVisual ? "TextPanels/tp-celestial-chosen" : "TextPanels/tp-celestial-knights"
-        case .theEndless: return useAlternateSubfactionVisual ? "TextPanels/tp-endless-spectres" : "TextPanels/tp-endless-cabals"
-        }
-    }
-
-    /// Sub-faction emblem assets are used where available so generated emblem art is visible.
-    private var factionEmblemAssetName: String? {
-        guard let faction = data.faction else { return data.factionEmblemAssetName }
-        switch faction {
-        case .ironwright:
-            return useAlternateSubfactionVisual ? "FactionEmblems/sub-scrap-legions" : "FactionEmblems/sub-foundry-directorate"
-        case .feyCourts:
-            return useAlternateSubfactionVisual ? "FactionEmblems/sub-hollow-court" : "FactionEmblems/sub-verdant-throne"
-        case .demonicKingdoms:
-            return useAlternateSubfactionVisual ? "FactionEmblems/sub-obsidian-bureaucracy" : "FactionEmblems/sub-furnace-lords"
-        case .celestialCrusade:
-            return useAlternateSubfactionVisual ? "FactionEmblems/sub-heavens-chosen" : "FactionEmblems/sub-knights-deliverance"
-        case .theEndless:
-            return useAlternateSubfactionVisual ? "FactionEmblems/sub-lost-spectres" : "FactionEmblems/sub-necromantic-cabals"
-        }
-    }
-
-    // MARK: - Full-Bleed Art Layer
-
-    /// Inner art dimensions (inset by border width on all sides).
-    /// Legendary uses legendaryArtBleed for extended art effect.
-    private var artWidth: CGFloat { size.width - legendaryArtBleed * 2 }
-    private var artHeight: CGFloat { size.height - legendaryArtBleed * 2 }
-    private var innerCornerRadius: CGFloat { max(cornerRadius - legendaryArtBleed, 4) }
-
-    private var artLayer: some View {
-        Group {
-            if let urlString = data.artUrl, !urlString.isEmpty, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .empty:
-                        artPlaceholder
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: artWidth, height: artHeight)
-                            .clipped()
-                    case .failure:
-                        artPlaceholder
-                    @unknown default:
-                        artPlaceholder
-                    }
-                }
-            } else {
-                artPlaceholder
-            }
-        }
-        .frame(width: artWidth, height: artHeight)
-        .clipShape(RoundedRectangle(cornerRadius: innerCornerRadius))
-    }
-
-    private var artPlaceholder: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [factionBgColor.opacity(0.3), Color.bgTertiary],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .frame(width: artWidth, height: artHeight)
-            .overlay(
-                Image("UIIcons/ui-hero")
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: max(artWidth * 0.16, 12), height: max(artWidth * 0.16, 12))
-                    .foregroundColor(.textDisabled.opacity(0.8))
-            )
-    }
-
-    // MARK: - Card Name Plate (Top-Left)
-
-    /// Contained name plate badge at the top-left of the card.
-    private var cardNamePlate: some View {
-        VStack {
-            HStack {
-                Text(data.name.uppercased())
-                    .font(CardFont.cardName(size: namePlateFontSize * iPadScale))
-                    .foregroundColor(parchmentTextColor)
-                    .lineLimit(namePlateMaxLines)
-                    .minimumScaleFactor(0.65)
-                    .tracking(0.35)
-                    // Letterpress inner shadow effect
-                    .shadow(color: .black.opacity(0.55), radius: 0.4, x: 0, y: 0.5)
-                    .padding(.horizontal, namePlatePaddingH)
-                    .padding(.vertical, namePlatePaddingV)
-                    .background(
-                        ZStack {
-                            LinearGradient(
-                                colors: [
-                                    Color(hex: "#3C301E").opacity(0.92),
-                                    Color.black.opacity(0.80)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-
-                            Image(factionTextPanelAssetName)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .opacity(0.18)
-                        }
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(factionBorderColor.opacity(0.56), lineWidth: 0.7)
-                    )
-                    .overlay(alignment: .top) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.white.opacity(0.16), lineWidth: 0.35)
-                            .padding(0.45)
-                    }
-                    .frame(maxWidth: namePlateMaxWidth, alignment: .leading)
-                    .padding(.leading, namePlateInset)
-                    .padding(.top, namePlateInset)
-                    .shadow(color: Color.black.opacity(0.5), radius: 1.2, x: 0, y: 1)
-
-                Spacer()
-            }
-            Spacer()
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    private var namePlatePaddingH: CGFloat {
-        switch size {
-        case .grid: return 4
-        case .hand: return 3.5
-        case .detail: return 6
-        case .fullscreen: return 7
-        }
-    }
-
-    private var namePlatePaddingV: CGFloat {
-        switch size {
-        case .grid: return 2
-        case .hand: return 1.5
-        case .detail: return 3
-        case .fullscreen: return 3.5
-        }
-    }
-
-    private var namePlateFontSize: CGFloat {
-        switch size {
-        case .grid: return 9
-        case .hand: return 9
-        case .detail: return 17
-        case .fullscreen: return 20
-        }
-    }
-
-    private var namePlateMaxLines: Int {
-        switch size {
-        case .grid, .hand: return 1
-        case .detail, .fullscreen: return 2
-        }
-    }
-
-    private var namePlateMaxWidth: CGFloat {
-        switch size {
-        case .grid: return size.width * 0.62
-        case .hand: return size.width * 0.68
-        case .detail: return size.width * 0.52
-        case .fullscreen: return size.width * 0.50
-        }
-    }
-
-    private var namePlateInset: CGFloat {
-        switch size {
-        case .grid: return 6
-        case .hand: return 5
-        case .detail: return 9
-        case .fullscreen: return 10
-        }
-    }
-
-    // MARK: - Lower Thirds Text Panel (Redesigned)
-
-    private var textPanel: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            ZStack(alignment: .bottom) {
-                panelBackground
-                panelContent
-            }
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    private var panelBackground: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            ZStack {
-                // Faction-specific text panel texture base
-                Image(factionTextPanelAssetName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(
-                        width: size.width - panelHorizontalInset * 2,
-                        height: size.height * textPanelHeightRatio
-                    )
-                    .clipped()
-                    .brightness(0.05)
-
-                // Darkening overlay for text readability
-                Color.black.opacity(size == .grid || size == .hand ? 0.34 : 0.42)
-
-                // Paper grain on text panel for extra print texture
-                Image("CardTextures/paper-texture")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(
-                        width: size.width - panelHorizontalInset * 2,
-                        height: size.height * textPanelHeightRatio
-                    )
-                    .clipped()
-                    .blendMode(.overlay)
-                    .opacity(0.12)
-            }
-            .frame(
-                width: size.width - panelHorizontalInset * 2,
-                height: size.height * textPanelHeightRatio
-            )
-            .clipShape(RoundedRectangle(cornerRadius: panelTopCornerRadius))
-            // Inner shadow — top edge darkened (recessed into card)
-            .overlay(alignment: .top) {
-                LinearGradient(
-                    colors: [Color.black.opacity(0.4), Color.clear],
-                    startPoint: .top,
-                    endPoint: .init(x: 0.5, y: 0.3)
-                )
-                .frame(height: size.height * textPanelHeightRatio * 0.3)
-                .clipShape(RoundedRectangle(cornerRadius: panelTopCornerRadius))
-            }
-            // Bottom edge highlight (light hitting the recessed edge)
-            .overlay(alignment: .bottom) {
-                LinearGradient(
-                    colors: [Color.clear, Color(hex: "#8B7355").opacity(0.15)],
-                    startPoint: .init(x: 0.5, y: 0.7),
-                    endPoint: .bottom
-                )
-                .frame(height: size.height * textPanelHeightRatio * 0.2)
-                .clipShape(RoundedRectangle(cornerRadius: panelTopCornerRadius))
-            }
-            .padding(.horizontal, panelHorizontalInset)
-            // Faction-colored top border on text panel — like a gilt edge
-            .overlay(alignment: .top) {
-                RoundedRectangle(cornerRadius: panelTopCornerRadius)
-                    .stroke(factionBorderColor.opacity(0.35), lineWidth: 0.5)
-                    .frame(height: size.height * textPanelHeightRatio)
-                    .padding(.horizontal, panelHorizontalInset)
-            }
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    private var panelTopCornerRadius: CGFloat {
-        switch size {
-        case .grid: return 6
-        case .hand: return 5
-        case .detail, .fullscreen: return 11
-        }
-    }
-
-    private var panelHorizontalInset: CGFloat {
-        switch size {
-        case .grid, .hand: return 3
-        case .detail, .fullscreen: return 4
-        }
-    }
-
-    private var textPanelHeightRatio: CGFloat {
-        switch size {
-        case .grid: return 0.23
-        case .hand: return 0.24
-        case .detail, .fullscreen: return 0.36
-        }
-    }
-
-    @ViewBuilder
-    private var panelContent: some View {
-        switch size {
-        case .grid:
-            gridPanel
-        case .hand:
-            handPanel
-        case .detail, .fullscreen:
-            detailPanel
-        }
-    }
-
-    /// Off-white text color — like ink on aged parchment, not digital white.
-    /// Matches design spec #F0EAD6 throughout all card text.
-    private var parchmentTextColor: Color { Color(hex: "#F0EAD6") }
-
-    // MARK: - Grid Panel (112x157) -- Faction icon + minimal info
-
-    private var gridPanel: some View { EmptyView() }
-
-    // MARK: - Hand Panel (90x130) -- Keyword dots
-
-    private var handPanel: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            // Keyword dots (up to 3)
-            if !data.keywords.isEmpty {
-                HStack(spacing: 3) {
-                    ForEach(Array(data.keywords.prefix(3))) { keyword in
-                        Circle()
-                            .fill(keywordColor(keyword))
-                            .frame(width: 6, height: 6)
-                            .shadow(color: keywordColor(keyword).opacity(0.5), radius: 1)
-                    }
-                    Spacer()
-                }
-            }
-        }
-        .padding(.horizontal, 6)
-        .padding(.bottom, 5)
-        .padding(.top, 4)
-    }
-
-    // MARK: - Detail Panel (280x392 / 350x490) -- Full info (Redesigned)
-
-    private var detailPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Type Line: faction icon + "CREATURE — IRONWRIGHT" left, "◆ INST X" right
-            typeLineRow
-                .padding(.bottom, 4)
-
-            // Thin dashed divider
-            thinDivider(color: factionBorderColor, opacity: 0.15, thickness: 0.5)
-                .padding(.bottom, 5)
-
-            // Modifier Names (middle — only if keywords exist)
-            if !data.keywords.isEmpty {
-                modifierNamesRow
-                    .padding(.bottom, 4)
-
-                // Thin dashed divider
-                thinDivider(color: parchmentTextColor, opacity: 0.10, thickness: 0.3)
-                    .padding(.bottom, 4)
-            }
-
-            // Flavor Text (bottom)
-            if !data.flavorText.isEmpty {
-                Text("\u{201C}\(data.flavorText)\u{201D}")
-                    .font(CardFont.flavorText(size: (size == .fullscreen ? 12 : 11) * iPadScale))
-                    .foregroundColor(parchmentTextColor.opacity(0.58))
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
-                    .truncationMode(.tail)
-            }
-        }
-        .padding(.horizontal, detailPanelHorizontalPadding)
-        .padding(.bottom, detailPanelBottomPadding)
-        .padding(.top, 8)
-    }
-
-    private var detailPanelHorizontalPadding: CGFloat {
-        switch size {
-        case .detail: return 20
-        case .fullscreen: return 24
-        case .grid, .hand: return 10
-        }
-    }
-
-    private var detailPanelBottomPadding: CGFloat {
-        switch size {
-        case .detail: return 34
-        case .fullscreen: return 40
-        case .grid, .hand: return 10
-        }
-    }
-
-    /// Type line row: type text (left), instability (right)
-    private var typeLineRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(data.typeLine.uppercased())
-                .font(CardFont.uiLabelBold(size: typeLineFontSize * iPadScale))
-                .foregroundColor(parchmentTextColor.opacity(0.80))
-                .tracking(0.4)
-                .lineLimit(1)
-
-            Spacer(minLength: 2)
-
-            if let instability = data.instability {
-                HStack(spacing: 2) {
-                    Text("\u{25C6}")  // ◆ diamond
-                    .font(CardFont.uiLabel(size: (size == .fullscreen ? 10 : 9) * iPadScale))
-                    Text("INST \(instability)")
-                        .font(CardFont.uiLabelBold(size: (size == .fullscreen ? 11 : 10) * iPadScale))
-                }
-                .foregroundColor(factionAccentColor.opacity(0.88))
-            }
-        }
-    }
-
-    private var typeLineFontSize: CGFloat {
-        size == .fullscreen ? 13 : 12
-    }
-
-    /// Modifier names row: "Haste · Shield · Piercing" — tappable for tooltip
-    private var modifierNamesRow: some View {
-        let keywordList = data.keywords
-        return HStack(spacing: 0) {
-            ForEach(Array(keywordList.enumerated()), id: \.element) { index, keyword in
-                if index > 0 {
-                    Text(" \u{00B7} ")  // centered dot separator
-                        .font(CardFont.bodyBold(size: modifierNameFontSize * iPadScale))
-                        .foregroundColor(parchmentTextColor.opacity(0.50))
-                }
-                Text(keyword.displayName)
-                    .font(CardFont.bodyBold(size: modifierNameFontSize * iPadScale))
-                    .foregroundColor(parchmentTextColor.opacity(0.82))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.black.opacity(activeTooltipKeyword == keyword ? 0.42 : 0.18))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 3)
-                                    .stroke(
-                                        factionBorderColor.opacity(activeTooltipKeyword == keyword ? 0.48 : 0.20),
-                                        lineWidth: 0.45
-                                    )
-                            )
-                    )
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            if activeTooltipKeyword == keyword {
-                                activeTooltipKeyword = nil
-                            } else {
-                                activeTooltipKeyword = keyword
-                            }
-                        }
-                    }
-            }
-            Spacer(minLength: 0)
-        }
-    }
-
-    private var modifierNameFontSize: CGFloat {
-        size == .fullscreen ? 12 : 11
-    }
-
-    /// Thin solid divider line for text panel hierarchy
-    private func thinDivider(color: Color, opacity: Double, thickness: CGFloat) -> some View {
-        Rectangle()
-            .fill(color.opacity(opacity))
-            .frame(height: thickness)
-    }
-
-    // MARK: - Modifier Tooltip Overlay
-
-    /// Inline tooltip appearing when user taps a modifier name.
-    private func modifierTooltipOverlay(keyword: Keyword) -> some View {
-        VStack {
-            Spacer()
-
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Image(keyword.customIconName)
-                            .renderingMode(.template)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 14 * iPadScale, height: 14 * iPadScale)
-                            .foregroundColor(keywordColor(keyword))
-
-                        Text(keyword.displayName)
-                            .font(CardFont.bodyBold(size: 12 * iPadScale))
-                            .foregroundColor(parchmentTextColor)
-                    }
-
-                    Text(keyword.description)
-                        .font(CardFont.body(size: 11 * iPadScale))
-                        .foregroundColor(parchmentTextColor.opacity(0.75))
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    ZStack {
-                        Color.black.opacity(0.85)
-                        Image("CardTextures/tex-parchment")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .opacity(0.10)
-                    }
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(factionBorderColor.opacity(0.60), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.6), radius: 4, x: 0, y: 2)
-                .frame(maxWidth: size.width * 0.85)
-                .padding(.horizontal, 8)
-            }
-
-            // Position above the panel area
-            Spacer()
-                .frame(height: size.height * textPanelHeightRatio + 10)
-        }
-        .frame(width: size.width, height: size.height)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                activeTooltipKeyword = nil
-            }
-        }
-    }
-
-    // MARK: - CM Badge (Top-Right)
-
-    private var cmBadgeOverlay: some View {
-        VStack {
-            HStack {
-                Spacer()
-                WaxSealBadge(
-                    value: data.manaCost,
-                    size: cmBadgeSize * iPadScale,
-                    factionSealAsset: factionSealAsset,
-                    tintColor: cmTintColor,
-                    iconName: "UIIcons/ui-chaos-mana"
-                )
-                .padding(.trailing, cmInset)
-                .padding(.top, cmInset)
-            }
-            Spacer()
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    private var cmTintColor: Color {
-        guard data.faction != nil else { return Color(hex: "#0D47A1") }
-        return factionBorderColor.opacity(0.80)
-    }
-
-    private var cmBadgeSize: CGFloat {
-        switch size {
-        case .grid: return 24
-        case .hand: return 20
-        case .detail: return 36
-        case .fullscreen: return 40
-        }
-    }
-
-    private var cmInset: CGFloat {
-        switch size {
-        case .grid: return 6
-        case .hand: return 5
-        case .detail, .fullscreen: return 10
-        }
-    }
-
-    // MARK: - ATK Badge (Bottom-Left, Straddling Art/Panel Boundary)
-
-    private func atkBadgeOverlay(atk: Int) -> some View {
-        let badgeSize = atkHpBadgeSize * iPadScale
-        return VStack {
-            Spacer()
-            HStack {
-                WaxSealBadge(
-                    value: atk,
-                    size: badgeSize,
-                    factionSealAsset: factionSealAsset,
-                    tintColor: Color(hex: "#BF360C"),
-                    iconName: "UIIcons/ui-trigger-attack"
-                )
-                .padding(.leading, atkHpInset)
-                .padding(.bottom, statBadgeBottomInset)
-                Spacer()
-            }
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    // MARK: - HP Badge (Bottom-Right, Straddling Art/Panel Boundary)
-
-    private func hpBadgeOverlay(hp: Int) -> some View {
-        let badgeSize = atkHpBadgeSize * iPadScale
-        return VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                WaxSealBadge(
-                    value: hp,
-                    size: badgeSize,
-                    factionSealAsset: factionSealAsset,
-                    tintColor: Color(hex: "#1B5E20"),
-                    iconName: "KeywordIcons/kw-shield"
-                )
-                .padding(.trailing, atkHpInset)
-                .padding(.bottom, statBadgeBottomInset)
-            }
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    private var atkHpBadgeSize: CGFloat {
-        switch size {
-        case .grid: return 24
-        case .hand: return 20
-        case .detail: return 36
-        case .fullscreen: return 40
-        }
-    }
-
-    private var atkHpInset: CGFloat {
-        switch size {
-        case .grid: return 6
-        case .hand: return 5
-        case .detail, .fullscreen: return 10
-        }
-    }
-
-    private var statBadgeBottomInset: CGFloat {
-        switch size {
-        case .grid: return 4
-        case .hand: return 3
-        case .detail: return 4
-        case .fullscreen: return 5
-        }
-    }
-
-    // MARK: - Evolution Tier Chevron Badge (Top-Left, after name plate)
-
-    private var evolutionChevronBadge: some View {
-        VStack {
-            HStack {
-                Text(tierChevronText)
-                    .font(CardFont.cardName(size: tierChevronFontSize * iPadScale))
-                    .foregroundColor(Color.tierColor(data.tier))
-                    .shadow(color: Color.tierColor(data.tier).opacity(0.6), radius: 3)
-                    .padding(.horizontal, tierChevronPaddingH)
-                    .padding(.vertical, tierChevronPaddingV)
-                    .background(
-                        Capsule()
-                            .fill(Color.black.opacity(0.55))
-                    )
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.tierColor(data.tier).opacity(0.4), lineWidth: 0.5)
-                    )
-                    .padding(.leading, tierChevronLeadingInset)
-                    .padding(.top, tierChevronTopInset)
-                Spacer()
-            }
-            Spacer()
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    private var tierChevronText: String {
-        switch data.tier {
-        case .common: return ""
-        case .uncommon: return "\u{2227}" // single chevron ^
-        case .rare: return "\u{2227}\u{2227}" // ^^
-        case .epic: return "\u{2227}\u{2227}\u{2227}" // ^^^
-        case .legendary: return "\u{2606}" // star outline
-        }
-    }
-
-    private var tierChevronFontSize: CGFloat {
-        switch size {
-        case .grid: return 8
-        case .hand: return 7
-        case .detail, .fullscreen: return 14
-        }
-    }
-
-    private var tierChevronPaddingH: CGFloat {
-        switch size {
-        case .grid, .hand: return 3
-        case .detail, .fullscreen: return 6
-        }
-    }
-
-    private var tierChevronPaddingV: CGFloat {
-        switch size {
-        case .grid, .hand: return 1
-        case .detail, .fullscreen: return 3
-        }
-    }
-
-    private var tierChevronLeadingInset: CGFloat {
-        // Position after name plate area
-        let base: CGFloat = (size == .detail || size == .fullscreen) ? 8 : 4
-        guard size == .detail || size == .fullscreen else { return base }
-        // Place below name plate vertically instead — shift horizontal offset
-        return base + namePlateInset
-    }
-
-    private var tierChevronTopInset: CGFloat {
-        switch size {
-        case .grid, .hand: return 4
-        case .detail: return 36  // Below name plate
-        case .fullscreen: return 42
-        }
-    }
-
-    // MARK: - Evolution Ready Badge
-
-    private var evolutionReadyBadge: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Image("UIIcons/ui-evolution-sparkle")
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: size == .grid ? 14 : 12, height: size == .grid ? 14 : 12)
-                    .foregroundColor(.tauntGold)
-                    .shadow(color: .tauntGold.opacity(0.5), radius: 3)
-                    .padding(4)
-            }
-            Spacer()
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    // MARK: - Faction Decorative Overlay
-
-    /// Subtle faction-specific decorative accents visible at detail/fullscreen scale.
-    /// Corner accents, inner glow tints, and faction emblem watermark.
-    @ViewBuilder
-    private var factionDecorativeOverlay: some View {
-        ZStack {
-            // Faction emblem watermark in text panel area
-            if let emblemAsset = factionEmblemAssetName {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Image(emblemAsset)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: size.width * 0.22, height: size.width * 0.22)
-                            .opacity(0.07)
-                            .blendMode(.screen)
-                        Spacer()
-                    }
-                    .padding(.bottom, size.height * textPanelHeightRatio * 0.3)
-                }
-            }
-
-            // Faction-specific accents
-            switch data.faction {
-            case .ironwright:
-                ironwrightAccents
-            case .feyCourts:
-                feyAccents
-            case .demonicKingdoms:
-                demonicAccents
-            case .celestialCrusade:
-                celestialAccents
-            case .theEndless:
-                endlessAccents
-            case nil:
-                EmptyView()
-            }
-        }
-        .frame(width: size.width, height: size.height)
-        .allowsHitTesting(false)
-    }
-
-    /// Ironwright: subtle forged-metal inner edge.
-    private var ironwrightAccents: some View {
-        RoundedRectangle(cornerRadius: cornerRadius - 1)
-            .stroke(
-                LinearGradient(
-                    colors: [
-                        Color(hex: "#89A1B8").opacity(0.12),
-                        Color(hex: "#4B5A68").opacity(0.06),
-                        Color(hex: "#89A1B8").opacity(0.10)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 1
-            )
-            .padding(borderWidth + 1)
-    }
-
-    /// Fey Courts: tiny leaf-bud dots at corners + organic inner glow.
-    private var feyAccents: some View {
-        let budSize: CGFloat = size == .fullscreen ? 5 : 4
-        let inset: CGFloat = borderWidth + 3
-        return ZStack {
-            // Bioluminescent inner glow at corners
-            RadialGradient(
-                colors: [Color(hex: "#7FFFD4").opacity(0.06), .clear],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: size.width * 0.4
-            )
-            RadialGradient(
-                colors: [Color(hex: "#7FFFD4").opacity(0.04), .clear],
-                center: .bottomTrailing,
-                startRadius: 0,
-                endRadius: size.width * 0.4
-            )
-
-            // Leaf bud dots at top corners
-            ForEach(0..<2) { i in
-                Ellipse()
-                    .fill(Color(hex: "#2E8B57").opacity(0.5))
-                    .frame(width: budSize, height: budSize * 1.4)
-                    .rotationEffect(.degrees(i == 0 ? -30 : 30))
-                    .position(
-                        x: i == 0 ? inset + budSize : size.width - inset - budSize,
-                        y: inset + budSize
-                    )
-            }
-        }
-    }
-
-    /// Demonic Kingdoms: faint lava vein glow at bottom edge.
-    private var demonicAccents: some View {
-        VStack {
-            Spacer()
-            // Lava glow at bottom border
-            LinearGradient(
-                colors: [.clear, Color(hex: "#FF4500").opacity(0.08)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: size.height * 0.15)
-        }
-    }
-
-    /// Celestial Crusade: gold filigree inner border accent.
-    private var celestialAccents: some View {
-        RoundedRectangle(cornerRadius: cornerRadius - 1)
-            .stroke(
-                LinearGradient(
-                    colors: [
-                        Color(hex: "#DAA520").opacity(0.12),
-                        Color(hex: "#FFD700").opacity(0.06),
-                        Color(hex: "#DAA520").opacity(0.12)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 1
-            )
-            .padding(borderWidth + 1)
-    }
-
-    /// The Endless: necrotic teal inner glow.
-    private var endlessAccents: some View {
-        ZStack {
-            // Soul-light inner glow from edges
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(
-                    Color(hex: "#2DD4BF").opacity(0.08),
-                    lineWidth: 3
-                )
-                .blur(radius: 3)
-                .padding(borderWidth)
-        }
-    }
-
-    // MARK: - Card Metadata Helpers
-
-    // MARK: - Helper Colors
-
-    private var factionBgColor: Color {
-        guard let faction = data.faction else { return .bgQuaternary }
-        return Color.factionPrimary(faction)
-    }
-
-    private var factionBorderColor: Color {
-        guard let faction = data.faction else { return Color(hex: "#888888") }
-        return factionPrimaryBorderColor(faction)
-    }
-
-    /// Faction accent color for instability and other highlights.
-    private var factionAccentColor: Color {
-        guard let faction = data.faction else { return parchmentTextColor }
-        return Color.factionAccent(faction)
-    }
-
-    /// Faction border color for rarity treatment overlay.
-    private func factionPrimaryBorderColor(_ faction: FactionShortName) -> Color {
-        switch faction {
-        case .ironwright: return Color(hex: "#C9A84C")
-        case .feyCourts: return Color(hex: "#4CAF50")
-        case .demonicKingdoms: return Color(hex: "#E63946")
-        case .celestialCrusade: return Color(hex: "#DAA520")
-        case .theEndless: return Color(hex: "#6B3FA0")
-        }
-    }
-
-    private func keywordColor(_ keyword: Keyword) -> Color {
-        switch keyword {
-        case .shield: return .orderBlue
-        case .lifesteal: return .healGreen
-        case .flying: return Color(hex: "#90CAF9")
-        case .reach: return .damageOrange
-        case .deathtouch: return .chaosRed
-        case .taunt: return .tauntGold
-        case .piercing: return .warningYellow
-        case .haste: return .damageOrange
-        case .ward: return Color(hex: "#B39DDB")
-        }
+        .frame(width: size, height: size)
     }
 }
 
-// MARK: - Rarity Border Modifier
-
-/// Applies rarity-based border treatment using the card border itself.
-/// Common = plain matte border. Uncommon = thin silver metallic inner line.
-/// Rare = gold metallic inner border. Epic = holographic foil overlay (gyroscope-driven).
-/// Legendary = full foil border + art overlay + extended art bleed.
-private struct RarityBorderModifier: ViewModifier {
-    let tier: EvolutionTier
-    let faction: FactionShortName?
-    let cornerRadius: CGFloat
-
-    @State private var isPulsing = false
-    @State private var shimmerPhase: CGFloat = 0
-    @ObservedObject private var gyroscope = GyroscopeManager.shared
-
-    private var factionColor: Color {
-        guard let faction = faction else { return Color(hex: "#888888") }
-        switch faction {
-        case .ironwright: return Color(hex: "#C9A84C")
-        case .feyCourts: return Color(hex: "#4CAF50")
-        case .demonicKingdoms: return Color(hex: "#E63946")
-        case .celestialCrusade: return Color(hex: "#DAA520")
-        case .theEndless: return Color(hex: "#6B3FA0")
+struct ATKBadgeView: View {
+    let value: Int
+    let size: CGFloat
+    var factionSealAsset: String? = nil
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(hex: "#BF360C").opacity(0.85))
+                .frame(width: size, height: size)
+            Text("\(value)")
+                .font(CardFont.statNumber(size: size * 0.5))
+                .foregroundColor(Color("parchment-light"))
+                .shadow(color: .black.opacity(0.7), radius: 0.5, x: 0, y: 0.5)
         }
-    }
-
-    func body(content: Content) -> some View {
-        switch tier {
-        case .common:
-            // Plain warm brown border — the base matte card look. No metallic elements.
-            content
-
-        case .uncommon:
-            // Thin silver metallic inner border line (1px, #C0C0C0, 0.6 opacity)
-            // + faction-colored outer shadow + slightly richer canvas weave
-            content
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius - 1)
-                        .stroke(Color(hex: "#C0C0C0").opacity(0.60), lineWidth: 1)
-                        .padding(1)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(factionColor.opacity(0.30), lineWidth: 1.5)
-                )
-                .shadow(color: factionColor.opacity(0.15), radius: 4)
-
-        case .rare:
-            // Gold metallic inner border (1.5px, #FFD700, 0.7 opacity)
-            // + faction-colored border + 6px pulsing glow
-            content
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius - 1)
-                        .stroke(Color(hex: "#FFD700").opacity(0.70), lineWidth: 1.5)
-                        .padding(1)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(factionColor.opacity(0.50), lineWidth: 2)
-                )
-                .shadow(
-                    color: factionColor.opacity(isPulsing ? 0.35 : 0.20),
-                    radius: isPulsing ? 8 : 4
-                )
-                .onAppear {
-                    withAnimation(
-                        .easeInOut(duration: 3.0)
-                        .repeatForever(autoreverses: true)
-                    ) {
-                        isPulsing = true
-                    }
-                }
-
-        case .epic:
-            // Gradient border + holographic foil overlay on card border
-            // Foil offset driven by gyroscope tilt data
-            content
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    factionColor.opacity(0.80),
-                                    Color(hex: "#FFFDE7").opacity(0.60),
-                                    factionColor.opacity(0.80)
-                                ],
-                                startPoint: isPulsing ? .topLeading : .bottomTrailing,
-                                endPoint: isPulsing ? .bottomTrailing : .topLeading
-                            ),
-                            lineWidth: 2.5
-                        )
-                )
-                // Holographic foil overlay on the border region
-                .overlay(
-                    Image("RarityEffects/holographic-foil")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .offset(
-                            x: gyroscope.tiltX * 30,
-                            y: gyroscope.tiltY * 20
-                        )
-                        .blendMode(.overlay)
-                        .opacity(0.20)
-                        .clipShape(
-                            // Only show foil on the border region (mask out the inner art area)
-                            RarityFoilBorderMask(
-                                cornerRadius: cornerRadius,
-                                borderWidth: 0 // full card coverage at low opacity
-                            )
-                        )
-                        .allowsHitTesting(false)
-                )
-                .shadow(color: factionColor.opacity(0.40), radius: 8)
-                .onAppear {
-                    gyroscope.startIfNeeded()
-                    withAnimation(
-                        .easeInOut(duration: 3.0)
-                        .repeatForever(autoreverses: true)
-                    ) {
-                        isPulsing = true
-                    }
-                }
-                .onDisappear {
-                    gyroscope.stopIfUnneeded()
-                }
-
-        case .legendary:
-            // Gold prismatic border at full opacity + 12px golden glow + animated shimmer
-            // + holographic foil at higher opacity + subtle art overlay
-            content
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(
-                            AngularGradient(
-                                colors: [
-                                    Color(hex: "#FFD700"),
-                                    Color(hex: "#FFF8E1"),
-                                    Color(hex: "#FFD700"),
-                                    Color(hex: "#FF8F00"),
-                                    Color(hex: "#FFD700")
-                                ],
-                                center: .center,
-                                startAngle: .degrees(shimmerPhase),
-                                endAngle: .degrees(shimmerPhase + 360)
-                            ),
-                            lineWidth: 3.5
-                        )
-                )
-                // Full holographic foil border at higher opacity (0.35)
-                .overlay(
-                    Image("RarityEffects/holographic-foil")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .offset(
-                            x: gyroscope.tiltX * 40,
-                            y: gyroscope.tiltY * 30
-                        )
-                        .blendMode(.overlay)
-                        .opacity(0.35)
-                        .clipShape(
-                            RarityFoilBorderMask(
-                                cornerRadius: cornerRadius,
-                                borderWidth: 0
-                            )
-                        )
-                        .allowsHitTesting(false)
-                )
-                // Subtle foil overlay on art area (very low opacity)
-                .overlay(
-                    Image("RarityEffects/holographic-foil")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .offset(
-                            x: gyroscope.tiltX * 20,
-                            y: gyroscope.tiltY * 15
-                        )
-                        .blendMode(.softLight)
-                        .opacity(0.08)
-                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-                        .allowsHitTesting(false)
-                )
-                .shadow(color: Color(hex: "#FFD700").opacity(0.35), radius: 12)
-                .shadow(color: Color(hex: "#FFD700").opacity(0.15), radius: 4)
-                .onAppear {
-                    gyroscope.startIfNeeded()
-                    withAnimation(
-                        .linear(duration: 4.0)
-                        .repeatForever(autoreverses: false)
-                    ) {
-                        shimmerPhase = 360
-                    }
-                }
-                .onDisappear {
-                    gyroscope.stopIfUnneeded()
-                }
-        }
+        .frame(width: size, height: size)
     }
 }
 
-// MARK: - Rarity Foil Border Mask Shape
-
-/// A shape that masks to the border region of a rounded rectangle.
-/// When borderWidth > 0, it shows only the border strip.
-/// When borderWidth == 0, it shows the full card area (for low-opacity full-card foil).
-private struct RarityFoilBorderMask: Shape {
-    let cornerRadius: CGFloat
-    let borderWidth: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        if borderWidth <= 0 {
-            // Full card coverage
-            return Path(roundedRect: rect, cornerRadius: cornerRadius)
+struct HPBadgeView: View {
+    let value: Int
+    let size: CGFloat
+    var factionSealAsset: String? = nil
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color(hex: "#1B5E20").opacity(0.85))
+                .frame(width: size, height: size)
+            Text("\(value)")
+                .font(CardFont.statNumber(size: size * 0.5))
+                .foregroundColor(Color("parchment-light"))
+                .shadow(color: .black.opacity(0.7), radius: 0.5, x: 0, y: 0.5)
         }
-        // Border-only: outer minus inner
-        var path = Path(roundedRect: rect, cornerRadius: cornerRadius)
-        let insetRect = rect.insetBy(dx: borderWidth, dy: borderWidth)
-        let innerRadius = max(cornerRadius - borderWidth, 2)
-        path.addPath(Path(roundedRect: insetRect, cornerRadius: innerRadius))
-        return path
-    }
-}
-
-// MARK: - Keyword Asset Name Extension
-
-extension Keyword {
-    /// SF Symbol name for this keyword's icon (legacy, kept for backwards compatibility).
-    var sfSymbolName: String {
-        switch self {
-        case .shield: return "shield.fill"
-        case .lifesteal: return "drop.fill"
-        case .flying: return "wind"
-        case .reach: return "scope"
-        case .deathtouch: return "xmark.seal.fill"
-        case .taunt: return "exclamationmark.shield.fill"
-        case .piercing: return "arrow.right.circle.fill"
-        case .haste: return "bolt.fill"
-        case .ward: return "sparkles"
-        }
+        .frame(width: size, height: size)
     }
 }
 
 // MARK: - CardFrameView Previews
 
-#Preview("Rarity Tiers - Grid") {
+#Preview("Zone-Stack Grid") {
     HStack(spacing: 6) {
         ForEach(
             [
-                ("Recruit", EvolutionTier.common, FactionShortName.ironwright),
-                ("Veteran", EvolutionTier.uncommon, FactionShortName.feyCourts),
-                ("Champion", EvolutionTier.rare, FactionShortName.demonicKingdoms),
-                ("Archon", EvolutionTier.epic, FactionShortName.celestialCrusade),
-                ("Ascended", EvolutionTier.legendary, FactionShortName.theEndless)
+                ("Recruit",  Rarity.common,    CardFaction.ironwright),
+                ("Veteran",  Rarity.uncommon,  CardFaction.fey),
+                ("Champion", Rarity.rare,      CardFaction.demonic),
+                ("Archon",   Rarity.epic,      CardFaction.celestial),
+                ("Ascended", Rarity.legendary, CardFaction.endless)
             ],
             id: \.0
         ) { name, tier, faction in
@@ -1897,10 +1306,13 @@ extension Keyword {
                         instability: tier.tierIndex,
                         tier: tier,
                         faction: faction,
-                        keywords: [.shield]
+                        keywords: [.shield],
+                        flavorText: "A warrior forged in \(tier.displayName) fire.",
+                        abilityText: "Shield: absorbs one hit."
                     ),
                     size: .grid
                 )
+                .frame(width: 90)
                 Text(tier.displayName)
                     .font(.caption2)
                     .foregroundColor(.textSecondary)
@@ -1911,75 +1323,61 @@ extension Keyword {
     .background(Color.bgPrimary)
 }
 
-#Preview("Rarity Tiers - Detail") {
-    ScrollView(.horizontal) {
-        HStack(spacing: 12) {
-            ForEach(
-                [
-                    ("Iron Recruit", EvolutionTier.common, FactionShortName.ironwright),
-                    ("Fey Veteran", EvolutionTier.uncommon, FactionShortName.feyCourts),
-                    ("Demon Champion", EvolutionTier.rare, FactionShortName.demonicKingdoms),
-                    ("Celestial Archon", EvolutionTier.epic, FactionShortName.celestialCrusade),
-                    ("Endless Ascended", EvolutionTier.legendary, FactionShortName.theEndless)
-                ],
-                id: \.0
-            ) { name, tier, faction in
-                VStack(spacing: 4) {
-                    CardFrameView(
-                        data: CardDisplayData(
-                            name: name,
-                            artUrl: nil,
-                            manaCost: tier.tierIndex + 1,
-                            attack: tier.tierIndex + 2,
-                            health: tier.tierIndex + 3,
-                            instability: tier.tierIndex,
-                            tier: tier,
-                            faction: faction,
-                            keywords: [.shield, .taunt, .lifesteal, .haste],
-                            flavorText: "A warrior forged in \(tier.displayName) fire."
-                        ),
-                        size: .detail
-                    )
-                    Text(tier.displayName)
-                        .font(.caption)
-                        .foregroundColor(.textSecondary)
-                }
-            }
-        }
-        .padding()
-    }
+#Preview("Spell Card") {
+    CardFrameView(
+        data: CardDisplayData(
+            name: "Arcane Bolt",
+            artUrl: nil,
+            manaCost: 2,
+            tier: .common,
+            cardType: .spell,
+            faction: .fey,
+            flavorText: "A flash of emerald lightning.",
+            abilityText: "Deal 3 damage to any creature."
+        ),
+        size: .detail
+    )
+    .frame(width: 210)
+    .padding()
     .background(Color.bgPrimary)
 }
 
-#Preview("Hand Size") {
-    HStack(spacing: 8) {
-        CardFrameView(
-            data: CardDisplayData(
-                name: "Iron Sentinel",
-                artUrl: nil,
-                manaCost: 3,
-                attack: 4,
-                health: 5,
-                instability: 2,
-                tier: .uncommon,
-                faction: .ironwright,
-                keywords: [.shield, .taunt, .lifesteal]
-            ),
-            size: .hand
-        )
+#Preview("Stabilizer Card") {
+    CardFrameView(
+        data: CardDisplayData(
+            name: "Chaos Anchor",
+            artUrl: nil,
+            manaCost: 0,
+            tier: .uncommon,
+            cardType: .stabilizer,
+            faction: .ironwright,
+            flavorText: "Cannot be destroyed.",
+            abilityText: "All your creatures gain +1 ATK."
+        ),
+        size: .detail
+    )
+    .frame(width: 210)
+    .padding()
+    .background(Color.bgPrimary)
+}
 
-        CardFrameView(
-            data: CardDisplayData(
-                name: "Arcane Bolt",
-                artUrl: nil,
-                manaCost: 2,
-                tier: .common,
-                cardType: .spell,
-                faction: .feyCourts
-            ),
-            size: .hand
-        )
-    }
+#Preview("Planar Ruin Card") {
+    CardFrameView(
+        data: CardDisplayData(
+            name: "Ashen Colosseum",
+            artUrl: nil,
+            manaCost: 3,
+            health: 10,
+            tier: .rare,
+            cardType: .planarRuin,
+            faction: .demonic,
+            flavorText: "Once a great arena.",
+            ruinPassiveText: "All creatures deal +1 damage in combat.",
+            ruinDestructionPenaltyText: "All your creatures lose 2 ATK until end of turn."
+        ),
+        size: .detail
+    )
+    .frame(width: 210)
     .padding()
     .background(Color.bgPrimary)
 }

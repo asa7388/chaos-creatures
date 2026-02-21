@@ -41,6 +41,8 @@
 		35BAA07E717FF5E5898645AC /* PhaseIndicatorNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 180734839ABFE3E33CD068E9 /* PhaseIndicatorNode.swift */; };
 		3709549D72B1DD85EB41E0D0 /* MatchmakingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0F9959D975D39012E4F720 /* MatchmakingService.swift */; };
 		3A1CF2A0B1E7D3F4A9C85E60 /* CardFrameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */; };
+		P2CC111111111111DDDDDD01 /* CardBackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2AA111111111111BBBBBB01 /* CardBackView.swift */; };
+		P2CC111111111111DDDDDD02 /* DraggableCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P2AA111111111111BBBBBB02 /* DraggableCardView.swift */; };
 		3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B487311E9E0110DA6121F9A /* CardView.swift */; };
 		3BC837205AE555B437984697 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308097FB7D4FEB7E802BFC9E /* ContentView.swift */; };
 		3F1A1C86C6C0AD96E32784E1 /* SpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E7B70326AD4C66B85692318 /* SpriteKit.framework */; };
@@ -247,6 +249,8 @@
 		4781670C0F98E38FE15E8653 /* DailyMissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyMissionsView.swift; sourceTree = "<group>"; };
 		49CF45F9013860294E4763B8 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFrameView.swift; sourceTree = "<group>"; };
+		P2AA111111111111BBBBBB01 /* CardBackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardBackView.swift; sourceTree = "<group>"; };
+		P2AA111111111111BBBBBB02 /* DraggableCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraggableCardView.swift; sourceTree = "<group>"; };
 		4B487311E9E0110DA6121F9A /* CardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardView.swift; sourceTree = "<group>"; };
 		4CC2BA355A2E2C9A0D4874B2 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		4DA5BD6AD9E7FB6BF516258B /* EvolutionFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvolutionFlowView.swift; sourceTree = "<group>"; };
@@ -709,6 +713,8 @@
 			isa = PBXGroup;
 			children = (
 				7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */,
+				P2AA111111111111BBBBBB01 /* CardBackView.swift */,
+				P2AA111111111111BBBBBB02 /* DraggableCardView.swift */,
 				4B487311E9E0110DA6121F9A /* CardView.swift */,
 				CD01A2B3E4F56789AB012346 /* ChaosDustView.swift */,
 				5AE64322615B77DD0D2F9A62 /* EmptyStateView.swift */,
@@ -960,6 +966,8 @@
 				D4DAB6A87FEDA69762F7CE31 /* CardTemplate.swift in Sources */,
 				DD11111111111111DDDDDDDD /* CardFont.swift in Sources */,
 				3A1CF2A0B1E7D3F4A9C85E60 /* CardFrameView.swift in Sources */,
+				P2CC111111111111DDDDDD01 /* CardBackView.swift in Sources */,
+				P2CC111111111111DDDDDD02 /* DraggableCardView.swift in Sources */,
 				3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */,
 				11DCA5933CE01CADC1B34BA1 /* ChaosCreaturesApp.swift in Sources */,
 				8DA80DDB662FE44064989616 /* ChaosRollAction.swift in Sources */,

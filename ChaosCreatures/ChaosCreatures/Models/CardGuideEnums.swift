@@ -4,29 +4,78 @@
 // Enums and Card struct from CARD_DESIGN_GUIDE.md Section 2.1 and Section 2.2.
 // These types are the render-time card data model used by card views (Phase 2+).
 //
-// CONFLICT NOTE: Several types here have naming overlaps with existing DB-mapped types
-// in Enums.swift and CardTemplate.swift. See Logs/CONFLICTS.md (Conflicts P1-1, P1-2, P1-3)
-// for details. Both type families coexist until the owner resolves the naming conflicts.
-//
-//   CardFaction  ↔ FactionShortName  (same concept, different names — see P1-1)
-//   Rarity       ↔ EvolutionTier     (same concept, different names — see P1-2)
-//   Card         ↔ CardTemplate      (same concept, different fields — see P1-3)
+// P1 MIGRATIONS APPLIED (2026-02-21):
+//   P1-1: FactionShortName merged into CardFaction (raw values, all properties preserved)
+//   P1-2: EvolutionTier merged into Rarity (all progression + render properties unified)
+//   P1-3: Card(from: CardTemplate) conversion init added
 //
 // Architecture rule (Section 2.2): All Rarity extensions must be defined here,
 // not scattered across view files. CardFaction.color is defined here once only.
 
 import SwiftUI
+import UIKit
 
 // MARK: - CardFaction (Section 2.1)
-// Render-time faction type for card views and prompt generation.
-// NOT interchangeable with FactionShortName (DB-mapped) — see CONFLICTS.md P1-1.
+// Unified faction enum — replaces both CardFaction and FactionShortName.
+// Raw values match the DB/Supabase string values (from Enums.swift FactionShortName).
+// Short case names are used everywhere; DB decoding uses the raw value.
 
-enum CardFaction: String, Codable {
-    case ironwright   // Piranesi + Martin illustrators
-    case fey          // Rackham + Dulac
-    case demonic      // Bosch
-    case celestial    // Dore (Paradise) + Blake
-    case endless      // Dore (Inferno) + Goya
+enum CardFaction: String, Codable, CaseIterable, Identifiable {
+    case ironwright  = "IRONWRIGHT"          // Piranesi + Martin illustrators
+    case fey         = "FEY_COURTS"          // Rackham + Dulac
+    case demonic     = "DEMONIC_KINGDOMS"    // Bosch
+    case celestial   = "CELESTIAL_CRUSADE"  // Dore (Paradise) + Blake
+    case endless     = "THE_ENDLESS"         // Dore (Inferno) + Goya
+
+    var id: String { rawValue }
+
+    // MARK: Display
+
+    var displayName: String {
+        switch self {
+        case .ironwright: return "The Ironwright Collective"
+        case .fey:        return "The Fey Courts"
+        case .demonic:    return "The Demonic Kingdoms"
+        case .celestial:  return "The Celestial Crusade"
+        case .endless:    return "The Endless"
+        }
+    }
+
+    var shortDisplayName: String {
+        switch self {
+        case .ironwright: return "Ironwright"
+        case .fey:        return "Fey Courts"
+        case .demonic:    return "Demonic"
+        case .celestial:  return "Celestial"
+        case .endless:    return "Endless"
+        }
+    }
+
+    // MARK: Mechanic
+
+    var mechanic: FactionMechanic {
+        switch self {
+        case .ironwright: return .augment
+        case .fey:        return .bond
+        case .demonic:    return .corruption
+        case .celestial:  return .exalt
+        case .endless:    return .persist
+        }
+    }
+
+    // MARK: Assets
+
+    var emblemAssetName: String {
+        switch self {
+        case .ironwright: return "FactionEmblems/emblem-ironwright"
+        case .fey:        return "FactionEmblems/emblem-fey"
+        case .demonic:    return "FactionEmblems/emblem-demonic"
+        case .celestial:  return "FactionEmblems/emblem-celestial"
+        case .endless:    return "FactionEmblems/emblem-endless"
+        }
+    }
+
+    // MARK: SwiftUI Color
 
     /// Runtime tint color for faction icon and instability badge.
     /// Uses named colors from the asset catalog (Section 1.2 palette tokens).
@@ -38,6 +87,48 @@ enum CardFaction: String, Codable {
         case .demonic:    return Color("wax-red")
         case .celestial:  return Color("aged-gold")
         case .endless:    return Color("rot-moss")
+        }
+    }
+
+    var swiftUIColor: Color {
+        switch self {
+        case .ironwright: return .ironwright
+        case .fey:        return .feyCourts
+        case .demonic:    return .demonic
+        case .celestial:  return .celestial
+        case .endless:    return .endless
+        }
+    }
+
+    // MARK: UIKit Colors (for SpriteKit)
+
+    var primaryUIColor: UIColor {
+        switch self {
+        case .ironwright: return UIColor(hex: "#6B7B8D")
+        case .fey:        return UIColor(hex: "#2E8B57")
+        case .demonic:    return UIColor(hex: "#8B2252")
+        case .celestial:  return UIColor(hex: "#DAA520")
+        case .endless:    return UIColor(hex: "#6B3FA0")
+        }
+    }
+
+    var accentUIColor: UIColor {
+        switch self {
+        case .ironwright: return UIColor(hex: "#E07020")
+        case .fey:        return UIColor(hex: "#7FFFD4")
+        case .demonic:    return UIColor(hex: "#FF4500")
+        case .celestial:  return UIColor(hex: "#F5F0E1")
+        case .endless:    return UIColor(hex: "#E8DCC8")
+        }
+    }
+
+    var frameTintUIColor: UIColor {
+        switch self {
+        case .ironwright: return UIColor(hex: "#3D4654")
+        case .fey:        return UIColor(hex: "#1A3A1A")
+        case .demonic:    return UIColor(hex: "#2A1010")
+        case .celestial:  return UIColor(hex: "#2A2030")
+        case .endless:    return UIColor(hex: "#1A1525")
         }
     }
 }
@@ -63,15 +154,89 @@ enum CardSubFaction: String, Codable {
 }
 
 // MARK: - Rarity (Section 2.1)
-// Render-time rarity type for card views, frames, and shader uniforms.
-// NOT interchangeable with EvolutionTier (DB-mapped) — see CONFLICTS.md P1-2.
+// Unified rarity/evolution-tier enum — replaces both Rarity and EvolutionTier.
+// Raw values match the DB/Supabase string values (from Enums.swift EvolutionTier: "COMMON" etc.)
+// This type carries BOTH render properties (frame, shader, wax seal) AND
+// progression properties (energy thresholds, tier navigation).
 
-enum Rarity: String, Codable {
-    case common
-    case uncommon
-    case rare
-    case epic
-    case legendary
+enum Rarity: String, Codable, CaseIterable, Identifiable {
+    case common    = "COMMON"
+    case uncommon  = "UNCOMMON"
+    case rare      = "RARE"
+    case epic      = "EPIC"
+    case legendary = "LEGENDARY"
+
+    var id: String { rawValue }
+
+    // MARK: Display
+
+    var displayName: String {
+        switch self {
+        case .common:    return "Common"
+        case .uncommon:  return "Uncommon"
+        case .rare:      return "Rare"
+        case .epic:      return "Epic"
+        case .legendary: return "Legendary"
+        }
+    }
+
+    // MARK: Progression (from EvolutionTier)
+
+    /// Index for tier ordering and comparison (0-4).
+    var tierIndex: Int {
+        switch self {
+        case .common:    return 0
+        case .uncommon:  return 1
+        case .rare:      return 2
+        case .epic:      return 3
+        case .legendary: return 4
+        }
+    }
+
+    /// Chaos energy threshold to reach this tier (design: 0/15/30/50/75).
+    var energyThreshold: Int {
+        switch self {
+        case .common:    return 0
+        case .uncommon:  return 15
+        case .rare:      return 30
+        case .epic:      return 50
+        case .legendary: return 75
+        }
+    }
+
+    /// The next tier, if any.
+    var nextTier: Rarity? {
+        switch self {
+        case .common:    return .uncommon
+        case .uncommon:  return .rare
+        case .rare:      return .epic
+        case .epic:      return .legendary
+        case .legendary: return nil
+        }
+    }
+
+    /// The previous tier, if any.
+    var previousTier: Rarity? {
+        switch self {
+        case .common:    return nil
+        case .uncommon:  return .common
+        case .rare:      return .uncommon
+        case .epic:      return .rare
+        case .legendary: return .epic
+        }
+    }
+
+    // MARK: UIKit border color (for SpriteKit — was EvolutionTier.borderUIColor)
+
+    var borderUIColor: UIColor {
+        switch self {
+        case .common:    return UIColor(red: 0.62, green: 0.62, blue: 0.62, alpha: 1.0)
+        case .uncommon:  return UIColor(red: 0.30, green: 0.69, blue: 0.31, alpha: 1.0)
+        case .rare:      return UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 1.0)
+        case .epic:      return UIColor(red: 0.61, green: 0.15, blue: 0.69, alpha: 1.0)
+        case .legendary: return UIColor(red: 1.0,  green: 0.60, blue: 0.0,  alpha: 1.0)
+        }
+    }
 }
 
 // MARK: - Rarity Extensions (Section 2.2)
@@ -79,8 +244,7 @@ enum Rarity: String, Codable {
 
 extension Rarity: Comparable {
     static func < (lhs: Rarity, rhs: Rarity) -> Bool {
-        let order: [Rarity] = [.common, .uncommon, .rare, .epic, .legendary]
-        return order.firstIndex(of: lhs)! < order.firstIndex(of: rhs)!
+        lhs.tierIndex < rhs.tierIndex
     }
 }
 
@@ -233,7 +397,7 @@ struct CardShaderUniforms {
 
 // MARK: - Card Struct (Section 2.1)
 // Render-time card model — loaded from Resources/Cards/*.json via CardRepository (Phase 2).
-// NOT the same as CardTemplate (Supabase DB model) — see CONFLICTS.md P1-3.
+// Also constructable from CardTemplate via Card(from:) for DB-sourced data.
 
 struct Card: Codable, Identifiable {
     let id: UUID
@@ -284,5 +448,59 @@ struct Card: Codable, Identifiable {
     var ruinHP: Int? {
         guard type == .planarRuin, let cost = cost else { return nil }
         return cost * 3 + 1
+    }
+
+    // MARK: - VoiceOver (Task 2.10)
+
+    /// Accessibility label for VoiceOver. Summarises all visible card information.
+    var voiceOverLabel: String {
+        var parts = [String]()
+        parts.append(name)
+        parts.append("Cost: \(cost.map { "\($0)" } ?? "none")")
+        parts.append(type.rawValue.capitalized)
+        if let atk = attack { parts.append("Attack: \(atk)") }
+        if let displayHP = type == .planarRuin ? ruinHP : hp {
+            parts.append("HP: \(displayHP)")
+        }
+        parts.append("Instability: \(instability)")
+        if !abilityText.isEmpty { parts.append(abilityText) }
+        if let flavor = flavorText, !flavor.isEmpty { parts.append(flavor) }
+        return parts.joined(separator: ". ")
+    }
+
+    // MARK: - CardTemplate Conversion Init (P1-3)
+    // Maps CardTemplate (DB model) → Card (render model).
+    // CardTemplate.factionId is a UUID (FK to factions table), not a faction short-name string,
+    // so faction is always unknown at this level — caller must resolve via Faction.shortName lookup.
+    // Fields with no source in CardTemplate are documented with TODO.
+
+    init(from template: CardTemplate) {
+        self.id             = template.id
+        self.name           = template.name
+        self.type           = template.cardType
+        self.subtypes       = []                    // TODO: no source in CardTemplate (DB has no subtype column)
+        self.rarity         = .common               // TODO: no source in CardTemplate — CardTemplate is always the base Common record; tier lives on CardInstance
+        self.faction        = .ironwright           // TODO: CardTemplate.factionId is a UUID FK; resolve via Faction.shortName → CardFaction before using for rendering
+        self.subFaction     = .foundryDirectorate   // TODO: no source in CardTemplate (sub-faction not stored at template level)
+        self.cost           = template.manaCost
+        self.attack         = template.baseAttack
+        self.hp             = template.baseHealth
+        self.instability    = template.baseInstability
+        self.abilityText    = ""                    // TODO: no source in CardTemplate — ability text is derived from modifiers/triggers on CardInstance
+        self.modifiers      = []                    // TODO: no source in CardTemplate (modifiers live on CardInstance.modifiers)
+        self.triggeredAbilities = []                // TODO: no source in CardTemplate (triggered abilities live on CardInstance)
+        self.flavorText     = template.flavorText
+        self.artworkAssetName = template.artUrl     // maps remote URL as asset name; local asset lookup may differ
+        self.artworkLineage = []                    // TODO: no source in CardTemplate (lineage tracks evolution history, lives on CardInstance.artPromptHistory)
+        self.artworkArtist  = nil                   // TODO: no source in CardTemplate
+        self.frameStyle     = .standard
+        self.foil           = false                 // TODO: no source in CardTemplate — foil is instance-level cosmetic
+        self.evolutionDirection = nil               // Common tier has no evolution direction yet
+        self.setCode        = template.batchId ?? "ALPHA"
+        self.collectorNumber = template.id.uuidString // stable per-card identifier from DB id
+        self.condition      = .mint
+        self.inkColor       = .darkBrown
+        self.ruinPassiveText = nil                  // TODO: no source in CardTemplate (ruin passive is derived from spellEffect for PLANAR_RUIN type)
+        self.ruinDestructionPenaltyText = nil       // TODO: no source in CardTemplate
     }
 }
