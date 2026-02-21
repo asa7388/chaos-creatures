@@ -16,6 +16,7 @@
 		0A45B072636D29D4B0280B42 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045868C4CFB7E10DE62507F4 /* GameState.swift */; };
 		0D37F8BBFB04783BE9C8319B /* AuthServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC01794C22164CE1887A2489 /* AuthServiceTests.swift */; };
 		0FDC86ACDC4DD1B8EE445C40 /* BattleContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39DF5512B44FF548DBAF1464 /* BattleContainerView.swift */; };
+		CC22222222222222BBBBBB01 /* StabilityZoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC22222222222222BBBBBB02 /* StabilityZoneView.swift */; };
 		10D8F44A307A2358E8D243A0 /* MatchServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B71F423BDD301FAF3785491D /* MatchServiceTests.swift */; };
 		11DCA5933CE01CADC1B34BA1 /* ChaosCreaturesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0D45736FB1B9F8D2FCFE2A7 /* ChaosCreaturesApp.swift */; };
 		15565E16EFD4489A99641845 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CC2BA355A2E2C9A0D4874B2 /* Enums.swift */; };
@@ -219,6 +220,7 @@
 		32A216579D53CF7800E4EC9E /* CreatureNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureNode.swift; sourceTree = "<group>"; };
 		36789896515180866832BFB3 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		39DF5512B44FF548DBAF1464 /* BattleContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleContainerView.swift; sourceTree = "<group>"; };
+		CC22222222222222BBBBBB02 /* StabilityZoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StabilityZoneView.swift; sourceTree = "<group>"; };
 		3A39E9295562D6124B7FED4B /* Data+Codable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Codable.swift"; sourceTree = "<group>"; };
 		C9D4E2B1A3F7C5D8E4B6A1C2 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
 		3AB95B740838B12CB51EE495 /* GameplayKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameplayKit.framework; path = System/Library/Frameworks/GameplayKit.framework; sourceTree = SDKROOT; };
@@ -730,6 +732,7 @@
 				39DF5512B44FF548DBAF1464 /* BattleContainerView.swift */,
 				D17E7B8C57E7D047BD219AC7 /* MatchmakingView.swift */,
 				B3F86950CC6F3092FC7A30CB /* PostMatchView.swift */,
+				CC22222222222222BBBBBB02 /* StabilityZoneView.swift */,
 				BB11111111111111AAAAAA01 /* TutorialOverlayView.swift */,
 			);
 			path = Battle;
@@ -910,6 +913,7 @@
 				B4E2C7A3D1F5B9E702C8A4D1 /* GyroscopeManager.swift in Sources */,
 				F404562865EA887A1FE90DAC /* BattleCard.swift in Sources */,
 				0FDC86ACDC4DD1B8EE445C40 /* BattleContainerView.swift in Sources */,
+				CC22222222222222BBBBBB01 /* StabilityZoneView.swift in Sources */,
 				7350B72D83BEF4B0FC8DD11E /* BattleScene.swift in Sources */,
 				FD547EB4A8E4E85601437FA7 /* BattleStateMachine.swift in Sources */,
 				A919793DCCBC5E7FC75DB737 /* BattleViewModel.swift in Sources */,

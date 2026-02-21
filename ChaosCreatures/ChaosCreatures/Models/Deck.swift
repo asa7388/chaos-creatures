@@ -62,9 +62,9 @@ struct Deck: Codable, Identifiable, Equatable {
     func validate(cards: [CardInstance], templates: [UUID: CardTemplate]) -> [String] {
         var errors: [String] = []
 
-        // Rule: exactly 20 cards
-        if totalCards != 20 {
-            errors.append("Deck must contain exactly 20 cards (currently \(totalCards))")
+        // Rule: exactly 30 cards
+        if totalCards != 30 {
+            errors.append("Deck must contain exactly 30 cards (currently \(totalCards))")
         }
 
         // Rule: no template appears more than 2 times

@@ -100,24 +100,36 @@ struct BattleContainerView: View {
                             .padding(.horizontal, 20)
                         }
 
+                        // Stability zone (above hand, player's side only)
+                        StabilityZoneView(
+                            stabilizers: viewModel.playerStabilityZone,
+                            canActivate: viewModel.isMyTurn && viewModel.stateMachine.canPlayCards,
+                            onActivate: { instanceId in
+                                viewModel.activateStabilizer(instanceId: instanceId)
+                            }
+                        )
+
                         // Hand scroll view
                         HandScrollView(
                             hand: viewModel.hand,
                             selectedCardId: viewModel.selectedHandCardId,
                             canPlay: viewModel.stateMachine.canPlayCards,
                             currentMana: viewModel.playerMana,
+                            stabilizersPlayedThisTurn: viewModel.stabilizersPlayedThisTurn,
                             onSelect: { cardId in
                                 viewModel.selectHandCard(cardId)
-                                // Tell the scene about the selected card for slot highlighting
+                                // Tell the scene about the selected card for slot highlighting.
+                                // Stabilizers go to stability zone — no board slot needed.
                                 let card = viewModel.hand.first(where: { $0.instanceId == cardId })
-                                let needsSlot = card?.cardType == .creature || card?.cardType == .stabilizer || card?.cardType == .planarRuin
+                                let needsSlot = card?.cardType == .creature || card?.cardType == .planarRuin
                                 viewModel.battleScene?.setSelectedHandCard(cardId, needsSlot: needsSlot)
                             },
                             onPlay: { cardId in
-                                // For spells, play immediately (no slot needed).
-                                // For creatures/stabilizers, selection + board tap handles it.
+                                // Spells: play immediately (no slot needed).
+                                // Stabilizers: play immediately (go to stability zone, no slot).
+                                // Creatures/Planar Ruins: select then tap a board slot.
                                 let card = viewModel.hand.first(where: { $0.instanceId == cardId })
-                                if card?.cardType == .spell {
+                                if card?.cardType == .spell || card?.cardType == .stabilizer {
                                     viewModel.playCard(cardId)
                                     viewModel.battleScene?.setSelectedHandCard(nil, needsSlot: false)
                                 } else {
@@ -448,6 +460,8 @@ struct HandScrollView: View {
     let selectedCardId: String?
     let canPlay: Bool
     let currentMana: Int
+    /// Number of stabilizers played this turn (for limiting stabilizer plays to 1/turn)
+    var stabilizersPlayedThisTurn: Int = 0
     let onSelect: (String?) -> Void
     let onPlay: (String) -> Void
 
@@ -462,11 +476,11 @@ struct HandScrollView: View {
                         HandCardView(
                             card: card,
                             isSelected: card.instanceId == selectedCardId,
-                            canAfford: card.manaCost <= currentMana && canPlay,
+                            canAfford: canAffordCard(card),
                             onTap: {
                                 if card.instanceId == selectedCardId {
                                     // Double-tap to play
-                                    if card.manaCost <= currentMana && canPlay {
+                                    if canAffordCard(card) && canPlay {
                                         onPlay(card.instanceId)
                                     }
                                 } else {
@@ -495,6 +509,19 @@ struct HandScrollView: View {
                 .transition(.opacity)
             }
         }
+    }
+
+    // MARK: - Helpers
+
+    /// Whether the card can be played given the current state.
+    /// Stabilizers are free (0 motes) but max 1 per turn.
+    /// All other cards require enough mana.
+    private func canAffordCard(_ card: BattleCardData) -> Bool {
+        guard canPlay else { return false }
+        if card.cardType == .stabilizer {
+            return stabilizersPlayedThisTurn < 1
+        }
+        return card.manaCost <= currentMana
     }
 }
 
@@ -558,14 +585,25 @@ struct HandCardView: View {
                 )
         )
         .overlay(alignment: .topLeading) {
-            // CM cost badge
-            Text("\(card.manaCost)")
-                .font(CardFont.stats(size: 10))
-                .foregroundColor(.textPrimary)
-                .frame(width: 18, height: 18)
-                .background(canAfford ? Color.timerBlue : Color.textDisabled)
-                .clipShape(Circle())
-                .offset(x: -4, y: -4)
+            // CM cost badge — stabilizers show "FREE" in green
+            Group {
+                if card.cardType == .stabilizer {
+                    Text("FREE")
+                        .font(CardFont.stats(size: 6))
+                        .foregroundColor(canAfford ? .white : .gray)
+                        .frame(width: 22, height: 18)
+                        .background(canAfford ? Color.green.opacity(0.85) : Color.textDisabled)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                } else {
+                    Text("\(card.manaCost)")
+                        .font(CardFont.stats(size: 10))
+                        .foregroundColor(.textPrimary)
+                        .frame(width: 18, height: 18)
+                        .background(canAfford ? Color.timerBlue : Color.textDisabled)
+                        .clipShape(Circle())
+                }
+            }
+            .offset(x: -4, y: -4)
         }
         .opacity(canAfford ? 1.0 : 0.6)
         .scaleEffect(isSelected ? 1.08 : 1.0)

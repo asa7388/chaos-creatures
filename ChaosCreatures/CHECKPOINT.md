@@ -139,3 +139,27 @@ The iOS app shell is fully implemented. All SwiftUI views, navigation infrastruc
 - **Implemented by this agent**: ~45 files (models, extensions, app infra, views, services)
 - **Implemented by battle agent**: ~25 files (SpriteKit nodes, scenes, actions, battle views)
 - **Pre-existing**: ~4 files (Secrets.swift, GameState.swift, MatchEvent.swift, PlayerAction.swift)
+
+---
+
+# iOS Stabilizer Redesign Checkpoint
+## Status: complete
+## Files Updated
+- Models/GameState.swift — complete (added BattleStabilizerData struct, StabilizerTypeEnum, new fields + custom init on ClientBattlePlayer)
+- Models/Deck.swift — complete (totalCards check: 20 → 30)
+- Models/PlayerAction.swift — complete (added activateStabilizer case + jsonPayload entry)
+- Services/BattleViewModel.swift — complete (playerStabilityZone published, stabilizersPlayedThisTurn published, updateFromGameState updated, playCard updated to not require slot for stabilizers, activateStabilizer method added, canPlayCard updated)
+- SpriteKit/Nodes/HandCardNode.swift — complete (stabilizers show "FREE" in green instead of mana cost number)
+- Views/Battle/StabilityZoneView.swift (new) — complete (horizontal strip with StabilizerZoneCard tiles, ACTIVATE/COOLDOWN states, art thumbnails)
+- Views/Battle/BattleContainerView.swift — complete (StabilityZoneView integrated between action button and hand, HandScrollView updated to accept stabilizersPlayedThisTurn param and canAffordCard helper, HandCardView CM badge shows FREE for stabilizers, stabilizer onPlay goes directly to stability zone without slot selection)
+- Views/Collection/DeckBuilderView.swift — complete (maxCards 20 → 30, comment updated)
+## Build Result
+xcodebuild: pass (BUILD SUCCEEDED — iPhone 17 Simulator, Debug)
+## Notes
+- BattleStabilizerData decodes activated_effect JSONB as [String: String] to extract just the "type" key for display. If the server sends other value types, falls back to "UNKNOWN".
+- ClientBattlePlayer now has a custom init(from:) that uses decodeIfPresent for stabilityZone and stabilizersPlayedThisTurn (defaults to [] and 0) so the new fields are backward-compatible with older server payloads.
+- PlayerAction enum: activateStabilizer case added. The enum is marked Codable but uses jsonPayload/jsonData for actual serialization — no custom Codable init/encode needed.
+- StabilityZoneView.swift added to project.pbxproj with UUIDs CC22222222222222BBBBBB01 (build) and CC22222222222222BBBBBB02 (file ref).
+## Next Steps
+- Run xcodebuild to verify compilation
+- Fix any compilation errors found

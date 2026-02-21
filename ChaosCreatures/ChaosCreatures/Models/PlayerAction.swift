@@ -9,6 +9,7 @@ import Foundation
 
 enum PlayerAction: Codable {
     case playCard(cardId: String, targetSlot: Int?, targetId: String?)
+    case activateStabilizer(instanceId: String)
     case useChaosSpark
     case endMainPhase
     case declareAttackers(attackerIds: [String])
@@ -27,6 +28,8 @@ enum PlayerAction: Codable {
             if let slot = targetSlot { payload["target_slot"] = slot }
             if let tid = targetId { payload["target_id"] = tid }
             return payload
+        case .activateStabilizer(let instanceId):
+            return ["type": "ACTIVATE_STABILIZER", "instance_id": instanceId]
         case .useChaosSpark:
             return ["type": "USE_CHAOS_SPARK"]
         case .endMainPhase:

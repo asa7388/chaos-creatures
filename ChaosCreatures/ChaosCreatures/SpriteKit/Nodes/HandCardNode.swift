@@ -124,7 +124,14 @@ final class HandCardNode: SKSpriteNode {
         cmLabel.verticalAlignmentMode = .center
         cmLabel.position = .zero
         cmLabel.zPosition = 4
-        cmLabel.text = "\(card.manaCost)"
+        // Stabilizers are free — display "FREE" in green instead of a mana cost number
+        if card.cardType == .stabilizer {
+            cmLabel.text = "FREE"
+            cmLabel.fontSize = max(SK.Card.handCMFontSize - 2, 7)
+            cmLabel.fontColor = UIColor(hex: "#4CAF50")
+        } else {
+            cmLabel.text = "\(card.manaCost)"
+        }
 
         // ATK/HP badges (bottom corners, seated on lower card edge) — wax seal medallions
         let statRadius = SK.Card.handStatBadgeRadius

@@ -1,6 +1,6 @@
 // DeckBuilderView.swift
 // Chaos Creatures
-// Deck editor with card pool and deck list (20 cards).
+// Deck editor with card pool and deck list (30 cards).
 // Source: docs/design/07-ui-ux-specs.md Section 5.3
 
 import SwiftUI
@@ -22,7 +22,7 @@ struct DeckBuilderView: View {
     @State private var showDeckPanel = false  // For phone toggle layout (S-25)
     @State private var cardTypeFilter: CardType? = nil  // nil = all types
 
-    private let maxCards = 20
+    private let maxCards = 30
     private let maxRuins = 2
 
     var body: some View {

@@ -43,6 +43,10 @@ final class BattleViewModel: ObservableObject {
 
     @Published var selectedHandCardId: String?
 
+    // Stability zone: stabilizers the player has played this match
+    @Published var playerStabilityZone: [BattleStabilizerData] = []
+    @Published var stabilizersPlayedThisTurn: Int = 0
+
     // S-16: Turn timer
     @Published var turnTimeRemaining: Int = 0
     @Published var turnTimerActive: Bool = false
@@ -114,6 +118,8 @@ final class BattleViewModel: ObservableObject {
         playerGraveyardCount = state.me.graveyardCount
         hasChaosSpark = state.me.hasChaosSpark
         isConnected = state.me.isConnected
+        playerStabilityZone = state.me.stabilityZone
+        stabilizersPlayedThisTurn = state.me.stabilizersPlayedThisTurn
 
         opponentHp = state.opponent.currentHp
         opponentMaxHp = state.opponent.maxHp
@@ -194,13 +200,23 @@ final class BattleViewModel: ObservableObject {
     func playCard(_ cardId: String, targetSlot: Int? = nil, targetId: String? = nil) {
         guard stateMachine.canPlayCards else { return }
         guard let card = hand.first(where: { $0.instanceId == cardId }) else { return }
-        guard card.manaCost <= playerMana else { return }
+
+        // Stabilizers are free (0 motes). All other cards require mana.
+        if card.cardType != .stabilizer {
+            guard card.manaCost <= playerMana else { return }
+        }
+
+        // Stabilizers: max 1 per turn
+        if card.cardType == .stabilizer {
+            guard stabilizersPlayedThisTurn < 1 else { return }
+        }
 
         selectedHandCardId = nil
 
-        // For creatures/stabilizers/planar ruins, auto-select the first empty slot if none specified
+        // For creatures and planar ruins, auto-select the first empty slot if none specified.
+        // Stabilizers go directly to the stability zone — no board slot needed.
         var slot = targetSlot
-        let needsSlot = card.cardType == .creature || card.cardType == .stabilizer || card.cardType == .planarRuin
+        let needsSlot = card.cardType == .creature || card.cardType == .planarRuin
         if slot == nil && needsSlot {
             if let state = stateMachine.gameState {
                 slot = state.me.board.firstIndex(where: { $0 == nil })
@@ -209,6 +225,12 @@ final class BattleViewModel: ObservableObject {
 
         let action = PlayerAction.playCard(cardId: cardId, targetSlot: slot, targetId: targetId)
         sendAction(action)
+    }
+
+    /// Activate a stabilizer's ability
+    func activateStabilizer(instanceId: String) {
+        guard stateMachine.canPlayCards else { return }
+        sendAction(.activateStabilizer(instanceId: instanceId))
     }
 
     /// Select a card in hand (for preview or targeting)
@@ -266,9 +288,14 @@ final class BattleViewModel: ObservableObject {
         battleScene?.battleDelegate?.battleScene(battleScene!, didRequestAction: action)
     }
 
-    /// Whether a card can be played (enough CM + correct phase)
+    /// Whether a card can be played (enough CM + correct phase).
+    /// Stabilizers are free (0 motes) but limited to 1 per turn.
     func canPlayCard(_ card: BattleCardData) -> Bool {
-        stateMachine.canPlayCards && card.manaCost <= playerMana
+        guard stateMachine.canPlayCards else { return false }
+        if card.cardType == .stabilizer {
+            return stabilizersPlayedThisTurn < 1
+        }
+        return card.manaCost <= playerMana
     }
 
     // MARK: - S-16: Turn Timer
