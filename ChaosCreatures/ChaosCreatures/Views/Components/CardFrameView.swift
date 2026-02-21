@@ -318,11 +318,13 @@ struct CardFrameView: View {
 
     private func computedCardWidth(geometry: GeometryProxy) -> CGFloat {
         let isCompact = horizontalSizeClass == .compact
+        let rawWidth: CGFloat
         if isCompact {
-            return min(geometry.size.width * 0.85, 260)
+            rawWidth = min(geometry.size.width * 0.85, 260)
         } else {
-            return min(geometry.size.width * 0.40, 350)
+            rawWidth = min(geometry.size.width * 0.55, 380)
         }
+        return max(rawWidth, 160) // never smaller than 160pt
     }
 
     // MARK: - Card Content (with gesture + state transforms)
