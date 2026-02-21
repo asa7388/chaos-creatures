@@ -305,6 +305,16 @@ struct CollectionView: View {
         )
     }
 
+    // MARK: - Grid Columns
+
+    private var gridColumns: [GridItem] {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return [GridItem(.adaptive(minimum: 160, maximum: 200))]
+        } else {
+            return [GridItem(.adaptive(minimum: 112, maximum: 130))]
+        }
+    }
+
     // MARK: - Card Grid
 
     private var cardGrid: some View {
@@ -342,7 +352,7 @@ struct CollectionView: View {
                 .padding(.leading, 4)
 
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 112, maximum: 130))],
+                    columns: gridColumns,
                     spacing: 10
                 ) {
                     ForEach(filteredCards) { card in

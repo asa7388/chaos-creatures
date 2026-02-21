@@ -324,16 +324,12 @@ struct CardFrameView: View {
     }
 
     private func computedCardWidth(geometry: GeometryProxy) -> CGFloat {
-        // Spec (CARD_DESIGN_GUIDE.md §9.2 / CARD_DESIGN_QUICKREF.md "Card Sizing by Context"):
-        //   iPhone (compact):  min(availableWidth * 0.85, 260)
-        //   iPad (regular):    min(availableWidth * 0.40, 350)
-        // The caller controls visible card size by the frame it provides;
-        // detail views offer the full available width, grid cells offer a small frame.
-        let isCompact = horizontalSizeClass == .compact
-        if isCompact {
-            return max(min(geometry.size.width * 0.85, 260), 160)
+        // Use UIDevice.current.userInterfaceIdiom instead of horizontalSizeClass —
+        // horizontalSizeClass is unreliable inside fullScreenCover on iPad.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return max(min(geometry.size.width * 0.55, 500), 160)
         } else {
-            return max(min(geometry.size.width * 0.40, 350), 160)
+            return max(min(geometry.size.width * 0.85, 320), 160)
         }
     }
 

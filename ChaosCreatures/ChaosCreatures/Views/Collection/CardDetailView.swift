@@ -145,9 +145,9 @@ struct CardDetailView: View {
     private var detailCardWidth: CGFloat {
         let screenWidth = UIScreen.main.bounds.width
         if UIDevice.current.userInterfaceIdiom == .pad {
-            return min(screenWidth * 0.40, 350)
+            return min(screenWidth * 0.55, 500)
         } else {
-            return min(screenWidth * 0.85, 260)
+            return min(screenWidth * 0.85, 320)
         }
     }
 
@@ -158,7 +158,7 @@ struct CardDetailView: View {
         // inside CardFrameView multiplies back to exactly cardWidth.
         let cardWidth = detailCardWidth
         let cardHeight = cardWidth * (294.0 / 210.0)
-        let multiplier: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 0.40 : 0.85
+        let multiplier: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 0.55 : 0.85
         let offeredWidth = cardWidth / multiplier
 
         return Group {
