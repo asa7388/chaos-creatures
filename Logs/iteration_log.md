@@ -51,3 +51,37 @@ Next phase: Phase 1 — Color Palette & Data Schema
 MASTER_STATE.json read: phase=pre-implementation, all decisions resolved, ready for Phase 0.
 Guide section for today's task: Section 4 (Environment & Tool Setup).
 Beginning Phase 0: Environment & Toolchain Setup — fonts, .env, budget ledger, asset license manifest, toolchain verification.
+
+---
+
+## Phase 1 Start — 2026-02-21
+Phase 0 font deviation resolved: 3 incorrect variable-weight fonts replaced with static-weight builds from fontsource CDN. All 6 PostScript names verified correct. Build: SUCCEEDED.
+Guide section for Phase 1: Section 1.2 (P3 color palette), Section 2 (Card Data Schema).
+Beginning Phase 1: Color Palette & Data Schema — 16 P3 named color assets, CardDisplayState enum, CardTemplate struct, enum updates.
+
+---
+
+## Phase 1 Complete — 2026-02-21
+Tasks completed:
+- Color assets created: 16 new .colorset files in Assets.xcassets (all at root level of xcassets, not in a subfolder)
+- CardPalette.swift: created with 16 color tokens matching guide Section 1.2 exactly
+- CardDisplayState.swift: created with 8 states from guide Section 2.3 (default, focused, selected, tapped, previewed, summoning(progress:), foilActive(tiltX:tiltY:), damaged(severity:), inGraveyard)
+- CardGuideEnums.swift: created — new file containing guide Section 2.1 spec: CardFaction, CardSubFaction, Rarity (with all Section 2.2 extensions), EvolutionDirection, FrameStyle, CardCondition, InkColor, CardShaderUniforms, Card struct
+- CardTemplate.swift: NOT modified — additive approach taken; guide-spec Card struct placed in separate CardGuideEnums.swift to avoid breaking DB-mapped CardTemplate (see CONFLICTS.md P1-3)
+- Enums updated: CardType already had all 4 required cases (creature/spell/stabilizer/planarRuin). Keyword already had all 9 cases. No changes needed to existing enums — all were already correct.
+- Xcode project (pbxproj): 3 new files registered (PBXBuildFile, PBXFileReference, group children, Sources build phase)
+- Build: PASSED
+
+Conflicts encountered (logged to Logs/CONFLICTS.md — NOT self-resolved):
+- P1-1: CardFaction (guide) vs FactionShortName (existing) — different type name and case names
+- P1-2: Rarity (guide) vs EvolutionTier (existing) — same concept, different type name
+- P1-3: Card struct (guide) vs CardTemplate struct (existing) — same concept, different field names
+
+Phase 1 exit criteria:
+- [x] All 16 color tokens in Assets.xcassets (parchment-light, parchment-mid, parchment-dark, ink-black, wax-red, wax-blue, wax-green, fey-teal, rot-moss, aged-gold, antique-silver, epic-amethyst, legendary-ember, canvas-warm, parchment-dark-mode, ink-dark-mode)
+- [x] CardPalette.swift compiles and all 16 tokens reference valid asset names
+- [x] CardDisplayState enum has all guide Section 2.3 states (8 states, 3 with associated values)
+- [x] Card struct has all guide Section 2.1 fields (22 fields + 2 computed properties)
+- [x] Build passes
+
+Next phase: Phase 2 — Card Layout Rebuild (Decision Gate: CardFrameView zone-stack rewrite approved per DEPENDENCY_DECISIONS.md Decision 1)

@@ -43,3 +43,51 @@ Resolution: All occurrences changed to "iOS 16+".
 ## Non-Conflicting Removals (Superseded)
 - Art Consistency block (lines 142–144): Removed. Fully covered by guide Section 1.1.
 - Composition Variety block (lines 146–148): Removed. Fully covered by guide Section 3.
+
+---
+
+## Phase 1 Conflicts — 2026-02-21 (Card Data Schema)
+
+### Conflict P1-1 — Faction Enum Name and Case Names
+**Source A (existing codebase — Enums.swift):** `FactionShortName` enum with cases:
+  - `.ironwright` ("IRONWRIGHT")
+  - `.feyCourts` ("FEY_COURTS")
+  - `.demonicKingdoms` ("DEMONIC_KINGDOMS")
+  - `.celestialCrusade` ("CELESTIAL_CRUSADE")
+  - `.theEndless` ("THE_ENDLESS")
+
+**Source B (guide Section 2.1):** `CardFaction` enum with cases:
+  - `.ironwright`
+  - `.fey`
+  - `.demonic`
+  - `.celestial`
+  - `.endless`
+
+**Nature of conflict:** Different type name (`FactionShortName` vs `CardFaction`); different case names for 4 of 5 factions (fey/feyCourts, demonic/demonicKingdoms, celestial/celestialCrusade, endless/theEndless). The existing enum is DB-mapped to Supabase string values; the guide enum is for render-time card data.
+
+**Resolution (NOT self-resolved — owner decision required):**
+Both types coexist as of Phase 1. `FactionShortName` (existing, DB-mapped) is left untouched. `CardFaction` (new, guide Section 2.1) is added to `CardGuideEnums.swift`. Downstream views that need faction color for card rendering should use `CardFaction`. Views that need DB faction data continue using `FactionShortName`. A conversion helper between the two types is NOT added until the owner resolves the naming conflict and decides on a single canonical type.
+
+---
+
+### Conflict P1-2 — Rarity Enum Name
+**Source A (existing codebase — Enums.swift):** `EvolutionTier` with cases: common, uncommon, rare, epic, legendary. Includes energy thresholds (15/30/50/75), display names, and `nextTier` computed property.
+
+**Source B (guide Section 2.1):** `Rarity` with cases: common, uncommon, rare, epic, legendary. Used for frame styling, wax seal colors, glow uniforms, foil intensity. Section 2.2 defines extensive `Rarity` extensions for `waxColor`, `glowSIMD`, `foilIntensity`, `glowIntensity`, `sealIconName`, `borderWidth`, `borderGradient`.
+
+**Nature of conflict:** Same semantic concept (card rarity / evolution tier), different type name. The guide's `Rarity` extensions are specified as canonically belonging in `Sources/Models/Card.swift` (Section 2.2 comment).
+
+**Resolution (NOT self-resolved — owner decision required):**
+Both types coexist as of Phase 1. `EvolutionTier` (existing, DB-mapped with energy thresholds) is left untouched. `Rarity` (new, guide Section 2.1) is added to `CardGuideEnums.swift` with all Section 2.2 extensions. Card views being rebuilt in Phase 2 must use `Rarity`. The existing collection/evolution views that reference `EvolutionTier` continue as-is until those screens are audited. Owner must decide whether to rename `EvolutionTier` → `Rarity` and merge, or keep both with an explicit conversion layer.
+
+---
+
+### Conflict P1-3 — CardTemplate vs Card (Struct Name and Field Names)
+**Source A (existing codebase — CardTemplate.swift):** `CardTemplate` struct, DB-mapped fields. Key fields: `cardType: CardType`, `factionId: UUID` (FK), `baseAttack: Int?`, `baseHealth: Int?`, `manaCost: Int`, `baseInstability: Int`, `artUrl: String`.
+
+**Source B (guide Section 2.1):** `Card` struct. Key fields: `type: CardType`, `faction: CardFaction`, `rarity: Rarity`, `attack: Int?`, `hp: Int?`, `cost: Int?`, `instability: Int`, `artworkAssetName: String`.
+
+**Nature of conflict:** Different struct names; field naming diverges (attack/baseAttack, hp/baseHealth, cost/manaCost, faction/factionId, instability/baseInstability). The guide struct is a render-time model loaded from JSON; the existing struct is a DB decode model.
+
+**Resolution (NOT self-resolved — owner decision required):**
+The guide-spec `Card` struct is added as a NEW struct in `CardGuideEnums.swift`. The existing `CardTemplate` struct is left untouched (it is the Supabase DB model and is used by CollectionService, BattleCard, etc.). Card views being rebuilt in Phase 2 will target `Card`. Owner must eventually decide whether to merge these into a single struct or maintain a conversion layer between the DB model and render model.
