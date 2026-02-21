@@ -5,6 +5,15 @@
 // stat badges, keyword dots, and contact shadow. Rendered in SpriteKit for drag-to-play
 // interactions from within the scene.
 //
+// Layout (90x130pt hand card):
+//   Top-left: card name label with dark plate
+//   Top-right: CM wax-seal badge (faction-shaped when asset available)
+//   Center: full-bleed creature art with parallax
+//   Above text panel: keyword dots (small colored circles)
+//   Bottom-left: ATK wax-seal badge straddling art/panel boundary
+//   Bottom-right: HP wax-seal badge straddling art/panel boundary
+//   NO type line, instability, modifiers, or flavor text at hand size
+//
 // Wave 6 additions:
 //   - Parallax: art layer shifts 1-3px on horizontal pan for depth-under-glass feel
 //   - Card Expand: tap to expand card to ~80% screen width with detail text overlay
@@ -16,9 +25,10 @@ import SpriteKit
 /// Represents a card in the player's hand within the SpriteKit scene.
 /// Full-bleed art fills the card bounds. Texture layers (canvas weave, faction border,
 /// text panel) give the hand-painted paper-card feel matching the SwiftUI CardFrameView.
-/// Wax-seal medallion stat badges overlay corners: CM top-right, ATK bottom-left of text
-/// panel, HP bottom-right of text panel. Keywords shown as tiny colored dots just above
-/// the text panel edge.
+/// Card name at top-left with dark plate, CM seal at top-right, ATK/HP seals straddling
+/// art/panel boundary at bottom-left/right. Keywords shown as tiny colored dots just above
+/// the text panel edge. When faction-shaped wax seal assets are available, badges use them
+/// instead of generic bronze circle seals.
 ///
 /// **Parallax**: The card art is wrapped in an `SKCropNode` so it clips to the card
 /// bounds. Call `applyParallaxOffset(_:)` during horizontal panning to shift the art
@@ -80,16 +90,21 @@ final class HandCardNode: SKSpriteNode {
         artCropNode.addChild(cardArtNode)
         artCropNode.zPosition = 0
 
-        // --- Card name (upper portion of text panel) ---
+        // --- Card name (top-left with dark background plate) ---
         nameLabel = SKLabelNode(fontNamed: SK.Fonts.bold)
         nameLabel.fontSize = SK.Card.handNameFontSize
         nameLabel.fontColor = SK.CardTextures.parchmentText
-        nameLabel.horizontalAlignmentMode = .center
+        nameLabel.horizontalAlignmentMode = .left
         nameLabel.verticalAlignmentMode = .center
-        nameLabel.position = CGPoint(x: 0, y: -cardSize.height / 2 + panelHeight * 0.65)
-        nameLabel.zPosition = 2.5
+        // Positioned top-left, inset 5pt from edges
+        let namePadding: CGFloat = 5
+        nameLabel.position = CGPoint(x: -cardSize.width / 2 + namePadding + 3,
+                                     y: cardSize.height / 2 - namePadding - 5)
+        nameLabel.zPosition = 2.7
 
-        let displayName = card.name.count > 12 ? String(card.name.prefix(11)) + "\u{2026}" : card.name
+        // Truncate longer names to fit ~55% of card width
+        let maxNameChars = 13
+        let displayName = card.name.count > maxNameChars ? String(card.name.prefix(maxNameChars - 1)) + "\u{2026}" : card.name
         nameLabel.text = displayName
 
         // --- Medallion stat badges ---
@@ -111,13 +126,14 @@ final class HandCardNode: SKSpriteNode {
         cmLabel.zPosition = 4
         cmLabel.text = "\(card.manaCost)"
 
-        // ATK badge (bottom-left of text panel) — wax seal medallion
+        // ATK badge (bottom-left, straddling art/panel boundary) — wax seal medallion
         let statRadius = SK.Card.handStatBadgeRadius
         let panelBottomY = -cardSize.height / 2
+        let sealStraddleY = panelBottomY + panelHeight * 0.5
 
         let atkContainer = SKNode()
         atkContainer.position = CGPoint(x: -cardSize.width / 2 + statRadius + 4,
-                                        y: panelBottomY + panelHeight * 0.25)
+                                        y: sealStraddleY)
         atkContainer.zPosition = 3
         atkBadge = atkContainer
 
@@ -129,10 +145,10 @@ final class HandCardNode: SKSpriteNode {
         atkLabel.position = .zero
         atkLabel.zPosition = 4
 
-        // HP badge (bottom-right of text panel) — wax seal medallion
+        // HP badge (bottom-right, straddling art/panel boundary) — wax seal medallion
         let hpContainer = SKNode()
         hpContainer.position = CGPoint(x: cardSize.width / 2 - statRadius - 4,
-                                       y: panelBottomY + panelHeight * 0.25)
+                                       y: sealStraddleY)
         hpContainer.zPosition = 3
         hpBadge = hpContainer
 
@@ -199,16 +215,29 @@ final class HandCardNode: SKSpriteNode {
             cardSize: cardSize
         )
 
-        // Layer 2: Card name (on top of text panel)
+        // Layer 2: Card name (top-left with dark background plate)
+        // Dark background plate behind the name for readability
+        let nameWidth = CGFloat(displayName.count) * SK.Card.handNameFontSize * 0.55 + 8
+        let namePlateHeight: CGFloat = SK.Card.handNameFontSize + 6
+        let namePlate = SKShapeNode(rectOf: CGSize(width: nameWidth, height: namePlateHeight),
+                                    cornerRadius: 3)
+        namePlate.fillColor = UIColor.black.withAlphaComponent(0.55)
+        namePlate.strokeColor = .clear
+        namePlate.position = CGPoint(x: nameLabel.position.x + nameWidth / 2 - 3,
+                                     y: nameLabel.position.y)
+        namePlate.zPosition = 2.5
+        namePlate.name = "name_plate"
+        addChild(namePlate)
+
         // Drop shadow for name label
         let nameShadow = SKLabelNode(fontNamed: SK.Fonts.bold)
         nameShadow.fontSize = SK.Card.handNameFontSize
         nameShadow.fontColor = .black.withAlphaComponent(0.8)
-        nameShadow.horizontalAlignmentMode = .center
+        nameShadow.horizontalAlignmentMode = .left
         nameShadow.verticalAlignmentMode = .center
         nameShadow.position = CGPoint(x: nameLabel.position.x + 0.5,
                                       y: nameLabel.position.y - 0.5)
-        nameShadow.zPosition = 2.4
+        nameShadow.zPosition = 2.6
         nameShadow.text = nameLabel.text
         addChild(nameShadow)
         addChild(nameLabel)
@@ -218,23 +247,26 @@ final class HandCardNode: SKSpriteNode {
         let atkIcon = SK.CardTextures.atkIconName(faction: faction)
         let hpIcon = SK.CardTextures.hpIconName(faction: faction)
 
-        // Layer 3: CM badge (medallion)
+        // Layer 3: CM badge (medallion with faction seal)
         setupMedallionBadge(container: cmContainer, radius: cmRadius,
                             tintColor: SK.CardTextures.cmTintColor,
-                            iconName: cmIcon, label: cmLabel)
+                            iconName: cmIcon, label: cmLabel,
+                            faction: faction)
         addChild(cmBadge)
 
         if isCreature {
-            // ATK medallion badge
+            // ATK medallion badge with faction seal
             setupMedallionBadge(container: atkContainer, radius: statRadius,
                                 tintColor: SK.CardTextures.atkTintColor,
-                                iconName: atkIcon, label: atkLabel)
+                                iconName: atkIcon, label: atkLabel,
+                                faction: faction)
             addChild(atkBadge)
 
-            // HP medallion badge
+            // HP medallion badge with faction seal
             setupMedallionBadge(container: hpContainer, radius: statRadius,
                                 tintColor: SK.CardTextures.hpTintColor,
-                                iconName: hpIcon, label: hpLabel)
+                                iconName: hpIcon, label: hpLabel,
+                                faction: faction)
             addChild(hpBadge)
         } else {
             // Non-creature: show centered type label instead of ATK/HP badges
@@ -243,7 +275,7 @@ final class HandCardNode: SKSpriteNode {
             typeLbl.fontColor = UIColor(hex: "#AAAAAA")
             typeLbl.horizontalAlignmentMode = .center
             typeLbl.verticalAlignmentMode = .center
-            typeLbl.position = CGPoint(x: 0, y: panelBottomY + panelHeight * 0.25)
+            typeLbl.position = CGPoint(x: 0, y: sealStraddleY)
             typeLbl.zPosition = 3
             typeLbl.text = card.cardType == .spell ? "Spell" : "Stabilizer"
             addChild(typeLbl)
@@ -365,63 +397,106 @@ final class HandCardNode: SKSpriteNode {
     // MARK: - Medallion Badge Setup
 
     /// Creates a wax-seal medallion badge at the given container position.
-    /// Matches the SwiftUI MedallionBadge: wax-seal-bronze texture base, faction color
-    /// tint, stat icon at low opacity, embossed rim, and Bebas Neue stat number.
+    /// When a faction-shaped seal asset is available, uses that as the base sprite.
+    /// Otherwise falls back to the generic wax-seal-bronze texture clipped to a circle.
+    /// Both paths apply: stat color tint, stat icon at low opacity, embossed rim, and
+    /// Bebas Neue stat number with drop shadow.
     private func setupMedallionBadge(container: SKNode, radius: CGFloat,
                                      tintColor: UIColor, iconName: String,
-                                     label: SKLabelNode) {
+                                     label: SKLabelNode,
+                                     faction: FactionShortName? = nil) {
         let diameter = radius * 2
 
-        // 1. Wax seal bronze texture base, clipped to circle
-        let sealTexture = SKSpriteNode(imageNamed: SK.CardTextures.waxSealBronze)
-        sealTexture.size = CGSize(width: diameter, height: diameter)
-        sealTexture.zPosition = 0
+        // Check for faction-specific wax seal asset
+        let sealAssetName = SK.CardTextures.factionSealAsset(faction: faction)
+        let hasFactionSeal = sealAssetName != nil && UIImage(named: sealAssetName!) != nil
 
-        let sealCrop = SKCropNode()
-        let sealMask = SKShapeNode(circleOfRadius: radius)
-        sealMask.fillColor = .white
-        sealCrop.maskNode = sealMask
-        sealCrop.addChild(sealTexture)
-        sealCrop.zPosition = 0
-        container.addChild(sealCrop)
+        if hasFactionSeal, let assetName = sealAssetName {
+            // --- Faction seal path ---
 
-        // 2. Stat color tint overlay
-        let tintCircle = SKShapeNode(circleOfRadius: radius)
-        tintCircle.fillColor = tintColor.withAlphaComponent(0.35)
-        tintCircle.strokeColor = .clear
-        tintCircle.zPosition = 1
-        container.addChild(tintCircle)
+            // 0. Contact shadow beneath the seal (subtle dark circle offset 1pt down)
+            let shadow = SKShapeNode(circleOfRadius: radius * 0.9)
+            shadow.fillColor = UIColor.black.withAlphaComponent(0.4)
+            shadow.strokeColor = .clear
+            shadow.position = CGPoint(x: 0, y: -1.5)
+            shadow.zPosition = -0.5
+            container.addChild(shadow)
 
-        // 3. Stat icon texture at low opacity
-        let iconSprite = SKSpriteNode(imageNamed: iconName)
-        iconSprite.size = CGSize(width: diameter, height: diameter)
-        iconSprite.alpha = 0.25
-        iconSprite.blendMode = .alpha
-        let iconCrop = SKCropNode()
-        let iconMask = SKShapeNode(circleOfRadius: radius)
-        iconMask.fillColor = .white
-        iconCrop.maskNode = iconMask
-        iconCrop.addChild(iconSprite)
-        iconCrop.zPosition = 2
-        container.addChild(iconCrop)
+            // 1. Faction seal sprite (pre-shaped, no circle crop needed)
+            let sealSprite = SKSpriteNode(imageNamed: assetName)
+            sealSprite.size = CGSize(width: diameter, height: diameter)
+            sealSprite.zPosition = 0
+            container.addChild(sealSprite)
 
-        // 4. Embossed rim — dark outer ring
-        let outerRim = SKShapeNode(circleOfRadius: radius)
-        outerRim.fillColor = .clear
-        outerRim.strokeColor = SK.CardTextures.rimDark.withAlphaComponent(0.8)
-        outerRim.lineWidth = max(radius * 0.12, 0.75)
-        outerRim.zPosition = 3
-        container.addChild(outerRim)
+            // 2. Stat color tint overlay (circle at 0.25 alpha, alpha blend)
+            let tintCircle = SKShapeNode(circleOfRadius: radius)
+            tintCircle.fillColor = tintColor.withAlphaComponent(0.25)
+            tintCircle.strokeColor = .clear
+            tintCircle.blendMode = .alpha
+            tintCircle.zPosition = 1
+            container.addChild(tintCircle)
 
-        // 5. Inner highlight
-        let innerRim = SKShapeNode(circleOfRadius: radius * 0.88)
-        innerRim.fillColor = .clear
-        innerRim.strokeColor = SK.CardTextures.rimHighlight.withAlphaComponent(0.35)
-        innerRim.lineWidth = 0.5
-        innerRim.zPosition = 3.5
-        container.addChild(innerRim)
+            // 3. Stat icon stamp at 25% opacity behind the number
+            let iconSprite = SKSpriteNode(imageNamed: iconName)
+            iconSprite.size = CGSize(width: diameter * 0.7, height: diameter * 0.7)
+            iconSprite.alpha = 0.25
+            iconSprite.blendMode = .alpha
+            iconSprite.zPosition = 2
+            container.addChild(iconSprite)
+        } else {
+            // --- Fallback: generic wax-seal-bronze clipped to circle ---
 
-        // 6. Number label (Bebas Neue) with drop shadow
+            // 1. Wax seal bronze texture base, clipped to circle
+            let sealTexture = SKSpriteNode(imageNamed: SK.CardTextures.waxSealBronze)
+            sealTexture.size = CGSize(width: diameter, height: diameter)
+            sealTexture.zPosition = 0
+
+            let sealCrop = SKCropNode()
+            let sealMask = SKShapeNode(circleOfRadius: radius)
+            sealMask.fillColor = .white
+            sealCrop.maskNode = sealMask
+            sealCrop.addChild(sealTexture)
+            sealCrop.zPosition = 0
+            container.addChild(sealCrop)
+
+            // 2. Stat color tint overlay
+            let tintCircle = SKShapeNode(circleOfRadius: radius)
+            tintCircle.fillColor = tintColor.withAlphaComponent(0.35)
+            tintCircle.strokeColor = .clear
+            tintCircle.zPosition = 1
+            container.addChild(tintCircle)
+
+            // 3. Stat icon texture at low opacity
+            let iconSprite = SKSpriteNode(imageNamed: iconName)
+            iconSprite.size = CGSize(width: diameter, height: diameter)
+            iconSprite.alpha = 0.25
+            iconSprite.blendMode = .alpha
+            let iconCrop = SKCropNode()
+            let iconMask = SKShapeNode(circleOfRadius: radius)
+            iconMask.fillColor = .white
+            iconCrop.maskNode = iconMask
+            iconCrop.addChild(iconSprite)
+            iconCrop.zPosition = 2
+            container.addChild(iconCrop)
+
+            // 4. Embossed rim — dark outer ring
+            let outerRim = SKShapeNode(circleOfRadius: radius)
+            outerRim.fillColor = .clear
+            outerRim.strokeColor = SK.CardTextures.rimDark.withAlphaComponent(0.8)
+            outerRim.lineWidth = max(radius * 0.12, 0.75)
+            outerRim.zPosition = 3
+            container.addChild(outerRim)
+
+            // 5. Inner highlight
+            let innerRim = SKShapeNode(circleOfRadius: radius * 0.88)
+            innerRim.fillColor = .clear
+            innerRim.strokeColor = SK.CardTextures.rimHighlight.withAlphaComponent(0.35)
+            innerRim.lineWidth = 0.5
+            innerRim.zPosition = 3.5
+            container.addChild(innerRim)
+        }
+
+        // 6. Number label (Bebas Neue) with drop shadow — common to both paths
         label.zPosition = 4
         let shadowLabel = SKLabelNode(fontNamed: SK.Fonts.statNumber)
         shadowLabel.fontSize = label.fontSize

@@ -6,6 +6,7 @@
 |---|---|---|
 | 2026-02-19 | v1.0 | Initial creation — complete card layout specification, UI direction, art style rules, faction palettes, typography, texture system, information hierarchy, and interaction design |
 | 2026-02-19 | v1.1 | Removed creature art generation guidance (handled externally). Added comprehensive AI generation workflows for textures, icons, card frames, UI elements, and all non-creature art. Added Section 17 (AI Asset Generation Playbook). |
+| 2026-02-20 | v1.2 | Card layout redesign: name top-left (contained plate), CM top-right, ATK/HP bottom corners. Wax-seal stat tokens (5 faction shapes). Lower thirds: type+instability, modifier names (tap-to-discover via inline tooltip), flavor text. Physical cardstock aesthetic for all card chrome. |
 
 ---
 
@@ -91,47 +92,82 @@ A card in the player's hand or on the battlefield must communicate the following
 ### Card Layout Zones (Top to Bottom)
 
 ```
-┌─────────────────────────────┐
-│  [Faction Emblem]   [Chaos Motes ●●●] │  ← Header Band
-├─────────────────────────────┤
-│                             │
-│                             │
-│      CREATURE ART           │  ← Art Window (55-60% of card height)
-│      (oil palette)          │
-│                             │
-│                             │
-├─────────────────────────────┤
-│  CARD NAME                  │  ← Name Bar (sits on border of art/text)
-│  Card Type · Instability ◆  │  ← Subline
-├─────────────────────────────┤
-│  Effect 1 icon + text       │  ← Text Box (remaining space)
-│  Effect 2 icon + text       │     1-2 effects visible; "..." if more
-├────────┬───────────────┬────────┤
-│ ⚔ 5  │              │ ♥ 8  │  ← Stat Corners
-└────────┴───────────────┴────────┘
+┌──────────────────────────────────────┐
+│ ┌────────────┐            ┌────────┐ │
+│ │ REBAR GOLEM│            │  ⬡ 4   │ │  ← Contained name plate (left), CM wax seal (right)
+│ └────────────┘            └────────┘ │
+│                                      │
+│          CREATURE ART                │  ← Full-bleed art (~60-65% of card)
+│          (oil painting)              │
+│                                      │
+├──────────────────────────────────────┤
+│  CREATURE — IRONWRIGHT    ◆ INST 1  │  ← Type line + instability (inline)
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │
+│  Haste · Shield · Piercing          │  ← Modifier names (tap for inline tooltip)
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ │
+│  "Rage remembers what flesh forgets" │  ← Flavor text (italic, low opacity)
+├────────┬────────────────────┬────────┤
+│  ⚔ 5  │                    │  ♥ 3  │  ← ATK wax seal (left), HP wax seal (right)
+└────────┴────────────────────┴────────┘
 ```
+
+Key elements:
+- **Card Name**: Top-left, contained name plate (engraved badge, like a brass nameplate on a picture frame). Cinzel Bold, parchment-colored, with letterpress inner shadow. Background: faction text panel texture at low opacity + dark overlay. 0.5pt faction-colored border. Rounded corners (4pt). Padding 4pt h, 2pt v. Positioned 6-8pt inset from card edge.
+- **CM Cost**: Top-right, faction-shaped wax-seal badge
+- **Creature Art**: Full-bleed, ~60-65% of card height
+- **Lower Thirds** (~30-35%): Type line + instability (inline), modifier names (tap-to-discover via inline tooltip), flavor text
+- **ATK**: Bottom-left, faction-shaped wax-seal badge, straddling panel/art boundary
+- **HP**: Bottom-right, faction-shaped wax-seal badge, straddling panel/art boundary
+- **Instability**: Inline in type line as "◆ INST X" (NOT a separate badge)
 
 ### Critical Proportions
 
-The art window must dominate. On a physical card, the illustration is the centerpiece, and the frame exists to support it. Target **55-60% of total card height** for the art window. The text box below should be **20-25%**. The header and footer stat bars split the remaining **15-20%**.
+The art window must dominate. On a physical card, the illustration is the centerpiece, and the frame exists to support it. Target **60-65% of total card height** for the art window. The lower thirds (type line, modifiers, flavor text) should be **30-35%**. The stat seals straddle the boundary between art and lower thirds.
 
 The card's aspect ratio should be approximately **2.5:3.5** (standard poker card proportions, 63mm × 88mm). On a mobile screen, cards in hand will render at roughly 120-160px wide, so every element in the "at a glance" tier must be legible at that size.
 
-### The Name Bar
+### The Card Name Plate (Top-Left)
 
-The card name bar is the single most important typographic element. It should span the full width of the card between the art window and the text box, functioning as a visual bridge. The name should be set in a display typeface (see Typography section) with enough size to be readable when the card is at minimum hand-view scale. Consider placing the name bar so it slightly overlaps the bottom edge of the art frame — this is a classic physical card design technique that creates depth and connects the art to the information space.
+The card name is displayed as a **contained name plate** — a small badge/plate wrapping just the card name text (not a full-width strip). It should have a handcrafted/engraved feel, like a brass nameplate on a picture frame.
 
-### The Stat Corners
+- **Background:** Faction text panel texture at low opacity + dark overlay for readability
+- **Border:** 0.5pt faction-colored stroke
+- **Corners:** Rounded (4pt)
+- **Padding:** 4pt horizontal, 2pt vertical
+- **Font:** Cinzel Bold, parchment color, with letterpress inner shadow
+- **Size scales:** 10pt (grid), 9pt (hand), 18pt (detail), 22pt (fullscreen)
+- **Position:** Top-left with 6-8pt inset from card edge
 
-Attack and HP sit in the bottom-left and bottom-right corners respectively. These must be the **second thing the eye reads after the art**. They should be rendered as if physically stamped or debossed into the card — large numerals with a subtle inner shadow, sitting inside shaped containers (shields, circles, hexagons — see Faction Variations). The containers should feel like metal or enamel inlays set into the cardstock, not floating digital badges.
+### The Stat Seals (Wax-Seal Badges)
 
-Chaos Motes cost sits in the top-right corner. Render each mote as a small glowing orb — a painted element, not a flat circle. If the cost is 1-4, show individual orbs. If higher, show a numeral inside a single mote container.
+Attack, HP, and Chaos Motes cost are rendered as **raised wax-seal tokens** sitting ON the card surface — dimensional, tactile, with faction-specific shapes. These must be the **second thing the eye reads after the art**. They should feel like physical wax seals pressed onto premium cardstock, not floating digital badges.
 
-### The Text Box
+- **ATK:** Bottom-left corner, straddling the lower-thirds panel boundary
+- **HP:** Bottom-right corner, straddling the lower-thirds panel boundary
+- **CM Cost:** Top-right corner
 
-The text box holds 1-2 effect modifiers visible by default, with a subtle visual indicator (a faint downward chevron or "..." in the faction's accent color) signaling that more content exists on tap. Effect text should be concise — keyword-based with a short descriptor. Each effect modifier gets a small icon to its left for quick visual parsing.
+Each seal uses a faction-specific shape (see Section 7 for shapes and materials). The numerals are set in Bebas Neue with an embossed shadow, centered in the seal.
 
-**Do not try to display all 4 possible effect modifiers on the card face at once.** This is the primary source of clutter. Show the first 1-2, and trust the tap-to-discover interaction for the rest. Players will learn this pattern immediately.
+### The Lower Thirds (Text Panel)
+
+The lower thirds occupies the bottom ~30-35% of the card and contains three information rows:
+
+**Type Line** (top of panel):
+- Format: `"CREATURE — IRONWRIGHT"` or `"SPELL — FEY COURTS"`
+- Font: Fira Sans SemiBold 12pt, opacity 0.80
+- Instability: `◆ INST 1` right-aligned on same line
+- Thin divider below (0.5pt, faction color at 0.20 opacity)
+
+**Modifier Names** (middle):
+- Format: `"Haste · Shield · Piercing"` — names only, separated by centered dots
+- Font: Alegreya Bold 11pt, parchment color
+- **Tap interaction: inline tooltip** — tapping a modifier name shows a small floating tooltip directly above the tapped word with the full description. Tooltip has dark parchment background, faction-colored border, modifier icon + name (bold) + 1-2 line description. Dismisses on tap-away.
+- If no modifiers: this row is hidden, space reclaimed by art/flavor
+
+**Flavor Text** (bottom):
+- Font: Alegreya Italic 11pt, opacity 0.48
+- Max 2 lines, trailing ellipsis if truncated
+- Thin divider above (0.3pt, parchment at 0.12 opacity)
 
 ---
 
@@ -223,14 +259,55 @@ Every icon must look like it could be **physically embossed, stamped, or printed
 - **Consistent stroke weight.** All icons in a set should share the same visual weight so they feel unified.
 - **A subtle bevel or inner shadow.** Just enough to suggest that the icon is pressed into the cardstock, not floating on top of it. This is the single biggest differentiator between "digital icon" and "printed icon."
 
-### The Four Key Stat Icons
+### Stat Containers: Wax-Seal Tokens
 
-| Stat | Icon Concept | Visual Treatment |
+Stat badges are rendered as **raised wax-seal tokens sitting ON the card surface** — not debossed/stamped into it. They are dimensional: contact shadow beneath (warm, 2pt offset down, 4pt blur), top-lit highlight crescent on the upper edge.
+
+**5 faction-specific shapes:**
+
+| Faction | Shape | Description |
 |---|---|---|
-| **Attack (ATK)** | A fractured blade or serrated shard — referencing the Great Fracture and the world's broken state. Not a generic sword. | Rendered as a metallic inlay in the card's bottom-left corner. The numeral sits inside or adjacent to the icon. Color: faction-specific metal (iron for Ironwright, gold for Celestial, obsidian for Demonic, bone for Endless, living wood for Fey). |
-| **HP** | A cracked shield or a planar shard — evoking both protection and the fragility of the shattered world. | Rendered as a metallic inlay in the card's bottom-right corner, mirroring the ATK treatment. Same faction-specific materials. |
-| **Chaos Motes** | Small orbs of swirling energy — painted, not flat. Each orb should have internal color variation (a brighter core, darker edge) suggesting raw planar energy. | Top-right corner. Individual orbs for costs 1-4. For costs 5+, a single larger orb with the numeral inside. The orbs should have a subtle painted glow — not a digital outer-glow effect, but a warm/cool halo rendered in brushstroke texture. |
-| **Instability** | A single diamond or crystalline shard indicator, filled proportionally or marked with a value — referencing Planar Shards. | Small and secondary — lives near the card name or subline. Shown as a small printed symbol with the numeric value, not a progress bar. On tap-expand, this becomes a more detailed readout. |
+| **Ironwright** | Hexagonal | Industrial hex bolt, sharp geometric edges |
+| **Fey Courts** | Leaf | Organic leaf/seed-pod, flowing curves |
+| **Demonic Kingdoms** | Jagged Shard | Cracked obsidian shard, aggressive points |
+| **Celestial Crusade** | Shield | Heraldic shield, symmetrical, noble |
+| **The Endless** | Skull | Simplified skull/vertebral, ominous |
+
+**Neutral fallback:** Standard bronze circle (used when faction is unknown or for faction-neutral cards).
+
+**Wax-seal material per faction:**
+
+| Faction | Seal Material |
+|---|---|
+| Ironwright | Pressed steel |
+| Fey Courts | Forest resin/amber |
+| Demonic Kingdoms | Volcanic obsidian |
+| Celestial Crusade | Gold leaf |
+| The Endless | Bone/ash |
+
+**Rendering layers (bottom to top):**
+1. **Contact shadow** — warm, offset 2pt down, 4pt blur (seal sits ON card surface)
+2. **Seal image** — faction-shaped wax-seal asset (or Circle() fallback for neutral)
+3. **Faction tint overlay** — 30% opacity color blend
+4. **Stat icon stamp** — stat icon at 25% opacity behind number (ATK sword, HP heart, CM chaos mote)
+5. **Top-lit highlight** — crescent highlight at top edge (wax catches light from upper-left)
+6. **Number** — Bebas Neue, embossed shadow
+
+**Stat placement:**
+- **ATK:** Bottom-left corner, straddling lower-thirds panel boundary
+- **HP:** Bottom-right corner, straddling lower-thirds panel boundary
+- **CM Cost:** Top-right corner, inset from card edge
+- **Instability:** NOT a badge — displayed inline in the type line as "◆ INST X"
+
+### Modifier Interaction
+
+Modifier names are displayed as a compact dot-separated list in the lower thirds panel: `"Haste · Shield · Piercing"`
+
+- **Font:** Alegreya Bold 11pt, parchment color
+- **Tap interaction:** Inline tooltip appears directly above the tapped modifier name
+- **Tooltip contents:** Dark parchment background, faction-colored border, modifier icon + name (bold) + 1-2 line description
+- **Dismissal:** Tap-away dismisses the tooltip
+- **If no modifiers:** Row is hidden, space reclaimed by art or flavor text
 
 ### Effect Modifier Icons
 
@@ -384,77 +461,75 @@ For Endless faction cards specifically, the destruction can have a lingering gho
 
 Each faction's card frame should have distinct characteristics while sharing the same fundamental layout. The differences are in materials, border treatments, and decorative details.
 
-### Ironwright Collective
+### Faction Stat Containers (Unified)
+
+Stat containers are unified at the **faction level** (5 factions, not 10 sub-factions). All sub-factions within a faction share the same wax-seal shape and material. See Section 7 for full rendering specification.
+
+| Faction | Seal Shape | Seal Material | Chaos Mote Style |
+|---|---|---|---|
+| **Ironwright** | Hexagonal (industrial hex bolt) | Pressed steel | Cold blue-white, with a mechanical containment ring around each orb |
+| **Fey Courts** | Leaf (organic seed-pod) | Forest resin/amber | Green-gold, with a pulsing organic glow suggesting bioluminescence |
+| **Demonic Kingdoms** | Jagged Shard (cracked obsidian) | Volcanic obsidian | Deep red with a molten orange core, wreathed in black smoke wisps |
+| **Celestial Crusade** | Shield (heraldic) | Gold leaf | Pure white with a golden halo, like concentrated divine light |
+| **The Endless** | Skull (simplified vertebral) | Bone/ash | Teal-green, with a cold ghostly glow — necrotic energy, not natural light |
+
+### Sub-Faction Visual Variation (Border, Frame, Decorative Elements)
+
+The sub-faction visual variation system below applies to border textures, frame styles, text panel textures, and decorative elements. Stat containers are NOT varied by sub-faction — they use the faction-level wax-seal shapes above.
+
+#### Ironwright Collective
 
 - **Border material:** Brushed steel / industrial iron. Visible bolt or rivet details at the four corners.
 - **Frame style:** Geometric, angular. The art window has straight edges with slight industrial bevels — no soft curves.
 - **Decorative elements:** Exposed rebar patterns along the card edges. Faint blueprint-grid lines in the text box background.
-- **Stat containers:** Hexagonal, industrial. Reactor-blue inner glow behind the numerals.
-- **Chaos Mote orbs:** Cold blue-white, with a mechanical containment ring around each orb.
 
-### Fey Courts — Verdant Throne
+#### Fey Courts — Verdant Throne
 
 - **Border material:** Living wood — visible grain with tiny green vines or roots threading through. The border should feel grown, not built.
 - **Frame style:** Organic curves. The art window has a slightly irregular edge, as if shaped by branches.
 - **Decorative elements:** Tiny leaf or flower buds at the corners. Bioluminescent dots along the frame edges.
-- **Stat containers:** Rounded, leaf-shaped or seed-pod shaped. Warm gold with green veining.
-- **Chaos Mote orbs:** Green-gold, with a pulsing organic glow suggesting bioluminescence.
 
-### Fey Courts — Hollow Court
+#### Fey Courts — Hollow Court
 
 - **Border material:** Bone-white birch bark or frosted antler. Smooth, cold, with hairline cracks.
 - **Frame style:** Elegant but stark. The art window has thorn-like points along its upper edge.
 - **Decorative elements:** Bare branch silhouettes in the margins. Moth-wing patterns in the text box watermark.
-- **Stat containers:** Angular thorns or antler-point shapes. Ice blue with bone-white numerals.
-- **Chaos Mote orbs:** Pale ice-blue, with a cold, sharp-edged glow.
 
-### Demonic Kingdoms — Furnace Lords
+#### Demonic Kingdoms — Furnace Lords
 
 - **Border material:** Cracked obsidian with molten veins visible in the cracks. Should feel hot.
 - **Frame style:** Jagged, aggressive. The art window frame has irregular volcanic-glass edges.
 - **Decorative elements:** Lava veins that pulse faintly (a very subtle, slow glow animation — the only animated card element at rest). Scorch marks at the card edges.
-- **Stat containers:** Jagged obsidian shards. Volcanic orange-red numerals that look like they're carved from cooling lava.
-- **Chaos Mote orbs:** Deep red with a molten orange core, wreathed in black smoke wisps.
 
-### Demonic Kingdoms — Obsidian Bureaucracy
+#### Demonic Kingdoms — Obsidian Bureaucracy
 
 - **Border material:** Polished obsidian — smooth, reflective, cold. No cracks.
 - **Frame style:** Precise, formal. The card has thin ruled lines along the frame edges, like a legal document.
 - **Decorative elements:** A wax-seal impression of the Bureaucracy's emblem at the bottom center. Faint contract-text watermark in the text box.
-- **Stat containers:** Rectangular with precise corners — like stamps on a document. Dark red, formal.
-- **Chaos Mote orbs:** Dark red, contained within obsidian settings — orderly and controlled.
 
-### Celestial Crusade — Knights of Deliverance
+#### Celestial Crusade — Knights of Deliverance
 
 - **Border material:** Polished gold and ivory. The most ornate frame — cathedral-inspired geometric patterns.
 - **Frame style:** Symmetrical, architectural. The art window has an arched top (like a cathedral window). Thin gold filigree lines.
 - **Decorative elements:** A faint halo of light behind the card name. Geometric patterns inspired by rose windows in the border.
-- **Stat containers:** Shield-shaped with gold trim. Divine blue inner field with white or gold numerals.
-- **Chaos Mote orbs:** Pure white with a golden halo, like concentrated divine light.
 
-### Celestial Crusade — Heaven's Chosen
+#### Celestial Crusade — Heaven's Chosen
 
 - **Border material:** Burning gold — the frame itself appears to radiate soft light. Edges are slightly blurred or distorted.
 - **Frame style:** The same cathedral structure as the Knights, but warped — slightly non-Euclidean, edges bending in subtle ways suggesting divine geometry. This should be very subtle.
 - **Decorative elements:** Multiple faint eye symbols in the border pattern (referencing the biblically-accurate celestials). The border seems to shift very slightly (a subtle parallax/shimmer).
-- **Stat containers:** Circular, ringed with tiny eye symbols. Burning gold numerals.
-- **Chaos Mote orbs:** Brilliant white, almost too bright — with a slight reality-distortion effect at their edges.
 
-### The Endless — Necromantic Cabals
+#### The Endless — Necromantic Cabals
 
 - **Border material:** Aged bone — a yellowed, cracked surface like an ossuary wall. Visible suture lines where bones are fused.
 - **Frame style:** Constructed and deliberate. The art window is framed by stacked bone shapes — femurs, ribs — arranged architecturally.
 - **Decorative elements:** Tiny phylactery symbols at the corners. A faint soul-light glow (teal) along the inner frame edge.
-- **Stat containers:** Skull-shaped or vertebral. Bone-white with teal-green numerals.
-- **Chaos Mote orbs:** Teal-green, with a cold ghostly glow — necrotic energy, not natural light.
 
-### The Endless — Lost Spectres
+#### The Endless — Lost Spectres
 
 - **Border material:** Translucent and ethereal — the border appears semi-transparent, as if the card itself is partially immaterial. Wisps of spectral fog along the edges.
 - **Frame style:** Faded and indistinct. The art window's edges are soft, bleeding into the border as if the card is losing cohesion.
 - **Decorative elements:** Broken chain links along one edge. Faint ghostly faces in the border fog.
-- **Stat containers:** Translucent orbs with faded, flickering numerals. The stat containers should feel less solid than any other faction's.
-- **Chaos Mote orbs:** Sickly green, with a fog-like diffusion around them — the energy is leaking.
 
 ---
 
@@ -1027,6 +1102,6 @@ Before any AI-generated asset is committed to the build, it must pass all of the
 
 ---
 
-*End of Design Guide v1.1*
+*End of Design Guide v1.2*
 
 *This document is intended as a directive reference for AI agents generating art assets, card layouts, and UI components for Chaos Creatures. Every instruction should be treated as a constraint, not a suggestion. When in doubt, refer to the Three Pillars: Materiality, Restraint, Hierarchy.*

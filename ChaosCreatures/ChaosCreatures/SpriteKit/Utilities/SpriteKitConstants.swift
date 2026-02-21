@@ -635,6 +635,19 @@ enum SK {
         /// HP badge tint color (deep green)
         static let hpTintColor = UIColor(hex: "#1B5E20")
 
+        /// Faction-shaped wax seal asset name for medallion badges.
+        /// Returns the StatIcons/stat-seal-{faction} asset name, or nil for neutral cards.
+        static func factionSealAsset(faction: FactionShortName?) -> String? {
+            guard let faction = faction else { return nil }
+            switch faction {
+            case .ironwright: return "StatIcons/stat-seal-ironwright"
+            case .feyCourts: return "StatIcons/stat-seal-fey"
+            case .demonicKingdoms: return "StatIcons/stat-seal-demonic"
+            case .celestialCrusade: return "StatIcons/stat-seal-celestial"
+            case .theEndless: return "StatIcons/stat-seal-endless"
+            }
+        }
+
         /// Parchment text color for medallion numbers
         static let parchmentText = UIColor(hex: "#F0E6D2")
         /// Dark brown for medallion rim gradient start
