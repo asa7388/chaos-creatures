@@ -1,5 +1,34 @@
 # Iteration Log — Chaos Creatures Design Overhaul
 
+## P1 Conflict Migrations Complete — 2026-02-21
+P1-1 (FactionShortName → CardFaction):
+  Raw values preserved: IRONWRIGHT, FEY_COURTS, DEMONIC_KINGDOMS, CELESTIAL_CRUSADE, THE_ENDLESS
+  Case renames: .feyCourts→.fey, .demonicKingdoms→.demonic, .celestialCrusade→.celestial, .theEndless→.endless
+  Files changed: CardGuideEnums, Enums, BattleCard, Player, AppState, AppRouter, BattleAudioManager,
+                 Color+Theme, SpriteKitConstants, CardFrameView, CardFlipAction, OpponentHandCardNode,
+                 ParticleEffects, DeathAction, BattleScene, CreatureNode, HandCardNode, OnboardingView,
+                 FactionPickerView, CardPackOpeningView, CardDetailView, DeckListView, FullscreenCardView,
+                 CollectionView, DeckBuilderView, EvolutionRevealView, CardView, ProfileView
+  Build: PASS
+
+P1-2 (EvolutionTier merged into Rarity):
+  Energy thresholds: common=0, uncommon=15, rare=30, epic=50, legendary=75
+  Raw values: COMMON, UNCOMMON, RARE, EPIC, LEGENDARY
+  Files changed: CardGuideEnums, Enums (stub comment), CreatureNode, HandCardNode, CardPackOpeningView,
+                 EvolutionRevealView, EvolutionFlowView
+  Build: PASS
+
+P1-3 (Card conversion init added):
+  Mapping: 12 fields mapped from CardTemplate
+  TODOs: subtypes, rarity (on instance), faction (needs lookup), subFaction, abilityText,
+         modifiers, triggeredAbilities, artworkLineage, artworkArtist, foil,
+         ruinPassiveText, ruinDestructionPenaltyText
+  Build: PASS
+
+Final build: PASS
+
+---
+
 ## Guide Read Confirmation — 2026-02-21
 Guide read in full: docs/CARD_DESIGN_GUIDE.md
 Sections read: 1 through 14 + Addendum

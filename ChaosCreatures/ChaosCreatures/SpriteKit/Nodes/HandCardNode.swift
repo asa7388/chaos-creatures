@@ -310,8 +310,8 @@ final class HandCardNode: SKSpriteNode {
     /// Background with faction-specific border texture instead of a flat color border.
     /// The border texture is placed behind the art; the art covers the inner area,
     /// leaving only the 2.5pt border edge of the texture visible around the card.
-    private func setupFactionBorder(cardSize: CGSize, faction: FactionShortName?,
-                                    tier: EvolutionTier) {
+    private func setupFactionBorder(cardSize: CGSize, faction: CardFaction?,
+                                    tier: Rarity) {
         let cornerRadius: CGFloat = 8
 
         // Faction border texture fills the full card — the art sprite on top covers
@@ -358,7 +358,7 @@ final class HandCardNode: SKSpriteNode {
 
     /// Faction-specific text panel texture at the bottom of the card.
     private func setupTextPanelTexture(cardSize: CGSize, panelHeight: CGFloat,
-                                       faction: FactionShortName?) {
+                                       faction: CardFaction?) {
         let panelWidth: CGFloat = cardSize.width - 6 // Inset 3pt from each side
 
         let textPanelSprite = SKSpriteNode(imageNamed: SK.CardTextures.textPanelAssetName(faction: faction))
@@ -385,8 +385,8 @@ final class HandCardNode: SKSpriteNode {
 
     /// Overlays faction/type/rarity frame art so generated card frame assets are visible
     /// in SpriteKit hand cards, not only in SwiftUI surfaces.
-    private func addPrebakedFrameOverlay(cardType: CardType, faction: FactionShortName?,
-                                         tier: EvolutionTier, cardSize: CGSize) {
+    private func addPrebakedFrameOverlay(cardType: CardType, faction: CardFaction?,
+                                         tier: Rarity, cardSize: CGSize) {
         guard let frameAsset = SK.CardFrames.frameAssetName(cardType: cardType, faction: faction, tier: tier),
               UIImage(named: frameAsset) != nil else {
             return
@@ -411,7 +411,7 @@ final class HandCardNode: SKSpriteNode {
     private func setupMedallionBadge(container: SKNode, radius: CGFloat,
                                      tintColor: UIColor, iconName: String,
                                      label: SKLabelNode,
-                                     faction: FactionShortName? = nil) {
+                                     faction: CardFaction? = nil) {
         let diameter = radius * 2
 
         // Check for faction-specific wax seal asset
@@ -589,7 +589,7 @@ final class HandCardNode: SKSpriteNode {
     /// Common: nothing (matte frame). Uncommon: thin silver inner border.
     /// Rare: gold inner border with subtle glow. Epic: rainbow shimmer border.
     /// Legendary: rainbow shimmer + extended art + pulse + sparkle dots.
-    private func applyRarityEffect(_ tier: EvolutionTier) {
+    private func applyRarityEffect(_ tier: Rarity) {
         // Clean up previous effects
         rarityOverlay?.removeFromParent()
         rarityOverlay = nil

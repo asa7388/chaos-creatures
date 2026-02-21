@@ -15,7 +15,7 @@ enum DeathAction {
     /// Endless faction creatures leave a lingering ghost afterimage.
     static func playDeath(
         creature: CreatureNode,
-        faction: FactionShortName?,
+        faction: CardFaction?,
         in scene: SKScene,
         completion: @escaping () -> Void
     ) {
@@ -32,10 +32,10 @@ enum DeathAction {
         let factionColor: UIColor
         switch effectiveFaction {
         case .ironwright: factionColor = UIColor(hex: "#D4AF37")
-        case .feyCourts: factionColor = UIColor(hex: "#81C784")
-        case .demonicKingdoms: factionColor = UIColor(hex: "#FF5252")
-        case .celestialCrusade: factionColor = UIColor(hex: "#DAA520")
-        case .theEndless: factionColor = UIColor(hex: "#6B3FA0")
+        case .fey: factionColor = UIColor(hex: "#81C784")
+        case .demonic: factionColor = UIColor(hex: "#FF5252")
+        case .celestial: factionColor = UIColor(hex: "#DAA520")
+        case .endless: factionColor = UIColor(hex: "#6B3FA0")
         }
         let shatter = ParticleEffects.deathShatter(at: position, color: factionColor)
         shatter.zPosition = SK.ZPosition.particles
@@ -60,7 +60,7 @@ enum DeathAction {
 
     /// Quick death for multiple creatures dying simultaneously (e.g. simultaneous combat)
     static func playMultipleDeaths(
-        creatures: [(node: CreatureNode, faction: FactionShortName?)],
+        creatures: [(node: CreatureNode, faction: CardFaction?)],
         in scene: SKScene,
         completion: @escaping () -> Void
     ) {

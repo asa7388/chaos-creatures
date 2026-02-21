@@ -47,6 +47,7 @@ Resolution: All occurrences changed to "iOS 16+".
 ---
 
 ## Phase 1 Conflicts — 2026-02-21 (Card Data Schema)
+**STATUS: ALL RESOLVED 2026-02-21** — P1-1: FactionShortName removed, CardFaction canonical throughout all 28 Swift files. P1-2: EvolutionTier removed, Rarity canonical throughout all affected files. P1-3: Card(from: CardTemplate) init added to CardGuideEnums.swift with 12 mapped fields and TODOs logged.
 
 ### Conflict P1-1 — Faction Enum Name and Case Names
 **Source A (existing codebase — Enums.swift):** `FactionShortName` enum with cases:

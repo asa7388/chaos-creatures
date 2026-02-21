@@ -10,10 +10,10 @@ import SwiftUI
 
 struct CardGridItemView: View {
     let card: CardInstance
-    let faction: FactionShortName?
+    let faction: CardFaction?
     let showEvolutionBadge: Bool
 
-    init(card: CardInstance, faction: FactionShortName? = nil, showEvolutionBadge: Bool = true) {
+    init(card: CardInstance, faction: CardFaction? = nil, showEvolutionBadge: Bool = true) {
         self.card = card
         self.faction = faction
         self.showEvolutionBadge = showEvolutionBadge
@@ -35,9 +35,9 @@ struct CardGridItemView: View {
 struct CardListRowView: View {
     let card: CardInstance
     let quantity: Int
-    let faction: FactionShortName?
+    let faction: CardFaction?
 
-    init(card: CardInstance, quantity: Int, faction: FactionShortName? = nil) {
+    init(card: CardInstance, quantity: Int, faction: CardFaction? = nil) {
         self.card = card
         self.quantity = quantity
         self.faction = faction
@@ -101,9 +101,9 @@ struct CardListRowView: View {
 
 struct CardTemplateView: View {
     let template: CardTemplate
-    let faction: FactionShortName?
+    let faction: CardFaction?
 
-    init(template: CardTemplate, faction: FactionShortName? = nil) {
+    init(template: CardTemplate, faction: CardFaction? = nil) {
         self.template = template
         self.faction = faction
     }

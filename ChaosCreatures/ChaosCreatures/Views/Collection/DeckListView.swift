@@ -185,7 +185,7 @@ struct DeckListView: View {
 
 struct DeckRowView: View {
     let deck: Deck
-    let faction: FactionShortName?
+    let faction: CardFaction?
 
     var body: some View {
         HStack(spacing: 12) {

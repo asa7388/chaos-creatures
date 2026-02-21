@@ -61,7 +61,7 @@ enum CardFlipAction {
     /// - Returns: A configured OpponentHandCardNode.
     static func createCardBack(
         at position: CGPoint,
-        faction: FactionShortName? = nil,
+        faction: CardFaction? = nil,
         zPosition: CGFloat = SK.ZPosition.creatures
     ) -> OpponentHandCardNode {
         let cardBack = OpponentHandCardNode(faction: faction)

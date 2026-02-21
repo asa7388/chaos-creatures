@@ -11,7 +11,7 @@ enum ParticleEffects {
     // MARK: - Death Particles
 
     /// Faction-specific death particle burst
-    static func deathEmitter(for faction: FactionShortName) -> SKEmitterNode {
+    static func deathEmitter(for faction: CardFaction) -> SKEmitterNode {
         let emitter = SKEmitterNode()
 
         emitter.particleBirthRate = 80
@@ -41,7 +41,7 @@ enum ParticleEffects {
             emitter.particleSpeed = 150
             emitter.yAcceleration = -80
 
-        case .feyCourts:
+        case .fey:
             // Leaf/petal burst — soft green
             emitter.particleColor = UIColor(hex: "#81C784")
             emitter.particleColorBlendFactor = 1.0
@@ -51,7 +51,7 @@ enum ParticleEffects {
             emitter.particleRotationSpeed = 2.0
             emitter.yAcceleration = -20
 
-        case .demonicKingdoms:
+        case .demonic:
 
             // Ember/smoke — deep red
             emitter.particleColor = UIColor(hex: "#FF5252")
@@ -60,7 +60,7 @@ enum ParticleEffects {
             emitter.particleSpeed = 100
             emitter.yAcceleration = 30 // Embers rise
 
-        case .celestialCrusade:
+        case .celestial:
             // Divine radiance — golden light
             emitter.particleColor = UIColor(hex: "#DAA520")
             emitter.particleColorBlendFactor = 1.0
@@ -68,7 +68,7 @@ enum ParticleEffects {
             emitter.particleSpeed = 120
             emitter.yAcceleration = 40 // Light rises
 
-        case .theEndless:
+        case .endless:
             // Spectral mist — purple wisps
             emitter.particleColor = UIColor(hex: "#6B3FA0")
             emitter.particleColorBlendFactor = 1.0

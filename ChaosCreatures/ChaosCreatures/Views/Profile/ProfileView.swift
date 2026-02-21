@@ -93,7 +93,7 @@ struct ProfileView: View {
 
             // Faction badge
             if let factionId = appState.player?.primaryFactionId,
-               let faction = FactionShortName(rawValue: factionId.uuidString) {
+               let faction = CardFaction(rawValue: factionId.uuidString) {
                 HStack(spacing: 6) {
                     Image(faction.emblemAssetName)
                         .renderingMode(.template)
@@ -234,7 +234,7 @@ struct ProfileView: View {
                 .font(CardFont.cardName(size: 16))
                 .foregroundColor(.textPrimary)
 
-            ForEach(FactionShortName.allCases) { faction in
+            ForEach(CardFaction.allCases) { faction in
                 HStack(spacing: 12) {
                     Image(factionEmblemAsset(faction))
                         .resizable()
@@ -283,19 +283,19 @@ struct ProfileView: View {
 
     // MARK: - Helpers
 
-    private func factionEmblemAsset(_ faction: FactionShortName) -> String {
+    private func factionEmblemAsset(_ faction: CardFaction) -> String {
         switch faction {
         case .ironwright: return "FactionEmblems/emblem-ironwright"
-        case .feyCourts: return "FactionEmblems/emblem-fey"
-        case .demonicKingdoms: return "FactionEmblems/emblem-demonic"
-        case .celestialCrusade: return "FactionEmblems/emblem-celestial"
-        case .theEndless: return "FactionEmblems/emblem-endless"
+        case .fey: return "FactionEmblems/emblem-fey"
+        case .demonic: return "FactionEmblems/emblem-demonic"
+        case .celestial: return "FactionEmblems/emblem-celestial"
+        case .endless: return "FactionEmblems/emblem-endless"
         }
     }
 
     /// Placeholder mastery progress based on player stats (0.0-1.0)
     /// TODO: Replace with real FactionMastery data when wired up in AppState
-    private func placeholderMasteryProgress(for faction: FactionShortName) -> Double {
+    private func placeholderMasteryProgress(for faction: CardFaction) -> Double {
         guard let player = appState.player else { return 0.0 }
 
         // Use win rate as a placeholder for progress
@@ -305,10 +305,10 @@ struct ProfileView: View {
         let factionVariance: Double
         switch faction {
         case .ironwright: factionVariance = 0.1
-        case .feyCourts: factionVariance = 0.15
-        case .demonicKingdoms: factionVariance = 0.05
-        case .celestialCrusade: factionVariance = 0.2
-        case .theEndless: factionVariance = 0.12
+        case .fey: factionVariance = 0.15
+        case .demonic: factionVariance = 0.05
+        case .celestial: factionVariance = 0.2
+        case .endless: factionVariance = 0.12
         }
 
         return min(baseProgress + factionVariance, 1.0)
@@ -316,7 +316,7 @@ struct ProfileView: View {
 
     /// Placeholder mastery level based on player level
     /// TODO: Replace with real FactionMastery data when wired up in AppState
-    private func placeholderMasteryLevel(for faction: FactionShortName) -> Int {
+    private func placeholderMasteryLevel(for faction: CardFaction) -> Int {
         guard let player = appState.player else { return 0 }
 
         // Derive from player level with faction variance
@@ -325,10 +325,10 @@ struct ProfileView: View {
         let factionAdjustment: Int
         switch faction {
         case .ironwright: factionAdjustment = 1
-        case .feyCourts: factionAdjustment = 2
-        case .demonicKingdoms: factionAdjustment = 0
-        case .celestialCrusade: factionAdjustment = 3
-        case .theEndless: factionAdjustment = 1
+        case .fey: factionAdjustment = 2
+        case .demonic: factionAdjustment = 0
+        case .celestial: factionAdjustment = 3
+        case .endless: factionAdjustment = 1
         }
 
         return max(0, baseFactionLevel + factionAdjustment)

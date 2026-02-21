@@ -409,7 +409,7 @@ struct DeckBuilderView: View {
         availableCards.first(where: { $0.id == id })
     }
 
-    private var deckFaction: FactionShortName? {
+    private var deckFaction: CardFaction? {
         if let deck = router.selectedDeck,
            let faction = appState.factions.first(where: { $0.id == deck.factionId })?.shortName {
             return faction

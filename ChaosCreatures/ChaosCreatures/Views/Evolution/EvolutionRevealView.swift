@@ -9,12 +9,12 @@ import SwiftUI
 
 struct EvolutionRevealView: View {
     let result: EvolutionResult
-    let previousTier: EvolutionTier
+    let previousTier: Rarity
     let previousName: String
     let previousArtUrl: String?
     let modifierName: String?
     let statChanges: EvolutionStatChanges?
-    let evolvedFaction: FactionShortName?
+    let evolvedFaction: CardFaction?
     let evolvedManaCost: Int
     let evolvedAttack: Int?
     let evolvedHealth: Int?

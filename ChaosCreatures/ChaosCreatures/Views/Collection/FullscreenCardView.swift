@@ -8,7 +8,7 @@ import SwiftUI
 
 struct FullscreenCardView: View {
     let card: CardInstance
-    let faction: FactionShortName?
+    let faction: CardFaction?
 
     @Environment(\.dismiss) private var dismiss
 

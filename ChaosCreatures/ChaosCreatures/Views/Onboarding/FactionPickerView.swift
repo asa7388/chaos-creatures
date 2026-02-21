@@ -6,9 +6,9 @@
 import SwiftUI
 
 struct FactionPickerView: View {
-    let onSelect: (FactionShortName) -> Void
+    let onSelect: (CardFaction) -> Void
 
-    @State private var selectedFaction: FactionShortName = .ironwright
+    @State private var selectedFaction: CardFaction = .ironwright
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,7 +28,7 @@ struct FactionPickerView: View {
 
             // Faction pager
             TabView(selection: $selectedFaction) {
-                ForEach(FactionShortName.allCases) { faction in
+                ForEach(CardFaction.allCases) { faction in
                     FactionCardView(faction: faction) {
                         onSelect(faction)
                     }
@@ -52,7 +52,7 @@ struct FactionPickerView: View {
 // MARK: - Faction Card
 
 struct FactionCardView: View {
-    let faction: FactionShortName
+    let faction: CardFaction
     let onChoose: () -> Void
 
     var body: some View {
@@ -154,32 +154,32 @@ struct FactionCardView: View {
         .padding(.horizontal, 16)
     }
 
-    private func factionDescription(_ faction: FactionShortName) -> String {
+    private func factionDescription(_ faction: CardFaction) -> String {
         switch faction {
         case .ironwright:
             return "Masters of mechanical augmentation. Stack stat boosts and keywords through evolution to build unstoppable creatures."
-        case .feyCourts:
+        case .fey:
             return "Weavers of natural bonds. Create powerful synergies between creatures that share the battlefield."
-        case .demonicKingdoms:
+        case .demonic:
             return "Wielders of dark corruption. Sacrifice resources for devastating power spikes that can swing entire games."
-        case .celestialCrusade:
+        case .celestial:
             return "Champions of divine exaltation. Empower your strongest creatures with celestial blessings that grow with righteous victory."
-        case .theEndless:
+        case .endless:
             return "Masters of undying persistence. Your fallen creatures refuse to stay dead, returning weakened but relentless."
         }
     }
 
-    private func factionKeywords(_ faction: FactionShortName) -> [String] {
+    private func factionKeywords(_ faction: CardFaction) -> [String] {
         switch faction {
         case .ironwright:
             return ["Augment", "Stat Boosts", "Keywords"]
-        case .feyCourts:
+        case .fey:
             return ["Bond", "Synergy", "Teamwork"]
-        case .demonicKingdoms:
+        case .demonic:
             return ["Corruption", "Sacrifice", "Power"]
-        case .celestialCrusade:
+        case .celestial:
             return ["Exalt", "Divine Buffs", "Judgment"]
-        case .theEndless:
+        case .endless:
             return ["Persist", "Undying", "Inevitability"]
         }
     }

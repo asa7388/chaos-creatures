@@ -41,8 +41,8 @@ final class CreatureNode: SKSpriteNode {
     // MARK: - State
 
     private(set) var creatureId: String
-    private(set) var factionShortName: FactionShortName?
-    private(set) var evolutionTier: EvolutionTier
+    private(set) var factionShortName: CardFaction?
+    private(set) var evolutionTier: Rarity
     private(set) var boardSlot: Int
     private(set) var isPlayerCard: Bool
     var isAttacking: Bool = false
@@ -248,7 +248,7 @@ final class CreatureNode: SKSpriteNode {
     /// The border texture is placed behind the art; the art covers the inner area,
     /// leaving only the 2pt border edge of the texture visible around the card.
     private func setupFactionBorder(cardSize: CGSize, cornerRadius: CGFloat,
-                                    faction: FactionShortName?, tier: EvolutionTier) {
+                                    faction: CardFaction?, tier: Rarity) {
         // Faction border texture fills the full card — the art sprite on top covers
         // the inner area, leaving only the border edges visible.
         let borderTexture = SKSpriteNode(imageNamed: SK.CardTextures.borderAssetName(faction: faction))
@@ -292,7 +292,7 @@ final class CreatureNode: SKSpriteNode {
     // MARK: - Text Panel Texture
 
     /// Faction-specific text panel texture at the bottom of the card.
-    private func setupTextPanelTexture(cardSize: CGSize, faction: FactionShortName?) {
+    private func setupTextPanelTexture(cardSize: CGSize, faction: CardFaction?) {
         let panelHeight: CGFloat = cardSize.height * 0.20 // Slightly shorter on board cards
         let panelWidth: CGFloat = cardSize.width - 4 // Inset 2pt from each side
 
@@ -320,8 +320,8 @@ final class CreatureNode: SKSpriteNode {
 
     /// Overlays faction/type/rarity frame art so generated card frame assets are visible
     /// on SpriteKit battlefield cards, not only on SwiftUI card views.
-    private func addPrebakedFrameOverlay(cardType: CardType, faction: FactionShortName?,
-                                         tier: EvolutionTier, cardSize: CGSize) {
+    private func addPrebakedFrameOverlay(cardType: CardType, faction: CardFaction?,
+                                         tier: Rarity, cardSize: CGSize) {
         guard let frameAsset = SK.CardFrames.frameAssetName(cardType: cardType, faction: faction, tier: tier),
               UIImage(named: frameAsset) != nil else {
             return
@@ -415,16 +415,16 @@ final class CreatureNode: SKSpriteNode {
 
     /// Subtle faction-specific accent at board card scale — a thin inner glow line
     /// in the faction's accent color, visible along the card edges.
-    private func setupFactionAccent(faction: FactionShortName?, cardSize: CGSize, cornerRadius: CGFloat) {
+    private func setupFactionAccent(faction: CardFaction?, cardSize: CGSize, cornerRadius: CGFloat) {
         guard let faction = faction else { return }
 
         let accentColor: UIColor
         switch faction {
         case .ironwright: accentColor = UIColor(hex: "#E07020") // Warning orange
-        case .feyCourts: accentColor = UIColor(hex: "#7FFFD4")  // Bioluminescent
-        case .demonicKingdoms: accentColor = UIColor(hex: "#FF4500") // Volcanic
-        case .celestialCrusade: accentColor = UIColor(hex: "#DAA520") // Holy gold
-        case .theEndless: accentColor = UIColor(hex: "#2DD4BF")  // Ghostly teal
+        case .fey: accentColor = UIColor(hex: "#7FFFD4")  // Bioluminescent
+        case .demonic: accentColor = UIColor(hex: "#FF4500") // Volcanic
+        case .celestial: accentColor = UIColor(hex: "#DAA520") // Holy gold
+        case .endless: accentColor = UIColor(hex: "#2DD4BF")  // Ghostly teal
         }
 
         let innerGlow = SKShapeNode(rectOf: CGSize(width: cardSize.width - 4,
@@ -460,7 +460,7 @@ final class CreatureNode: SKSpriteNode {
 
     // MARK: - Rarity Glow (background behind card)
 
-    private func applyRarityGlow(_ tier: EvolutionTier) {
+    private func applyRarityGlow(_ tier: Rarity) {
         rarityGlowNode?.removeFromParent()
         rarityGlowNode = nil
 
@@ -489,7 +489,7 @@ final class CreatureNode: SKSpriteNode {
     /// Apply tier-specific rarity inner border treatment.
     /// Common: nothing. Uncommon: thin silver border. Rare: gold border with glow.
     /// Epic: rainbow shimmer border. Legendary: rainbow shimmer + pulse + sparkle dots.
-    private func applyRarityTreatment(tier: EvolutionTier, cardSize: CGSize, cornerRadius: CGFloat) {
+    private func applyRarityTreatment(tier: Rarity, cardSize: CGSize, cornerRadius: CGFloat) {
         // Clean up any previous treatment
         rarityBorderNode?.removeFromParent()
         rarityBorderNode = nil
@@ -999,7 +999,7 @@ final class CreatureNode: SKSpriteNode {
     /// The Demonic Kingdoms faction's primary sub-faction is Furnace Lords,
     /// and sub-faction data is not available during battle, so all Demonic creatures get it.
     var isFurnaceLords: Bool {
-        factionShortName == .demonicKingdoms
+        factionShortName == .demonic
     }
 
     // MARK: - Selection States (per doc 07 Section 3.3)
@@ -1116,7 +1116,7 @@ final class CreatureNode: SKSpriteNode {
     /// Endless faction special: lingering ghost afterimage fades over 2s.
     func playDestruction(in scene: SKScene, completion: @escaping () -> Void) {
         let cardSize = self.size
-        let isEndless = factionShortName == .theEndless
+        let isEndless = factionShortName == .endless
 
         // --- Phase 1 (0-0.3s): Crack overlay ---
         let crackNode = createCrackOverlay(cardSize: cardSize)

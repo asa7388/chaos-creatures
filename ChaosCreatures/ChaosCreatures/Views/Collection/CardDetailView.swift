@@ -14,7 +14,7 @@ struct CardDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let fixedCard: CardInstance?
-    private let fixedFaction: FactionShortName?
+    private let fixedFaction: CardFaction?
 
     @State private var showFullscreen = false
     @State private var modifiersExpanded = false
@@ -22,7 +22,7 @@ struct CardDetailView: View {
     @State private var historyExpanded = false
     @State private var shimmerOffset: CGFloat = -1.0
 
-    init(card: CardInstance? = nil, faction: FactionShortName? = nil) {
+    init(card: CardInstance? = nil, faction: CardFaction? = nil) {
         self.fixedCard = card
         self.fixedFaction = faction
     }
@@ -827,7 +827,7 @@ struct CardDetailView: View {
     }
 
     /// Get the faction for theming (from appState template-faction map, or fallback).
-    private func factionForCard(_ card: CardInstance) -> FactionShortName? {
+    private func factionForCard(_ card: CardInstance) -> CardFaction? {
         if let fixedFaction {
             return fixedFaction
         }

@@ -40,7 +40,7 @@ enum PackType: String, CaseIterable, Identifiable {
         }
     }
 
-    var guaranteedMinTier: EvolutionTier {
+    var guaranteedMinTier: Rarity {
         switch self {
         case .starter: return .common
         case .rare: return .rare
@@ -363,7 +363,7 @@ struct CardPackOpeningView: View {
 
     // MARK: - Action Buttons
 
-    private var packFaction: FactionShortName? {
+    private var packFaction: CardFaction? {
         guard let factionId = appState.player?.primaryFactionId else { return nil }
         return appState.factions.first(where: { $0.id == factionId })?.shortName
     }
@@ -472,7 +472,7 @@ struct CardPackOpeningView: View {
         phase = .purchasing
 
         do {
-            let factionId = appState.player?.primaryFactionId?.uuidString ?? FactionShortName.ironwright.rawValue
+            let factionId = appState.player?.primaryFactionId?.uuidString ?? CardFaction.ironwright.rawValue
 
             let result = try await CollectionService.shared.openPack(factionId: factionId)
 

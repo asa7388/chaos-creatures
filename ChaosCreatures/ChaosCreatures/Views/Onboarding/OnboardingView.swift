@@ -58,7 +58,7 @@ struct OnboardingView: View {
         .animation(.easeInOut(duration: 0.5), value: currentStep)
     }
 
-    private func commitFaction(_ faction: FactionShortName) async {
+    private func commitFaction(_ faction: CardFaction) async {
         // Call Edge Function to commit faction and create starter deck
         struct FactionCommitRequest: Encodable {
             let factionId: String

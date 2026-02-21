@@ -106,7 +106,7 @@ final class BattleScene: SKScene {
     }
 
     /// Set the player's faction for audio theming
-    func setPlayerFaction(_ faction: FactionShortName) {
+    func setPlayerFaction(_ faction: CardFaction) {
         BattleAudioManager.shared.setFaction(faction)
     }
 
@@ -569,7 +569,7 @@ final class BattleScene: SKScene {
     }
 
     private func animateDeaths(_ deaths: [DeathData], completion: @escaping () -> Void) {
-        let deathEntries: [(node: CreatureNode, faction: FactionShortName?)] = deaths.compactMap { death in
+        let deathEntries: [(node: CreatureNode, faction: CardFaction?)] = deaths.compactMap { death in
             guard let node = creatureNodes[death.creatureId] else { return nil }
             return (node: node, faction: node.factionShortName)
         }

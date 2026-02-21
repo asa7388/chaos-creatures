@@ -19,7 +19,7 @@ struct EvolutionFlowView: View {
     @State private var selectedChannel: EventType = .order
 
     // Snapshot of card before evolution (for reveal comparison)
-    @State private var previousTier: EvolutionTier = .common
+    @State private var previousTier: Rarity = .common
     @State private var previousName: String = ""
     @State private var previousArtUrl: String?
 

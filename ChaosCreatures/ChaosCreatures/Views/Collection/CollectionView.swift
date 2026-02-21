@@ -427,20 +427,20 @@ struct CollectionView: View {
 
     /// Map FactionFilter to the set of matching faction UUIDs from appState.factions
     private func factionIdsForFilter(_ filter: FactionFilter) -> Set<UUID> {
-        let targetShortName: FactionShortName
+        let targetShortName: CardFaction
         switch filter {
         case .all: return Set(appState.factions.map(\.id))
         case .ironwright: targetShortName = .ironwright
-        case .feyCourts: targetShortName = .feyCourts
-        case .demonic: targetShortName = .demonicKingdoms
-        case .celestial: targetShortName = .celestialCrusade
-        case .endless: targetShortName = .theEndless
+        case .feyCourts: targetShortName = .fey
+        case .demonic: targetShortName = .demonic
+        case .celestial: targetShortName = .celestial
+        case .endless: targetShortName = .endless
         }
         return Set(appState.factions.filter { $0.shortName == targetShortName }.map(\.id))
     }
 
     /// Resolve card faction from template-faction map and app state's faction definitions.
-    private func factionForCard(_ card: CardInstance) -> FactionShortName? {
+    private func factionForCard(_ card: CardInstance) -> CardFaction? {
         guard let factionId = templateFactionMap[card.templateId] else { return nil }
         return appState.factions.first(where: { $0.id == factionId })?.shortName
     }
