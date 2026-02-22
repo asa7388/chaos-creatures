@@ -552,6 +552,7 @@ struct CardFrameView: View {
 
             typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.typeLine)
+                .zIndex(10)
 
             textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
                 .frame(height: cardHeight * ZoneHeight.textBox)
@@ -577,6 +578,7 @@ struct CardFrameView: View {
 
             typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.typeLine)
+                .zIndex(10)
 
             textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBoxExpanded)
                 .frame(height: cardHeight * ZoneHeight.textBoxExpanded)
@@ -599,6 +601,7 @@ struct CardFrameView: View {
 
             typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.typeLine)
+                .zIndex(10)
 
             textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBoxExpanded)
                 .frame(height: cardHeight * ZoneHeight.textBoxExpanded)
@@ -621,6 +624,7 @@ struct CardFrameView: View {
 
             typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.typeLine)
+                .zIndex(10)
 
             ruinTextBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
                 .frame(height: cardHeight * ZoneHeight.textBox)
@@ -829,6 +833,7 @@ struct CardFrameView: View {
 
                 // Wax seal — faction symbol + rarity color
                 WaxSealView(rarity: data.tier, faction: data.faction ?? .ironwright, size: 28 * scale)
+                    .zIndex(10)
             }
             .padding(.horizontal, 6 * scale)
         }
