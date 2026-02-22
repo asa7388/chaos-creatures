@@ -138,6 +138,7 @@ struct CollectionView: View {
         }
         .fullScreenCover(item: $selectedCard) { card in
             CardDetailView(card: card, faction: factionForCard(card))
+                .presentationBackground(Color.bgPrimary)
         }
         .fullScreenCover(item: $fullscreenCard) { card in
             FullscreenCardView(card: card, faction: factionForCard(card))
