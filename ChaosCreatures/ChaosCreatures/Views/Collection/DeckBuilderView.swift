@@ -424,6 +424,21 @@ struct DeckBuilderView: View {
 
     /// S-24: Load available cards and, if editing, pre-populate from existing deck
     private func loadData() async {
+        #if DEBUG
+        if appState.isDevMode {
+            // In dev mode, use mock cards from AppState instead of hitting Supabase
+            availableCards = appState.devCards
+
+            // If editing an existing deck (navigated from DeckListView), pre-populate
+            if let selectedDeck = router.selectedDeck {
+                existingDeckId = selectedDeck.id
+                deckName = selectedDeck.name
+                deckCards = selectedDeck.cardEntries
+            }
+            return
+        }
+        #endif
+
         guard let playerId = appState.player?.id else { return }
         isLoading = true
         defer { isLoading = false }
@@ -441,10 +456,6 @@ struct DeckBuilderView: View {
                 existingDeckId = selectedDeck.id
                 deckName = selectedDeck.name
                 deckCards = selectedDeck.cardEntries
-            } else {
-                // Check if the navigation destination included a deck ID
-                // DeckListView navigates with DecksDestination.deckBuilder(deck.id)
-                // The deck might be set via router.selectedDeck
             }
         } catch {
             self.error = error.localizedDescription
