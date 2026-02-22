@@ -1,16 +1,13 @@
 {
-  "images": [
+  "images" : [
     {
-      "filename": "seal_fey_epic.png",
-      "idiom": "universal",
-      "scale": "3x"
+      "filename" : "seal_fey_epic.png",
+      "idiom" : "universal",
+      "scale" : "3x"
     }
   ],
-  "info": {
-    "author": "xcode",
-    "version": 1
-  },
-  "properties": {
-    "compression-type": "automatic"
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
   }
 }
