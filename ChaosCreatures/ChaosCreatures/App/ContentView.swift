@@ -127,7 +127,7 @@ struct ContentView: View {
             .tag(AppTab.shop)
         }
         .toolbar(.hidden, for: .tabBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .safeAreaInset(edge: .top, spacing: 0) {
             CustomTabBar(selectedTab: tabSelection)
         }
         .tint(.appAccent)
@@ -162,73 +162,43 @@ private struct CustomTabBar: View {
     @Binding var selectedTab: AppTab
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(AppTab.allCases) { tab in
-                let isActive = selectedTab == tab
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        selectedTab = tab
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                ForEach(AppTab.allCases) { tab in
+                    let isActive = selectedTab == tab
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            selectedTab = tab
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: tab.iconName)
+                                .font(.system(size: 16))
+                                .foregroundColor(isActive ? .tauntGold : .secondary)
+                            Text(tab.rawValue)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(isActive ? .tauntGold : .secondary)
+                        }
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(isActive ? Color.tauntGold.opacity(0.15) : Color.clear)
+                        )
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
                     }
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(tab.customIconName)
-                            .renderingMode(.template)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 21, height: 21)
-                            .foregroundColor(isActive ? .tauntGold : .textSecondary)
-
-                        Text(tab.rawValue)
-                            .font(isActive ? CardFont.uiLabelBold(size: 10) : CardFont.uiLabel(size: 10))
-                            .foregroundColor(isActive ? .textPrimary : .textSecondary)
-
-                        Capsule()
-                            .fill(
-                                isActive
-                                ? LinearGradient(
-                                    colors: [Color.tauntGold.opacity(0.92), Color(hex: "#8C6A1A").opacity(0.85)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                                : LinearGradient(colors: [.clear, .clear], startPoint: .top, endPoint: .bottom)
-                            )
-                            .frame(width: 24, height: 1.6)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .padding(.vertical, 3)
-                    .background(
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .fill(isActive ? Color.tauntGold.opacity(0.12) : Color.clear)
-                    )
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(.ultraThinMaterial)
+
+            Rectangle()
+                .frame(height: 0.5)
+                .foregroundColor(Color.white.opacity(0.15))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .frame(height: 68)
-        .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(Color.bgSecondary.opacity(0.42))
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.tauntGold.opacity(0.32), Color.white.opacity(0.08)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.8
-                )
-        )
-        .padding(.horizontal, 12)
-        .padding(.bottom, 6)
     }
 }
 
