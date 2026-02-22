@@ -1177,10 +1177,14 @@ private struct AnimatedRarityBorder: View {
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
             .strokeBorder(
-                AngularGradient(colors: colors, center: .center),
+                AngularGradient(
+                    colors: colors,
+                    center: .center,
+                    startAngle: .degrees(rotation),
+                    endAngle: .degrees(rotation + 360)
+                ),
                 lineWidth: lineWidth
             )
-            .rotationEffect(.degrees(rotation))
             .opacity(0.9)
             .onAppear {
                 // Guard prevents re-triggering if view is briefly re-appeared
