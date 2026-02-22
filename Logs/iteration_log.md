@@ -529,3 +529,76 @@ Haptic note: wax seal tap haptic (.heavy impact) unchanged — physical feel of 
 
 Commits: 3fd5f95 (scripts), ccb0b2a (generated + installed + WaxSealView update)
 
+
+[2026-02-22 session-start] Protocol confirmation: MASTER_STATE read (phase_3_complete, v2 seals done), awaiting Phase 4 direction.
+
+---
+## Phase 4 Build + Validate — 2026-02-22
+
+### Section 12.3 Structured Critique
+
+**Build:** PASS — xcodebuild iPhone 17 Simulator, iOS 26.2 (latest), Debug configuration. 0 errors, 0 warnings blocking build.
+
+**Device:** iPhone 17 Simulator (UDID 3FA5C8B9-0852-47B0-8FA0-BC37C91B60CB)
+
+**App bundle:** com.chaoscreatures.app — installed and launched successfully
+
+---
+
+## Iteration 1 — CardFrameView Zone-Stack Layout — iPhone 17 Simulator
+**Timestamp:** 2026-02-22 (Phase 4 validation session)
+**Reference:** docs/CARD_DESIGN_GUIDE.md Section 1.4 (zone-stack) + Section 14 (quality bar)
+
+| Axis | Score (1-5) | Observation |
+|------|------------|-------------|
+| Material believability | 4 | Canvas-weave fallback in artBox uses Canvas{} procedural crosshatch + canvas-warm Color. Text panel uses paper-texture image overlay at 0.06 opacity. SpriteKit layer uses canvasWeave node at 0.15 alpha multiply blend. Both read as physical paper surfaces with texture grain. Not quite 5 — real art content would elevate score. |
+| Color temperature | 4 | parchment-light, parchment-mid, parchment-dark named colors throughout. nameBarBackground and typeLineBackground use theme.nameBarBackground which layers a white-to-clear gradient over parchment base. Sepia-shifted correctly. |
+| Texture grain | 3 | Paper-texture overlay at 0.06 opacity is present but conservative. Crosshatch fallback is procedural and reads as placeholder. On real artwork, grain would compound correctly. At 0.06 the overlay effect is very subtle on simulator — unclear if it registers at all. |
+| Typography letterpress | 4 | LetterpressShadow modifier applies radius-0.5, y+0.5 shadow in parchment-dark color on all text. CardFont.cardName uses Cinzel, CardFont.abilityText/flavorText use Alegreya — correct spec fonts. Ink-bleed is subtle but present. |
+| Lighting consistency | 4 | WaxSealView applies rarity glow as a radial shadow (not directional) — acceptable for a seal. nameBarBackground gradient is top-lit. rarityBorderGradient is rarity-colored. Shadow on card face (.shadow radius 3, x:0, y:2) is lower-right consistent. Contact shadow at bottom via .contactShadow modifier on CardDetailView (opacity 0.6). SpriteKit contact shadow is an ellipse at y=-cardHeight/2-1, zPosition -3. Consistent. |
+| Tactile impression | 3 | Zone-stack layout (nameBar / artBox / typeLine / textBox / statsBar / rarityBar) gives structural weight. Wax seal overlaps typeLine zone (zIndex 10). Animated rarity border on Epic/Legendary adds shimmer. With placeholder fallback art the card reads more as "polished UI" than "physical card" — real artwork would push this to 4-5. |
+| iPad vs iPhone | 3 | cardScale() uses cardWidth/210.0 ratio — all font sizes and icon sizes scale proportionally. computedCardWidth() returns geometry.size.width*0.55 capped at 500pt on iPad, 0.85 on iPhone. Layout zones use percentage heights, not fixed points. No iPad-specific layout variation beyond scaling — "not a scaled iPhone view" requirement from Section 14 is partially met but no tablet-specific richness added yet. |
+| Dark mode | 3 | CardTheme struct switches on colorScheme: dark mode uses parchment-dark-mode color, LetterpressShadow switches shadow color. No full dark mode screenshot taken in this session — candlelit manuscript feel is design intent, cannot confirm without visual verification on device. |
+
+**Regression check:** N/A — No reference screenshots exist yet for this phase. This is the baseline capture.
+**Largest gap:** Texture grain visibility — paper-texture overlay at 0.06 opacity is below perceptual threshold on simulator; SpriteKit canvas-weave at 0.15 multiply is stronger but battlefield-only. Collection grid cards show crosshatch fallback (no real art loaded), making cards appear as structured placeholder UI rather than physical cardstock.
+**Root cause:** No card art has been loaded into the simulator instance (collection is empty for a fresh install). The artFallback path renders canvas-warm + procedural crosshatch, which reads as "loading" state rather than finished card. All layout zones and typography are correct, but visual completeness requires real art content.
+**Next action:** Populate the simulator with test card data (seed or mock) so real artwork can be evaluated. Alternatively, open a CardDetailView with a hardcoded preview card to see the full frame with art fallback in detail size.
+**Blocked items:** Physical device GPU frame time measurement (Instruments Xcode GUI, cannot automate). Dark mode candlelit feel requires human visual check on physical device.
+
+---
+
+**Success Criteria (11-point checklist from prompt):**
+
+| # | Criterion | Status | Notes |
+|---|---|---|---|
+| 1 | Card name top-left | PASS | nameBar() HStack: Text(data.name) is leading-aligned. Cinzel font via CardFont.cardName(). letterpressShadow() applied. |
+| 2 | CM cost top-right | PASS | chaosMoteRow() renders "\(cost) ⊕" in trailing position of nameBar HStack with Spacer pushing it right. chaos_mote_symbol image used. |
+| 3 | ATK/HP bottom corners | PARTIAL | statsBar() renders ATK/HP as a single "atk / hp" Text string right-aligned with 52pt trailing inset (to clear wax seal zone). Not split to separate bottom-left/bottom-right corners — both values share the bottom-right area. SpriteKit (CreatureNode) does place ATK bottom-left and HP bottom-right as separate medallion badges. SwiftUI zone-stack differs from SpriteKit medallion layout. |
+| 4 | Wax seal visible on type line | PASS | WaxSealView(rarity:faction:size:28*scale) is in typeLine() HStack, trailing-aligned, zIndex 10. All 25 seal imagesets (5 factions × 5 rarities) confirmed in Assets.xcassets/Icons/Seals/. Falls back to programmatic circle if asset missing. |
+| 5 | No text overlaps | PASS | Zone-stack VStack with explicit .frame(height:) percentages enforces non-overlapping zones. nameBar/artBox/typeLine/textBox/statsBar/rarityBar are vertically stacked with no overlap. WaxSealView uses zIndex 10 but overlaps only the typeLine background, not text. minimumScaleFactor(0.7-0.75) on name and type text prevents overflow. |
+| 6 | Lower-thirds text panel | PARTIAL | textBox zone occupies ~30% of card height (ZoneHeight.textBox = 0.299). typeLine at 6% + textBox at 30% = 36% bottom-area panel. This is a structured zone panel, not a translucent overlay across the lower third of the art. The design guide spec calls for translucent text panel overlaid on art. SwiftUI implementation uses discrete zones below the artBox rather than overlay on art. Partial because intent is met functionally but not as an overlay on full-bleed art. |
+| 7 | Physical cardstock feel (textures) | PARTIAL | Canvas weave: present in SpriteKit (multiply blend 0.15) and as procedural crosshatch in SwiftUI fallback. paper-texture overlay in textBox at 0.06 opacity. LetterpressShadow on all text. nameBarBackground and typeLineBackground use parchment color. Texture present but subtle — crosshatch fallback reads as placeholder, not finished card. PARTIAL pending real artwork. |
+| 8 | Contact shadows | PASS | contactShadow() ViewModifier defined (double shadow: opacity 0.5 radius 1, + opacity*0.3 radius 3). Used at CardDetailView, EvolutionFlowView, LoadingView. SpriteKit CreatureNode has elliptical contact shadow at y=-cardHeight/2-1 zPosition -3. HandCardNode has contact_shadow named node. Implementation is complete. |
+| 9 | SpriteKit parity | PARTIAL | CreatureNode uses: canvas weave (0.15 multiply), faction text panel texture, pre-baked frame overlay, medallion stat badges (CM top-right, ATK bottom-left, HP bottom-right), wax seal medallion, rarity glow, contact shadow, selection states. Zone-stack is absent from SpriteKit — battlefield cards are full-bleed with overlay badges, not zone-stack. This is appropriate for the smaller 64×90pt board size. The visual language is consistent (same textures, same wax seal assets) but layout differs between sizes — acceptable per the guide but noted as PARTIAL because "parity" implies matching the zone-stack which is only in SwiftUI. |
+| 10 | Builds clean | PASS | BUILD SUCCEEDED with 0 errors on iPhone 17 Simulator, iOS 26.2 (latest), Debug configuration. |
+| 11 | Rarity treatments (border glow) | PASS | cardFace() applies: rarityBorderGradient as stroke overlay, rarityGlowColor shadow (radius proportional to glowIntensity), AnimatedRarityBorder for Epic/Legendary (rotating AngularGradient). rarityColorBar() at bottom uses: parchment-mid (common), antique-silver (uncommon), aged-gold gradient (rare), epic-amethyst gradient (epic), legendary-ember gradient (legendary). AnimatedRarityBorder uses 3.0s rotation for Legendary, 4.5s for Epic. Reduce Motion guard present. |
+
+**Pass count:** 6 PASS, 4 PARTIAL, 0 FAIL
+**Overall:** PARTIAL PASS — Build is clean, all 11 design criteria have implementation in place. 4 criteria score PARTIAL due to: (a) ATK/HP not split to opposite corners in SwiftUI (unified text string vs SpriteKit's separate badges), (b) lower-thirds text panel is discrete zone rather than overlay on art, (c) texture grain at threshold opacity visibility, (d) SpriteKit layout differs from SwiftUI zone-stack appropriately but lacks zone-stack parity. No hard FAILs. All structural correctness criteria (build, name, cost, wax seal, rarity) PASS.
+
+**Screenshots taken:**
+- Staging/phase4_screenshots/01_launch_state.png
+- Staging/phase4_screenshots/02_collection_grid.png
+
+**Issues requiring Phase 5 review:**
+- ATK/HP placement: SwiftUI statsBar renders "ATK / HP" as single right-aligned string. Consider splitting into separate ATKBadgeView / HPBadgeView structs in the statsBar to match SpriteKit corner placement.
+- Lower-thirds overlay: Current zone-stack places textBox below artBox as a discrete zone. If full-bleed art is desired with overlaid text panel, the layout would need to change to a ZStack with the text panel overlaid on the art.
+- Texture grain opacity: Increase paper-texture overlay from 0.06 to 0.10–0.12 in textBox for perceptible grain on simulator.
+- Dark mode: Requires human visual check on physical device for candlelit manuscript feel.
+
+⚠️ HUMAN PROFILING REQUIRED:
+- GPU Frame Capture in Xcode Instruments (AnimatedRarityBorder rotation + rarityGlow shadow compound effects)
+- Metal System Trace (SpriteKit battlefield with multiple CreatureNodes + canvas weave multiply blend)
+- Core Animation: Color Offscreen-Rendered (check animated border and rarity glow layers)
+Target: all pass performance thresholds from Section 13.2 before Phase 4 is marked complete.
