@@ -93,6 +93,7 @@ struct CardDetailView: View {
             // Close button overlay (top-left)
             closeButton
         }
+        .background(Color.bgPrimary.ignoresSafeArea())
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let card {
                 actionBar(card: card)
