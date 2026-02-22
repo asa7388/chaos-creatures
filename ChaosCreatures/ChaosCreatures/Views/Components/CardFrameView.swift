@@ -261,7 +261,7 @@ private enum ZoneHeight {
     static let typeLine: CGFloat = 0.061   // 18pt / 294pt ≈ 6%
     static let textBox: CGFloat  = 0.299   // 88pt / 294pt ≈ 30%
     static let textBoxExpanded: CGFloat = 0.364  // 107pt / 294pt (spell/stabilizer)
-    static let statsBar: CGFloat = 0.051   // 15pt / 294pt ≈ 5%
+    static let statsBar: CGFloat = 0.070   // ~21pt / 294pt ≈ 7% (increased for badge visibility)
     static let rarityBar: CGFloat = 0.014  // 4pt / 294pt ≈ 1.5%
 }
 
@@ -543,45 +543,41 @@ struct CardFrameView: View {
     // MARK: - Creature Layout (full-bleed art with ZStack lower-thirds overlay)
 
     private func creatureLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        let overlayHeight = cardHeight * (ZoneHeight.typeLine + ZoneHeight.textBox + ZoneHeight.statsBar + ZoneHeight.rarityBar)
-        return ZStack(alignment: .top) {
+        return ZStack(alignment: .bottom) {
             // Art fills full card height
             artBox(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(width: cardWidth, height: cardHeight)
 
-            // Name bar overlays the top of the art
+            // Name bar pinned to the top — uses a full-height VStack with Spacer
             VStack(spacing: 0) {
                 nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
                     .frame(height: cardHeight * ZoneHeight.nameBars)
-                Spacer()
+                Spacer(minLength: 0)
             }
+            .frame(width: cardWidth, height: cardHeight, alignment: .top)
 
-            // Text panel overlays the bottom ~38% of the card
+            // Bottom text panel — ZStack(alignment: .bottom) pins this to the card bottom
             VStack(spacing: 0) {
-                Spacer()
-                VStack(spacing: 0) {
-                    typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
-                        .frame(height: cardHeight * ZoneHeight.typeLine)
-                        .zIndex(10)
+                typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
+                    .frame(height: cardHeight * ZoneHeight.typeLine)
 
-                    textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
-                        .frame(height: cardHeight * ZoneHeight.textBox)
+                textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
+                    .frame(height: cardHeight * ZoneHeight.textBox)
 
-                    statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: true)
-                        .frame(height: cardHeight * ZoneHeight.statsBar)
+                statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: true)
+                    .frame(height: cardHeight * ZoneHeight.statsBar)
 
-                    rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
-                        .frame(height: cardHeight * ZoneHeight.rarityBar)
-                }
-                .frame(width: cardWidth)
-                .background(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0), Color(red: 0.12, green: 0.08, blue: 0.04).opacity(0.92)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                    .frame(height: cardHeight * ZoneHeight.rarityBar)
             }
+            .frame(width: cardWidth)
+            .background(
+                LinearGradient(
+                    colors: [Color.black.opacity(0), Color(red: 0.12, green: 0.08, blue: 0.04).opacity(0.95)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
         }
         .frame(width: cardWidth, height: cardHeight)
         .background(cardBaseColor)
@@ -1042,7 +1038,7 @@ struct CardFrameView: View {
                     }
                     .padding(.horizontal, 8 * scale)
                     .padding(.vertical, 3 * scale)
-                    .background(Capsule().fill(Color.black.opacity(0.6)))
+                    .background(Capsule().fill(Color(hex: "#FF8F00").opacity(0.25)).overlay(Capsule().stroke(Color(hex: "#FF8F00").opacity(0.6), lineWidth: 0.5 * scale)))
 
                     Spacer()
 
@@ -1058,7 +1054,7 @@ struct CardFrameView: View {
                     }
                     .padding(.horizontal, 8 * scale)
                     .padding(.vertical, 3 * scale)
-                    .background(Capsule().fill(Color.black.opacity(0.6)))
+                    .background(Capsule().fill(Color(hex: "#E53935").opacity(0.25)).overlay(Capsule().stroke(Color(hex: "#E53935").opacity(0.6), lineWidth: 0.5 * scale)))
                 } else {
                     // No stats to show — instability and collector info only
                     if data.cardType == .creature, let instability = data.instability, instability > 0 {
