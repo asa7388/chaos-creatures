@@ -128,6 +128,7 @@ struct CollectionView: View {
                 .ignoresSafeArea()
             }
         )
+        .navigationBarTitleDisplayMode(.inline)
         .themedNavigationTitle("Collection")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -372,10 +373,9 @@ struct CollectionView: View {
                                 )
 
                             CardGridItemView(card: card, faction: faction)
-                                .frame(height: 157)
-                                .padding(3)
+                                .padding(4)
                         }
-                        .frame(height: 164)
+                        .aspectRatio(210.0 / 294.0, contentMode: .fit)
                         .simultaneousGesture(TapGesture().onEnded {
                             router.selectedCardInstance = card
                             router.selectedCardFaction = faction
