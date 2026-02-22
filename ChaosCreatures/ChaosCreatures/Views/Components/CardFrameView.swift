@@ -569,7 +569,7 @@ struct CardFrameView: View {
                 .frame(width: sealSize, height: sealSize)
                 .offset(
                     x: (173.0 / 210.0) * cardWidth,
-                    y: (257.0 / 294.0) * cardHeight
+                    y: (240.0 / 294.0) * cardHeight
                 )
                 .allowsHitTesting(false)
         }
@@ -648,7 +648,7 @@ struct CardFrameView: View {
                 .frame(width: sealSize, height: sealSize)
                 .offset(
                     x: (173.0 / 210.0) * cardWidth,
-                    y: (257.0 / 294.0) * cardHeight
+                    y: (240.0 / 294.0) * cardHeight
                 )
                 .allowsHitTesting(false)
         }
