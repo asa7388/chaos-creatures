@@ -142,10 +142,16 @@ struct CardDetailView: View {
 
     // MARK: - Card Frame Section
 
+    private var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     private var detailCardWidth: CGFloat {
         let screenWidth = UIScreen.main.bounds.width
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            return min(screenWidth * 0.55, 500)
+        if isIPad {
+            // 65% of screen width — fills viewport without overcrowding (60-75% recommended range)
+            // e.g. 671pt on a 13" iPad Pro (1032pt wide)
+            return min(screenWidth * 0.65, 700)
         } else {
             return min(screenWidth * 0.85, 320)
         }
