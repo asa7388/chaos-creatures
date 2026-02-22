@@ -34,7 +34,7 @@ struct HomeView: View {
                 quickStatsSection
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 80) // Space for tab bar
+            .padding(.bottom, 16) // Landscape layout - no bottom tab bar
         }
         .background(
             ZStack {

@@ -392,7 +392,7 @@ struct CollectionView: View {
                 .padding(.vertical, 10)
             }
             .padding(.horizontal, 8)
-            .padding(.bottom, 80)
+            .padding(.bottom, 16)
         }
     }
 
