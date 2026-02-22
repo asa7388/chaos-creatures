@@ -790,7 +790,8 @@ struct CardDetailView: View {
             )
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
         .background(
             ZStack {
                 Color.bgSecondary
@@ -799,8 +800,9 @@ struct CardDetailView: View {
                     .aspectRatio(contentMode: .fill)
                     .opacity(0.22)
             }
-            .shadow(color: .black.opacity(0.3), radius: 8, y: -4)
+            .ignoresSafeArea()
         )
+        .shadow(color: .black.opacity(0.3), radius: 8, y: -4)
     }
 
     // MARK: - Helper Functions
