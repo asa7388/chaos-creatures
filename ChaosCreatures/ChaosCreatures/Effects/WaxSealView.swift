@@ -2,13 +2,18 @@
 // Chaos Creatures
 //
 // Embossed wax seal rarity badge component.
-// Uses Unicode text symbols instead of image assets — guarantees the symbol
-// always renders regardless of asset pipeline state.
+// Uses game-icons.net CC BY 3.0 icons (white-on-transparent PNG assets)
+// rendered with .template rendering mode over the colored wax seal.
 // Radial gradient + specular highlight create dimensional wax-stamp look.
 //
+// Icon credits (CC BY 3.0, game-icons.net):
+//   seal_common    — circle-sparks by Lorc
+//   seal_uncommon  — triquetra by Delapouite
+//   seal_rare      — crown by Lorc
+//   seal_epic      — all-seeing-eye by Delapouite
+//   seal_legendary — dragon-head by Lorc
+//
 // Spec: docs/CARD_DESIGN_GUIDE.md Section 6.6
-// Revised: uses raritySymbol (Text) instead of Image(sealIconName) because
-//          seal_common / seal_rare / etc. image assets are not yet generated.
 
 import SwiftUI
 
@@ -21,19 +26,6 @@ struct WaxSealView: View {
 
     @State private var isGlowing = false
     @State private var appeared = false
-
-    // MARK: - Symbol
-
-    /// Unicode symbol stamped into the wax. No image assets needed.
-    private var raritySymbol: String {
-        switch rarity {
-        case .common:    return "◆"
-        case .uncommon:  return "◈"
-        case .rare:      return "★"
-        case .epic:      return "✦"
-        case .legendary: return "⚜"
-        }
-    }
 
     // MARK: - Colors
 
@@ -95,24 +87,20 @@ struct WaxSealView: View {
                 )
                 .frame(width: size * 0.64, height: size * 0.64)
 
-            // Layer 5: The stamp symbol — lit from top, shadow presses it into wax
-            Text(raritySymbol)
-                .font(.system(size: size * 0.38, weight: .bold))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.95),
-                            highlightColor.opacity(0.75)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+            // Layer 5: Embossed symbol — game-icons.net CC BY 3.0 icon stamped into wax
+            // renderingMode(.template) + foregroundColor tints the white icon,
+            // shadow below presses it into the wax surface visually.
+            Image(rarity.sealIconName)
+                .resizable()
+                .renderingMode(.template)
+                .foregroundColor(.white.opacity(0.85))
+                .frame(width: size * 0.45, height: size * 0.45)
+                .shadow(
+                    color: rarity.waxColor.opacity(0.8),
+                    radius: size * 0.02,
+                    x: size * 0.01,
+                    y: size * 0.02
                 )
-                // Shadow below symbol = looks pressed into the wax surface
-                .shadow(color: rarity.waxColor.opacity(0.90),
-                        radius: size * 0.025,
-                        x: size * 0.012,
-                        y: size * 0.022)
 
             // Layer 6: Specular highlight — directional glint from upper-left
             Ellipse()
