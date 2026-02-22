@@ -89,6 +89,7 @@ struct CardDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
+            .scrollContentBackground(.hidden)
 
             // Close button overlay (top-left)
             closeButton
