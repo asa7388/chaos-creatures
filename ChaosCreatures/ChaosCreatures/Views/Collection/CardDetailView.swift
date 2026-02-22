@@ -85,21 +85,22 @@ struct CardDetailView: View {
                             evolutionHistorySection(card: card)
                         }
                     }
+
+                    // Action buttons inline at the bottom
+                    if let card {
+                        actionBar(card: card)
+                            .padding(.top, 16)
+                            .padding(.bottom, 32)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
-            .scrollContentBackground(.hidden)
 
             // Close button overlay (top-left)
             closeButton
         }
         .background(Color.black.ignoresSafeArea())
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if let card {
-                actionBar(card: card)
-            }
-        }
         .fullScreenCover(isPresented: $showFullscreen) {
             if let card {
                 FullscreenCardView(card: card, faction: factionForCard(card))
@@ -792,20 +793,6 @@ struct CardDetailView: View {
                     .stroke(factionColor.opacity(0.35), lineWidth: 1)
             )
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
-        .background(
-            ZStack {
-                Color.bgSecondary
-                Image("UIComponents/ui-panel-leather")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .opacity(0.22)
-            }
-            .ignoresSafeArea(edges: .bottom)
-        )
-        .shadow(color: .black.opacity(0.3), radius: 8, y: -4)
     }
 
     // MARK: - Helper Functions
