@@ -59,6 +59,7 @@ struct WaxSealView: View {
                     .resizable()
                     .interpolation(.high)
                     .frame(width: size, height: size)
+                    .blendMode(.screen)
             } else {
                 // Fallback: programmatic circle — do not ship to App Store
                 Circle()
