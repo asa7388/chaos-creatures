@@ -7,6 +7,7 @@ import SwiftUI
 
 @main
 struct ChaosCreaturesApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appState = AppState()
     @State private var router = AppRouter()
 

@@ -24,6 +24,7 @@
 		CC22222222222222BBBBBB01 /* StabilityZoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC22222222222222BBBBBB02 /* StabilityZoneView.swift */; };
 		10D8F44A307A2358E8D243A0 /* MatchServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B71F423BDD301FAF3785491D /* MatchServiceTests.swift */; };
 		11DCA5933CE01CADC1B34BA1 /* ChaosCreaturesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0D45736FB1B9F8D2FCFE2A7 /* ChaosCreaturesApp.swift */; };
+		BB4C6D0E1234567890ABCDEF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3B5C9D1234567890ABCDEF /* AppDelegate.swift */; };
 		P1AA111111111111BBBBBB03 /* CardGuideEnums.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1CC111111111111DDDDDD03 /* CardGuideEnums.swift */; };
 		CTHEME0002222222AAAABBBB /* CardTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CTHEME0001111111AAAABBBB /* CardTheme.swift */; };
 		P1AA111111111111BBBBBB02 /* CardDisplayState.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1CC111111111111DDDDDD02 /* CardDisplayState.swift */; };
@@ -338,6 +339,7 @@
 		EAAC68523F92C1ABF145A98D /* ChaosCreatures.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ChaosCreatures.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EEC5AB8FE5397CAAF7F6DB07 /* ChaosCreaturesTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ChaosCreaturesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F0D45736FB1B9F8D2FCFE2A7 /* ChaosCreaturesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaosCreaturesApp.swift; sourceTree = "<group>"; };
+		AA3B5C9D1234567890ABCDEF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F1DC1EA14BB53FE59FCAFBDB /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		F3041A6D083B249AB7E9564C /* BattleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BattleViewModel.swift; sourceTree = "<group>"; };
 		F9539FD65D9F09F58E7114D0 /* SpriteKitConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteKitConstants.swift; sourceTree = "<group>"; };
@@ -668,6 +670,7 @@
 		B8709C99AE6ABADCDF1F4EC1 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				AA3B5C9D1234567890ABCDEF /* AppDelegate.swift */,
 				3FAD7E69BE11CB6C7549ED20 /* AppRouter.swift */,
 				8254B49F80A4DB02447820E7 /* AppState.swift */,
 				F0D45736FB1B9F8D2FCFE2A7 /* ChaosCreaturesApp.swift */,
@@ -1025,6 +1028,7 @@
 				P2CC111111111111DDDDDD01 /* CardBackView.swift in Sources */,
 				P2CC111111111111DDDDDD02 /* DraggableCardView.swift in Sources */,
 				3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */,
+				BB4C6D0E1234567890ABCDEF /* AppDelegate.swift in Sources */,
 				11DCA5933CE01CADC1B34BA1 /* ChaosCreaturesApp.swift in Sources */,
 				8DA80DDB662FE44064989616 /* ChaosRollAction.swift in Sources */,
 				193540074882D560F4A4D8FA /* ChaosRollScene.swift in Sources */,

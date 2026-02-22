@@ -29,7 +29,8 @@
     <dict/>
     <key>UISupportedInterfaceOrientations</key>
     <array>
-        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>SUPABASE_URL</key>
     <string>$(SUPABASE_URL)</string>
