@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		SH0000000000001CCCCDDDD01 /* OilPaintShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = SH0000000000001AAAABBBB01 /* OilPaintShader.metal */; };
+		SH0000000000002CCCCDDDD02 /* ParchmentShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = SH0000000000002AAAABBBB02 /* ParchmentShader.metal */; };
+		SH0000000000003CCCCDDDD03 /* WarmFoilShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = SH0000000000003AAAABBBB03 /* WarmFoilShader.metal */; };
+		SH0000000000004CCCCDDDD04 /* InkSpreadKernel.metal in Sources */ = {isa = PBXBuildFile; fileRef = SH0000000000004AAAABBBB04 /* InkSpreadKernel.metal */; };
+		SH0000000000005CCCCDDDD05 /* brush_normal.jpg in Resources */ = {isa = PBXBuildFile; fileRef = SH0000000000005AAAABBBB05 /* brush_normal.jpg */; };
 		011251E18ECE5C181762C220 /* MatchEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7666073DB2F13CDC08B1CD15 /* MatchEvent.swift */; };
 		054E64408EE249254ABE50F7 /* HealAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6505DC27566B9985818EDEF /* HealAction.swift */; };
 		AA44444444444444CCCCCC01 /* OpponentHandCardNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA44444444444444BBBBBB01 /* OpponentHandCardNode.swift */; };
@@ -187,6 +192,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		SH0000000000001AAAABBBB01 /* OilPaintShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = OilPaintShader.metal; sourceTree = "<group>"; };
+		SH0000000000002AAAABBBB02 /* ParchmentShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = ParchmentShader.metal; sourceTree = "<group>"; };
+		SH0000000000003AAAABBBB03 /* WarmFoilShader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = WarmFoilShader.metal; sourceTree = "<group>"; };
+		SH0000000000004AAAABBBB04 /* InkSpreadKernel.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = InkSpreadKernel.metal; sourceTree = "<group>"; };
+		SH0000000000005AAAABBBB05 /* brush_normal.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = brush_normal.jpg; sourceTree = "<group>"; };
 		AA11111111111111AAAAAAAA /* Cinzel-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Cinzel-Variable.ttf"; sourceTree = "<group>"; };
 		AA22222222222222AAAAAAAA /* Alegreya-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Alegreya-Variable.ttf"; sourceTree = "<group>"; };
 		AA33333333333333AAAAAAAA /* Alegreya-Italic-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Alegreya-Italic-Variable.ttf"; sourceTree = "<group>"; };
@@ -584,6 +594,7 @@
 		8359928251C29FE8481E9070 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				SH0000000000005AAAABBBB05 /* brush_normal.jpg */,
 				1B49F7CB5FADE74ECB6AA436 /* Fonts */,
 				27DE3CD034B3A5694EDCE6CA /* Particles */,
 				091DCB2CFF3DE401D1DAEA30 /* Sounds */,
@@ -678,6 +689,7 @@
 				W7B0000000000002AAAAAA01 /* ChaosCreatures.entitlements */,
 				3FD9A3D478CBAC6E4D5D1C74 /* Config */,
 				EFFTIER0000000000GRPGRP01 /* Effects */,
+				SH0000000000000GRPGRP001 /* Shaders */,
 				999DA759FD512EFFCA1AB3C0 /* Extensions */,
 				B2E3ED1E141FBE67F097F30B /* Models */,
 				8359928251C29FE8481E9070 /* Resources */,
@@ -794,6 +806,18 @@
 				EFFTIER0000000000BBBBBB01 /* EffectTier.swift */,
 			);
 			path = Effects;
+			sourceTree = "<group>";
+		};
+
+		SH0000000000000GRPGRP001 /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				SH0000000000001AAAABBBB01 /* OilPaintShader.metal */,
+				SH0000000000002AAAABBBB02 /* ParchmentShader.metal */,
+				SH0000000000003AAAABBBB03 /* WarmFoilShader.metal */,
+				SH0000000000004AAAABBBB04 /* InkSpreadKernel.metal */,
+			);
+			path = Shaders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -935,6 +959,7 @@
 				SFX00018BBBBBBBBBBBBBB18 /* sfx_chaos_spark.wav in Resources */,
 				SFX00019BBBBBBBBBBBBBB19 /* sfx_evolution_reveal.wav in Resources */,
 				W7B0000000000001CCCCCC01 /* PrivacyInfo.xcprivacy in Resources */,
+				SH0000000000005CCCCDDDD05 /* brush_normal.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1065,6 +1090,10 @@
 				BA1CB07B97965E89C653F43A /* TimerNode.swift in Sources */,
 				2D420C70835D5AA68DE2D07E /* View+Loading.swift in Sources */,
 				EFFTIER0000000000CCCCCC01 /* EffectTier.swift in Sources */,
+				SH0000000000001CCCCDDDD01 /* OilPaintShader.metal in Sources */,
+				SH0000000000002CCCCDDDD02 /* ParchmentShader.metal in Sources */,
+				SH0000000000003CCCCDDDD03 /* WarmFoilShader.metal in Sources */,
+				SH0000000000004CCCCDDDD04 /* InkSpreadKernel.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
