@@ -75,21 +75,6 @@ enum CardFaction: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    // MARK: SwiftUI Color
-
-    /// Runtime tint color for faction icon and instability badge.
-    /// Uses named colors from the asset catalog (Section 1.2 palette tokens).
-    /// These colors are NOT used in image generation prompts — see Section 3.3c.
-    var color: Color {
-        switch self {
-        case .ironwright: return Color("antique-silver")
-        case .fey:        return Color("fey-teal")
-        case .demonic:    return Color("wax-red")
-        case .celestial:  return Color("aged-gold")
-        case .endless:    return Color("rot-moss")
-        }
-    }
-
     var swiftUIColor: Color {
         switch self {
         case .ironwright: return .ironwright

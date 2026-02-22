@@ -160,6 +160,7 @@
 		SMOKE0AA111111111111BBBBBB01 /* SmokeTestCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SMOKE0CC111111111111DDDDDD01 /* SmokeTestCardView.swift */; };
 		EFFTIER0000000000CCCCCC01 /* EffectTier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFFTIER0000000000BBBBBB01 /* EffectTier.swift */; };
 		WAXSEAL000000000001CCCCCC01 /* WaxSealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */; };
+		INSTBDG000000000001CCCCCC01 /* InstabilityBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = INSTBDG000000000001BBBBBB01 /* InstabilityBadgeView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -347,6 +348,7 @@
 		SMOKE0CC111111111111DDDDDD01 /* SmokeTestCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTestCardView.swift; sourceTree = "<group>"; };
 		EFFTIER0000000000BBBBBB01 /* EffectTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectTier.swift; sourceTree = "<group>"; };
 		WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaxSealView.swift; sourceTree = "<group>"; };
+		INSTBDG000000000001BBBBBB01 /* InstabilityBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstabilityBadgeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -807,6 +809,7 @@
 			children = (
 				EFFTIER0000000000BBBBBB01 /* EffectTier.swift */,
 				WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */,
+				INSTBDG000000000001BBBBBB01 /* InstabilityBadgeView.swift */,
 			);
 			path = Effects;
 			sourceTree = "<group>";
@@ -1094,6 +1097,7 @@
 				2D420C70835D5AA68DE2D07E /* View+Loading.swift in Sources */,
 				EFFTIER0000000000CCCCCC01 /* EffectTier.swift in Sources */,
 				WAXSEAL000000000001CCCCCC01 /* WaxSealView.swift in Sources */,
+					INSTBDG000000000001CCCCCC01 /* InstabilityBadgeView.swift in Sources */,
 				SH0000000000001CCCCDDDD01 /* OilPaintShader.metal in Sources */,
 				SH0000000000002CCCCDDDD02 /* ParchmentShader.metal in Sources */,
 				SH0000000000003CCCCDDDD03 /* WarmFoilShader.metal in Sources */,

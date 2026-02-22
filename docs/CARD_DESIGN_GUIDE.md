@@ -95,11 +95,11 @@ Every color used anywhere in the app must derive from this palette. Do not intro
 | `parchment-mid` | `#D4B896` | `displayP3(0.827, 0.718, 0.585)` | Card body shadow, inner borders |
 | `parchment-dark` | `#8B6914` | `displayP3(0.541, 0.408, 0.071)` | Deep shadows, ink shadows |
 | `ink-black` | `#1A1208` | `displayP3(0.098, 0.071, 0.027)` | Typography, fine lines |
-| `wax-red` | `#8B1A1A` | `displayP3(0.537, 0.094, 0.082)` | Demonic Kingdoms faction color (wax seal, type line icon tint) |
+| `wax-red` | `#8B1A1A` | `displayP3(0.537, 0.094, 0.082)` | Demonic Kingdoms faction color (wax seal glow) |
 | `wax-blue` | `#1A2E5C` | `displayP3(0.086, 0.176, 0.353)` | Reserved — not currently assigned to a faction |
 | `wax-green` | `#1A3D1A` | `displayP3(0.086, 0.235, 0.086)` | Reserved — not currently assigned to a faction |
-| `fey-teal` | `#1A3D30` | `displayP3(0.086, 0.235, 0.184)` | Fey Courts faction color (wax seal, type line icon tint) |
-| `rot-moss` | `#1C2B1A` | `displayP3(0.106, 0.165, 0.098)` | The Endless faction color (wax seal, type line icon tint) — dark greenish-black, decay palette |
+| `fey-teal` | `#1A3D30` | `displayP3(0.086, 0.235, 0.184)` | Fey Courts faction color (wax seal glow) |
+| `rot-moss` | `#1C2B1A` | `displayP3(0.106, 0.165, 0.098)` | The Endless faction color (wax seal glow) — dark greenish-black, decay palette |
 | `aged-gold` | `#C8A951` | `displayP3(0.776, 0.659, 0.306)` | Rare frames, gold accents; Celestial Crusade faction color |
 | `antique-silver` | `#9AA0A6` | `displayP3(0.600, 0.624, 0.647)` | Uncommon frames; Ironwright Collective faction color |
 | `epic-amethyst` | `#7B2FBE` | `displayP3(0.463, 0.161, 0.729)` | Epic frames, arcane glow |
@@ -112,13 +112,13 @@ Every color used anywhere in the app must derive from this palette. Do not intro
 
 | Faction | Token | Usage |
 |---------|-------|-------|
-| Demonic Kingdoms | `wax-red` | Wax seal base color; faction icon tint on type line |
-| Fey Courts | `fey-teal` | Wax seal base color; faction icon tint on type line |
-| Ironwright Collective | `antique-silver` | Wax seal base color; faction icon tint on type line |
-| Celestial Crusade | `aged-gold` | Wax seal base color; faction icon tint on type line |
-| The Endless | `rot-moss` | Wax seal base color; faction icon tint on type line |
+| Demonic Kingdoms | `wax-red` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
+| Fey Courts | `fey-teal` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
+| Ironwright Collective | `antique-silver` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
+| Celestial Crusade | `aged-gold` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
+| The Endless | `rot-moss` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
 
-Faction color appears in exactly two places per card: the wax seal and the faction icon on the type line. It does not affect borders, name bar, text box, or any other zone — those are driven by rarity, not faction.
+Faction color appears in exactly one place per card: the wax seal glow. Wax color is driven by rarity (parchment-tan → silver → gold → amethyst → ember-red); the faction symbol (scroll / tree / sledgehammer / wing / skull) is embossed into the wax. Faction color does not affect borders, name bar, type line, text box, or any other zone.
 
 **Always use P3 values when initializing UIColor/Color in Swift** — the warm tones benefit from P3's extended gamut on modern displays. Use `Color(UIColor(displayP3Red: r, green: g, blue: b, alpha: 1))` for all palette colors.
 
@@ -203,31 +203,6 @@ Card type rules:
 
 Replaces: the former tiled dot system (●●●●●●● up to 7 + "N+" overflow text) and the ruins "COST: N" label.
 
-**Type line faction icon (type line, left-aligned):**
-
-Each faction has a unique icon displayed left-aligned on the type line, mirroring the set symbol on the right. Both icons are 14×14pt.
-
-| Faction | Icon | Token color for tint |
-|---------|------|----------------------|
-| Demonic Kingdoms | Scroll | `wax-red` |
-| Fey Courts | Tree | `fey-teal` |
-| Ironwright Collective | Sledgehammer | `antique-silver` |
-| Celestial Crusade | Single angelic wing | `aged-gold` |
-| The Endless | Skull | `rot-moss` |
-
-**The token color column is for runtime tinting only — it has no effect on image generation.** Faction icons are generated as pure black-on-white silhouettes (see Section 3.8), then post-processed to white-on-transparent PNGs. Color is applied in SwiftUI at runtime using `.renderingMode(.template)` and `.foregroundColor(card.faction.color)`. The exact hex value does not need to be embedded in the image in any way.
-
-```swift
-Image("faction_demonic")
-    .renderingMode(.template)
-    .resizable()
-    .frame(width: 14, height: 14)
-    .foregroundColor(card.faction.color)
-    .shadow(color: Color("parchment-dark").opacity(0.6), radius: 0.5, x: 0, y: 0.5)
-```
-
-Icons must be legible at 14×14pt — simple silhouettes only, no fine internal detail. See Section 3.8 for generation briefs.
-
 **Attack/HP stats (stats bar, right-aligned):**
 
 | Property | Value |
@@ -241,13 +216,12 @@ Icons must be legible at 14×14pt — simple silhouettes only, no fine internal 
 
 | Property | Value |
 |----------|-------|
-| Font | Oswald-Bold, 10pt (for the numeral) |
-| Icon | D20 die face glyph — fractured/cracked to suggest chaos. Rendered as a simple silhouette icon, same height as the numeral (10pt). |
-| Format | [D20 icon] N — e.g. a small cracked D20 followed by "3" |
-| Color | Faction token color at 80% opacity |
+| Component | InstabilityBadgeView — D20 base image with number overlaid in code |
+| D20 asset | d20_instability_base.png — full color, swirling cobalt blue (left/chaos) and fiery orange (right/order), cracked face, 22×22pt display size |
+| Number | Oswald-Bold, 9pt, white (#FFFFFF), shadow: black 60% opacity radius 1pt — overlaid at runtime, offset y=-1pt |
+| Color | White only — not faction-tinted. Reads against both blue and orange areas of the D20. |
 | Placement | Left side of stats bar, 4pt from left edge |
-| Note | N is the creature's base instability value (0–5) as printed on the card — not the board-calculated total |
-| Generation | AI-generate the D20 icon once as a silhouette PNG. See Section 3.8 for generation brief. |
+| Note | instability value 0 hides the badge entirely (guard > 0 before rendering) |
 
 **Modifier and triggered ability text (text box, below ability text, above flavor text):**
 
@@ -541,18 +515,6 @@ enum CardFaction: String, Codable {
     case celestial    // Doré (Paradise) + Blake
     case endless      // Doré (Inferno) + Goya
 
-    /// Runtime tint color for faction icon and instability badge.
-    /// Uses named colors from the asset catalog (Section 1.2 palette tokens).
-    /// These colors are NOT used in image generation prompts — see Section 3.3c.
-    var color: Color {
-        switch self {
-        case .ironwright: return Color("antique-silver")
-        case .fey:        return Color("fey-teal")
-        case .demonic:    return Color("wax-red")
-        case .celestial:  return Color("aged-gold")
-        case .endless:    return Color("rot-moss")
-        }
-    }
 }
 
 enum CardSubFaction: String, Codable {
@@ -1430,12 +1392,12 @@ Store at: `Resources/Icons/set_symbol.png`
 
 **FACTION ICONS — Generation briefs (one per faction)**
 
+Faction icons are embossed into the wax seal for each card — the same five symbols (scroll, tree, sledgehammer, wing, skull) pressed into rarity-colored wax. They are not displayed on the type line. Generate once as white-on-transparent silhouette PNGs per the briefs below. The wax seal generation pipeline (WAX_SEAL_OVERHAUL_BRIEF.md) uses these symbol descriptions directly in its FACTION_SYMBOL prompts.
+
 All faction icons share these parameters:
 - Style: flat fantasy insignia, bold silhouette, heraldic quality
-- No fine internal detail — must read at 14pt
-- Pure black on white background (will be tinted in code)
-
-> **Color note:** Do not use faction colors in the generation prompt and do not try to generate colored icons. The faction color (`wax-red`, `fey-teal`, etc.) is applied entirely at runtime by SwiftUI's `.renderingMode(.template)` — the asset itself must be a black silhouette on white. Any color you bake into the generated image will be overwritten at render time. Generate all five faction icons identically in terms of color treatment.
+- No fine internal detail — must read at the embossed badge scale
+- Pure black on white background (post-processed to white-on-transparent)
 
 *Ironwright Collective — Sledgehammer:*
 ```
@@ -1499,16 +1461,29 @@ Store at: `Resources/Icons/chaos_mote_symbol.png`
 
 **D20 INSTABILITY ICON — Generation brief**
 
-The D20 instability icon is displayed alongside the creature's instability value in the stats bar.
+The D20 is a full-color asset — not a silhouette. It shows swirling cobalt blue (chaos, left side)
+and fiery orange (order, right side) colliding at the center of the die face. The instability
+number is overlaid in code at runtime (see InstabilityBadgeView). Generate once; all instability
+values 0–5 use the same base image.
 
+Prompt:
 ```
-A twenty-sided die (D20) face, viewed straight-on. The face shows a crack or 
-fracture running diagonally across it — suggesting chaotic instability. The crack 
-is significant but the die shape is still clearly readable. Clean flat silhouette. 
-Bold clear edges. No number visible on the face. Heraldic badge style.
+A twenty-sided die (D20), viewed straight-on, face showing. The die face is filled with
+violently swirling magical energy — on the left side, deep electric cobalt blue with turbulent
+swirling motion; on the right side, fierce fiery orange with upward-licking flame motion.
+The two colors meet at the center in a chaotic collision, neither dominant.
+The die has visible facets and edges — clearly a D20, not a sphere.
+A single crack or fracture runs diagonally across the face, suggesting chaos and instability.
+The crack is significant but the die shape remains clearly readable.
+Fantasy magical artifact. Studio lighting with rim light. Isolated on pure white background.
 ```
 
-Store at: `Resources/Icons/instability_d20.png`
+Negative prompt: smooth gradient, flat, uniform color, cartoon, plastic, digital, text, numbers,
+letters, blurry, soft, glowing outline, 2D, vector art, coin, circle, sphere, perfect symmetry
+
+Post-processing: REMBG background removal (alpha_matting=True). Do NOT convert to silhouette —
+retain full color. Downscale from 512×512 source to 144×144px (48pt @3x).
+Store at: `Resources/Icons/d20_instability_base.png`
 
 ---
 
@@ -4312,9 +4287,7 @@ ZStack {
     // Stats bar — 52pt right padding keeps text clear of seal zone (x ≤ 158)
     HStack(spacing: 0) {
         if card.instability > 0 {
-            Text("⚡\(card.instability)")
-                .font(.custom("Oswald-Bold", size: 10))
-                .foregroundColor(card.faction.color.opacity(0.8))
+            InstabilityBadgeView(instability: card.instability)
         }
         Text("\(card.collectorNumber) • \(card.setCode)")
             .font(.custom("Cinzel-Regular", size: 7))

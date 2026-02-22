@@ -847,20 +847,6 @@ struct CardFrameView: View {
         return ZStack {
             theme.typeLineBackground
             HStack(alignment: .center, spacing: 4 * scale) {
-                // Faction icon (left-aligned, scales from 14×14pt base)
-                if let faction = data.faction {
-                    Image(faction.emblemAssetName)
-                        .renderingMode(.template)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 14 * scale, height: 14 * scale)
-                        .foregroundColor(faction.color)
-                        .shadow(
-                            color: theme.letterpressShadowColor.opacity(0.6),
-                            radius: 0.5, x: 0, y: 0.5
-                        )
-                }
-
                 Text(data.typeLine)
                     .font(CardFont.cardType(size: 10 * scale))
                     .foregroundColor(theme.primaryText)
@@ -1033,19 +1019,9 @@ struct CardFrameView: View {
             theme.statsBarBackground
             HStack(alignment: .center) {
                 // Instability indicator (left — creature only, not planar ruins)
-                if data.cardType == .creature, let instability = data.instability {
-                    HStack(spacing: 3 * scale) {
-                        Image(systemName: "die.face.4")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 10 * scale, height: 10 * scale)
-                            .foregroundColor(factionIconColor.opacity(0.8))
-                        Text("\(instability)")
-                            .font(CardFont.statNumber(size: 10 * scale))
-                            .foregroundColor(factionIconColor.opacity(0.8))
-                            .letterpressShadow()
-                    }
-                    .padding(.leading, 4 * scale)
+                if data.cardType == .creature, let instability = data.instability, instability > 0 {
+                    InstabilityBadgeView(instability: instability)
+                        .padding(.leading, 4 * scale)
                 }
 
                 // Collector number (left of center)
@@ -1144,12 +1120,7 @@ struct CardFrameView: View {
         theme.cardBase
     }
 
-    // MARK: - Faction Color Helpers
 
-    private var factionIconColor: Color {
-        guard let faction = data.faction else { return Color("parchment-dark") }
-        return faction.color
-    }
 }
 
 // MARK: - AnimatedRarityBorder

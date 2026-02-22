@@ -43,13 +43,15 @@ Swift: `Color(UIColor(displayP3Red: r, green: g, blue: b, alpha: 1))`
 
 ### Faction Color Mapping
 
+Wax color is driven by **rarity** (parchment-tan → silver → gold → amethyst → ember-red). Faction color is used for the **wax seal glow only**. The faction **symbol** (scroll / tree / sledgehammer / wing / skull) is embossed into the wax. 25 seal images stored in `Assets.xcassets/Icons/Seals/`.
+
 | Faction | Token | Where used |
 |---------|-------|-----------|
-| Demonic Kingdoms | `wax-red` | Wax seal + faction icon tint |
-| Fey Courts | `fey-teal` | Wax seal + faction icon tint |
-| Ironwright Collective | `antique-silver` | Wax seal + faction icon tint |
-| Celestial Crusade | `aged-gold` | Wax seal + faction icon tint |
-| The Endless | `rot-moss` | Wax seal + faction icon tint |
+| Demonic Kingdoms | `wax-red` | Wax seal glow only |
+| Fey Courts | `fey-teal` | Wax seal glow only |
+| Ironwright Collective | `antique-silver` | Wax seal glow only |
+| Celestial Crusade | `aged-gold` | Wax seal glow only |
+| The Endless | `rot-moss` | Wax seal glow only |
 
 ---
 
@@ -63,7 +65,7 @@ Swift: `Color(UIColor(displayP3Red: r, green: g, blue: b, alpha: 1))`
 │ ├─────────────────────────────┤ │
 │ │        ART BOX              │ │  132pt tall
 │ ├─────────────────────────────┤ │
-│ │[FAC] TYPE LINE  [SET SYMBOL]│ │  18pt tall
+│ │ TYPE LINE      [SET SYMBOL] │ │  18pt tall
 │ ├─────────────────────────────┤ │
 │ │        TEXT BOX             │ │  88pt tall
 │ │  [ability] ──────────────   │ │
@@ -84,10 +86,10 @@ Swift: `Color(UIColor(displayP3Red: r, green: g, blue: b, alpha: 1))`
 | Name bar | 4 | 4 | 202 | 25 | `N ⊕` right-aligned, 6pt from inner right edge; Oswald-Bold 13pt numeral + 20×20pt chaos mote icon |
 | Art box | 4 | 29 | 202 | 132 | No corner radius |
 | Art box vignette | 4 | 29 | 202 | 132 | 20pt feather fade all 4 edges |
-| Type line | 4 | 161 | 202 | 18 | Faction icon left 14×14pt; set symbol right 14×14pt |
+| Type line | 4 | 161 | 202 | 18 | Set symbol right-aligned 14×14pt |
 | Text box | 8 | 179 | 194 | 88 | 4pt internal padding (Spell/Stabilizer: 107pt — stats bar absent) |
 | Ability/flavor divider | 12 | varies | 186 | 0.5 | parchment-mid hairline |
-| Stats bar | 4 | 267 | 202 | 15 | ATK/HP right-aligned; D20 instability icon+N left; absent on Spell/Stabilizer |
+| Stats bar | 4 | 267 | 202 | 15 | ATK/HP right-aligned; InstabilityBadgeView left (D20 full-color + white numeral); absent on Spell/Stabilizer |
 | Rarity color bar | 4 | 282 | 202 | 4 | Bottom of inner area |
 | Wax seal | 164 | 258 | 34 | 34 | Rarity indicator — absent on Spell and neutral Ruins |
 
@@ -114,27 +116,28 @@ Icon file: Resources/Icons/chaos_mote_symbol.png
 | Planar Ruin  | `N ⊕` (no label)  |
 | Stabilizer   | None              |
 
-### Faction Icons (type line, left-aligned, 14×14pt)
+### Faction Icons (wax seal embossing only — not on type line)
 
-| Faction | Icon | Token | Asset |
-|---------|------|-------|-------|
-| Demonic Kingdoms | Scroll | `wax-red` | `faction_demonic.png` |
-| Fey Courts | Tree | `fey-teal` | `faction_fey.png` |
-| Ironwright Collective | Sledgehammer | `antique-silver` | `faction_ironwright.png` |
-| Celestial Crusade | Single wing | `aged-gold` | `faction_celestial.png` |
-| The Endless | Skull | `rot-moss` | `faction_endless.png` |
+| Faction | Symbol | Asset |
+|---------|--------|-------|
+| Demonic Kingdoms | Scroll | `faction_demonic.png` |
+| Fey Courts | Tree | `faction_fey.png` |
+| Ironwright Collective | Sledgehammer | `faction_ironwright.png` |
+| Celestial Crusade | Single wing | `faction_celestial.png` |
+| The Endless | Skull | `faction_endless.png` |
 
-All faction icons are white silhouette PNGs (tinted at runtime). All in `Resources/Icons/`.
+White silhouette PNGs, used by wax seal pipeline. Not rendered on type line. All in `Resources/Icons/`.
 
 ### Instability Badge (stats bar, left-aligned)
 
 | Property | Value |
 |----------|-------|
-| Icon | D20 cracked die silhouette — `Resources/Icons/instability_d20.png` |
-| Font | Oswald-Bold, 10pt |
-| Format | [D20 icon] N |
-| Color | Faction token color at 80% opacity |
+| Component | `InstabilityBadgeView(instability: card.instability)` |
+| Icon | D20 full-color (cobalt blue left / fiery orange right) — `Resources/Icons/d20_instability_base.png` |
+| Number | Oswald-Bold, 9pt, white (#FFFFFF), overlaid in code at runtime, offset y=-1pt |
+| Color | White only — not faction-tinted |
 | Left margin | 4pt |
+| Hidden when | instability == 0 |
 
 ---
 
@@ -166,7 +169,7 @@ All 6 must be registered in Info.plist under `UIAppFonts` before use.
 | Collector # | Cinzel-Regular | 7pt | parchment-mid | Left | 1 | Never truncate |
 | Set code | Cinzel-Regular | 7pt | parchment-mid | Center | 1 | — |
 | ATK/HP | Oswald-Bold | 13pt | ink-black | Right | 1 | Never truncate |
-| Instability (D20 N) | Oswald-Bold | 10pt | faction color 80% | Left | 1 | Never truncate |
+| Instability numeral | Oswald-Bold | 9pt | white #FFFFFF | Left (overlaid on D20) | 1 | Never truncate — use InstabilityBadgeView |
 
 ### Letterpress Effect (apply to all text)
 
@@ -639,7 +642,7 @@ All axes ≥4 before proceeding. One fix per loop. Three fails on same gap → b
 | Name bar | ✓ `N ⊕` right-aligned | ✓ `N ⊕` right-aligned | ✓ **no cost indicator** | ✓ `N ⊕` right-aligned (no label) |
 | Art box | ✓ | ✓ | ✓ still-life | ✓ full-art (bleeds to edges) |
 | Type line | "Creature — [type]" | "Spell — [subtype]" | "Stabilizer" | "Planar Ruin" |
-| Faction icon | ✓ | ✓ | ✓ | Omit if neutral |
+| Faction icon on type line | **Omit** | **Omit** | **Omit** | **Omit** — faction symbol is on wax seal only |
 | Text box | 88pt | 107pt (expanded) | 107pt (expanded) | Passive + Destroyed panels |
 | Stats bar | ATK / HP + D20 N | **Omit** | **Omit** | HP only (cost×3+1) |
 | Wax seal | ✓ | **Omit** | ✓ | Omit if neutral; faction color if evolved |
@@ -662,7 +665,7 @@ All axes ≥4 before proceeding. One fix per loop. Three fails on same gap → b
 | `Resources/Icons/faction_celestial.png` | Celestial Crusade faction icon |
 | `Resources/Icons/faction_endless.png` | The Endless faction icon |
 | `Resources/Icons/chaos_mote_symbol.png` | Single 20×20pt chaos mote cost icon used in `N ⊕` name bar display |
-| `Resources/Icons/instability_d20.png` | D20 instability badge icon |
+| `Resources/Icons/d20_instability_base.png` | D20 instability badge icon — full color (cobalt blue + fiery orange) |
 | `Logs/MASTER_STATE.json` | Current phase, task queue, budget |
 | `Logs/iteration_log.md` | Per-iteration log + critiques |
 | `Logs/CONFLICTS.md` | Guide conflicts + resolutions |
@@ -677,6 +680,7 @@ All axes ≥4 before proceeding. One fix per loop. Three fails on same gap → b
 | `Sources/Haptics/HapticEngine.swift` | Haptic service |
 | `Sources/Audio/SoundEngine.swift` | Audio service |
 | `Sources/Effects/WaxSealView.swift` | Wax seal component |
+| `Sources/Effects/InstabilityBadgeView.swift` | D20 badge with runtime number overlay |
 | `Scripts/verify_environment.sh` | Master env check — tools, simulators, API keys, Python libs (§4.1) |
 | `Scripts/download_fonts.sh` | Font acquisition via homebrew-cask-fonts or GitHub mirrors (§4.7) |
 | `Scripts/grade_artwork.sh` | Color grading pipeline |

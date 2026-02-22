@@ -1,0 +1,5 @@
+{
+  "images": [{"filename": "d20_instability_base.png", "idiom": "universal", "scale": "3x"}],
+  "info": {"author": "xcode", "version": 1},
+  "properties": {"compression-type": "automatic", "preserves-vector-representation": false}
+}
