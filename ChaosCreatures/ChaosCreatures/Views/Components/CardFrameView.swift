@@ -834,7 +834,7 @@ struct CardFrameView: View {
 
     private func waxSeal(cardWidth: CGFloat) -> some View {
         let scale = cardScale(cardWidth: cardWidth)
-        return WaxSealView(rarity: data.tier)
+        return WaxSealView(rarity: data.tier, faction: data.faction ?? .ironwright)
             .scaleEffect(scale * (34.0 / 34.0))  // WaxSealView renders at 34pt base; scale to card
             .frame(width: 34 * scale, height: 34 * scale)
     }

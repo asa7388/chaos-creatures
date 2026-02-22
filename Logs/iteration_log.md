@@ -444,3 +444,44 @@ Auto-captured screenshots show the login screen (app launched but automation cou
 #### VERDICT
 Phase 3 complete. All planned artifacts exist, compile, and are included in the Xcode target. Build passes. Core visual hook (WaxSealView + animated borders) is live and user-visible in card detail. Metal shaders require Phase 4 wiring to be visible — expected at this stage. Proceed to Phase 3 end gate user review.
 
+
+---
+
+## Wax Seal Reference Study — 2026-02-22
+
+ref_wellcome_13c_seals.jpg: Edge translucency — N/A (line drawings, not photo). Embossing depth — very deep; complex architectural + heraldic imagery pressed into recessed areas with crisp definition; raised outer border ring clearly visible. Specular — not applicable (drawings). Key takeaway: symbol INSIDE a recessed zone, not floating on wax surface.
+
+ref_schwamberg_1614.jpg: Symbol impression depth — substantial; coat of arms creates clear raised/recessed relief with distinct light/shadow on raised areas. Displacement ring — present at outer edge of seal, creates a subtle raised rim where wax was pushed by the stamp. Color — rich saturated crimson throughout even in shadows; does NOT go dark/black at rim. Surface — matte, slight ambient sheen.
+
+ref_letter_a_modern.jpg: Specular position — ambient, very subtle, no strong directional highlight visible at this angle. Size — irregular organic blob (approx 30mm diameter). Hardness — wax surface is matte with almost no specular. Key takeaway: at real macro scale, the wax goes much thinner and more translucent at edges than expected — quite dramatic thinning.
+
+Primary insight for prompt: The Schwamberg 1614 seal is the target quality level. Properly circular, rich saturated color, deeply embossed, matte surface with subtle diffuse lighting. The hardest challenge for demonic legendary: dark blood-crimson must still read as SATURATED colored wax, not near-black. Schwamberg shows this is achievable even with deep crimson.
+
+Ready to generate calibration seal: demonic legendary.
+
+
+---
+
+## Wax Seal Iteration 1 — seal_demonic_legendary — 2026-02-22
+**References loaded:** ref_wellcome_13c_seals.jpg, ref_schwamberg_1614.jpg, ref_letter_a_modern.jpg
+**Files evaluated:** Staging/wax_seals/seal_demonic_legendary_raw.png, Staging/wax_seals/preview_seal_demonic_legendary.png
+
+| Axis | Score (1–5) | Observation |
+|------|------------|-------------|
+| Physical material | 5 | Unmistakably wax — beeswax/resin texture, matte surface with subtle directional highlights. Not plastic, not digital. |
+| Edge translucency | 3 | Outer raised rim shows natural wax compression. Not dramatically translucent but not flat either — acceptable at 34pt. |
+| Embossing depth | 5 | Dragon head is genuinely pressed IN. Raised coils cast shadows in recessed areas. Clearly not printed on top. |
+| Displacement ring | 4 | Clear raised outer ring where stamp edge compressed wax. Inner dragon coils show internal displacement. |
+| Specular accuracy | 4 | Warm highlights on raised dragon parts, upper-left bias. Natural and diffuse, no harsh spotlight. |
+| Color depth | 4 | Rich crimson in thick wax areas, deeper tone in recessed shadows. Internal color variation is present. |
+| 34pt readability | 4 | Dragon silhouette recognizable at display size. Crimson reads clearly — does NOT go near-black at small size. |
+| Imperfections | 4 | Rim slightly irregular, not a perfect circle. Handmade organic quality present. |
+
+**Largest gap at 34pt:** Edge translucency — the thinning effect is subtle but this is a minor issue at 34pt where coarser features dominate.
+**Root cause:** None — all axes pass. No failure to diagnose.
+**Prompt change if regenerating:** None needed — prompt performs well.
+**Decision:** APPROVE — all 8 axes ≥ 3. Physical material and 34pt readability both strong. Proceeding to full 25-seal batch.
+
+APPROVED PROMPT — demonic legendary:
+"A circular wax seal, deep blood-crimson wax, dark wine red, a dragon head in profile embossed and pressed into the center of the wax. Physical wax material — beeswax and resin compound, slightly translucent at the thinning edges, dense and opaque in the center. Single specular highlight at upper-left quadrant, warm directional light, no highlight on right side. Visible texture where the stamp pressed into the soft wax — slight displacement, raised ridge of wax around the outer edge of the impressed symbol. Depth of color — lighter where wax is thin, saturated and rich where wax is thick. Aged and handmade, organic surface irregularities, slight imperfections at rim. Fantasy heraldic style. Isolated on pure white background. Macro photography, studio lighting."
+

@@ -1,139 +1,89 @@
 // WaxSealView.swift
 // Chaos Creatures
 //
-// Embossed wax seal rarity badge component.
-// Uses game-icons.net CC BY 3.0 icons (white-on-transparent PNG assets)
-// rendered with .template rendering mode over the colored wax seal.
-// Radial gradient + specular highlight create dimensional wax-stamp look.
+// Faction × rarity wax seal badge.
+// Loads the AI-generated seal image (25 total: 5 factions × 5 rarities) from
+// Assets.xcassets/Icons/Seals/. Images were generated via fal.ai FLUX.1 Dev,
+// background-removed with REMBG, and scaled to 102×102 px.
 //
-// Icon credits (CC BY 3.0, game-icons.net):
-//   seal_common    — circle-sparks by Lorc
-//   seal_uncommon  — triquetra by Delapouite
-//   seal_rare      — crown by Lorc
-//   seal_epic      — all-seeing-eye by Delapouite
-//   seal_legendary — dragon-head by Lorc
+// Image naming convention: seal_<factionSlug>_<raritySlug>
+//   factionSlug: demonic | fey | ironwright | celestial | endless
+//   raritySlug:  common  | uncommon | rare  | epic      | legendary
 //
-// Spec: docs/CARD_DESIGN_GUIDE.md Section 6.6
+// Fallback: programmatic circle with "!" — only shown if asset is missing.
+// Rare+ seals pulse with a glow animation on appearance.
 
 import SwiftUI
 
-/// Embossed wax seal rarity indicator placed at the top-right corner of CardFrameView.
-/// Renders at a configurable `size` (default 34pt to match legacy fixed size).
-/// Uses `Rarity.waxColor` from CardGuideEnums.swift for color continuity.
 struct WaxSealView: View {
     let rarity: Rarity
+    let faction: CardFaction
     var size: CGFloat = 34
 
     @State private var isGlowing = false
-    @State private var appeared = false
 
-    // MARK: - Colors
+    // MARK: - Slug helpers
 
-    /// Lighter highlight color derived from waxColor — simulates light from upper-left.
-    private var highlightColor: Color {
-        switch rarity {
-        case .common:    return Color("parchment-light")
-        case .uncommon:  return Color(red: 0.85, green: 0.85, blue: 0.90) // light silver
-        case .rare:      return Color(red: 0.98, green: 0.85, blue: 0.45) // bright gold
-        case .epic:      return Color(red: 0.75, green: 0.50, blue: 0.95) // bright amethyst
-        case .legendary: return Color(red: 1.00, green: 0.62, blue: 0.30) // bright ember
+    /// Maps CardFaction (rawValue = "DEMONIC_KINGDOMS" etc.) to image filename slug.
+    private var factionSlug: String {
+        switch faction {
+        case .demonic:    return "demonic"
+        case .fey:        return "fey"
+        case .ironwright: return "ironwright"
+        case .celestial:  return "celestial"
+        case .endless:    return "endless"
         }
+    }
+
+    /// Maps Rarity (rawValue = "COMMON" etc.) to image filename slug.
+    private var raritySlug: String {
+        switch rarity {
+        case .common:    return "common"
+        case .uncommon:  return "uncommon"
+        case .rare:      return "rare"
+        case .epic:      return "epic"
+        case .legendary: return "legendary"
+        }
+    }
+
+    private var imageName: String {
+        "seal_\(factionSlug)_\(raritySlug)"
     }
 
     // MARK: - Body
 
     var body: some View {
-        ZStack {
-            // Layer 1: Drop shadow disc — gives the seal elevation off the card surface
-            Circle()
-                .fill(Color.black.opacity(0.55))
-                .frame(width: size, height: size)
-                .offset(x: size * 0.05, y: size * 0.07)
-                .blur(radius: size * 0.08)
-
-            // Layer 2: Outer wax ring — slightly darker pressed/crushed edge
-            Circle()
-                .fill(rarity.waxColor)
-                .frame(width: size, height: size)
-
-            // Layer 3: Main wax disc — radial gradient lit from upper-left
-            Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: highlightColor, location: 0.0),
-                            .init(color: rarity.waxColor, location: 0.50),
-                            .init(color: rarity.waxColor.opacity(0.75), location: 1.0)
-                        ]),
-                        center: UnitPoint(x: 0.30, y: 0.28),
-                        startRadius: 0,
-                        endRadius: size * 0.52
+        Group {
+            if UIImage(named: imageName) != nil {
+                Image(imageName)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: size, height: size)
+            } else {
+                // Fallback: programmatic circle — do not ship to App Store
+                Circle()
+                    .fill(rarity.waxColor)
+                    .frame(width: size, height: size)
+                    .overlay(
+                        Text("!")
+                            .font(.system(size: size * 0.35, weight: .bold))
+                            .foregroundColor(.white)
                     )
-                )
-                .frame(width: size * 0.84, height: size * 0.84)
-
-            // Layer 4: Engraved inner ring — pressed impression circle
-            Circle()
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            rarity.waxColor.opacity(0.25),
-                            highlightColor.opacity(0.55)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: max(1.0, size * 0.04)
-                )
-                .frame(width: size * 0.64, height: size * 0.64)
-
-            // Layer 5: Embossed symbol — game-icons.net CC BY 3.0 icon stamped into wax
-            // renderingMode(.template) + foregroundColor tints the white icon,
-            // shadow below presses it into the wax surface visually.
-            Image(rarity.sealIconName)
-                .resizable()
-                .renderingMode(.template)
-                .foregroundColor(.white.opacity(0.85))
-                .frame(width: size * 0.45, height: size * 0.45)
-                .shadow(
-                    color: rarity.waxColor.opacity(0.8),
-                    radius: size * 0.02,
-                    x: size * 0.01,
-                    y: size * 0.02
-                )
-
-            // Layer 6: Specular highlight — directional glint from upper-left
-            Ellipse()
-                .fill(
-                    RadialGradient(
-                        colors: [Color.white.opacity(0.40), .clear],
-                        center: .init(x: 0.35, y: 0.30),
-                        startRadius: 0,
-                        endRadius: size * 0.28
-                    )
-                )
-                .frame(width: size * 0.55, height: size * 0.40)
-                .offset(x: -size * 0.10, y: -size * 0.12)
-                .blendMode(.screen)
+                    .onAppear {
+                        print("WAX SEAL MISSING: \(imageName) — run Scripts/generate_wax_seals.py")
+                    }
+            }
         }
-        // Outer glow for Rare+ (pulsing animation)
         .shadow(
-            color: rarity >= .rare ? rarity.waxColor.opacity(isGlowing ? 0.75 : 0.20) : .clear,
+            color: rarity >= .rare ? rarity.waxColor.opacity(isGlowing ? 0.75 : 0.35) : .clear,
             radius: isGlowing ? size * 0.32 : size * 0.10,
             x: 0, y: 0
         )
-        // Stamp-press entrance animation
-        .scaleEffect(appeared ? 1.0 : 0.05)
-        .rotationEffect(.degrees(appeared ? 0 : -45))
-        .animation(
-            .spring(response: 0.32, dampingFraction: 0.55, blendDuration: 0)
-                .delay(0.08),
-            value: appeared
-        )
         .onAppear {
-            appeared = true
             guard rarity >= .rare else { return }
-            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+            withAnimation(
+                .easeInOut(duration: 1.8).repeatForever(autoreverses: true)
+            ) {
                 isGlowing = true
             }
         }
@@ -143,19 +93,28 @@ struct WaxSealView: View {
 // MARK: - Preview
 
 #if DEBUG
-#Preview("WaxSealView — all rarities") {
-    HStack(spacing: 16) {
-        ForEach(Rarity.allCases) { rarity in
-            VStack(spacing: 6) {
-                WaxSealView(rarity: rarity)
-                WaxSealView(rarity: rarity, size: 52)
-                Text(rarity.displayName)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+#Preview("WaxSealView — all factions × all rarities") {
+    ScrollView {
+        VStack(spacing: 20) {
+            ForEach(CardFaction.allCases) { faction in
+                HStack(spacing: 12) {
+                    Text(faction.displayName)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .frame(width: 60, alignment: .trailing)
+                    ForEach(Rarity.allCases) { rarity in
+                        VStack(spacing: 4) {
+                            WaxSealView(rarity: rarity, faction: faction)
+                            Text(rarity.displayName)
+                                .font(.system(size: 7))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
             }
         }
+        .padding(24)
     }
-    .padding(24)
     .background(Color(UIColor.systemBackground))
 }
 #endif

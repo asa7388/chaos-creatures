@@ -42,3 +42,28 @@ depends on iOS variable font registration — see CardFont.swift debugVerifyRequ
 | Asset | Source | License | Commercial Use |
 |-------|--------|---------|----------------|
 | [To be populated in Phase 6] | freesound.org or itch.io | CC0 or Commercial | TBD |
+| seal_demonic_legendary.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_demonic_common.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_demonic_uncommon.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_demonic_rare.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_demonic_epic.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_fey_common.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_fey_uncommon.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_fey_rare.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_fey_epic.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_fey_legendary.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_ironwright_common.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_ironwright_uncommon.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_ironwright_rare.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_ironwright_epic.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_ironwright_legendary.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_celestial_common.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_celestial_uncommon.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_celestial_rare.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_celestial_epic.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_celestial_legendary.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_endless_common.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_endless_uncommon.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_endless_rare.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_endless_epic.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
+| seal_endless_legendary.png | fal.ai FLUX.1 Dev output — AI generated | fal.ai commercial license | 2026-02-22 | Yes | No | — |
