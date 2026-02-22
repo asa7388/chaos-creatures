@@ -543,7 +543,6 @@ struct CardFrameView: View {
     // MARK: - Creature Layout (standard — all zones present)
 
     private func creatureLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        let sealSize: CGFloat = 34 * (cardWidth / 210.0)
         return VStack(spacing: 0) {
             nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
                 .frame(height: cardHeight * ZoneHeight.nameBars)
@@ -564,15 +563,6 @@ struct CardFrameView: View {
                 .frame(height: cardHeight * ZoneHeight.rarityBar)
         }
         .background(cardBaseColor)
-        .overlay(alignment: .topLeading) {
-            waxSeal(cardWidth: cardWidth)
-                .frame(width: sealSize, height: sealSize)
-                .offset(
-                    x: (173.0 / 210.0) * cardWidth,
-                    y: (240.0 / 294.0) * cardHeight
-                )
-                .allowsHitTesting(false)
-        }
     }
 
     // MARK: - Spell Layout (no stats bar, expanded text box, no wax seal, no instability)
@@ -622,7 +612,6 @@ struct CardFrameView: View {
     // MARK: - Planar Ruin Layout (HP only, passive + destruction panels)
 
     private func planarRuinLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        let sealSize: CGFloat = 34 * (cardWidth / 210.0)
         return VStack(spacing: 0) {
             ruinNameBar(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.nameBars)
@@ -643,15 +632,6 @@ struct CardFrameView: View {
                 .frame(height: cardHeight * ZoneHeight.rarityBar)
         }
         .background(cardBaseColor)
-        .overlay(alignment: .topLeading) {
-            waxSeal(cardWidth: cardWidth)
-                .frame(width: sealSize, height: sealSize)
-                .offset(
-                    x: (173.0 / 210.0) * cardWidth,
-                    y: (240.0 / 294.0) * cardHeight
-                )
-                .allowsHitTesting(false)
-        }
     }
 
     // MARK: - Name Bar Zone
@@ -830,15 +810,6 @@ struct CardFrameView: View {
         }
         .frame(width: cardWidth, height: cardHeight)
     }
-    // MARK: - Wax Seal
-
-    private func waxSeal(cardWidth: CGFloat) -> some View {
-        let scale = cardScale(cardWidth: cardWidth)
-        return WaxSealView(rarity: data.tier, faction: data.faction ?? .ironwright)
-            .scaleEffect(scale * (34.0 / 34.0))  // WaxSealView renders at 34pt base; scale to card
-            .frame(width: 34 * scale, height: 34 * scale)
-    }
-
 
     // MARK: - Type Line Zone
 
@@ -856,12 +827,8 @@ struct CardFrameView: View {
 
                 Spacer(minLength: 2 * scale)
 
-                // Set symbol placeholder (right-aligned, scales from 14×14pt base)
-                Image(systemName: "seal")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 14 * scale, height: 14 * scale)
-                    .foregroundColor(theme.secondaryText.opacity(0.5))
+                // Wax seal — faction symbol + rarity color
+                WaxSealView(rarity: data.tier, faction: data.faction ?? .ironwright, size: 28 * scale)
             }
             .padding(.horizontal, 6 * scale)
         }
