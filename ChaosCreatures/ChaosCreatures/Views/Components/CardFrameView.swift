@@ -300,6 +300,7 @@ struct CardFrameView: View {
     @State private var dragOffset: CGSize = .zero
     @State private var shakeOffset: CGFloat = 0
     @State private var activeTooltipKeyword: Keyword? = nil
+    @State private var borderRotation: Double = 0
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
 
@@ -506,9 +507,43 @@ struct CardFrameView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(rarityBorderGradient, lineWidth: data.tier.borderWidth)
             )
+            .overlay(animatedBorder)
             .shadow(color: rarityGlowColor.opacity(Double(data.tier.glowIntensity) * 0.6),
                     radius: CGFloat(data.tier.glowIntensity) * 8)
             .shadow(color: .black.opacity(0.45), radius: 3, x: 0, y: 2)
+    }
+
+    // MARK: - Animated Epic/Legendary Border
+
+    @ViewBuilder
+    private var animatedBorder: some View {
+        if data.tier == .epic || data.tier == .legendary {
+            let isLegendary = data.tier == .legendary
+            AngularGradient(
+                colors: isLegendary
+                    ? [Color(hex: "#FFD700"), Color(hex: "#FFA500"), Color(hex: "#FF8C00"), Color(hex: "#FFD700")]
+                    : [Color(hex: "#9B59B6"), Color(hex: "#6C3483"), Color(hex: "#D98EE5"), Color(hex: "#9B59B6")],
+                center: .center
+            )
+            .rotationEffect(.degrees(borderRotation))
+            .mask(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(lineWidth: isLegendary ? 3 : 2)
+            )
+            .opacity(0.85)
+            .onAppear {
+                if UIAccessibility.isReduceMotionEnabled {
+                    borderRotation = 45
+                } else {
+                    withAnimation(
+                        .linear(duration: isLegendary ? 3.0 : 4.5)
+                        .repeatForever(autoreverses: false)
+                    ) {
+                        borderRotation = 360
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - 2.2 Card Type Layout Variants
@@ -817,63 +852,15 @@ struct CardFrameView: View {
         }
         .frame(width: cardWidth, height: cardHeight)
     }
-
     // MARK: - Wax Seal
 
     private func waxSeal(cardWidth: CGFloat) -> some View {
         let scale = cardScale(cardWidth: cardWidth)
-        return ZStack {
-            // Drop shadow
-            Circle()
-                .fill(Color.black.opacity(0.40))
-                .frame(width: 32 * scale, height: 32 * scale)
-                .blur(radius: 3)
-                .offset(y: 2)
-
-            // Seal body — rarity color with radial gradient
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            data.tier.waxColor.opacity(0.9),
-                            data.tier.waxColor.opacity(0.6),
-                            Color.black.opacity(0.7)
-                        ],
-                        center: .init(x: 0.4, y: 0.35),
-                        startRadius: 1,
-                        endRadius: 17 * scale
-                    )
-                )
-                .frame(width: 34 * scale, height: 34 * scale)
-
-            // Top-lit highlight
-            LinearGradient(
-                colors: [Color.white.opacity(0.35), Color.clear],
-                startPoint: .top,
-                endPoint: .center
-            )
-            .frame(width: 30 * scale, height: 18 * scale)
-            .offset(y: -7 * scale)
-            .blendMode(.screen)
-            .clipShape(Circle().offset(y: -4 * scale))
-
-            // Rarity symbol — collector number displayed in seal at detail sizes
-            Text(raritySymbol)
-                .font(CardFont.collectorNumber(size: 9 * scale))
-                .foregroundColor(Color("parchment-light").opacity(0.9))
-                .shadow(color: .black.opacity(0.7), radius: 1, x: 0, y: 0.5)
-        }
+        return WaxSealView(rarity: data.tier)
+            .scaleEffect(scale * (34.0 / 34.0))  // WaxSealView renders at 34pt base; scale to card
+            .frame(width: 34 * scale, height: 34 * scale)
     }
 
-    private var raritySymbol: String {
-        switch data.tier {
-        case .common:    return "C"
-        case .uncommon:  return "U"
-        case .rare:      return "R"
-        case .epic:      return "E"
-        case .legendary: return "\u{2605}" // star
-        }
-    }
 
     // MARK: - Type Line Zone
 
