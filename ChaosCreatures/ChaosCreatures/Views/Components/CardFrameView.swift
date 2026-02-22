@@ -305,6 +305,14 @@ struct CardFrameView: View {
 
     private var theme: CardTheme { CardTheme(colorScheme: colorScheme) }
 
+    // MARK: - Scale Factor
+    // All font and icon sizes are expressed relative to the 210pt reference card width.
+    // The GeometryReader resolves the actual card width; this scale is forwarded through
+    // every zone builder so that iPad (671pt) and iPhone (210pt) render proportionally.
+    private func cardScale(cardWidth: CGFloat) -> CGFloat {
+        cardWidth / 210.0
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let cardWidth = computedCardWidth(geometry: geometry)
@@ -544,7 +552,7 @@ struct CardFrameView: View {
         }
         .background(cardBaseColor)
         .overlay(alignment: .topLeading) {
-            waxSeal
+            waxSeal(cardWidth: cardWidth)
                 .frame(width: sealSize, height: sealSize)
                 .offset(
                     x: (164.0 / 210.0) * cardWidth,
@@ -623,7 +631,7 @@ struct CardFrameView: View {
         }
         .background(cardBaseColor)
         .overlay(alignment: .topLeading) {
-            waxSeal
+            waxSeal(cardWidth: cardWidth)
                 .frame(width: sealSize, height: sealSize)
                 .offset(
                     x: (164.0 / 210.0) * cardWidth,
@@ -636,39 +644,41 @@ struct CardFrameView: View {
     // MARK: - Name Bar Zone
 
     private func nameBar(cardWidth: CGFloat, cardHeight: CGFloat, showCost: Bool) -> some View {
-        ZStack(alignment: .leading) {
+        let scale = cardScale(cardWidth: cardWidth)
+        return ZStack(alignment: .leading) {
             nameBarBackground
-            HStack(alignment: .center, spacing: 4) {
+            HStack(alignment: .center, spacing: 4 * scale) {
                 Text(data.name)
-                    .font(CardFont.cardName(size: 13))
+                    .font(CardFont.cardName(size: 13 * scale))
                     .foregroundColor(theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .letterpressShadow()
-                Spacer(minLength: 4)
+                Spacer(minLength: 4 * scale)
                 if showCost {
                     chaosMoteRow(cost: data.manaCost, cardWidth: cardWidth)
                 }
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 6 * scale)
         }
     }
 
     /// Planar Ruin name bar — uses the same N ⊕ unified cost display as creature/spell bars.
     private func ruinNameBar(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        ZStack(alignment: .leading) {
+        let scale = cardScale(cardWidth: cardWidth)
+        return ZStack(alignment: .leading) {
             nameBarBackground
-            HStack(alignment: .center, spacing: 4) {
+            HStack(alignment: .center, spacing: 4 * scale) {
                 Text(data.name)
-                    .font(CardFont.cardName(size: 13))
+                    .font(CardFont.cardName(size: 13 * scale))
                     .foregroundColor(theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .letterpressShadow()
-                Spacer(minLength: 4)
+                Spacer(minLength: 4 * scale)
                 chaosMoteRow(cost: data.manaCost, cardWidth: cardWidth)
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 6 * scale)
         }
     }
 
@@ -724,15 +734,16 @@ struct CardFrameView: View {
     }
 
     private func artBoxWithLockIcon(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        ZStack(alignment: .bottomTrailing) {
+        let scale = cardScale(cardWidth: cardWidth)
+        return ZStack(alignment: .bottomTrailing) {
             artBox(cardWidth: cardWidth, cardHeight: cardHeight)
             // Lock icon for stabilizers (Section 1.5b)
             Image(systemName: "lock.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 10, height: 10)
+                .frame(width: 10 * scale, height: 10 * scale)
                 .foregroundColor(Color("parchment-mid").opacity(0.7))
-                .padding(6)
+                .padding(6 * scale)
                 .allowsHitTesting(false)
         }
     }
@@ -809,12 +820,13 @@ struct CardFrameView: View {
 
     // MARK: - Wax Seal
 
-    private var waxSeal: some View {
-        ZStack {
+    private func waxSeal(cardWidth: CGFloat) -> some View {
+        let scale = cardScale(cardWidth: cardWidth)
+        return ZStack {
             // Drop shadow
             Circle()
                 .fill(Color.black.opacity(0.40))
-                .frame(width: 32, height: 32)
+                .frame(width: 32 * scale, height: 32 * scale)
                 .blur(radius: 3)
                 .offset(y: 2)
 
@@ -829,10 +841,10 @@ struct CardFrameView: View {
                         ],
                         center: .init(x: 0.4, y: 0.35),
                         startRadius: 1,
-                        endRadius: 17
+                        endRadius: 17 * scale
                     )
                 )
-                .frame(width: 34, height: 34)
+                .frame(width: 34 * scale, height: 34 * scale)
 
             // Top-lit highlight
             LinearGradient(
@@ -840,14 +852,14 @@ struct CardFrameView: View {
                 startPoint: .top,
                 endPoint: .center
             )
-            .frame(width: 30, height: 18)
-            .offset(y: -7)
+            .frame(width: 30 * scale, height: 18 * scale)
+            .offset(y: -7 * scale)
             .blendMode(.screen)
-            .clipShape(Circle().offset(y: -4))
+            .clipShape(Circle().offset(y: -4 * scale))
 
             // Rarity symbol — collector number displayed in seal at detail sizes
             Text(raritySymbol)
-                .font(CardFont.collectorNumber(size: 9))
+                .font(CardFont.collectorNumber(size: 9 * scale))
                 .foregroundColor(Color("parchment-light").opacity(0.9))
                 .shadow(color: .black.opacity(0.7), radius: 1, x: 0, y: 0.5)
         }
@@ -866,16 +878,17 @@ struct CardFrameView: View {
     // MARK: - Type Line Zone
 
     private func typeLine(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        ZStack {
+        let scale = cardScale(cardWidth: cardWidth)
+        return ZStack {
             theme.typeLineBackground
-            HStack(alignment: .center, spacing: 4) {
-                // Faction icon (left-aligned, 14×14pt)
+            HStack(alignment: .center, spacing: 4 * scale) {
+                // Faction icon (left-aligned, scales from 14×14pt base)
                 if let faction = data.faction {
                     Image(faction.emblemAssetName)
                         .renderingMode(.template)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 14, height: 14)
+                        .frame(width: 14 * scale, height: 14 * scale)
                         .foregroundColor(faction.color)
                         .shadow(
                             color: theme.letterpressShadowColor.opacity(0.6),
@@ -884,29 +897,30 @@ struct CardFrameView: View {
                 }
 
                 Text(data.typeLine)
-                    .font(CardFont.cardType(size: 10))
+                    .font(CardFont.cardType(size: 10 * scale))
                     .foregroundColor(theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .letterpressShadow()
 
-                Spacer(minLength: 2)
+                Spacer(minLength: 2 * scale)
 
-                // Set symbol placeholder (right-aligned 14×14pt)
+                // Set symbol placeholder (right-aligned, scales from 14×14pt base)
                 Image(systemName: "seal")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 14, height: 14)
+                    .frame(width: 14 * scale, height: 14 * scale)
                     .foregroundColor(theme.secondaryText.opacity(0.5))
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 6 * scale)
         }
     }
 
     // MARK: - Text Box Zone
 
     private func textBox(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
+        let scale = cardScale(cardWidth: cardWidth)
+        return ZStack(alignment: .topLeading) {
             theme.textBoxBackground
                 .overlay(
                     // Subtle paper texture overlay
@@ -920,22 +934,22 @@ struct CardFrameView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Keyword ability names row
                     if !data.keywords.isEmpty {
-                        keywordsRow
-                            .padding(.bottom, 4)
+                        keywordsRow(scale: scale)
+                            .padding(.bottom, 4 * scale)
                         Divider()
                             .frame(height: 0.5)
                             .background(theme.secondaryText.opacity(0.3))
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 4 * scale)
                     }
 
                     // Ability text
                     if let abilityText = data.abilityText, !abilityText.isEmpty {
                         Text(abilityText)
-                            .font(CardFont.abilityText(size: 11))
+                            .font(CardFont.abilityText(size: 11 * scale))
                             .foregroundColor(theme.primaryText)
-                            .lineSpacing(3)
+                            .lineSpacing(3 * scale)
                             .letterpressShadow()
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 4 * scale)
                     }
 
                     // Ability/flavor divider
@@ -943,19 +957,19 @@ struct CardFrameView: View {
                         Divider()
                             .frame(height: 0.5)
                             .background(theme.secondaryText.opacity(0.3))
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 4 * scale)
                     }
 
                     // Flavor text
                     if !data.flavorText.isEmpty {
                         Text("\u{201C}\(data.flavorText)\u{201D}")
-                            .font(CardFont.flavorText(size: 10))
+                            .font(CardFont.flavorText(size: 10 * scale))
                             .foregroundColor(theme.flavorText)
-                            .lineSpacing(2)
+                            .lineSpacing(2 * scale)
                             .letterpressShadow()
                     }
                 }
-                .padding(4)
+                .padding(4 * scale)
             }
         }
         .overlay(
@@ -969,17 +983,17 @@ struct CardFrameView: View {
         )
     }
 
-    private var keywordsRow: some View {
+    private func keywordsRow(scale: CGFloat) -> some View {
         HStack(spacing: 0) {
             ForEach(Array(data.keywords.enumerated()), id: \.element) { index, keyword in
                 if index > 0 {
                     Text(" \u{00B7} ")
-                        .font(CardFont.keywordName(size: 11))
+                        .font(CardFont.keywordName(size: 11 * scale))
                         .foregroundColor(theme.secondaryText)
                         .letterpressShadow()
                 }
                 Text(keyword.displayName)
-                    .font(CardFont.keywordName(size: 11))
+                    .font(CardFont.keywordName(size: 11 * scale))
                     .foregroundColor(theme.primaryText)
                     .letterpressShadow()
                     .onTapGesture {
@@ -995,49 +1009,50 @@ struct CardFrameView: View {
     // MARK: - Planar Ruin Text Box
 
     private func ruinTextBox(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
+        let scale = cardScale(cardWidth: cardWidth)
+        return ZStack(alignment: .topLeading) {
             theme.textBoxBackground
 
             VStack(alignment: .leading, spacing: 0) {
                 // Passive benefit panel
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 2 * scale) {
                     Text("PASSIVE")
-                        .font(CardFont.cardName(size: 8))
+                        .font(CardFont.cardName(size: 8 * scale))
                         .foregroundColor(theme.secondaryText)
                         .letterpressShadow()
                     Text(data.ruinPassiveText ?? "")
-                        .font(CardFont.abilityText(size: 10))
+                        .font(CardFont.abilityText(size: 10 * scale))
                         .foregroundColor(theme.primaryText)
-                        .lineSpacing(2)
+                        .lineSpacing(2 * scale)
                         .letterpressShadow()
                         .minimumScaleFactor(0.8)
                 }
-                .padding(.horizontal, 4)
-                .padding(.top, 4)
-                .padding(.bottom, 4)
+                .padding(.horizontal, 4 * scale)
+                .padding(.top, 4 * scale)
+                .padding(.bottom, 4 * scale)
 
                 // Separator
                 Rectangle()
                     .fill(theme.secondaryText.opacity(0.3))
                     .frame(height: 1)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 4 * scale)
 
                 // Destruction penalty panel
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 2 * scale) {
                     Text("IF DESTROYED")
-                        .font(CardFont.cardName(size: 8))
+                        .font(CardFont.cardName(size: 8 * scale))
                         .foregroundColor(Color("wax-red"))
                         .letterpressShadow()
                     Text(data.ruinDestructionPenaltyText ?? "")
-                        .font(CardFont.abilityText(size: 10))
+                        .font(CardFont.abilityText(size: 10 * scale))
                         .foregroundColor(Color("wax-red"))
-                        .lineSpacing(2)
+                        .lineSpacing(2 * scale)
                         .letterpressShadow()
                         .minimumScaleFactor(0.8)
                 }
-                .padding(.horizontal, 4)
-                .padding(.top, 4)
-                .padding(.bottom, 4)
+                .padding(.horizontal, 4 * scale)
+                .padding(.top, 4 * scale)
+                .padding(.bottom, 4 * scale)
 
                 Spacer(minLength: 0)
             }
@@ -1047,32 +1062,34 @@ struct CardFrameView: View {
     // MARK: - Stats Bar Zone
 
     private func statsBar(cardWidth: CGFloat, cardHeight: CGFloat, showAtk: Bool) -> some View {
-        ZStack {
+        let scale = cardScale(cardWidth: cardWidth)
+        let statTrailingInset: CGFloat = 52 * scale
+        return ZStack {
             theme.statsBarBackground
             HStack(alignment: .center) {
                 // Instability indicator (left — creature only, not planar ruins)
                 if data.cardType == .creature, let instability = data.instability {
-                    HStack(spacing: 3) {
+                    HStack(spacing: 3 * scale) {
                         Image(systemName: "die.face.4")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 10, height: 10)
+                            .frame(width: 10 * scale, height: 10 * scale)
                             .foregroundColor(factionIconColor.opacity(0.8))
                         Text("\(instability)")
-                            .font(CardFont.statNumber(size: 10))
+                            .font(CardFont.statNumber(size: 10 * scale))
                             .foregroundColor(factionIconColor.opacity(0.8))
                             .letterpressShadow()
                     }
-                    .padding(.leading, 4)
+                    .padding(.leading, 4 * scale)
                 }
 
                 // Collector number (left of center)
                 if let cn = data.collectorNumber {
                     Text(cn)
-                        .font(CardFont.collectorNumber(size: 7))
+                        .font(CardFont.collectorNumber(size: 7 * scale))
                         .foregroundColor(theme.secondaryText)
                         .letterpressShadow()
-                        .padding(.leading, 4)
+                        .padding(.leading, 4 * scale)
                 }
 
                 Spacer(minLength: 0)
@@ -1080,28 +1097,27 @@ struct CardFrameView: View {
                 // Set code (center)
                 if let setCode = data.setCode {
                     Text(setCode)
-                        .font(CardFont.collectorNumber(size: 7))
+                        .font(CardFont.collectorNumber(size: 7 * scale))
                         .foregroundColor(theme.secondaryText)
                         .letterpressShadow()
                 }
 
                 Spacer(minLength: 0)
 
-                // ATK / HP (right-aligned, Oswald-Bold 13pt)
+                // ATK / HP (right-aligned, scales from 13pt base)
                 // 52pt trailing inset (scaled) keeps text clear of wax seal zone (x=164–198, Section 10.3b)
-                let statTrailingInset: CGFloat = 52 * (cardWidth / 210.0)
                 if data.cardType == .planarRuin {
                     // HP only for ruins
                     if let hp = data.health {
                         Text("\(hp)")
-                            .font(CardFont.statNumber(size: 13))
+                            .font(CardFont.statNumber(size: 13 * scale))
                             .foregroundColor(theme.primaryText)
                             .letterpressShadow()
                             .padding(.trailing, statTrailingInset)
                     }
                 } else if showAtk, let atk = data.attack, let hp = data.health {
                     Text("\(atk) / \(hp)")
-                        .font(CardFont.statNumber(size: 13))
+                        .font(CardFont.statNumber(size: 13 * scale))
                         .foregroundColor(theme.primaryText)
                         .letterpressShadow()
                         .padding(.trailing, statTrailingInset)
