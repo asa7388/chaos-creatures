@@ -242,9 +242,10 @@ struct CardDetailView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .frame(height: 56)
+        .frame(maxWidth: .infinity, maxHeight: 56)
         .background(Color.bgSecondary)
         .cornerRadius(12)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Notes Section (fallback when no dynamic sections)
