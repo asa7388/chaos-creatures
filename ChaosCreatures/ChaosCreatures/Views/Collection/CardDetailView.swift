@@ -152,14 +152,12 @@ struct CardDetailView: View {
     }
 
     private func cardFrameSection(card: CardInstance?) -> some View {
-        // Use direct screen-width-based dimensions to avoid the
-        // GeometryReader-in-ScrollView infinite-height problem on iPad.
-        // offeredWidth = cardWidth / multiplier so that computedCardWidth
-        // inside CardFrameView multiplies back to exactly cardWidth.
+        // Pass the pre-computed card width directly as the frame so that
+        // CardFrameView's GeometryReader reports exactly that width.
+        // CardFrameView.computedCardWidth returns geometry.size.width unchanged
+        // for the .detail size, so no second multiplication occurs.
         let cardWidth = detailCardWidth
         let cardHeight = cardWidth * (294.0 / 210.0)
-        let multiplier: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 0.55 : 0.85
-        let offeredWidth = cardWidth / multiplier
 
         return Group {
             if let card {
@@ -167,7 +165,7 @@ struct CardDetailView: View {
                     data: CardDisplayData(instance: card, faction: factionForCard(card)),
                     size: .detail
                 )
-                .frame(width: offeredWidth, height: cardHeight)
+                .frame(width: cardWidth, height: cardHeight)
                 .contactShadow(opacity: 0.6)
                 .onTapGesture {
                     showFullscreen = true

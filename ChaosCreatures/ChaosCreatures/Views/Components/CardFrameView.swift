@@ -324,12 +324,20 @@ struct CardFrameView: View {
     }
 
     private func computedCardWidth(geometry: GeometryProxy) -> CGFloat {
-        // Use UIDevice.current.userInterfaceIdiom instead of horizontalSizeClass —
-        // horizontalSizeClass is unreliable inside fullScreenCover on iPad.
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            return max(min(geometry.size.width * 0.55, 500), 160)
-        } else {
-            return max(min(geometry.size.width * 0.85, 320), 160)
+        // For .detail and .fullscreen the parent (CardDetailView / FullscreenCardView)
+        // already pre-computes the target card width and passes it as the frame width.
+        // Returning geometry.size.width directly avoids a second multiplication.
+        // For .grid and .hand the container may be larger than one card, so the
+        // multiplier is still applied to derive the correct card size.
+        switch size {
+        case .detail, .fullscreen:
+            return max(min(geometry.size.width, 500), 160)
+        case .grid, .hand:
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                return max(min(geometry.size.width * 0.55, 500), 160)
+            } else {
+                return max(min(geometry.size.width * 0.85, 320), 160)
+            }
         }
     }
 
