@@ -100,7 +100,6 @@ struct CardDetailView: View {
             // Close button overlay (top-left)
             closeButton
         }
-        .background(Color.black.ignoresSafeArea())
         .fullScreenCover(isPresented: $showFullscreen) {
             if let card {
                 FullscreenCardView(card: card, faction: factionForCard(card))
@@ -112,14 +111,14 @@ struct CardDetailView: View {
 
     private var backgroundGradient: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.bgPrimary.ignoresSafeArea()
 
             if let card = displayCard,
                let faction = factionForCard(card) {
                 RadialGradient(
                     colors: [
                         Color.factionPrimary(faction).opacity(0.03),
-                        Color.black.opacity(0)
+                        Color.clear
                     ],
                     center: .top,
                     startRadius: 0,
@@ -244,10 +243,9 @@ struct CardDetailView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: 56)
+        .frame(height: 56)
         .background(Color.bgSecondary)
         .cornerRadius(12)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Notes Section (fallback when no dynamic sections)
