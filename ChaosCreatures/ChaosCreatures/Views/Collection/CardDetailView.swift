@@ -94,7 +94,7 @@ struct CardDetailView: View {
             // Close button overlay (top-left)
             closeButton
         }
-        .background(Color.bgPrimary.ignoresSafeArea())
+        .background(Color.black.ignoresSafeArea())
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let card {
                 actionBar(card: card)
@@ -111,14 +111,14 @@ struct CardDetailView: View {
 
     private var backgroundGradient: some View {
         ZStack {
-            Color.bgPrimary.ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
             if let card = displayCard,
                let faction = factionForCard(card) {
                 RadialGradient(
                     colors: [
                         Color.factionPrimary(faction).opacity(0.03),
-                        Color.bgPrimary.opacity(0)
+                        Color.black.opacity(0)
                     ],
                     center: .top,
                     startRadius: 0,
