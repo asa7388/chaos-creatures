@@ -540,29 +540,50 @@ struct CardFrameView: View {
         }
     }
 
-    // MARK: - Creature Layout (standard — all zones present)
+    // MARK: - Creature Layout (full-bleed art with ZStack lower-thirds overlay)
 
     private func creatureLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        return VStack(spacing: 0) {
-            nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
-                .frame(height: cardHeight * ZoneHeight.nameBars)
+        let overlayHeight = cardHeight * (ZoneHeight.typeLine + ZoneHeight.textBox + ZoneHeight.statsBar + ZoneHeight.rarityBar)
+        return ZStack(alignment: .top) {
+            // Art fills full card height
+            artBox(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(width: cardWidth, height: cardHeight)
 
-            artBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
-                .frame(height: cardHeight * ZoneHeight.artBox)
+            // Name bar overlays the top of the art
+            VStack(spacing: 0) {
+                nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
+                    .frame(height: cardHeight * ZoneHeight.nameBars)
+                Spacer()
+            }
 
-            typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
-                .frame(height: cardHeight * ZoneHeight.typeLine)
-                .zIndex(10)
+            // Text panel overlays the bottom ~38% of the card
+            VStack(spacing: 0) {
+                Spacer()
+                VStack(spacing: 0) {
+                    typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
+                        .frame(height: cardHeight * ZoneHeight.typeLine)
+                        .zIndex(10)
 
-            textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
-                .frame(height: cardHeight * ZoneHeight.textBox)
+                    textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
+                        .frame(height: cardHeight * ZoneHeight.textBox)
 
-            statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: true)
-                .frame(height: cardHeight * ZoneHeight.statsBar)
+                    statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: true)
+                        .frame(height: cardHeight * ZoneHeight.statsBar)
 
-            rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
-                .frame(height: cardHeight * ZoneHeight.rarityBar)
+                    rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                        .frame(height: cardHeight * ZoneHeight.rarityBar)
+                }
+                .frame(width: cardWidth)
+                .background(
+                    LinearGradient(
+                        colors: [Color.black.opacity(0), Color(red: 0.12, green: 0.08, blue: 0.04).opacity(0.92)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
         }
+        .frame(width: cardWidth, height: cardHeight)
         .background(cardBaseColor)
     }
 
@@ -850,7 +871,7 @@ struct CardFrameView: View {
                     Image("CardTextures/paper-texture")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .opacity(0.06)
+                        .opacity(0.10)
                 )
 
             ScrollView(.vertical, showsIndicators: false) {
@@ -986,56 +1007,82 @@ struct CardFrameView: View {
 
     private func statsBar(cardWidth: CGFloat, cardHeight: CGFloat, showAtk: Bool) -> some View {
         let scale = cardScale(cardWidth: cardWidth)
-        let statTrailingInset: CGFloat = 52 * scale
         return ZStack {
             theme.statsBarBackground
             HStack(alignment: .center) {
-                // Instability indicator (left — creature only, not planar ruins)
-                if data.cardType == .creature, let instability = data.instability, instability > 0 {
-                    InstabilityBadgeView(instability: instability)
-                        .padding(.leading, 4 * scale)
-                }
-
-                // Collector number (left of center)
-                if let cn = data.collectorNumber {
-                    Text(cn)
-                        .font(CardFont.collectorNumber(size: 7 * scale))
-                        .foregroundColor(theme.secondaryText)
-                        .letterpressShadow()
-                        .padding(.leading, 4 * scale)
-                }
-
-                Spacer(minLength: 0)
-
-                // Set code (center)
-                if let setCode = data.setCode {
-                    Text(setCode)
-                        .font(CardFont.collectorNumber(size: 7 * scale))
-                        .foregroundColor(theme.secondaryText)
-                        .letterpressShadow()
-                }
-
-                Spacer(minLength: 0)
-
-                // ATK / HP (right-aligned, scales from 13pt base)
-                // 52pt trailing inset (scaled) keeps text clear of wax seal zone (x=164–198, Section 10.3b)
                 if data.cardType == .planarRuin {
-                    // HP only for ruins
+                    // Planar Ruin: HP only — bottom right, no ATK
+                    Spacer()
                     if let hp = data.health {
+                        HStack(spacing: 4 * scale) {
+                            Image(systemName: "heart.fill")
+                                .resizable()
+                                .frame(width: 12 * scale, height: 12 * scale)
+                                .foregroundColor(Color(hex: "#E53935"))
+                            Text("\(hp)")
+                                .font(CardFont.statNumber(size: 13 * scale))
+                                .foregroundColor(theme.primaryText)
+                                .letterpressShadow()
+                        }
+                        .padding(.horizontal, 8 * scale)
+                        .padding(.vertical, 3 * scale)
+                        .background(Capsule().fill(Color.black.opacity(0.6)))
+                    }
+                } else if showAtk, let atk = data.attack, let hp = data.health {
+                    // Creature: ATK badge bottom-left, HP badge bottom-right
+                    HStack(spacing: 4 * scale) {
+                        Image(systemName: "crossed.swords")
+                            .resizable()
+                            .frame(width: 12 * scale, height: 12 * scale)
+                            .foregroundColor(Color(hex: "#FF8F00"))
+                        Text("\(atk)")
+                            .font(CardFont.statNumber(size: 13 * scale))
+                            .foregroundColor(theme.primaryText)
+                            .letterpressShadow()
+                    }
+                    .padding(.horizontal, 8 * scale)
+                    .padding(.vertical, 3 * scale)
+                    .background(Capsule().fill(Color.black.opacity(0.6)))
+
+                    Spacer()
+
+                    HStack(spacing: 4 * scale) {
+                        Image(systemName: "heart.fill")
+                            .resizable()
+                            .frame(width: 12 * scale, height: 12 * scale)
+                            .foregroundColor(Color(hex: "#E53935"))
                         Text("\(hp)")
                             .font(CardFont.statNumber(size: 13 * scale))
                             .foregroundColor(theme.primaryText)
                             .letterpressShadow()
-                            .padding(.trailing, statTrailingInset)
                     }
-                } else if showAtk, let atk = data.attack, let hp = data.health {
-                    Text("\(atk) / \(hp)")
-                        .font(CardFont.statNumber(size: 13 * scale))
-                        .foregroundColor(theme.primaryText)
-                        .letterpressShadow()
-                        .padding(.trailing, statTrailingInset)
+                    .padding(.horizontal, 8 * scale)
+                    .padding(.vertical, 3 * scale)
+                    .background(Capsule().fill(Color.black.opacity(0.6)))
+                } else {
+                    // No stats to show — instability and collector info only
+                    if data.cardType == .creature, let instability = data.instability, instability > 0 {
+                        InstabilityBadgeView(instability: instability)
+                            .padding(.leading, 4 * scale)
+                    }
+                    if let cn = data.collectorNumber {
+                        Text(cn)
+                            .font(CardFont.collectorNumber(size: 7 * scale))
+                            .foregroundColor(theme.secondaryText)
+                            .letterpressShadow()
+                            .padding(.leading, 4 * scale)
+                    }
+                    Spacer(minLength: 0)
+                    if let setCode = data.setCode {
+                        Text(setCode)
+                            .font(CardFont.collectorNumber(size: 7 * scale))
+                            .foregroundColor(theme.secondaryText)
+                            .letterpressShadow()
+                    }
+                    Spacer(minLength: 0)
                 }
             }
+            .padding(.horizontal, 6 * scale)
         }
     }
 
