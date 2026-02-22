@@ -300,7 +300,6 @@ struct CardFrameView: View {
     @State private var dragOffset: CGSize = .zero
     @State private var shakeOffset: CGFloat = 0
     @State private var activeTooltipKeyword: Keyword? = nil
-    @State private var borderRotation: Double = 0
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
 
@@ -518,31 +517,10 @@ struct CardFrameView: View {
     @ViewBuilder
     private var animatedBorder: some View {
         if data.tier == .epic || data.tier == .legendary {
-            let isLegendary = data.tier == .legendary
-            AngularGradient(
-                colors: isLegendary
-                    ? [Color(hex: "#FFD700"), Color(hex: "#FFA500"), Color(hex: "#FF8C00"), Color(hex: "#FFD700")]
-                    : [Color(hex: "#9B59B6"), Color(hex: "#6C3483"), Color(hex: "#D98EE5"), Color(hex: "#9B59B6")],
-                center: .center
+            AnimatedRarityBorder(
+                isLegendary: data.tier == .legendary,
+                cornerRadius: 12
             )
-            .rotationEffect(.degrees(borderRotation))
-            .mask(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(lineWidth: isLegendary ? 3 : 2)
-            )
-            .opacity(0.85)
-            .onAppear {
-                if UIAccessibility.isReduceMotionEnabled {
-                    borderRotation = 45
-                } else {
-                    withAnimation(
-                        .linear(duration: isLegendary ? 3.0 : 4.5)
-                        .repeatForever(autoreverses: false)
-                    ) {
-                        borderRotation = 360
-                    }
-                }
-            }
         }
     }
 
@@ -1171,6 +1149,53 @@ struct CardFrameView: View {
     private var factionIconColor: Color {
         guard let faction = data.faction else { return Color("parchment-dark") }
         return faction.color
+    }
+}
+
+// MARK: - AnimatedRarityBorder
+
+/// Isolated View struct for Epic/Legendary rotating gradient border.
+/// Using a separate struct prevents parent CardFrameView re-renders from
+/// interrupting the continuous rotation animation.
+private struct AnimatedRarityBorder: View {
+    let isLegendary: Bool
+    let cornerRadius: CGFloat
+
+    @State private var rotation: Double = 0
+
+    private var colors: [Color] {
+        isLegendary
+            ? [Color(hex: "#FFD700"), Color(hex: "#FFC820"), Color(hex: "#FF8C00"),
+               Color(hex: "#FFD700"), Color(hex: "#FFE860"), Color(hex: "#FFD700")]
+            : [Color(hex: "#9B59B6"), Color(hex: "#7D3C98"), Color(hex: "#D98EE5"),
+               Color(hex: "#9B59B6"), Color(hex: "#A569BD"), Color(hex: "#9B59B6")]
+    }
+
+    private var duration: Double { isLegendary ? 3.0 : 4.5 }
+    private var lineWidth: CGFloat { isLegendary ? 3 : 2 }
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .strokeBorder(
+                AngularGradient(colors: colors, center: .center),
+                lineWidth: lineWidth
+            )
+            .rotationEffect(.degrees(rotation))
+            .opacity(0.9)
+            .onAppear {
+                // Guard prevents re-triggering if view is briefly re-appeared
+                guard rotation == 0 else { return }
+                if UIAccessibility.isReduceMotionEnabled {
+                    rotation = 45
+                } else {
+                    withAnimation(
+                        .linear(duration: duration)
+                        .repeatForever(autoreverses: false)
+                    ) {
+                        rotation = 360
+                    }
+                }
+            }
     }
 }
 
