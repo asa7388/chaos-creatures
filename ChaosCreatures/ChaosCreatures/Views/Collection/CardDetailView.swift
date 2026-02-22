@@ -800,7 +800,7 @@ struct CardDetailView: View {
                     .aspectRatio(contentMode: .fill)
                     .opacity(0.22)
             }
-            .ignoresSafeArea()
+            .ignoresSafeArea(edges: .bottom)
         )
         .shadow(color: .black.opacity(0.3), radius: 8, y: -4)
     }
