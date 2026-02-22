@@ -1,9 +1,11 @@
 {
-  "phase": "phase_3_complete",
-  "current_task": "Phase 3 complete — Wax Seal Overhaul v2 done (rarity→color, faction→symbol). Awaiting user direction for Phase 4.",
+  "phase": "phase_5_in_progress",
+  "current_task": "Phase 5 visual polish — 3/4 items done. Remaining: dark mode physical device check (human task). Ready for Phase 6.",
   "last_updated": "2026-02-22",
   "phase_3_started": "2026-02-22",
   "phase_3_complete": "2026-02-22",
+  "phase_4_complete": "2026-02-22",
+  "phase_5_started": "2026-02-22",
   "phase_2_complete": "2026-02-21",
   "setup_steps_complete": [
     "1-verify-guides",
@@ -64,7 +66,15 @@
     "notes": "~$0.25 for first 25 FLUX.1 Dev wax seal generations (v1, discarded); ~$0.25 for 25 v2 seals (rarity→color, faction→symbol)"
   },
   "conflicts_pending_user_decision": [],
-  "hard_gates_passed": ["commercial-license-gate-reviewed", "all-decisions-resolved", "phase-2-end-gate-screenshots", "phase-3-end-gate-build-pass"],
+  "hard_gates_passed": [
+    "commercial-license-gate-reviewed",
+    "all-decisions-resolved",
+    "phase-2-end-gate-screenshots",
+    "phase-3-end-gate-build-pass",
+    "phase-4-end-gate-screenshots",
+    "landscape-orientation-complete",
+    "phase-5-card-layout-zstack"
+  ],
   "hard_gates_pending": [
     "lora-retraining-complete",
     "haptic-verification-Section-7.3"
@@ -74,13 +84,16 @@
     "phase_1": "complete",
     "phase_2": "complete",
     "phase_3": "complete",
-    "phase_4": "pending",
-    "phase_5": "pending",
+    "phase_4": "complete",
+    "phase_5": "in_progress",
     "phase_6": "pending",
     "phase_7": "pending",
     "phase_8": "pending"
   },
   "completed_tasks": [
+    "Phase 4 validation: 6 PASS / 4 PARTIAL — ATK/HP split, ZStack overlay, texture opacity queued for Phase 5",
+    "Landscape track: orientation lock + MTGA top tab bar (portrait → landscape, top HStack tab bar)",
+    "Phase 5 partial: ATK/HP corner badges, full-bleed ZStack overlay, texture opacity 0.10 — statsBar visibility fixed",
     "Phase 3 — Wax Seal Overhaul v2: Semantic reversed to rarity→wax color / faction→embossed symbol; 25 seals regenerated via FLUX.1 Dev + REMBG; D20 instability icon added (full-color AI); InstabilityBadgeView.swift created; CardFrameView type-line faction icon removed; CardFaction.color removed; CARD_DESIGN_GUIDE.md + CARD_DESIGN_QUICKREF.md updated; build PASS (commits 2f25eec, f8cf295)",
     "Phase 3 — Wax Seal Overhaul v1: 25 AI wax seals generated (5 factions × 5 rarities) via FLUX.1 Dev + REMBG; installed to Assets.xcassets/Icons/Seals/; WaxSealView.swift updated with faction parameter + factionSlug/raritySlug bridge; build PASS — SUPERSEDED by v2 (commits 3fd5f95, ccb0b2a)",
     "Phase 3 — Metal Shader Pipeline (commits bb95584, 2be0803, 5cb4d4b): OilPaintShader, ParchmentShader (closes DEV-13), WarmFoilShader, InkSpreadKernel; WaxSealView replaces C placeholder; animated Epic/Legendary AngularGradient borders; CardParticleFactory, ParallaxCardArtView; compile_shaders.sh; build SUCCEEDED",
