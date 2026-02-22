@@ -23,7 +23,15 @@ requests>=2.31.0
 # NOTE: Requires REPLICATE_API_TOKEN in .env
 replicate>=0.25.0
 
-# Optional but recommended
-# Pillow includes these; listed for clarity
-# numpy — required by some image processing scripts
+# fal.ai Python SDK
+# Used for: non-creature art generation via fal-ai/flux/dev (Phase 5)
+# NOTE: Requires FAL_KEY in .env
+fal-client>=0.5.0
+
+# Background removal
+# Used for: removing backgrounds from generated card art for compositing
+rembg>=2.0.50
+
+# Numerical processing
+# Used for: image array manipulation, color math, texture generation
 numpy>=1.24.0
