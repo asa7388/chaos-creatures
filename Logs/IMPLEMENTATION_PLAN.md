@@ -268,7 +268,8 @@ Add `switch card.type` logic per Section 1.5b:
 Effort: Large.
 
 **2.3 — Chaos Mote symbol system**
-AI-generate chaos mote symbol once as 32×32pt PNG at 3×. Add to asset catalog. Implement tiled symbol display in name bar: up to 7 symbols, 2pt spacing, "N+" overflow in Cinzel-Regular 10pt.
+Updated 2026-02-21: N ⊕ format approved, replaces tiled dot system.
+AI-generate chaos mote symbol once as 32×32pt PNG at 3×. Add to asset catalog as `chaos_mote_symbol`. Render HStack with Oswald-Bold numeral + 20×20pt chaos_mote_symbol.png, right-aligned in name bar (6pt from inner right edge). All card types (creature, spell, planar ruin) use identical format. Stabilizers: no cost indicator.
 Effort: Medium.
 
 **2.4 — Font migrations**

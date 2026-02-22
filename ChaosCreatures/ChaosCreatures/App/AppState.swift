@@ -182,10 +182,10 @@ final class AppState {
 
         factions = [
             Faction(id: ironwrightId, name: "The Ironwright Collective", shortName: .ironwright, exclusiveMechanic: .augment, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_ironwright", colorPrimary: "#C4A04E", colorSecondary: "#8B7635", colorBackground: "#1A1A2E", particleTheme: "sparks", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 40, createdAt: now),
-            Faction(id: feyId, name: "The Fey Courts", shortName: .feyCourts, exclusiveMechanic: .bond, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_fey", colorPrimary: "#7CB342", colorSecondary: "#558B2F", colorBackground: "#1A2E1A", particleTheme: "leaves", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 38, createdAt: now),
-            Faction(id: demonicId, name: "The Demonic Kingdoms", shortName: .demonicKingdoms, exclusiveMechanic: .corruption, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_demonic", colorPrimary: "#E53935", colorSecondary: "#B71C1C", colorBackground: "#2E1A1A", particleTheme: "embers", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 35, createdAt: now),
-            Faction(id: celestialId, name: "The Celestial Crusade", shortName: .celestialCrusade, exclusiveMechanic: .exalt, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_celestial", colorPrimary: "#DAA520", colorSecondary: "#B8860B", colorBackground: "#2E2A1A", particleTheme: "light", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 30, createdAt: now),
-            Faction(id: endlessId, name: "The Endless", shortName: .theEndless, exclusiveMechanic: .persist, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_endless", colorPrimary: "#6B3FA0", colorSecondary: "#5A2D8C", colorBackground: "#1A1A2E", particleTheme: "void", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 28, createdAt: now),
+            Faction(id: feyId, name: "The Fey Courts", shortName: .fey, exclusiveMechanic: .bond, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_fey", colorPrimary: "#7CB342", colorSecondary: "#558B2F", colorBackground: "#1A2E1A", particleTheme: "leaves", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 38, createdAt: now),
+            Faction(id: demonicId, name: "The Demonic Kingdoms", shortName: .demonic, exclusiveMechanic: .corruption, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_demonic", colorPrimary: "#E53935", colorSecondary: "#B71C1C", colorBackground: "#2E1A1A", particleTheme: "embers", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 35, createdAt: now),
+            Faction(id: celestialId, name: "The Celestial Crusade", shortName: .celestial, exclusiveMechanic: .exalt, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_celestial", colorPrimary: "#DAA520", colorSecondary: "#B8860B", colorBackground: "#2E2A1A", particleTheme: "light", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 30, createdAt: now),
+            Faction(id: endlessId, name: "The Endless", shortName: .endless, exclusiveMechanic: .persist, artPromptPrefix: "", flavorVoice: "", nameVoice: "", cardFrameAsset: "frame_endless", colorPrimary: "#6B3FA0", colorSecondary: "#5A2D8C", colorBackground: "#1A1A2E", particleTheme: "void", battleMusicUrl: nil, ambientAudioUrl: nil, releasedAt: now, cardTemplateCount: 28, createdAt: now),
         ]
 
         activeMissions = [
@@ -206,21 +206,23 @@ final class AppState {
             let hp: Int
             let cm: Int
             let keywords: [String]
+            var tier: Rarity = .common
         }
 
+        // Dev cards assigned across all 5 rarity tiers for visual testing
         let devCardDefs: [DevCard] = [
-            DevCard(name: "Rebar Golem", fileName: "V18-ironwright-rebar-golem.png", factionId: ironwrightId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["HASTE"]),
-            DevCard(name: "Void Welder", fileName: "V18-ironwright-void-welder.png", factionId: ironwrightId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["SHIELD"]),
-            DevCard(name: "Thornback Stag", fileName: "V18-fey-courts-thornback-stag.png", factionId: feyId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["TAUNT"]),
-            DevCard(name: "Briar Witch", fileName: "V18-fey-courts-briar-witch.png", factionId: feyId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["LIFESTEAL"]),
-            DevCard(name: "Infernal Bailiff", fileName: "V18-demonic-infernal-bailiff.png", factionId: demonicId, cardType: .creature, atk: 4, hp: 4, cm: 4, keywords: ["DEATHTOUCH"]),
-            DevCard(name: "Ember Hound", fileName: "V18-demonic-ember-hound.png", factionId: demonicId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["HASTE"]),
-            DevCard(name: "Siege Seraph", fileName: "V18-celestial-crusade-siege-seraph.png", factionId: celestialId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["FLYING"]),
-            DevCard(name: "Chapel Warden", fileName: "V18-celestial-crusade-chapel-warden.png", factionId: celestialId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["WARD"]),
-            DevCard(name: "Bone Colossus", fileName: "V18-the-endless-bone-colossus.png", factionId: endlessId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["TAUNT"]),
-            DevCard(name: "Wailing Shade", fileName: "V18-the-endless-wailing-shade.png", factionId: endlessId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["LIFESTEAL"]),
-            DevCard(name: "The Resonance Spire", fileName: "V18-neutral-the-resonance-spire.png", factionId: ironwrightId, cardType: .planarRuin, atk: nil, hp: 8, cm: 3, keywords: []),
-            DevCard(name: "The Sunken Archive", fileName: "V18-neutral-the-sunken-archive.png", factionId: feyId, cardType: .planarRuin, atk: nil, hp: 6, cm: 5, keywords: []),
+            DevCard(name: "Rebar Golem", fileName: "V18-ironwright-rebar-golem.png", factionId: ironwrightId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["HASTE"], tier: .common),
+            DevCard(name: "Void Welder", fileName: "V18-ironwright-void-welder.png", factionId: ironwrightId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["SHIELD"], tier: .uncommon),
+            DevCard(name: "Thornback Stag", fileName: "V18-fey-courts-thornback-stag.png", factionId: feyId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["TAUNT"], tier: .rare),
+            DevCard(name: "Briar Witch", fileName: "V18-fey-courts-briar-witch.png", factionId: feyId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["LIFESTEAL"], tier: .epic),
+            DevCard(name: "Infernal Bailiff", fileName: "V18-demonic-infernal-bailiff.png", factionId: demonicId, cardType: .creature, atk: 4, hp: 4, cm: 4, keywords: ["DEATHTOUCH"], tier: .legendary),
+            DevCard(name: "Ember Hound", fileName: "V18-demonic-ember-hound.png", factionId: demonicId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["HASTE"], tier: .common),
+            DevCard(name: "Siege Seraph", fileName: "V18-celestial-crusade-siege-seraph.png", factionId: celestialId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["FLYING"], tier: .uncommon),
+            DevCard(name: "Chapel Warden", fileName: "V18-celestial-crusade-chapel-warden.png", factionId: celestialId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["WARD"], tier: .rare),
+            DevCard(name: "Bone Colossus", fileName: "V18-the-endless-bone-colossus.png", factionId: endlessId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["TAUNT"], tier: .epic),
+            DevCard(name: "Wailing Shade", fileName: "V18-the-endless-wailing-shade.png", factionId: endlessId, cardType: .creature, atk: 2, hp: 6, cm: 5, keywords: ["LIFESTEAL"], tier: .legendary),
+            DevCard(name: "The Resonance Spire", fileName: "V18-neutral-the-resonance-spire.png", factionId: ironwrightId, cardType: .planarRuin, atk: nil, hp: 8, cm: 3, keywords: [], tier: .rare),
+            DevCard(name: "The Sunken Archive", fileName: "V18-neutral-the-sunken-archive.png", factionId: feyId, cardType: .planarRuin, atk: nil, hp: 6, cm: 5, keywords: [], tier: .epic),
         ]
 
         var mockCards: [CardInstance] = []
@@ -233,7 +235,7 @@ final class AppState {
                 templateId: templateId,
                 ownerId: devPlayerId,
                 cardType: def.cardType,
-                tier: .common,
+                tier: def.tier,
                 currentName: def.name,
                 currentAttack: def.atk,
                 currentHealth: def.hp,

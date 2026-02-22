@@ -131,7 +131,7 @@ enum EnergyConstants {
     static let energyPerWin = 2
     static let energyPerLoss = 1
 
-    static func threshold(for tier: EvolutionTier) -> Int? {
+    static func threshold(for tier: Rarity) -> Int? {
         tier.nextTier?.energyThreshold
     }
 }

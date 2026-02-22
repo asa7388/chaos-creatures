@@ -105,64 +105,8 @@ enum StabilizerType: String, Codable, CaseIterable {
     case hybrid = "HYBRID"
 }
 
-// MARK: - Evolution Tiers (Section 2)
-
-enum EvolutionTier: String, Codable, CaseIterable, Identifiable, Comparable {
-    case common = "COMMON"
-    case uncommon = "UNCOMMON"
-    case rare = "RARE"
-    case epic = "EPIC"
-    case legendary = "LEGENDARY"
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .common: return "Common"
-        case .uncommon: return "Uncommon"
-        case .rare: return "Rare"
-        case .epic: return "Epic"
-        case .legendary: return "Legendary"
-        }
-    }
-
-    /// Index for comparison (0-4)
-    var tierIndex: Int {
-        switch self {
-        case .common: return 0
-        case .uncommon: return 1
-        case .rare: return 2
-        case .epic: return 3
-        case .legendary: return 4
-        }
-    }
-
-    /// Chaos energy threshold to reach this tier
-    var energyThreshold: Int {
-        switch self {
-        case .common: return 0
-        case .uncommon: return 15
-        case .rare: return 30
-        case .epic: return 50
-        case .legendary: return 75
-        }
-    }
-
-    /// The next tier, if any
-    var nextTier: EvolutionTier? {
-        switch self {
-        case .common: return .uncommon
-        case .uncommon: return .rare
-        case .rare: return .epic
-        case .epic: return .legendary
-        case .legendary: return nil
-        }
-    }
-
-    static func < (lhs: EvolutionTier, rhs: EvolutionTier) -> Bool {
-        lhs.tierIndex < rhs.tierIndex
-    }
-}
+// EvolutionTier removed — merged into Rarity in CardGuideEnums.swift (P1-2, 2026-02-21).
+// Use Rarity everywhere EvolutionTier was used. Raw values are identical ("COMMON" etc.).
 
 // MARK: - Event Types (Section 3)
 
@@ -586,58 +530,11 @@ enum LogEntryType: String, Codable, CaseIterable {
     case turnTimeout = "TURN_TIMEOUT"
 }
 
-// MARK: - Faction Short Names
-
-enum FactionShortName: String, Codable, CaseIterable, Identifiable {
-    case ironwright = "IRONWRIGHT"
-    case feyCourts = "FEY_COURTS"
-    case demonicKingdoms = "DEMONIC_KINGDOMS"
-    case celestialCrusade = "CELESTIAL_CRUSADE"
-    case theEndless = "THE_ENDLESS"
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .ironwright: return "The Ironwright Collective"
-        case .feyCourts: return "The Fey Courts"
-        case .demonicKingdoms: return "The Demonic Kingdoms"
-        case .celestialCrusade: return "The Celestial Crusade"
-        case .theEndless: return "The Endless"
-        }
-    }
-
-    var shortDisplayName: String {
-        switch self {
-        case .ironwright: return "Ironwright"
-        case .feyCourts: return "Fey Courts"
-        case .demonicKingdoms: return "Demonic"
-        case .celestialCrusade: return "Celestial"
-        case .theEndless: return "Endless"
-        }
-    }
-
-    var mechanic: FactionMechanic {
-        switch self {
-        case .ironwright: return .augment
-        case .feyCourts: return .bond
-        case .demonicKingdoms: return .corruption
-        case .celestialCrusade: return .exalt
-        case .theEndless: return .persist
-        }
-    }
-
-    var emblemAssetName: String {
-        switch self {
-        case .ironwright: return "FactionEmblems/emblem-ironwright"
-        case .feyCourts: return "FactionEmblems/emblem-fey"
-        case .demonicKingdoms: return "FactionEmblems/emblem-demonic"
-        case .celestialCrusade: return "FactionEmblems/emblem-celestial"
-        case .theEndless: return "FactionEmblems/emblem-endless"
-        }
-    }
-
-}
+// FactionShortName removed — merged into CardFaction in CardGuideEnums.swift (P1-1, 2026-02-21).
+// Use CardFaction everywhere FactionShortName was used.
+// Case mapping: .ironwright→.ironwright  .feyCourts→.fey  .demonicKingdoms→.demonic
+//               .celestialCrusade→.celestial  .theEndless→.endless
+// Raw values preserved: "IRONWRIGHT","FEY_COURTS","DEMONIC_KINGDOMS","CELESTIAL_CRUSADE","THE_ENDLESS"
 
 // MARK: - Unlock Condition (Section 9)
 

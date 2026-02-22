@@ -134,43 +134,43 @@ extension Color {
 
     // MARK: - Helpers
 
-    static func tierColor(_ tier: EvolutionTier) -> Color {
+    static func tierColor(_ tier: Rarity) -> Color {
         switch tier {
-        case .common: return .rarityCommon
-        case .uncommon: return .rarityUncommon
-        case .rare: return .rarityRare
-        case .epic: return .rarityEpic
+        case .common:    return .rarityCommon
+        case .uncommon:  return .rarityUncommon
+        case .rare:      return .rarityRare
+        case .epic:      return .rarityEpic
         case .legendary: return .rarityLegendary
         }
     }
 
-    static func factionPrimary(_ faction: FactionShortName) -> Color {
+    static func factionPrimary(_ faction: CardFaction) -> Color {
         switch faction {
         case .ironwright: return .ironwright
-        case .feyCourts: return .feyCourts
-        case .demonicKingdoms: return .demonic
-        case .celestialCrusade: return .celestial
-        case .theEndless: return .endless
+        case .fey:        return .feyCourts
+        case .demonic:    return .demonic
+        case .celestial:  return .celestial
+        case .endless:    return .endless
         }
     }
 
-    static func factionFrameTint(_ faction: FactionShortName) -> Color {
+    static func factionFrameTint(_ faction: CardFaction) -> Color {
         switch faction {
         case .ironwright: return .ironwrightFrameTint
-        case .feyCourts: return .feyCourtsFrameTint
-        case .demonicKingdoms: return .demonicFrameTint
-        case .celestialCrusade: return .celestialFrameTint
-        case .theEndless: return .endlessFrameTint
+        case .fey:        return .feyCourtsFrameTint
+        case .demonic:    return .demonicFrameTint
+        case .celestial:  return .celestialFrameTint
+        case .endless:    return .endlessFrameTint
         }
     }
 
-    static func factionAccent(_ faction: FactionShortName) -> Color {
+    static func factionAccent(_ faction: CardFaction) -> Color {
         switch faction {
         case .ironwright: return .ironwrightAccent
-        case .feyCourts: return .feyCourtsAccent
-        case .demonicKingdoms: return .demonicAccent
-        case .celestialCrusade: return .celestialAccent
-        case .theEndless: return .endlessAccent
+        case .fey:        return .feyCourtsAccent
+        case .demonic:    return .demonicAccent
+        case .celestial:  return .celestialAccent
+        case .endless:    return .endlessAccent
         }
     }
 
@@ -221,46 +221,5 @@ extension UIColor {
     }
 }
 
-// MARK: - FactionShortName UIKit Extensions (for SpriteKit)
-
-extension FactionShortName {
-    var primaryUIColor: UIColor {
-        switch self {
-        case .ironwright: return UIColor(hex: "#6B7B8D")
-        case .feyCourts: return UIColor(hex: "#2E8B57")
-        case .demonicKingdoms: return UIColor(hex: "#8B2252")
-        case .celestialCrusade: return UIColor(hex: "#DAA520")
-        case .theEndless: return UIColor(hex: "#6B3FA0")
-        }
-    }
-
-    var accentUIColor: UIColor {
-        switch self {
-        case .ironwright: return UIColor(hex: "#E07020")
-        case .feyCourts: return UIColor(hex: "#7FFFD4")
-        case .demonicKingdoms: return UIColor(hex: "#FF4500")
-        case .celestialCrusade: return UIColor(hex: "#F5F0E1")
-        case .theEndless: return UIColor(hex: "#E8DCC8")
-        }
-    }
-
-    var frameTintUIColor: UIColor {
-        switch self {
-        case .ironwright: return UIColor(hex: "#3D4654")
-        case .feyCourts: return UIColor(hex: "#1A3A1A")
-        case .demonicKingdoms: return UIColor(hex: "#2A1010")
-        case .celestialCrusade: return UIColor(hex: "#2A2030")
-        case .theEndless: return UIColor(hex: "#1A1525")
-        }
-    }
-
-    var swiftUIColor: Color {
-        switch self {
-        case .ironwright: return .ironwright
-        case .feyCourts: return .feyCourts
-        case .demonicKingdoms: return .demonic
-        case .celestialCrusade: return .celestial
-        case .theEndless: return .endless
-        }
-    }
-}
+// FactionShortName UIKit extensions removed — moved to CardFaction in CardGuideEnums.swift (P1-1, 2026-02-21).
+// Use CardFaction.primaryUIColor, .accentUIColor, .frameTintUIColor, .swiftUIColor instead.

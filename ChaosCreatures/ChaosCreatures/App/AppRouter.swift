@@ -34,7 +34,7 @@ final class AppRouter {
     // MARK: - Detail Navigation
 
     var selectedCardInstance: CardInstance?
-    var selectedCardFaction: FactionShortName?
+    var selectedCardFaction: CardFaction?
     var selectedDeck: Deck?
 
     // MARK: - Navigation Paths (per tab)
@@ -68,13 +68,13 @@ final class AppRouter {
 
     // MARK: - Navigation Actions
 
-    func navigateToCardDetail(_ card: CardInstance, faction: FactionShortName? = nil) {
+    func navigateToCardDetail(_ card: CardInstance, faction: CardFaction? = nil) {
         selectedCardInstance = card
         selectedCardFaction = faction
         showCardDetail = true
     }
 
-    func navigateToEvolution(_ card: CardInstance, faction: FactionShortName? = nil) {
+    func navigateToEvolution(_ card: CardInstance, faction: CardFaction? = nil) {
         selectedCardInstance = card
         selectedCardFaction = faction
         showEvolution = true

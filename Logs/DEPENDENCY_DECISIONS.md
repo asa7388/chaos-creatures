@@ -130,3 +130,17 @@ waiting for the new LoRA.
 - Result: FAILED for Replicate use. PASSED for final image commercial sale.
 - Resolution: Decision 3A — new LoRA trained on public domain + SDXL base
 - Gate status: ✅ RESOLVED — implementation may proceed under Decision 3A terms
+
+---
+
+## Decision: N ⊕ Unified Cost Display
+Date: 2026-02-21
+Status: OWNER APPROVED
+Section: §1.4 Name Bar / Chaos Mote Symbols
+
+Previous spec: Tiled dot pips (up to 7 ● symbols + "N+" overflow text for costs >7). Ruins used "COST: N" label format.
+New spec: `N ⊕` — Oswald-Bold 13pt numeral + single 20×20pt chaos mote icon, right-aligned in name bar (6pt from inner right edge). All card types (creature, spell, planar ruin) use identical format. Stabilizers: no cost indicator.
+
+Rationale: 7 dots at 16pt consumed ~124pt of name bar width, leaving insufficient room for card names. Single icon + numeral takes ~35pt regardless of cost value. Eliminates ruins "COST:" inconsistency. Cleaner, more readable at all card display sizes.
+
+Implementation: Replace chaos mote dot tiling logic in CardFrameView with HStack{Text("\(cost)").font(Oswald-Bold-13) + Image("chaos_mote_symbol").frame(20×20)}

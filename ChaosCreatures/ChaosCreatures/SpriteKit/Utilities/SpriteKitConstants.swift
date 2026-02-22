@@ -326,41 +326,41 @@ enum SK {
     // MARK: - Card Frame Asset Names
 
     enum CardFrames {
-        private static func factionKey(_ faction: FactionShortName) -> String {
+        private static func factionKey(_ faction: CardFaction) -> String {
             switch faction {
             case .ironwright: return "ironwright"
-            case .feyCourts: return "fey"
-            case .demonicKingdoms: return "demonic"
-            case .celestialCrusade: return "celestial"
-            case .theEndless: return "endless"
+            case .fey:        return "fey"
+            case .demonic:    return "demonic"
+            case .celestial:  return "celestial"
+            case .endless:    return "endless"
             }
         }
 
         /// Asset name for a card frame by faction and rarity.
         /// Format: "CardFrames/{faction}-{rarity}" e.g. "CardFrames/ironwright-common"
-        static func assetName(faction: FactionShortName, tier: EvolutionTier) -> String {
+        static func assetName(faction: CardFaction, tier: Rarity) -> String {
             let tierKey: String
             switch tier {
             case .common, .uncommon: tierKey = "common"
-            case .rare: tierKey = "rare"
-            case .epic, .legendary: tierKey = "legendary"
+            case .rare:              tierKey = "rare"
+            case .epic, .legendary:  tierKey = "legendary"
             }
             return "CardFrames/\(factionKey(faction))-\(tierKey)"
         }
 
         /// Spell card frame asset name for a specific faction.
-        static func spellAssetName(faction: FactionShortName) -> String {
+        static func spellAssetName(faction: CardFaction) -> String {
             return "CardFrames/\(factionKey(faction))-spell"
         }
 
         /// Stabilizer card frame asset name for a specific faction.
-        static func stabilizerAssetName(faction: FactionShortName) -> String {
+        static func stabilizerAssetName(faction: CardFaction) -> String {
             return "CardFrames/\(factionKey(faction))-stabilizer"
         }
 
         /// Best frame asset for a specific card type/faction/tier combination.
         /// Returns nil if faction-specific selection is required but faction is unavailable.
-        static func frameAssetName(cardType: CardType, faction: FactionShortName?, tier: EvolutionTier) -> String? {
+        static func frameAssetName(cardType: CardType, faction: CardFaction?, tier: Rarity) -> String? {
             switch cardType {
             case .planarRuin:
                 return "CardFrames/planar-ruin"
@@ -401,14 +401,14 @@ enum SK {
     // MARK: - Faction Emblem Asset Names
 
     enum FactionEmblems {
-        static func assetName(faction: FactionShortName) -> String {
+        static func assetName(faction: CardFaction) -> String {
             let key: String
             switch faction {
             case .ironwright: key = "ironwright"
-            case .feyCourts: key = "fey"
-            case .demonicKingdoms: key = "demonic"
-            case .celestialCrusade: key = "celestial"
-            case .theEndless: key = "endless"
+            case .fey:        key = "fey"
+            case .demonic:    key = "demonic"
+            case .celestial:  key = "celestial"
+            case .endless:    key = "endless"
             }
             return "FactionEmblems/emblem-\(key)"
         }
@@ -419,14 +419,14 @@ enum SK {
     enum CardBacks {
         static let universal = "CardBacks/card-back-universal"
 
-        static func factionBack(faction: FactionShortName) -> String {
+        static func factionBack(faction: CardFaction) -> String {
             let key: String
             switch faction {
             case .ironwright: key = "ironwright"
-            case .feyCourts: key = "fey"
-            case .demonicKingdoms: key = "demonic"
-            case .celestialCrusade: key = "celestial"
-            case .theEndless: key = "endless"
+            case .fey:        key = "fey"
+            case .demonic:    key = "demonic"
+            case .celestial:  key = "celestial"
+            case .endless:    key = "endless"
             }
             return "CardBacks/card-back-\(key)"
         }
@@ -498,13 +498,13 @@ enum SK {
         static let glowPulseDuration: TimeInterval = 1.5
 
         /// Color per tier for the background glow
-        static func glowColor(for tier: EvolutionTier) -> UIColor? {
+        static func glowColor(for tier: Rarity) -> UIColor? {
             switch tier {
-            case .common: return nil  // no glow
-            case .uncommon: return UIColor(hex: "#C0C0C0")  // silver
-            case .rare: return UIColor(hex: "#FFD700")       // gold (matches rare border)
-            case .epic: return UIColor(hex: "#9C27B0")       // purple
-            case .legendary: return UIColor(hex: "#FFD700")  // gold
+            case .common:    return nil                      // no glow
+            case .uncommon:  return UIColor(hex: "#C0C0C0")  // silver
+            case .rare:      return UIColor(hex: "#FFD700")   // gold (matches rare border)
+            case .epic:      return UIColor(hex: "#9C27B0")   // purple
+            case .legendary: return UIColor(hex: "#FFD700")   // gold
             }
         }
     }
@@ -561,62 +561,62 @@ enum SK {
     /// its primary sub-faction texture (e.g. feyCourts -> fey-verdant).
     enum CardTextures {
         /// Faction-specific border texture asset name from CardTextures/ in Assets.xcassets.
-        static func borderAssetName(faction: FactionShortName?) -> String {
+        static func borderAssetName(faction: CardFaction?) -> String {
             guard let faction = faction else { return "CardTextures/border-ironwright" }
             switch faction {
             case .ironwright: return "CardTextures/border-ironwright"
-            case .feyCourts: return "CardTextures/border-fey-verdant"
-            case .demonicKingdoms: return "CardTextures/border-demonic-furnace"
-            case .celestialCrusade: return "CardTextures/border-celestial-knights"
-            case .theEndless: return "CardTextures/border-endless-cabals"
+            case .fey:        return "CardTextures/border-fey-verdant"
+            case .demonic:    return "CardTextures/border-demonic-furnace"
+            case .celestial:  return "CardTextures/border-celestial-knights"
+            case .endless:    return "CardTextures/border-endless-cabals"
             }
         }
 
         /// Faction-specific text panel texture asset name from TextPanels/ in Assets.xcassets.
-        static func textPanelAssetName(faction: FactionShortName?) -> String {
+        static func textPanelAssetName(faction: CardFaction?) -> String {
             guard let faction = faction else { return "TextPanels/tp-ironwright" }
             switch faction {
             case .ironwright: return "TextPanels/tp-ironwright"
-            case .feyCourts: return "TextPanels/tp-fey-verdant"
-            case .demonicKingdoms: return "TextPanels/tp-demonic-furnace"
-            case .celestialCrusade: return "TextPanels/tp-celestial-knights"
-            case .theEndless: return "TextPanels/tp-endless-cabals"
+            case .fey:        return "TextPanels/tp-fey-verdant"
+            case .demonic:    return "TextPanels/tp-demonic-furnace"
+            case .celestial:  return "TextPanels/tp-celestial-knights"
+            case .endless:    return "TextPanels/tp-endless-cabals"
             }
         }
 
         /// Faction-specific ATK icon asset name.
-        static func atkIconName(faction: FactionShortName?) -> String {
+        static func atkIconName(faction: CardFaction?) -> String {
             guard let faction = faction else { return "StatIcons/sword-atk" }
             switch faction {
             case .ironwright: return "StatIcons/atk-ironwright"
-            case .feyCourts: return "StatIcons/atk-feyVerdant"
-            case .demonicKingdoms: return "StatIcons/atk-demonicFurnace"
-            case .celestialCrusade: return "StatIcons/atk-celestialKnights"
-            case .theEndless: return "StatIcons/atk-endlessCabals"
+            case .fey:        return "StatIcons/atk-feyVerdant"
+            case .demonic:    return "StatIcons/atk-demonicFurnace"
+            case .celestial:  return "StatIcons/atk-celestialKnights"
+            case .endless:    return "StatIcons/atk-endlessCabals"
             }
         }
 
         /// Faction-specific HP icon asset name.
-        static func hpIconName(faction: FactionShortName?) -> String {
+        static func hpIconName(faction: CardFaction?) -> String {
             guard let faction = faction else { return "StatIcons/heart-hp" }
             switch faction {
             case .ironwright: return "StatIcons/hp-ironwright"
-            case .feyCourts: return "StatIcons/hp-feyVerdant"
-            case .demonicKingdoms: return "StatIcons/hp-demonicFurnace"
-            case .celestialCrusade: return "StatIcons/hp-celestialKnights"
-            case .theEndless: return "StatIcons/hp-endlessCabals"
+            case .fey:        return "StatIcons/hp-feyVerdant"
+            case .demonic:    return "StatIcons/hp-demonicFurnace"
+            case .celestial:  return "StatIcons/hp-celestialKnights"
+            case .endless:    return "StatIcons/hp-endlessCabals"
             }
         }
 
         /// Faction-specific CM (chaos mote) icon asset name.
-        static func cmIconName(faction: FactionShortName?) -> String {
+        static func cmIconName(faction: CardFaction?) -> String {
             guard let faction = faction else { return "StatIcons/chaos-motes" }
             switch faction {
             case .ironwright: return "StatIcons/chaos-mote-ironwright"
-            case .feyCourts: return "StatIcons/chaos-mote-feyVerdant"
-            case .demonicKingdoms: return "StatIcons/chaos-mote-demonicFurnace"
-            case .celestialCrusade: return "StatIcons/chaos-mote-celestialKnights"
-            case .theEndless: return "StatIcons/chaos-mote-endlessCabals"
+            case .fey:        return "StatIcons/chaos-mote-feyVerdant"
+            case .demonic:    return "StatIcons/chaos-mote-demonicFurnace"
+            case .celestial:  return "StatIcons/chaos-mote-celestialKnights"
+            case .endless:    return "StatIcons/chaos-mote-endlessCabals"
             }
         }
 
@@ -637,14 +637,14 @@ enum SK {
 
         /// Faction-shaped wax seal asset name for medallion badges.
         /// Returns the StatIcons/stat-seal-{faction} asset name, or nil for neutral cards.
-        static func factionSealAsset(faction: FactionShortName?) -> String? {
+        static func factionSealAsset(faction: CardFaction?) -> String? {
             guard let faction = faction else { return nil }
             switch faction {
             case .ironwright: return "StatIcons/stat-seal-ironwright"
-            case .feyCourts: return "StatIcons/stat-seal-fey"
-            case .demonicKingdoms: return "StatIcons/stat-seal-demonic"
-            case .celestialCrusade: return "StatIcons/stat-seal-celestial"
-            case .theEndless: return "StatIcons/stat-seal-endless"
+            case .fey:        return "StatIcons/stat-seal-fey"
+            case .demonic:    return "StatIcons/stat-seal-demonic"
+            case .celestial:  return "StatIcons/stat-seal-celestial"
+            case .endless:    return "StatIcons/stat-seal-endless"
             }
         }
 

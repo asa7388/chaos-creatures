@@ -1,8 +1,9 @@
 {
-  "phase": "phase_3_in_progress",
-  "current_task": "Phase 3 Metal Shader Pipeline — Wave C build verification",
+  "phase": "phase_3_complete",
+  "current_task": "Phase 3 complete — Wax Seal Overhaul done. Awaiting user direction for Phase 4.",
   "last_updated": "2026-02-22",
   "phase_3_started": "2026-02-22",
+  "phase_3_complete": "2026-02-22",
   "phase_2_complete": "2026-02-21",
   "setup_steps_complete": [
     "1-verify-guides",
@@ -57,12 +58,13 @@
   },
   "budget": {
     "total_allocated": 10.00,
-    "spent": 0.00,
-    "remaining": 10.00,
-    "currency": "USD"
+    "spent": 0.25,
+    "remaining": 9.75,
+    "currency": "USD",
+    "notes": "~$0.25 for 25 FLUX.1 Dev wax seal generations"
   },
   "conflicts_pending_user_decision": [],
-  "hard_gates_passed": ["commercial-license-gate-reviewed", "all-decisions-resolved", "phase-2-end-gate-screenshots"],
+  "hard_gates_passed": ["commercial-license-gate-reviewed", "all-decisions-resolved", "phase-2-end-gate-screenshots", "phase-3-end-gate-build-pass"],
   "hard_gates_pending": [
     "lora-retraining-complete",
     "haptic-verification-Section-7.3"
@@ -71,7 +73,7 @@
     "phase_0": "complete",
     "phase_1": "complete",
     "phase_2": "complete",
-    "phase_3": "in_progress",
+    "phase_3": "complete",
     "phase_4": "pending",
     "phase_5": "pending",
     "phase_6": "pending",
@@ -79,7 +81,10 @@
     "phase_8": "pending"
   },
   "completed_tasks": [
+    "Phase 3 — Wax Seal Overhaul: 25 AI wax seals generated (5 factions × 5 rarities) via FLUX.1 Dev + REMBG; installed to Assets.xcassets/Icons/Seals/; WaxSealView.swift updated with faction parameter + factionSlug/raritySlug bridge; build PASS (commits 3fd5f95, ccb0b2a)",
     "Phase 3 — Metal Shader Pipeline (commits bb95584, 2be0803, 5cb4d4b): OilPaintShader, ParchmentShader (closes DEV-13), WarmFoilShader, InkSpreadKernel; WaxSealView replaces C placeholder; animated Epic/Legendary AngularGradient borders; CardParticleFactory, ParallaxCardArtView; compile_shaders.sh; build SUCCEEDED",
+    "Phase 3 — Border fixes: animation choppy (isolated AnimatedRarityBorder struct); border rotating outside frame (removed rotationEffect, animate startAngle/endAngle instead) (commits af7ef7a, f2a6f1f)",
+    "Phase 3 — Dev card rarities: AppState.swift updated with varied rarities across all 5 tiers for visual testing",
     "Phase 0 — Environment & Toolchain Setup",
     "Phase 1 — Color Palette & Data Schema",
     "Phase 2 — Card Layout Rebuild",

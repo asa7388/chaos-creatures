@@ -51,7 +51,7 @@ struct Player: Codable, Identifiable, Equatable {
     var currentWinStreak: Int
     var bestWinStreak: Int
     var cardsEvolvedTotal: Int
-    var highestTierReached: EvolutionTier
+    var highestTierReached: Rarity
 
     // Social
     var friendIds: [UUID]
@@ -214,7 +214,7 @@ struct FactionMastery: Codable, Identifiable {
 struct Faction: Codable, Identifiable, Equatable {
     let id: UUID
     let name: String
-    let shortName: FactionShortName
+    let shortName: CardFaction
     let exclusiveMechanic: FactionMechanic
     let artPromptPrefix: String
     let flavorVoice: String

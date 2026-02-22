@@ -338,7 +338,7 @@ struct EvolutionResult: Equatable {
     let newName: String
     let newArtUrl: String
     let newFlavorText: String
-    let tier: EvolutionTier
+    let tier: Rarity
 
     static func == (lhs: EvolutionResult, rhs: EvolutionResult) -> Bool {
         lhs.cardInstanceId == rhs.cardInstanceId && lhs.tier == rhs.tier

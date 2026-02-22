@@ -31,7 +31,7 @@ final class BattleAudioManager {
     private var isSfxEnabled: Bool = true
     private var musicVolume: Float = 0.5
     private var sfxVolume: Float = 0.7
-    private var currentFaction: FactionShortName = .ironwright
+    private var currentFaction: CardFaction = .ironwright
 
     // MARK: - Music Stems (per doc 08)
     // Each faction has 4 stems: base, tension, chaos, victory
@@ -57,7 +57,7 @@ final class BattleAudioManager {
     }
 
     /// Set the faction for audio theming
-    func setFaction(_ faction: FactionShortName) {
+    func setFaction(_ faction: CardFaction) {
         self.currentFaction = faction
     }
 

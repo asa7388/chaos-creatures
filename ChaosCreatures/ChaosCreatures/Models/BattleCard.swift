@@ -21,7 +21,7 @@ struct BattleCardData: Codable, Identifiable {
     let baseInstability: Int
     let innateKeywords: [Keyword]
     let factionId: String
-    let evolutionTier: EvolutionTier
+    let evolutionTier: Rarity
     let modifiers: [BattleModifier]?
     let triggeredAbilities: [BattleTriggeredAbility]?
 
@@ -57,13 +57,13 @@ struct BattleCardData: Codable, Identifiable {
         baseInstability = try container.decode(Int.self, forKey: .baseInstability)
         innateKeywords = try container.decode([Keyword].self, forKey: .innateKeywords)
         factionId = try container.decode(String.self, forKey: .factionId)
-        evolutionTier = try container.decodeIfPresent(EvolutionTier.self, forKey: .evolutionTier) ?? .common
+        evolutionTier = try container.decodeIfPresent(Rarity.self, forKey: .evolutionTier) ?? .common
         modifiers = try container.decodeIfPresent([BattleModifier].self, forKey: .modifiers)
         triggeredAbilities = try container.decodeIfPresent([BattleTriggeredAbility].self, forKey: .triggeredAbilities)
     }
 
-    var factionShortName: FactionShortName? {
-        FactionShortName(rawValue: factionId)
+    var factionShortName: CardFaction? {
+        CardFaction(rawValue: factionId)
     }
 
     /// Faction UIColor for SpriteKit rendering
@@ -86,7 +86,7 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
     let baseInstability: Int
     let innateKeywords: [Keyword]
     let factionId: String
-    let evolutionTier: EvolutionTier
+    let evolutionTier: Rarity
 
     // Current combat stats
     let attack: Int
@@ -145,7 +145,7 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
         baseInstability = try container.decode(Int.self, forKey: .baseInstability)
         innateKeywords = try container.decode([Keyword].self, forKey: .innateKeywords)
         factionId = try container.decode(String.self, forKey: .factionId)
-        evolutionTier = try container.decodeIfPresent(EvolutionTier.self, forKey: .evolutionTier) ?? .common
+        evolutionTier = try container.decodeIfPresent(Rarity.self, forKey: .evolutionTier) ?? .common
         attack = try container.decode(Int.self, forKey: .attack)
         health = try container.decode(Int.self, forKey: .health)
         maxHealth = try container.decode(Int.self, forKey: .maxHealth)
@@ -157,8 +157,8 @@ struct BattleCreatureData: Codable, Identifiable, Equatable {
         boardSlot = try container.decode(Int.self, forKey: .boardSlot)
     }
 
-    var factionShortName: FactionShortName? {
-        FactionShortName(rawValue: factionId)
+    var factionShortName: CardFaction? {
+        CardFaction(rawValue: factionId)
     }
 
     /// Faction UIColor for SpriteKit rendering
@@ -223,16 +223,4 @@ enum ChaosRollOutcome: String, Codable {
     case nothing = "NOTHING"
 }
 
-// MARK: - Evolution Tier UIKit Extension (for SpriteKit use)
-
-extension EvolutionTier {
-    var borderUIColor: UIColor {
-        switch self {
-        case .common: return UIColor(red: 0.62, green: 0.62, blue: 0.62, alpha: 1.0)
-        case .uncommon: return UIColor(red: 0.30, green: 0.69, blue: 0.31, alpha: 1.0)
-        case .rare: return UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 1.0)
-        case .epic: return UIColor(red: 0.61, green: 0.15, blue: 0.69, alpha: 1.0)
-        case .legendary: return UIColor(red: 1.0, green: 0.60, blue: 0.0, alpha: 1.0)
-        }
-    }
-}
+// EvolutionTier UIKit extension removed — borderUIColor is now Rarity.borderUIColor in CardGuideEnums.swift (P1-2).

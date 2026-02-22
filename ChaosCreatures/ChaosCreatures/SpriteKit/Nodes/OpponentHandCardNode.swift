@@ -14,7 +14,7 @@ final class OpponentHandCardNode: SKSpriteNode {
 
     /// Create a face-down card back node.
     /// - Parameter faction: Optional faction for faction-specific card back; uses universal if nil or asset missing.
-    init(faction: FactionShortName? = nil) {
+    init(faction: CardFaction? = nil) {
         let cardSize = SK.Card.handSize
 
         // Try faction-specific card back first, then universal, then fallback

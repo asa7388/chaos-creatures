@@ -485,3 +485,21 @@ Ready to generate calibration seal: demonic legendary.
 APPROVED PROMPT — demonic legendary:
 "A circular wax seal, deep blood-crimson wax, dark wine red, a dragon head in profile embossed and pressed into the center of the wax. Physical wax material — beeswax and resin compound, slightly translucent at the thinning edges, dense and opaque in the center. Single specular highlight at upper-left quadrant, warm directional light, no highlight on right side. Visible texture where the stamp pressed into the soft wax — slight displacement, raised ridge of wax around the outer edge of the impressed symbol. Depth of color — lighter where wax is thin, saturated and rich where wax is thick. Aged and handmade, organic surface irregularities, slight imperfections at rim. Fantasy heraldic style. Isolated on pure white background. Macro photography, studio lighting."
 
+---
+
+## Wax Seal Overhaul — Complete — 2026-02-22
+
+Approach: 25 AI-generated images (5 factions × 5 rarities), symbol embossed in wax, faction color baked in
+Calibration seal: seal_demonic_legendary — APPROVED on iteration 1 (all 8 axes ≥ 3)
+Approved prompt logged: yes — see iteration 1 above
+All 25 generated: yes — demonic×5, fey×5, ironwright×5, celestial×5, endless×5. All passed VERIFY (20–85% opaque check, warm-tone check for demonic/celestial)
+Asset catalog: 25 imagesets installed in Assets.xcassets/Icons/Seals/
+WaxSealView updated: faction parameter added; factionSlug + raritySlug computed properties bridge uppercase rawValues (DEMONIC_KINGDOMS, FEY_COURTS, etc.) to lowercase slug names matching installed assets. Note: brief spec uses faction.rawValue directly — requires slug bridge because CardFaction rawValues are uppercase compound strings, not short slugs.
+All WaxSealView call sites updated: CardFrameView passes faction parameter (WaxSealView(rarity: data.tier, faction: data.faction ?? .ironwright))
+Build: PASS — xcodebuild iPhone 16 Simulator, iOS 26.2, 0 errors
+Budget spent: ~$0.25 (25 FLUX.1 Dev generations at ~$0.01 each)
+Remaining budget: $9.75 from $10.00 asset generation allocation
+Haptic note: wax seal tap haptic (.heavy impact) unchanged — physical feel of dense wax resistance still correct
+
+Commits: 3fd5f95 (scripts), ccb0b2a (generated + installed + WaxSealView update)
+

@@ -14,7 +14,7 @@ struct CardInstance: Codable, Identifiable, Equatable {
     var cardType: CardType?
 
     // Current state
-    var tier: EvolutionTier
+    var tier: Rarity
     var currentName: String
     var currentAttack: Int?
     var currentHealth: Int?
@@ -139,8 +139,8 @@ struct EvolutionRecord: Codable, Identifiable {
     var id: String { "\(step)" }
 
     let step: Int                    // 1-4
-    let fromTier: EvolutionTier
-    let toTier: EvolutionTier
+    let fromTier: Rarity
+    let toTier: Rarity
     let channeledToward: EventType
     let actualOutcome: EventType
     let modifierChosenId: String
