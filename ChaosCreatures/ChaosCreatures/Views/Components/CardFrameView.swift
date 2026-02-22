@@ -568,8 +568,8 @@ struct CardFrameView: View {
             waxSeal(cardWidth: cardWidth)
                 .frame(width: sealSize, height: sealSize)
                 .offset(
-                    x: (166.0 / 210.0) * cardWidth,
-                    y: (250.0 / 294.0) * cardHeight
+                    x: (173.0 / 210.0) * cardWidth,
+                    y: (257.0 / 294.0) * cardHeight
                 )
                 .allowsHitTesting(false)
         }
@@ -647,8 +647,8 @@ struct CardFrameView: View {
             waxSeal(cardWidth: cardWidth)
                 .frame(width: sealSize, height: sealSize)
                 .offset(
-                    x: (166.0 / 210.0) * cardWidth,
-                    y: (250.0 / 294.0) * cardHeight
+                    x: (173.0 / 210.0) * cardWidth,
+                    y: (257.0 / 294.0) * cardHeight
                 )
                 .allowsHitTesting(false)
         }
