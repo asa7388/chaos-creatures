@@ -487,6 +487,32 @@ APPROVED PROMPT — demonic legendary:
 
 ---
 
+## Wax Seal Iteration 1 (v2) — seal_demonic_legendary — 2026-02-22
+**References loaded:** ref_schwamberg_1614.jpg (primary physical reference)
+**Files evaluated:** Staging/wax_seals/seal_demonic_legendary_raw.png, Staging/wax_seals/preview_seal_demonic_legendary.png
+**Semantic (v2):** ember-red wax (legendary rarity) + scroll symbol (demonic faction)
+
+| Axis | Score (1–5) | Observation |
+|------|------------|-------------|
+| Physical material | 4 | Unmistakably wax — matte surface, organic texture, not plastic/digital. Raised outer rim with visible compression ridges. Matches Schwamberg reference material quality well. |
+| Edge translucency | 3 | Raised outer rim shows wax buildup at rim transition. Not dramatically translucent but the raised ring reads as compressed wax. Acceptable at 34pt. |
+| Embossing depth | 4 | Relief clearly pressed IN — deep shadows in recessed areas, raised curling elements catch light. Shadow depth matches the Schwamberg reference. |
+| Displacement ring | 4 | Pronounced outer ring where stamp edge compressed wax. Inner scroll curls show internal displacement. Ring is well-defined. |
+| Specular accuracy | 3 | Warm highlight present on raised areas. Concentrated in upper portion. Not strictly upper-left quadrant but natural diffuse lighting, no harsh spotlight. |
+| Color depth | 4 | Rich ember-red/orange-red reads correctly per spec. Internal color variation — lighter on raised curls, deeper in recessed shadows. Does NOT go near-black. |
+| 34pt readability | 3 | At display size: reads clearly as red wax seal with decorative pattern. Scroll curls present as ornamental flourishes. Symbol reads as "ornamental medallion" rather than unambiguously "scroll" at 34pt — expected at this display size; faction identity expressed through overall pattern. |
+| Imperfections | 4 | Rim organically irregular, not a perfect circle. Handmade quality present. |
+
+**Largest gap at 34pt:** Symbol reads as ornamental rather than clearly scroll-shaped. At 34pt, fine symbol identification is not achievable — the standard is readability as a distinctive wax seal pattern, not symbol identification.
+**Root cause:** 34pt is physically too small for distinct symbol identification. The curling forms are present but merge with overall decorative pattern.
+**Prompt change if regenerating:** None — all axes pass. Wax material and color are excellent.
+**Decision:** APPROVE — all 8 axes ≥ 3. Physical material and 34pt readability both pass. Ember-red color correct. Proceeding to full 25-seal batch.
+
+APPROVED PROMPT — demonic legendary (v2):
+"A circular wax seal, ember-red wax, deep fiery orange-red, an unrolled scroll with curled ends, slightly aged at edges embossed and pressed into the center of the wax. Physical wax material — beeswax and resin compound, slightly translucent at the thinning edges, dense and opaque in the center. Single specular highlight at upper-left quadrant, warm directional light, no highlight on right side. Visible texture where the stamp pressed into the soft wax — slight displacement, raised ridge of wax around the outer edge of the impressed symbol. Depth of color — lighter where wax is thin, saturated and rich where wax is thick. Aged and handmade, organic surface irregularities, slight imperfections at rim. Fantasy heraldic style. Isolated on pure white background. Macro photography, studio lighting."
+
+---
+
 ## Wax Seal Overhaul — Complete — 2026-02-22
 
 Approach: 25 AI-generated images (5 factions × 5 rarities), symbol embossed in wax, faction color baked in
