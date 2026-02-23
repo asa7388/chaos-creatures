@@ -78,6 +78,43 @@ enum CardFont {
         frederickaTheGreat(size: size)
     }
 
+    // --- Faction-Specific Front Face Fonts ---
+
+    /// Passions Conflict — Demonic Kingdoms front face font.
+    static func passionsConflict(size: CGFloat) -> Font {
+        .custom("PassionsConflict-Regular", size: size)
+    }
+
+    /// Lovers Quarrel — Fey Courts front face font.
+    static func loversQuarrel(size: CGFloat) -> Font {
+        .custom("LoversQuarrel-Regular", size: size)
+    }
+
+    /// Rammetto One — The Endless front face font.
+    static func rammettoOne(size: CGFloat) -> Font {
+        .custom("RammettoOne-Regular", size: size)
+    }
+
+    /// Returns the faction-specific front face font at the given size.
+    /// Ironwright and Celestial share Fredericka the Great; other factions
+    /// use their own display fonts. Neutral/nil defaults to Fredericka.
+    static func factionFont(for faction: CardFaction?, size: CGFloat) -> Font {
+        switch faction {
+        case .ironwright:
+            return frederickaTheGreat(size: size)
+        case .demonic:
+            return passionsConflict(size: size)
+        case .celestial:
+            return frederickaTheGreat(size: size)
+        case .fey:
+            return loversQuarrel(size: size)
+        case .endless:
+            return rammettoOne(size: size)
+        case nil:
+            return frederickaTheGreat(size: size)
+        }
+    }
+
     // --- IM Fell English (Intelligence Report Back Face) ---
 
     /// Report body text. IM Fell English Regular.
@@ -166,6 +203,15 @@ enum CardFont {
     /// FrederickatheGreat-Regular PostScript name for SKLabelNode (dossier front face).
     static let spriteKitDossierName = "FrederickatheGreat-Regular"
 
+    /// PassionsConflict-Regular PostScript name for SKLabelNode (Demonic Kingdoms front face).
+    static let spriteKitPassionsConflict = "PassionsConflict-Regular"
+
+    /// LoversQuarrel-Regular PostScript name for SKLabelNode (Fey Courts front face).
+    static let spriteKitLoversQuarrel = "LoversQuarrel-Regular"
+
+    /// RammettoOne-Regular PostScript name for SKLabelNode (The Endless front face).
+    static let spriteKitRammettoOne = "RammettoOne-Regular"
+
     /// IMFellEnglish-Regular PostScript name for SKLabelNode (report back face body).
     static let spriteKitReportBody = "IMFellEnglish-Regular"
 
@@ -227,6 +273,46 @@ enum CardFont {
         // Fallback: Georgia — closest serif match
         if let fallback = UIFont(name: "Georgia", size: size) { return fallback }
         return .systemFont(ofSize: size, weight: .regular)
+    }
+
+    /// Passions Conflict in SpriteKit / UIKit. Demonic Kingdoms front face.
+    static func passionsConflictUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "PassionsConflict-Regular", size: size) { return font }
+        // Fallback: Georgia Bold — closest serif match for display weight
+        if let fallback = UIFont(name: "Georgia-Bold", size: size) { return fallback }
+        return .systemFont(ofSize: size, weight: .bold)
+    }
+
+    /// Lovers Quarrel in SpriteKit / UIKit. Fey Courts front face.
+    static func loversQuarrelUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "LoversQuarrel-Regular", size: size) { return font }
+        if let fallback = UIFont(name: "Georgia-Bold", size: size) { return fallback }
+        return .systemFont(ofSize: size, weight: .bold)
+    }
+
+    /// Rammetto One in SpriteKit / UIKit. The Endless front face.
+    static func rammettoOneUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "RammettoOne-Regular", size: size) { return font }
+        if let fallback = UIFont(name: "Georgia-Bold", size: size) { return fallback }
+        return .systemFont(ofSize: size, weight: .bold)
+    }
+
+    /// Returns the faction-specific front face UIFont at the given size.
+    static func factionFontUI(for faction: CardFaction?, size: CGFloat) -> UIFont {
+        switch faction {
+        case .ironwright:
+            return frederickaTheGreatUI(size: size)
+        case .demonic:
+            return passionsConflictUI(size: size)
+        case .celestial:
+            return frederickaTheGreatUI(size: size)
+        case .fey:
+            return loversQuarrelUI(size: size)
+        case .endless:
+            return rammettoOneUI(size: size)
+        case nil:
+            return frederickaTheGreatUI(size: size)
+        }
     }
 
     /// Report back face italic in SpriteKit / UIKit. IM Fell English Italic.
@@ -380,7 +466,10 @@ enum CardFont {
             "Oswald-Bold",
             "FrederickatheGreat-Regular",
             "IMFellEnglish-Regular",
-            "IMFellEnglish-Italic"
+            "IMFellEnglish-Italic",
+            "PassionsConflict-Regular",
+            "LoversQuarrel-Regular",
+            "RammettoOne-Regular"
         ]
         print("=== CardFont Phase 0 Verification ===")
         for name in required {
@@ -391,7 +480,7 @@ enum CardFont {
             }
         }
         // Also print all registered families that match our target families
-        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira", "Fredericka", "Fell"]
+        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira", "Fredericka", "Fell", "Passions", "Lovers", "Rammetto"]
         print("--- Registered families ---")
         for family in UIFont.familyNames.sorted() {
             if targetFamilies.contains(where: { family.contains($0) }) {

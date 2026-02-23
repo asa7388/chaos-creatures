@@ -6,7 +6,7 @@
 // at the bottom of the card and growing upward.
 //
 // Spec: CARD_DESIGN_GUIDE.md Section 1.4 (layout) and Section 1.5 (typography).
-// All text uses Fredericka the Great Regular via CardFont.frederickaTheGreat(size:).
+// Text uses the faction-specific front face font via CardFont.factionFont(for:size:).
 // All text receives DossierTextShadow modifier for legibility over artwork.
 
 import SwiftUI
@@ -30,6 +30,7 @@ extension View {
 
 struct CardDossierTextView: View {
     let data: CardDisplayData
+    let faction: CardFaction?
     let cardScale: CGFloat  // cardWidth / 210.0
 
     // MARK: - Colors
@@ -39,8 +40,9 @@ struct CardDossierTextView: View {
     private let labelColor: Color
     private let valueColor: Color
 
-    init(data: CardDisplayData, cardScale: CGFloat) {
+    init(data: CardDisplayData, faction: CardFaction? = nil, cardScale: CGFloat) {
         self.data = data
+        self.faction = faction
         self.cardScale = cardScale
         let ivory = Color(red: 1.0, green: 0.98, blue: 0.94)
         self.labelColor = ivory
@@ -98,7 +100,7 @@ struct CardDossierTextView: View {
     /// Card name — no label, 15pt, 100% opacity.
     private var nameField: some View {
         Text(data.name)
-            .font(CardFont.frederickaTheGreat(size: 15 * cardScale))
+            .font(CardFont.factionFont(for: faction, size: 15 * cardScale))
             .foregroundColor(valueColor)
             .lineLimit(2)
             .minimumScaleFactor(0.7)
@@ -189,7 +191,7 @@ struct CardDossierTextView: View {
     /// Rank label — seal is rendered separately, this is just the text label.
     private var rankField: some View {
         Text("Rank:")
-            .font(CardFont.frederickaTheGreat(size: 9 * cardScale))
+            .font(CardFont.factionFont(for: faction, size: 9 * cardScale))
             .foregroundColor(labelColor.opacity(0.85))
             .dossierTextShadow()
     }
@@ -201,10 +203,10 @@ struct CardDossierTextView: View {
     private func fieldRow(label: String, value: String, valueSize: CGFloat, valueOpacity: Double) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4 * cardScale) {
             Text(label)
-                .font(CardFont.frederickaTheGreat(size: 9 * cardScale))
+                .font(CardFont.factionFont(for: faction, size: 9 * cardScale))
                 .foregroundColor(labelColor.opacity(0.85))
             Text(value)
-                .font(CardFont.frederickaTheGreat(size: valueSize * cardScale))
+                .font(CardFont.factionFont(for: faction, size: valueSize * cardScale))
                 .foregroundColor(valueColor.opacity(valueOpacity))
                 .lineLimit(3)
                 .minimumScaleFactor(0.7)
@@ -217,10 +219,10 @@ struct CardDossierTextView: View {
     private func statSegment(label: String, value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 2 * cardScale) {
             Text(label)
-                .font(CardFont.frederickaTheGreat(size: 9 * cardScale))
+                .font(CardFont.factionFont(for: faction, size: 9 * cardScale))
                 .foregroundColor(labelColor.opacity(0.85))
             Text(value)
-                .font(CardFont.frederickaTheGreat(size: 13 * cardScale))
+                .font(CardFont.factionFont(for: faction, size: 13 * cardScale))
                 .foregroundColor(valueColor)
         }
     }
@@ -288,6 +290,7 @@ struct CardDossierTextView: View {
                 flavorText: "",
                 abilityText: "Shield: absorbs one hit. Taunt: must be attacked."
             ),
+            faction: .ironwright,
             cardScale: 280.0 / 210.0
         )
     }
@@ -315,6 +318,7 @@ struct CardDossierTextView: View {
                 flavorText: "",
                 abilityText: "Deal 4 damage. Heal for damage dealt."
             ),
+            faction: .fey,
             cardScale: 280.0 / 210.0
         )
     }
@@ -344,6 +348,7 @@ struct CardDossierTextView: View {
                 ruinPassiveText: "All creatures deal +1 damage.",
                 ruinDestructionPenaltyText: "All your creatures lose 2 ATK until end of turn."
             ),
+            faction: .demonic,
             cardScale: 280.0 / 210.0
         )
     }

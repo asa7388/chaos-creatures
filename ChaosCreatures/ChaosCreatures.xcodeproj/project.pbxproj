@@ -138,6 +138,9 @@
 		EE77777777777777EEEEEEEE /* FrederickatheGreat-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF77777777777777FFFFFFFF /* FrederickatheGreat-Regular.ttf */; };
 		EE88888888888888EEEEEEEE /* IMFellEnglish-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */; };
 		EE99999999999999EEEEEEEE /* IMFellEnglish-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */; };
+		PASCON00000000001EEEEE01 /* PassionsConflict-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = PASCON00000000001FFFFF01 /* PassionsConflict-Regular.ttf */; };
+		LOVQRL00000000001EEEEE01 /* LoversQuarrel-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = LOVQRL00000000001FFFFF01 /* LoversQuarrel-Regular.ttf */; };
+		RAMONE00000000001EEEEE01 /* RammettoOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = RAMONE00000000001FFFFF01 /* RammettoOne-Regular.ttf */; };
 		DD11111111111111DDDDDDDD /* CardFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11111111111111CCCCCCCC /* CardFont.swift */; };
 		SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */; };
 		SFX00002BBBBBBBBBBBBBB02 /* sfx_attack.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */; };
@@ -219,6 +222,9 @@
 		FF77777777777777FFFFFFFF /* FrederickatheGreat-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FrederickatheGreat-Regular.ttf"; sourceTree = "<group>"; };
 		FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IMFellEnglish-Regular.ttf"; sourceTree = "<group>"; };
 		FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IMFellEnglish-Italic.ttf"; sourceTree = "<group>"; };
+		PASCON00000000001FFFFF01 /* PassionsConflict-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PassionsConflict-Regular.ttf"; sourceTree = "<group>"; };
+		LOVQRL00000000001FFFFF01 /* LoversQuarrel-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LoversQuarrel-Regular.ttf"; sourceTree = "<group>"; };
+		RAMONE00000000001FFFFF01 /* RammettoOne-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "RammettoOne-Regular.ttf"; sourceTree = "<group>"; };
 		CC11111111111111CCCCCCCC /* CardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFont.swift; sourceTree = "<group>"; };
 		SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_card_play.wav; sourceTree = "<group>"; };
 		SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_attack.wav; sourceTree = "<group>"; };
@@ -453,6 +459,9 @@
 				FF77777777777777FFFFFFFF /* FrederickatheGreat-Regular.ttf */,
 				FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */,
 				FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */,
+				PASCON00000000001FFFFF01 /* PassionsConflict-Regular.ttf */,
+				LOVQRL00000000001FFFFF01 /* LoversQuarrel-Regular.ttf */,
+				RAMONE00000000001FFFFF01 /* RammettoOne-Regular.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -963,6 +972,9 @@
 				EE77777777777777EEEEEEEE /* FrederickatheGreat-Regular.ttf in Resources */,
 				EE88888888888888EEEEEEEE /* IMFellEnglish-Regular.ttf in Resources */,
 				EE99999999999999EEEEEEEE /* IMFellEnglish-Italic.ttf in Resources */,
+				PASCON00000000001EEEEE01 /* PassionsConflict-Regular.ttf in Resources */,
+				LOVQRL00000000001EEEEE01 /* LoversQuarrel-Regular.ttf in Resources */,
+				RAMONE00000000001EEEEE01 /* RammettoOne-Regular.ttf in Resources */,
 				SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */,
 				SFX00002BBBBBBBBBBBBBB02 /* sfx_attack.wav in Resources */,
 				SFX00003BBBBBBBBBBBBBB03 /* sfx_damage.wav in Resources */,

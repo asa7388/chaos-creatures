@@ -289,7 +289,7 @@ struct CardFrameView: View {
                 .ignoresSafeArea()
 
             // 3. CardDossierTextView overlay (bottom-anchored)
-            CardDossierTextView(data: data, cardScale: cardScale)
+            CardDossierTextView(data: data, faction: data.faction, cardScale: cardScale)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .padding(0)
         }
