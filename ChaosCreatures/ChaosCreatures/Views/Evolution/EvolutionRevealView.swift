@@ -153,7 +153,7 @@ struct EvolutionRevealView: View {
                 faction: evolvedFaction,
                 flavorText: result.newFlavorText
             ),
-            size: .detail
+            cardWidth: 280, cardHeight: 392
         )
         .shadow(
             color: Color.tierColor(result.tier).opacity(pulseGlow ? 0.6 : 0.2),

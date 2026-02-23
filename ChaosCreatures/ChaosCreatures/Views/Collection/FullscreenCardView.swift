@@ -43,7 +43,7 @@ struct FullscreenCardView: View {
                 // Card centered in the viewport with slight upward bias.
                 CardFrameView(
                     data: CardDisplayData(instance: card, faction: faction),
-                    size: .fullscreen
+                    cardWidth: 350, cardHeight: 490
                 )
                 .shadow(color: .black.opacity(0.6), radius: 24, x: 0, y: 12)
                 .rotation3DEffect(

@@ -38,7 +38,7 @@ struct SmokeTestCardView: View {
                             HStack(spacing: 16) {
                                 ForEach(rarityTestCards, id: \.name) { data in
                                     VStack(spacing: 4) {
-                                        CardFrameView(data: data, size: .grid)
+                                        CardFrameView(data: data, cardWidth: 112, cardHeight: 157)
                                             .frame(width: 90, height: 126)
                                         Text(data.tier.displayName)
                                             .font(.caption2)
@@ -64,7 +64,7 @@ struct SmokeTestCardView: View {
                             HStack(spacing: 16) {
                                 ForEach(typeTestCards, id: \.name) { data in
                                     VStack(spacing: 4) {
-                                        CardFrameView(data: data, size: .grid)
+                                        CardFrameView(data: data, cardWidth: 112, cardHeight: 157)
                                             .frame(width: 90, height: 126)
                                         Text(data.cardType.displayName)
                                             .font(.caption2)
@@ -94,7 +94,7 @@ struct SmokeTestCardView: View {
                             spacing: 16
                         ) {
                             ForEach(detailTestCards, id: \.name) { data in
-                                CardFrameView(data: data, size: .detail)
+                                CardFrameView(data: data, cardWidth: 280, cardHeight: 392)
                                     .frame(width: 200)
                             }
                         }

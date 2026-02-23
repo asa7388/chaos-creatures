@@ -344,7 +344,7 @@ struct CardPackOpeningView: View {
             // Card front — uses CardFrameView for professional rendering
             CardFrameView(
                 data: CardDisplayData(instance: card, faction: packFaction),
-                size: .hand
+                cardWidth: 90, cardHeight: 130
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8)

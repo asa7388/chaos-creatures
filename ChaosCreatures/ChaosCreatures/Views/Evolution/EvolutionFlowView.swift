@@ -259,7 +259,7 @@ struct EvolutionFlowView: View {
         VStack(spacing: 8) {
             CardFrameView(
                 data: CardDisplayData(instance: card, faction: router.selectedCardFaction),
-                size: .hand
+                cardWidth: 90, cardHeight: 130
             )
             .contactShadow(opacity: 0.45, yOffset: 2)
 

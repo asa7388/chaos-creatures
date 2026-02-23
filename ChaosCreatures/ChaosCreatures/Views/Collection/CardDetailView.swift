@@ -171,7 +171,7 @@ struct CardDetailView: View {
             if let card {
                 CardFrameView(
                     data: CardDisplayData(instance: card, faction: factionForCard(card)),
-                    size: .detail
+                    cardWidth: 280, cardHeight: 392
                 )
                 .frame(width: cardWidth, height: cardHeight)
                 .contactShadow(opacity: 0.6)

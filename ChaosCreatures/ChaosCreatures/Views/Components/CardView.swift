@@ -25,7 +25,8 @@ struct CardGridItemView: View {
                 instance: card,
                 faction: faction
             ),
-            size: .grid
+            cardWidth: 112,
+            cardHeight: 157
         )
     }
 }
@@ -51,7 +52,8 @@ struct CardListRowView: View {
                     instance: card,
                     faction: faction
                 ),
-                size: .hand
+                cardWidth: 90,
+                cardHeight: 126
             )
             .frame(width: 48, height: 67)
             .scaleEffect(48.0 / 90.0) // Scale down hand-size to fit row
@@ -94,27 +96,5 @@ struct CardListRowView: View {
             ManaGemView(cost: card.currentManaCost)
         }
         .padding(.vertical, 4)
-    }
-}
-
-// MARK: - Card Template View (for browsing templates)
-
-struct CardTemplateView: View {
-    let template: CardTemplate
-    let faction: CardFaction?
-
-    init(template: CardTemplate, faction: CardFaction? = nil) {
-        self.template = template
-        self.faction = faction
-    }
-
-    var body: some View {
-        CardFrameView(
-            data: CardDisplayData(
-                template: template,
-                faction: faction
-            ),
-            size: .grid
-        )
     }
 }

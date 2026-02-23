@@ -16,13 +16,20 @@ import SwiftUI
 /// context where cards can be physically moved by the player.
 struct DraggableCardView: View {
     let data: CardDisplayData
-    let size: CardDisplaySize
+    let cardWidth: CGFloat
+    let cardHeight: CGFloat
 
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
 
+    init(data: CardDisplayData, size: CardDisplaySize) {
+        self.data = data
+        self.cardWidth = size.width
+        self.cardHeight = size.height
+    }
+
     var body: some View {
-        CardFrameView(data: data, size: size)
+        CardFrameView(data: data, cardWidth: cardWidth, cardHeight: cardHeight)
             .scaleEffect(isDragging ? 1.05 : 1.0)
             .shadow(radius: isDragging ? 16 : 4)
             .offset(dragOffset)
