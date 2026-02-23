@@ -230,9 +230,10 @@ struct CardFrameView: View {
                     // text overlay on top WITHOUT shader so text stays crisp.
 
                     // Layer 1: Art + vignette with ragged edge shader
+                    // NOTE: No inner .clipShape — the shader handles the edge treatment,
+                    // and the outer ZStack .clipShape provides the final boundary.
                     cardArtWithVignette
                         .frame(width: geo.size.width, height: geo.size.height)
-                        .clipShape(RoundedRectangle(cornerRadius: 9 * cardScale))
                         .layerEffect(
                             ShaderLibrary.raggedEdge(
                                 .float2(Float(geo.size.width), Float(geo.size.height)),
@@ -428,24 +429,29 @@ struct CardFrameView: View {
     // MARK: - Ragged Edge Shader Uniforms
     // Maps CardCondition to shader parameters. See RaggedEdgeShader.metal.
     // Mint cards have minimal edge distortion; ancient cards have heavy raggedness.
+    // The shader defines the card's SHAPE (outer boundary), NOT an inner vignette.
 
-    /// Noise displacement amplitude — how far the edge deviates from the card rectangle.
+    /// Noise amplitude multiplier — how much noise varies the ragged boundary position.
+    /// Higher values = more dramatic irregularity in the torn edge.
+    /// The boundary varies from edgeWidth to edgeWidth * (1 + strength).
     private var edgeRaggedStrength: Float {
         switch data.condition {
-        case .mint:    return 0.15
-        case .played:  return 0.35
-        case .worn:    return 0.60
-        case .ancient: return 0.85
+        case .mint:    return 0.3
+        case .played:  return 0.6
+        case .worn:    return 0.8
+        case .ancient: return 1.0
         }
     }
 
-    /// Base edge falloff width in UV space — how deep into the card the edge zone extends.
+    /// Base inset from edge in UV space — how far the ragged boundary sits inside
+    /// the card rectangle. On a 280pt card: 0.03 = 8pt, 0.08 = 22pt, 0.12 = 34pt, 0.18 = 50pt.
+    /// Must be large enough to be clearly visible at collection grid size (112pt wide).
     private var edgeWidth: Float {
         switch data.condition {
-        case .mint:    return 0.04
-        case .played:  return 0.06
-        case .worn:    return 0.08
-        case .ancient: return 0.12
+        case .mint:    return 0.03
+        case .played:  return 0.08
+        case .worn:    return 0.12
+        case .ancient: return 0.18
         }
     }
 
