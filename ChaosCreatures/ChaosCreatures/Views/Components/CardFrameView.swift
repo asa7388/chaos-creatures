@@ -8,8 +8,8 @@
 //   - Artwork image fills entire card interior (202x286pt inner area)
 //   - Vignette gradient (bottom 40%, transparent -> 45% black)
 //   - CardDossierTextView overlay anchored to bottom, growing upward
-//   - Ragged edge shader via .layerEffect() replaces digital strokeBorder
-//     (noise-displaced parchment edge driven by CardCondition)
+//   - Ragged edge via RaggedEdgeMask (Canvas path + .mask()) replaces Metal shader
+//     (noise-displaced parchment edge driven by CardCondition, guaranteed Simulator render)
 //   - Rarity glow preserved as outer shadow (rare+)
 //   - Gesture priority: LongPress > Tap (flip)
 //   - Tap triggers two-phase Y-axis flip: Phase 1 easeIn 0.17s (0->90deg),
@@ -213,35 +213,32 @@ struct CardFrameView: View {
         GeometryReader { geo in
             ZStack {
                 if isFlipped {
-                    // Back face: parchment intelligence report — shader applies here
+                    // Back face: parchment intelligence report — ragged mask applied
                     CardBackView(data: data, cardWidth: geo.size.width, cardHeight: geo.size.height)
                         .frame(width: geo.size.width, height: geo.size.height)
-                        .layerEffect(
-                            ShaderLibrary.raggedEdge(
-                                .float2(Float(geo.size.width), Float(geo.size.height)),
-                                .float(edgeRaggedStrength),
-                                .float(edgeWidth),
-                                .float(edgeSeed)
-                            ),
-                            maxSampleOffset: .zero
+                        .mask(
+                            RaggedEdgeMask(
+                                width: geo.size.width,
+                                height: geo.size.height,
+                                seed: edgeSeed,
+                                strength: CGFloat(edgeWidth) * geo.size.width
+                            )
                         )
                 } else {
                     // Front face: art + vignette grouped with shader,
                     // text overlay on top WITHOUT shader so text stays crisp.
 
-                    // Layer 1: Art + vignette with ragged edge shader
-                    // NOTE: No inner .clipShape — the shader handles the edge treatment,
-                    // and the outer ZStack .clipShape provides the final boundary.
+                    // Layer 1: Art + vignette with ragged edge mask
+                    // NOTE: No inner .clipShape — the mask handles the edge treatment.
                     cardArtWithVignette
                         .frame(width: geo.size.width, height: geo.size.height)
-                        .layerEffect(
-                            ShaderLibrary.raggedEdge(
-                                .float2(Float(geo.size.width), Float(geo.size.height)),
-                                .float(edgeRaggedStrength),
-                                .float(edgeWidth),
-                                .float(edgeSeed)
-                            ),
-                            maxSampleOffset: .zero
+                        .mask(
+                            RaggedEdgeMask(
+                                width: geo.size.width,
+                                height: geo.size.height,
+                                seed: edgeSeed,
+                                strength: CGFloat(edgeWidth) * geo.size.width
+                            )
                         )
 
                     // Layer 2: Text overlay — NO shader, crisp and unaffected
@@ -251,7 +248,9 @@ struct CardFrameView: View {
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 12 * cardScale))
+            // Don't clip with rounded rect — the ragged mask IS the edge.
+            // Just clip to prevent any stray rendering artifacts.
+            .clipped()
             // Rarity glow — colored outer shadow for rare+ cards
             .shadow(
                 color: rarityGlowColor.opacity(Double(data.tier.glowIntensity) * 0.6),
@@ -426,10 +425,11 @@ struct CardFrameView: View {
         }
     }
 
-    // MARK: - Ragged Edge Shader Uniforms
-    // Maps CardCondition to shader parameters. See RaggedEdgeShader.metal.
+    // MARK: - Ragged Edge Parameters
+    // Maps CardCondition to ragged edge parameters. Used by RaggedEdgeMask (Canvas path).
+    // Previously drove RaggedEdgeShader.metal (removed — Metal silently fails in Simulator).
     // Mint cards have minimal edge distortion; ancient cards have heavy raggedness.
-    // The shader defines the card's SHAPE (outer boundary), NOT an inner vignette.
+    // The mask defines the card's SHAPE (outer boundary), NOT an inner vignette.
 
     /// Noise amplitude multiplier — how much noise varies the ragged boundary position.
     /// Higher values = more dramatic irregularity in the torn edge.
@@ -469,6 +469,99 @@ struct CardFrameView: View {
         case .epic:      return Color("epic-amethyst")
         case .legendary: return Color("legendary-ember")
         }
+    }
+}
+
+// MARK: - RaggedEdgeMask (replaces Metal shader — guaranteed to render in Simulator)
+
+/// Pure SwiftUI/CoreGraphics mask that draws an irregular card shape.
+/// Applied via `.mask()` on the card art and back-face layers.
+/// Each edge is subdivided into `segments` line segments, with each vertex
+/// displaced inward by seeded pseudo-noise to create a torn-paper effect.
+/// The `seed` ensures every card has a unique edge pattern (deterministic).
+struct RaggedEdgeMask: View {
+    let width: CGFloat
+    let height: CGFloat
+    let seed: Float
+    let strength: CGFloat  // how far edges deviate (in points)
+    let segments: Int = 60  // number of edge segments per side
+
+    var body: some View {
+        Canvas { context, size in
+            var path = Path()
+
+            // Walk around the card perimeter, displacing each point by seeded noise.
+            // Top edge: left to right
+            let topPoints = edgePoints(
+                from: CGPoint(x: 0, y: 0),
+                to: CGPoint(x: width, y: 0),
+                normal: CGVector(dx: 0, dy: 1),  // displace downward (inward)
+                edgeSeed: seed
+            )
+
+            // Right edge: top to bottom
+            let rightPoints = edgePoints(
+                from: CGPoint(x: width, y: 0),
+                to: CGPoint(x: width, y: height),
+                normal: CGVector(dx: -1, dy: 0),  // displace leftward (inward)
+                edgeSeed: seed + 1.0
+            )
+
+            // Bottom edge: right to left
+            let bottomPoints = edgePoints(
+                from: CGPoint(x: width, y: height),
+                to: CGPoint(x: 0, y: height),
+                normal: CGVector(dx: 0, dy: -1),  // displace upward (inward)
+                edgeSeed: seed + 2.0
+            )
+
+            // Left edge: bottom to top
+            let leftPoints = edgePoints(
+                from: CGPoint(x: 0, y: height),
+                to: CGPoint(x: 0, y: 0),
+                normal: CGVector(dx: 1, dy: 0),  // displace rightward (inward)
+                edgeSeed: seed + 3.0
+            )
+
+            // Build path
+            path.move(to: topPoints[0])
+            for point in topPoints.dropFirst() { path.addLine(to: point) }
+            for point in rightPoints.dropFirst() { path.addLine(to: point) }
+            for point in bottomPoints.dropFirst() { path.addLine(to: point) }
+            for point in leftPoints.dropFirst() { path.addLine(to: point) }
+            path.closeSubpath()
+
+            context.fill(path, with: .color(.white))
+        }
+        .frame(width: width, height: height)
+    }
+
+    private func edgePoints(from start: CGPoint, to end: CGPoint, normal: CGVector, edgeSeed: Float) -> [CGPoint] {
+        var points: [CGPoint] = []
+        for i in 0...segments {
+            let t = CGFloat(i) / CGFloat(segments)
+            let baseX = start.x + (end.x - start.x) * t
+            let baseY = start.y + (end.y - start.y) * t
+
+            // Seeded noise: use sin-based pseudo-noise for deterministic results
+            let noiseInput = Float(t) * 12.0 + edgeSeed
+            let noise = pseudoNoise(noiseInput)
+            let displacement = CGFloat(noise) * strength
+
+            let px = baseX + normal.dx * displacement
+            let py = baseY + normal.dy * displacement
+            points.append(CGPoint(x: px, y: py))
+        }
+        return points
+    }
+
+    // Simple deterministic noise using layered sine waves (no randomness needed)
+    private func pseudoNoise(_ x: Float) -> Float {
+        let n = sin(x * 1.0) * 0.5 +
+                sin(x * 2.3 + 1.7) * 0.25 +
+                sin(x * 5.1 + 3.2) * 0.125 +
+                sin(x * 11.8 + 0.5) * 0.0625
+        return (n + 1.0) / 2.0  // normalize to 0...1
     }
 }
 
