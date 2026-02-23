@@ -8,7 +8,9 @@
 //   - Artwork image fills entire card interior (202x286pt inner area)
 //   - Vignette gradient (bottom 40%, transparent -> 45% black)
 //   - CardDossierTextView overlay anchored to bottom, growing upward
-//   - AnimatedRarityBorder frame (outer card edge)
+//   - Ragged edge shader via .layerEffect() replaces digital strokeBorder
+//     (noise-displaced parchment edge driven by CardCondition)
+//   - Rarity glow preserved as outer shadow (rare+)
 //   - Gesture priority: LongPress > Tap (flip)
 //   - Tap triggers two-phase Y-axis flip: Phase 1 easeIn 0.17s (0->90deg),
 //     Phase 2 easeOut 0.18s (-90->0deg) with content swap at the midpoint.
@@ -86,6 +88,8 @@ struct CardDisplayData {
     var collectorNumber: String?
     /// Set code string for stats bar.
     var setCode: String?
+    /// Card physical condition — drives ragged edge shader uniforms.
+    var condition: CardCondition
 
     init(
         name: String,
@@ -104,7 +108,8 @@ struct CardDisplayData {
         ruinDestructionPenaltyText: String? = nil,
         abilityText: String? = nil,
         collectorNumber: String? = nil,
-        setCode: String? = nil
+        setCode: String? = nil,
+        condition: CardCondition = .played
     ) {
         self.name = name
         self.artUrl = artUrl
@@ -123,6 +128,7 @@ struct CardDisplayData {
         self.abilityText = abilityText
         self.collectorNumber = collectorNumber
         self.setCode = setCode
+        self.condition = condition
     }
 
     /// Create from a CardInstance (collection/deck views).
@@ -144,6 +150,7 @@ struct CardDisplayData {
         self.abilityText = nil
         self.collectorNumber = nil
         self.setCode = nil
+        self.condition = .played  // Default — CardInstance doesn't track condition yet
     }
 
     // MARK: Computed properties for dossier layout
@@ -215,12 +222,25 @@ struct CardFrameView: View {
                         .frame(width: geo.size.width, height: geo.size.height)
                         .clipShape(RoundedRectangle(cornerRadius: 9 * cardScale))
                 }
-
-                // Outer frame: rarity border (always visible on both faces)
-                cardFrame
-                    .frame(width: geo.size.width, height: geo.size.height)
             }
             .frame(width: geo.size.width, height: geo.size.height)
+            .clipShape(RoundedRectangle(cornerRadius: 12 * cardScale))
+            .layerEffect(
+                ShaderLibrary.raggedEdge(
+                    .float2(Float(geo.size.width), Float(geo.size.height)),
+                    .float(edgeRaggedStrength),
+                    .float(edgeWidth),
+                    .float(edgeSeed)
+                ),
+                maxSampleOffset: .zero
+            )
+            // Rarity glow — colored outer shadow for rare+ cards
+            .shadow(
+                color: rarityGlowColor.opacity(Double(data.tier.glowIntensity) * 0.6),
+                radius: CGFloat(data.tier.glowIntensity) * 8
+            )
+            // Drop shadow — physical card depth cue
+            .shadow(color: .black.opacity(0.45), radius: 3, x: 0, y: 2)
             .rotation3DEffect(.degrees(flipAngle), axis: (x: 0, y: 1, z: 0))
             .onTapGesture {
                 flipCard()
@@ -369,31 +389,33 @@ struct CardFrameView: View {
         }
     }
 
-    // MARK: - Card Frame (Rarity Border)
+    // MARK: - Ragged Edge Shader Uniforms
+    // Maps CardCondition to shader parameters. See RaggedEdgeShader.metal.
+    // Mint cards have minimal edge distortion; ancient cards have heavy raggedness.
 
-    @ViewBuilder
-    private var cardFrame: some View {
-        RoundedRectangle(cornerRadius: 12 * cardScale)
-            .strokeBorder(
-                data.tier.borderGradient,
-                lineWidth: data.tier.borderWidth
-            )
-            .overlay(animatedBorder)
-            .shadow(
-                color: rarityGlowColor.opacity(Double(data.tier.glowIntensity) * 0.6),
-                radius: CGFloat(data.tier.glowIntensity) * 8
-            )
-            .shadow(color: .black.opacity(0.45), radius: 3, x: 0, y: 2)
+    /// Noise displacement amplitude — how far the edge deviates from the card rectangle.
+    private var edgeRaggedStrength: Float {
+        switch data.condition {
+        case .mint:    return 0.15
+        case .played:  return 0.35
+        case .worn:    return 0.60
+        case .ancient: return 0.85
+        }
     }
 
-    @ViewBuilder
-    private var animatedBorder: some View {
-        if data.tier == .epic || data.tier == .legendary {
-            AnimatedRarityBorder(
-                isLegendary: data.tier == .legendary,
-                cornerRadius: 12 * cardScale
-            )
+    /// Base edge falloff width in UV space — how deep into the card the edge zone extends.
+    private var edgeWidth: Float {
+        switch data.condition {
+        case .mint:    return 0.04
+        case .played:  return 0.06
+        case .worn:    return 0.08
+        case .ancient: return 0.12
         }
+    }
+
+    /// Per-card seed so every card has a unique edge pattern (deterministic from card name).
+    private var edgeSeed: Float {
+        Float(abs(data.name.hashValue) % 0xFFFF) / Float(0xFFFF)
     }
 
     // MARK: - Rarity Colors
