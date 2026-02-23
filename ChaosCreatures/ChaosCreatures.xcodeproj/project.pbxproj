@@ -135,7 +135,7 @@
 		EE44444444444444EEEEEEEE /* EBGaramond-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF44444444444444FFFFFFFF /* EBGaramond-Italic.ttf */; };
 		EE55555555555555EEEEEEEE /* EBGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF55555555555555FFFFFFFF /* EBGaramond-SemiBold.ttf */; };
 		EE66666666666666EEEEEEEE /* Oswald-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */; };
-		EE77777777777777EEEEEEEE /* YesevaOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF77777777777777FFFFFFFF /* YesevaOne-Regular.ttf */; };
+		EE77777777777777EEEEEEEE /* FrederickatheGreat-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF77777777777777FFFFFFFF /* FrederickatheGreat-Regular.ttf */; };
 		EE88888888888888EEEEEEEE /* IMFellEnglish-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */; };
 		EE99999999999999EEEEEEEE /* IMFellEnglish-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */; };
 		DD11111111111111DDDDDDDD /* CardFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11111111111111CCCCCCCC /* CardFont.swift */; };
@@ -215,7 +215,7 @@
 		FF44444444444444FFFFFFFF /* EBGaramond-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-Italic.ttf"; sourceTree = "<group>"; };
 		FF55555555555555FFFFFFFF /* EBGaramond-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-SemiBold.ttf"; sourceTree = "<group>"; };
 		FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Oswald-Bold.ttf"; sourceTree = "<group>"; };
-		FF77777777777777FFFFFFFF /* YesevaOne-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YesevaOne-Regular.ttf"; sourceTree = "<group>"; };
+		FF77777777777777FFFFFFFF /* FrederickatheGreat-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FrederickatheGreat-Regular.ttf"; sourceTree = "<group>"; };
 		FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IMFellEnglish-Regular.ttf"; sourceTree = "<group>"; };
 		FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IMFellEnglish-Italic.ttf"; sourceTree = "<group>"; };
 		CC11111111111111CCCCCCCC /* CardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFont.swift; sourceTree = "<group>"; };
@@ -448,7 +448,7 @@
 				FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */,
 				AA55555555555555AAAAAAAA /* FiraSans-Regular.ttf */,
 				AA66666666666666AAAAAAAA /* FiraSans-SemiBold.ttf */,
-				FF77777777777777FFFFFFFF /* YesevaOne-Regular.ttf */,
+				FF77777777777777FFFFFFFF /* FrederickatheGreat-Regular.ttf */,
 				FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */,
 				FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */,
 			);
@@ -957,7 +957,7 @@
 				EE66666666666666EEEEEEEE /* Oswald-Bold.ttf in Resources */,
 				BB55555555555555BBBBBBBB /* FiraSans-Regular.ttf in Resources */,
 				BB66666666666666BBBBBBBB /* FiraSans-SemiBold.ttf in Resources */,
-				EE77777777777777EEEEEEEE /* YesevaOne-Regular.ttf in Resources */,
+				EE77777777777777EEEEEEEE /* FrederickatheGreat-Regular.ttf in Resources */,
 				EE88888888888888EEEEEEEE /* IMFellEnglish-Regular.ttf in Resources */,
 				EE99999999999999EEEEEEEE /* IMFellEnglish-Italic.ttf in Resources */,
 				SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */,

@@ -6,7 +6,7 @@
 // at the bottom of the card and growing upward.
 //
 // Spec: CARD_DESIGN_GUIDE.md Section 1.4 (layout) and Section 1.5 (typography).
-// All text uses Yeseva One Regular via CardFont.yesevaOne(size:).
+// All text uses Fredericka the Great Regular via CardFont.frederickaTheGreat(size:).
 // All text receives DossierTextShadow modifier for legibility over artwork.
 
 import SwiftUI
@@ -15,7 +15,8 @@ import SwiftUI
 
 struct DossierTextShadow: ViewModifier {
     func body(content: Content) -> some View {
-        content.shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
+        content
+            .shadow(color: .black.opacity(0.9), radius: 3, x: 0, y: 1)
     }
 }
 
@@ -33,59 +34,71 @@ struct CardDossierTextView: View {
 
     // MARK: - Colors
 
-    private let labelColor = Color("parchment-light")
-    private let valueColor = Color("parchment-light")
+    /// Ivory / cream white — warm off-white for maximum legibility over artwork.
+    private let ivoryColor = Color(red: 1.0, green: 0.98, blue: 0.94)
+    private let labelColor: Color
+    private let valueColor: Color
+
+    init(data: CardDisplayData, cardScale: CGFloat) {
+        self.data = data
+        self.cardScale = cardScale
+        let ivory = Color(red: 1.0, green: 0.98, blue: 0.94)
+        self.labelColor = ivory
+        self.valueColor = ivory
+    }
 
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2 * cardScale) {
+        VStack(alignment: .leading, spacing: 0) {
             Spacer(minLength: 0)
 
-            // Fields rendered bottom-up visually (VStack top-to-bottom = visual top-to-bottom,
-            // but Spacer pushes everything to the bottom).
+            // Text fields — no backdrop, shadow-only legibility
+            VStack(alignment: .leading, spacing: 2 * cardScale) {
+                // --- Name (no label) ---
+                nameField
 
-            // --- Name (no label) ---
-            nameField
+                // --- Type / Faction ---
+                typeField
 
-            // --- Type / Faction ---
-            typeField
+                // --- Abilities (keywords) ---
+                if !data.keywords.isEmpty {
+                    abilitiesField
+                }
 
-            // --- Abilities (keywords) ---
-            if !data.keywords.isEmpty {
-                abilitiesField
+                // --- Cost / ATK / HP line (card-type dependent) ---
+                statsLineField
+
+                // --- Instability (creatures only, > 0) ---
+                if shouldShowInstability {
+                    instabilityField
+                }
+
+                // --- Destroyed (planar ruin penalty) ---
+                if shouldShowDestroyed, let penalty = data.ruinDestructionPenaltyText, !penalty.isEmpty {
+                    destroyedField(penalty: penalty)
+                }
+
+                // --- Rank label (card-type dependent) ---
+                if shouldShowRank {
+                    rankField
+                }
             }
-
-            // --- Cost / ATK / HP line (card-type dependent) ---
-            statsLineField
-
-            // --- Instability (creatures only, > 0) ---
-            if shouldShowInstability {
-                instabilityField
-            }
-
-            // --- Destroyed (planar ruin penalty) ---
-            if shouldShowDestroyed, let penalty = data.ruinDestructionPenaltyText, !penalty.isEmpty {
-                destroyedField(penalty: penalty)
-            }
-
-            // --- Rank label (card-type dependent) ---
-            if shouldShowRank {
-                rankField
-            }
+            .padding(.horizontal, 6 * cardScale)
+            .padding(.vertical, 4 * cardScale)
         }
-        .padding(.leading, 8 * cardScale)
-        .padding(.trailing, 8 * cardScale)
-        .padding(.bottom, 8 * cardScale)
+        .padding(.leading, 6 * cardScale)
+        .padding(.trailing, 6 * cardScale)
+        .padding(.bottom, 6 * cardScale)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
     }
 
     // MARK: - Field Views
 
-    /// Card name — no label, 13pt, 100% opacity.
+    /// Card name — no label, 15pt, 100% opacity.
     private var nameField: some View {
         Text(data.name)
-            .font(CardFont.yesevaOne(size: 13 * cardScale))
+            .font(CardFont.frederickaTheGreat(size: 15 * cardScale))
             .foregroundColor(valueColor)
             .lineLimit(2)
             .minimumScaleFactor(0.7)
@@ -95,13 +108,13 @@ struct CardDossierTextView: View {
 
     /// Type / Faction line.
     private var typeField: some View {
-        fieldRow(label: "Type:", value: data.typeLine, valueSize: 10, valueOpacity: 0.9)
+        fieldRow(label: "Type:", value: data.typeLine, valueSize: 12, valueOpacity: 1.0)
     }
 
     /// Abilities — keyword names joined with commas.
     private var abilitiesField: some View {
         let keywordNames = data.keywords.map { $0.displayName }.joined(separator: ", ")
-        return fieldRow(label: "Abilities:", value: keywordNames, valueSize: 10, valueOpacity: 0.9)
+        return fieldRow(label: "Abilities:", value: keywordNames, valueSize: 12, valueOpacity: 1.0)
     }
 
     /// Cost / ATK / HP inline stats — varies by card type.
@@ -163,21 +176,21 @@ struct CardDossierTextView: View {
         fieldRow(
             label: "Instability:",
             value: "\(data.instability ?? 0)",
-            valueSize: 10,
-            valueOpacity: 0.9
+            valueSize: 12,
+            valueOpacity: 1.0
         )
     }
 
     /// Destroyed field — planar ruin destruction penalty.
     private func destroyedField(penalty: String) -> some View {
-        fieldRow(label: "Destroyed:", value: penalty, valueSize: 10, valueOpacity: 0.9)
+        fieldRow(label: "Destroyed:", value: penalty, valueSize: 12, valueOpacity: 1.0)
     }
 
     /// Rank label — seal is rendered separately, this is just the text label.
     private var rankField: some View {
         Text("Rank:")
-            .font(CardFont.yesevaOne(size: 8 * cardScale))
-            .foregroundColor(labelColor.opacity(0.7))
+            .font(CardFont.frederickaTheGreat(size: 9 * cardScale))
+            .foregroundColor(labelColor.opacity(0.85))
             .dossierTextShadow()
     }
 
@@ -188,10 +201,10 @@ struct CardDossierTextView: View {
     private func fieldRow(label: String, value: String, valueSize: CGFloat, valueOpacity: Double) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4 * cardScale) {
             Text(label)
-                .font(CardFont.yesevaOne(size: 8 * cardScale))
-                .foregroundColor(labelColor.opacity(0.7))
+                .font(CardFont.frederickaTheGreat(size: 9 * cardScale))
+                .foregroundColor(labelColor.opacity(0.85))
             Text(value)
-                .font(CardFont.yesevaOne(size: valueSize * cardScale))
+                .font(CardFont.frederickaTheGreat(size: valueSize * cardScale))
                 .foregroundColor(valueColor.opacity(valueOpacity))
                 .lineLimit(3)
                 .minimumScaleFactor(0.7)
@@ -204,10 +217,10 @@ struct CardDossierTextView: View {
     private func statSegment(label: String, value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 2 * cardScale) {
             Text(label)
-                .font(CardFont.yesevaOne(size: 8 * cardScale))
-                .foregroundColor(labelColor.opacity(0.7))
+                .font(CardFont.frederickaTheGreat(size: 9 * cardScale))
+                .foregroundColor(labelColor.opacity(0.85))
             Text(value)
-                .font(CardFont.yesevaOne(size: 11 * cardScale))
+                .font(CardFont.frederickaTheGreat(size: 13 * cardScale))
                 .foregroundColor(valueColor)
         }
     }

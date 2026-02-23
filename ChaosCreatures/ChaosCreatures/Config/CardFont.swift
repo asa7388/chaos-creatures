@@ -66,11 +66,16 @@ enum CardFont {
         .custom("Oswald-Bold", size: size)
     }
 
-    // --- Yeseva One (Dossier Front Face) ---
+    // --- Fredericka the Great (Dossier Front Face) ---
 
-    /// Dossier card name, field values, labels. Yeseva One Regular.
+    /// Dossier card name, field values, labels. Fredericka the Great Regular.
+    static func frederickaTheGreat(size: CGFloat) -> Font {
+        .custom("FrederickatheGreat-Regular", size: size)
+    }
+
+    /// Legacy alias — callers that still reference yesevaOne route here.
     static func yesevaOne(size: CGFloat) -> Font {
-        .custom("YesevaOne-Regular", size: size)
+        frederickaTheGreat(size: size)
     }
 
     // --- IM Fell English (Intelligence Report Back Face) ---
@@ -116,14 +121,14 @@ enum CardFont {
     /// Mana cost numeral — Oswald-Bold 14pt
     static func manaCost(size: CGFloat = 14) -> Font { oswaldBold(size: size) }
 
-    // MARK: — Dossier Front Face (Yeseva One)
+    // MARK: — Dossier Front Face (Fredericka the Great)
 
     /// Card name on front face — 13pt at reference scale
-    static func dossierName(size: CGFloat) -> Font { yesevaOne(size: size) }
+    static func dossierName(size: CGFloat) -> Font { frederickaTheGreat(size: size) }
     /// Field values on front face — 10-11pt
-    static func dossierField(size: CGFloat) -> Font { yesevaOne(size: size) }
+    static func dossierField(size: CGFloat) -> Font { frederickaTheGreat(size: size) }
     /// Field labels on front face — 8pt, paired with 70% opacity
-    static func dossierLabel(size: CGFloat) -> Font { yesevaOne(size: size) }
+    static func dossierLabel(size: CGFloat) -> Font { frederickaTheGreat(size: size) }
 
     // MARK: — Intelligence Report Back Face (IM Fell English)
 
@@ -158,8 +163,8 @@ enum CardFont {
     /// Oswald-Bold PostScript name for SKLabelNode (stat numerals, mana cost).
     static let spriteKitStatNumber = "Oswald-Bold"
 
-    /// YesevaOne-Regular PostScript name for SKLabelNode (dossier front face).
-    static let spriteKitDossierName = "YesevaOne-Regular"
+    /// FrederickatheGreat-Regular PostScript name for SKLabelNode (dossier front face).
+    static let spriteKitDossierName = "FrederickatheGreat-Regular"
 
     /// IMFellEnglish-Regular PostScript name for SKLabelNode (report back face body).
     static let spriteKitReportBody = "IMFellEnglish-Regular"
@@ -203,12 +208,17 @@ enum CardFont {
         ebGaramondUIFont(size: size, italic: false, semiBold: true)
     }
 
-    /// Dossier front face in SpriteKit / UIKit. Yeseva One Regular.
-    static func yesevaOneUI(size: CGFloat) -> UIFont {
-        if let font = UIFont(name: "YesevaOne-Regular", size: size) { return font }
+    /// Dossier front face in SpriteKit / UIKit. Fredericka the Great Regular.
+    static func frederickaTheGreatUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "FrederickatheGreat-Regular", size: size) { return font }
         // Fallback: Georgia Bold — closest serif match for display weight
         if let fallback = UIFont(name: "Georgia-Bold", size: size) { return fallback }
         return .systemFont(ofSize: size, weight: .bold)
+    }
+
+    /// Legacy alias — callers that still reference yesevaOneUI route here.
+    static func yesevaOneUI(size: CGFloat) -> UIFont {
+        frederickaTheGreatUI(size: size)
     }
 
     /// Report back face body in SpriteKit / UIKit. IM Fell English Regular.
@@ -368,7 +378,7 @@ enum CardFont {
             "EBGaramond-Italic",
             "EBGaramond-SemiBold",
             "Oswald-Bold",
-            "YesevaOne-Regular",
+            "FrederickatheGreat-Regular",
             "IMFellEnglish-Regular",
             "IMFellEnglish-Italic"
         ]
@@ -381,7 +391,7 @@ enum CardFont {
             }
         }
         // Also print all registered families that match our target families
-        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira", "Yeseva", "Fell"]
+        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira", "Fredericka", "Fell"]
         print("--- Registered families ---")
         for family in UIFont.familyNames.sorted() {
             if targetFamilies.contains(where: { family.contains($0) }) {

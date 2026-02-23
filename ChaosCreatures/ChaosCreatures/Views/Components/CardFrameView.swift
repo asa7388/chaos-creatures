@@ -321,14 +321,15 @@ struct CardFrameView: View {
         VStack {
             Spacer()
             LinearGradient(
-                colors: [
-                    Color.clear,
-                    Color.black.opacity(0.45)
+                stops: [
+                    .init(color: Color.clear, location: 0.0),
+                    .init(color: Color.black.opacity(0.10), location: 0.6),
+                    .init(color: Color.black.opacity(0.18), location: 1.0)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: cardHeight * 0.4)
+            .frame(height: cardHeight * 0.30)
         }
     }
 

@@ -731,3 +731,56 @@ Rewrite: 1,544 lines → 375 lines (zone-stack → dossier).
 **Next:** Phase 3 screenshot testing (iPhone + iPad, light + dark modes) + critique before Phase 4 (CardBackView).
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---
+
+## Iteration 1 — Phase 3: CardFrameView Front Face Rewrite — iPhone 17 + iPad Pro
+**Timestamp:** 2026-02-23 02:45
+**Reference:** Staging/phase3_dossier_screenshots/
+
+### Phase 3 Scope
+Phase 3 is the layout rewrite only. Material shaders are Phase 5. Scores on material/texture axes reflect current state honestly but are expected to be low.
+
+### Implementation Summary
+- CardFrameView.swift: 1544 to 472 lines (complete rewrite)
+- CardDossierTextView.swift: NEW (339 lines)
+- CardTheme.swift: 4 zone properties removed
+- InstabilityBadgeView.swift: DELETED
+- bg-celestial, bg-fey imagesets: DELETED
+- Build: PASS (iPhone 17 + iPad Pro)
+
+| Axis | Score (1-5) | Observation |
+|------|------------|-------------|
+| Material believability | 2 | No shaders yet (Phase 5). Flat dark surface. Expected for layout phase. |
+| Color temperature | 3 | Warm dark bg, warm parchment text. No shader warm shifting. Rarity glow reads digital. |
+| Texture grain | 1 | No grain textures. Flat fills. Expected Phase 5 scope. |
+| Typography letterpress | 3 | Yeseva One rendering. DossierTextShadow provides legibility. Not yet ink-in-paper. |
+| Lighting consistency | 2 | No unified directional lighting. Vignette gradient functional. Expected Phase 5. |
+| Tactile impression | 2 | Premium digital card game feel. No physical presence yet. Foundation is correct. |
+| iPad vs iPhone | 3 | Both render correctly. Some iPad cards show lighter bottom. No layout breaks. |
+| Dark mode | N/A | Only dark mode screenshots. Cannot score without light mode comparison. |
+| War camp test | NO | Reads as digital product not physical artifact. Shaders needed (Phase 5). |
+
+**War camp test result:** NO
+Element breaking illusion: Flat card surface, no physical material quality
+Planned fix: Phase 5 shaders will add material textures, ragged edge, directional lighting
+
+**Regression check:** N/A (first dossier iteration)
+**Largest gap:** No physical material quality on card surface
+**Root cause:** Phase 3 is layout-only by design. Material shaders are Phase 5.
+**Next action:** Phase 4 (CardBackView) then Phase 5 (Metal Shaders + Ragged Edge)
+**Blocked items:** War camp test blocked on Phase 5 shader work.
+
+### Phase 3 Exit Criteria
+- [x] Full-art dossier layout (art fills card, ZStack with vignette + text overlay)
+- [x] Yeseva One on all front-face text
+- [x] Wax seal visible on creature cards
+- [x] Rarity border glow working
+- [x] Gestures + flip preserved
+- [x] Build passes iPhone 17 + iPad Pro
+- [x] CardDisplayData API preserved
+- [x] All retired zone methods deleted
+- [x] InstabilityBadgeView deleted
+- [x] bg-celestial, bg-fey deleted
+- [ ] All 4 card types verified in detail (only creatures shown)
+- [ ] Light mode screenshots not captured
