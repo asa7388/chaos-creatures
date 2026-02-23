@@ -26,7 +26,7 @@ Use this to identify which section to re-read before starting a task. Do not rel
 | **Preamble** | Locked deployment parameters | Any uncertainty about platform targets |
 | **§1 Aesthetic System** | Core principles, color palette (P3 values), dark mode, card layout measurements, zone table, border weights by rarity, typography spec, font + size tables, letterpress effect, all 9 state transitions with timing + curves, gesture priority, card back spec, error fallbacks, vision reference images | Any visual work |
 | **§2 Card Schema** | Swift structs, CardCondition/Rarity → shader uniform value tables, CardDisplayState enum, JSON card format | Any model, shader, or data work |
-| **§3 Asset Strategy** | Service selection by card type, LoRA R2 URL + Replicate generation call + scale tuning + failure table, fal.ai FLUX prompt templates, color grading pipeline, normal map generation scripts, foil gradient script, art box compositing steps, icon sources, license manifest format | Any asset generation |
+| **§3 Asset Strategy** | Service selection by card type, LoRA R2 URL + Replicate generation call + scale tuning + failure table, fal.ai FLUX prompt templates, color grading pipeline, normal map generation scripts, foil gradient script, full-art compositing steps, icon sources, license manifest format | Any asset generation |
 | **§4 Environment** | `verify_environment.sh` (master check — tools, simulators, API keys, Python libs), project scaffold, SPM dependencies, CLI tooling, API key setup + .env template, asset catalog structure + ASTC setup, font download script, pre-smoke-test asset prep, smoke test view + **HARD GATE** | First session; any environment failure |
 | **§5 Agent Techniques** | Vision tool workflow, bash discipline, 4-device screenshot script, 9-step refinement loop procedure, SwiftUI↔MTKView bridge pattern, context management, silent failure prevention | Any iterative implementation |
 | **§6 Effects** | OilPaintShader.metal, ParchmentShader.metal, WarmFoilShader.metal + CMMotionManager, parallax offsets, InkSpreadKernel.metal, WaxSealView, spring drag constants, particle rarity table + blend mode rules, EffectTier enum | Any shader or effects work |
@@ -35,7 +35,7 @@ Use this to identify which section to re-read before starting a task. Do not rel
 | **§9 iPad Layout** | Size class branching code, GeometryReader sizing formula, card size table (iPhone/iPad portrait/iPad landscape), Stage Manager + split view testing requirements, orientation layout rule | Any iPad layout work |
 | **§10 Accessibility** | VoiceOver label format + custom actions, Dynamic Type UIFontMetrics pattern, Reduce Motion disable list, WCAG AA contrast table + fix actions | Accessibility pass |
 | **§11 Workflow** | Budget allocation table, ordered 24-step pipeline sequence with hard gates marked | Starting any new phase |
-| **§12 Testing** | Reference anchoring protocol, regression script (compare_screenshots.py), structured critique template (8 axes), one-fix-per-loop rules, exit criteria checklist | Every QA pass and before marking any phase complete |
+| **§12 Testing** | Reference anchoring protocol, regression script (compare_screenshots.py), structured critique template (9 axes), one-fix-per-loop rules, exit criteria checklist | Every QA pass and before marking any phase complete |
 | **§13 Performance** | Instruments order (Core Animation first), performance targets table, optimization techniques, TextureCache LRU implementation, App Store compliance | Performance profiling pass |
 | **§14 Quality Bar** | Final validation — the physical test, all pass criteria in prose | Before declaring any work done |
 | **Addendum** | Multiagent roles (Orchestrator/Asset/Engineering/QA), handoff JSON format, context recovery, budget ledger format | Before spawning subagents |
@@ -69,21 +69,40 @@ This section is the foundation of every decision in the guide. Read it before to
 
 ### 1.1 Core Aesthetic Principles
 
-The card must read as a **physical artifact**, not a screen UI. Test every design decision against this question: *does this look like it could be held in a hand?* If the answer is no, it is wrong regardless of technical quality.
+**Read `docs/GRIMDARK_AESTHETIC_DIRECTIVE.md` before implementing any visual component.** That document is the emotional north star for all decisions in this section and throughout the guide.
 
-- **Oil paint for artwork:** Visible brushwork, impasto texture, pigment that has body and weight. Each faction has locked artist references that define its specific painterly character — see Section 3.1 for the complete faction artist table. The through-line across all factions is physical materiality: oil paint on canvas, not digital illustration.
-- **Parchment and cardstock for the card body:** Thick fibrous paper surface — warm cream/sepia, grain visible under raking light, edges that look cut not rendered.
-- **Canvas for backs and backgrounds:** Woven tooth, catches highlights, slightly textured.
-- **Wax for rarity seals:** Dense, slightly translucent at edges, raised center, single directional specular highlight.
-- **Ink for all typography:** Letterpress quality — slight bleed into paper fiber, warmth, weight. Never crisp vector text sitting on top of a surface.
-- **Aged quality throughout:** Nothing is new. Colors warm-shifted and slightly desaturated. Gold is antique. Silver is tarnished. Edges show handling.
+The card must read as a **field document from a two-hundred-year war**, not a premium collectible and not a screen UI. Test every design decision against this question: *does this look like it was made in a world that has been at war since before anyone alive can remember?*
 
-**The aesthetic failure modes to avoid actively:**
+"Physical artifact" is not sufficient. A museum artifact is preserved and pristine. This is not that. This is a card that has been handled by soldiers, stored in field conditions, passed between commanders, and made from materials that were available in a war economy — scraped hide, iron-particle ink, looted gold, blood-wax. It must show evidence of existing in that world.
+
+The competitive identity of this app is the *opposite* of major card game developers. While every other mobile card game chases digital spectacle — particle systems, 3D transforms, bloom-lit holographic frames — Chaos Creatures pursues physical weight. The player should feel like they are handling something real. Every design decision that makes the card look more impressive in a digital sense is probably wrong. Every decision that makes it feel heavier, older, and more materially specific is probably right.
+
+**Core material vocabulary — every element must conform to one of these:**
+- **Scraped-hide parchment** for the card body: warm and uneven, fiber visible, worn at edges and touch points, darker where hands have compressed it
+- **Iron-particle ink** for all typography: letterpress quality, penetrated into the surface not printed on it, micro-roughness at letterform edges where fiber interrupted ink flow
+- **Old Master oil paint** for artwork: Rembrandt, Caravaggio, Wright of Derby — museum craft applied to war-camp subject matter. Impasto highlights, glazed shadows, figures that emerge from their environments rather than being posed in front of them
+- **Faction-specific wax** for seals: physically pressed, dome-shaped, single directional specular, embossed symbol pressed *into* the wax not printed on it
+- **Looted gold** for Rare+ frames: directional, variable, built up in layers — never uniformly bright, never chrome, never glowing
+- **Worn canvas** for backs and battlefield surfaces: woven tooth visible, slightly irregular
+
+**The aesthetic failure modes to avoid — these break the illusion immediately:**
 - Anything that looks like a CSS gradient or a flat digital UI element
-- Chrome or cold holographic foil (wrong era, wrong material)
-- Pure black or pure white anywhere — use ink-black and parchment-light instead
-- Perfectly crisp edges on any organic element
+- Glow effects — physical gold catches, it does not glow; physical wax reflects, it does not emit
+- Chrome or cold holographic foil — wrong era, wrong material, wrong world
+- Pure black or pure white anywhere — use `ink-black` and `parchment-light` instead
+- Perfectly crisp edges on any organic element — parchment tears, paint strokes have edges, wax flows
 - Any font that reads as a system or tech typeface
+- Animations that feel frictionless, effortless, or bouncy in a gamified way — everything has mass
+- Particle effects or bloom that say "mobile game" rather than "physical object"
+
+**Faction material register:** Each faction's cards carry material evidence of their world. See `docs/GRIMDARK_AESTHETIC_DIRECTIVE.md` §"The Physical Environment These Cards Come From" for the full faction-by-faction material register. In brief:
+- Ironwright: industrial vellum, carbon-metallic ink, abrasion from armor
+- Fey: hide with visible vein structure, earth and rot, resin seals with bark texture
+- Demonic: blood-ink on bone-pale vellum, sulfur-wax, contract signatures in text overlay margins
+- Celestial: obsessively clean but martial, gold burnished not gilded, artwork that hurts
+- Endless: reused and written-over, bone-dust grey ink, wrong-colored parchment, survival evidence
+
+**The acceptance test:** Before marking any component complete, read `docs/GRIMDARK_AESTHETIC_DIRECTIVE.md` §"The Acceptance Test" and apply it. If the illusion holds, the component is done. If it breaks, identify the specific element that breaks it and fix only that.
 
 ### 1.2 Color Palette
 
@@ -95,11 +114,11 @@ Every color used anywhere in the app must derive from this palette. Do not intro
 | `parchment-mid` | `#D4B896` | `displayP3(0.827, 0.718, 0.585)` | Card body shadow, inner borders |
 | `parchment-dark` | `#8B6914` | `displayP3(0.541, 0.408, 0.071)` | Deep shadows, ink shadows |
 | `ink-black` | `#1A1208` | `displayP3(0.098, 0.071, 0.027)` | Typography, fine lines |
-| `wax-red` | `#8B1A1A` | `displayP3(0.537, 0.094, 0.082)` | Demonic Kingdoms faction color (wax seal glow) |
-| `wax-blue` | `#1A2E5C` | `displayP3(0.086, 0.176, 0.353)` | Reserved — not currently assigned to a faction |
-| `wax-green` | `#1A3D1A` | `displayP3(0.086, 0.235, 0.086)` | Reserved — not currently assigned to a faction |
-| `fey-teal` | `#1A3D30` | `displayP3(0.086, 0.235, 0.184)` | Fey Courts faction color (wax seal glow) |
-| `rot-moss` | `#1C2B1A` | `displayP3(0.106, 0.165, 0.098)` | The Endless faction color (wax seal glow) — dark greenish-black, decay palette |
+| `wax-red` | `#8B1A1A` | `displayP3(0.537, 0.094, 0.082)` | Demonic Kingdoms faction color (reserved — wax seal color is now rarity-driven) |
+| `wax-blue` | `#1A2E5C` | `displayP3(0.086, 0.176, 0.353)` | Reserved — not currently assigned |
+| `wax-green` | `#1A3D1A` | `displayP3(0.086, 0.235, 0.086)` | Reserved — not currently assigned |
+| `fey-teal` | `#1A3D30` | `displayP3(0.086, 0.235, 0.184)` | Fey Courts faction color (reserved — wax seal color is now rarity-driven) |
+| `rot-moss` | `#1C2B1A` | `displayP3(0.106, 0.165, 0.098)` | The Endless faction color (reserved — wax seal color is now rarity-driven) |
 | `aged-gold` | `#C8A951` | `displayP3(0.776, 0.659, 0.306)` | Rare frames, gold accents; Celestial Crusade faction color |
 | `antique-silver` | `#9AA0A6` | `displayP3(0.600, 0.624, 0.647)` | Uncommon frames; Ironwright Collective faction color |
 | `epic-amethyst` | `#7B2FBE` | `displayP3(0.463, 0.161, 0.729)` | Epic frames, arcane glow |
@@ -112,13 +131,13 @@ Every color used anywhere in the app must derive from this palette. Do not intro
 
 | Faction | Token | Usage |
 |---------|-------|-------|
-| Demonic Kingdoms | `wax-red` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
-| Fey Courts | `fey-teal` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
-| Ironwright Collective | `antique-silver` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
-| Celestial Crusade | `aged-gold` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
-| The Endless | `rot-moss` | Wax seal glow only (rarity drives wax color; faction drives embossed symbol) |
+| Demonic Kingdoms | `wax-red` | Reserved — no longer used for runtime tinting (wax seal color is rarity-driven) |
+| Fey Courts | `fey-teal` | Reserved — no longer used for runtime tinting |
+| Ironwright Collective | `antique-silver` | Reserved — no longer used for runtime tinting |
+| Celestial Crusade | `aged-gold` | Reserved — no longer used for runtime tinting |
+| The Endless | `rot-moss` | Reserved — no longer used for runtime tinting |
 
-Faction color appears in exactly one place per card: the wax seal glow. Wax color is driven by rarity (parchment-tan → silver → gold → amethyst → ember-red); the faction symbol (scroll / tree / sledgehammer / wing / skull) is embossed into the wax. Faction color does not affect borders, name bar, type line, text box, or any other zone.
+Faction identity is expressed through the **embossed symbol** on the wax seal (scroll, tree, sledgehammer, wing, skull) — not through color tinting. Wax color is driven by rarity. Faction token colors are retained in the palette for possible future use but are not referenced in any current rendering code.
 
 **Always use P3 values when initializing UIColor/Color in Swift** — the warm tones benefit from P3's extended gamut on modern displays. Use `Color(UIColor(displayP3Red: r, green: g, blue: b, alpha: 1))` for all palette colors.
 
@@ -128,121 +147,117 @@ The app must support both light and dark mode. The dark mode aesthetic is **not*
 
 Implement using `@Environment(\.colorScheme)` and a `CardTheme` object that switches the entire palette in one place. Do not scatter `if colorScheme == .dark` conditionals throughout the card rendering code.
 
-### 1.4 Precise Card Layout Specification
+### 1.4 Full-Art Dossier Card Layout
 
-**Do not guess these values.** Every zone on the card has a precise proportion. Implement these before any visual styling.
+**Do not guess these values.** Every layer and text field has a precise specification. Implement these before any visual styling.
 
-All proportions are expressed as percentages of card height (H) or card width (W). The base card size at "selected" state (the design reference size) is **210pt × 294pt** (5:7 ratio). All other sizes scale from this ratio.
+The card is a **full-art dossier**: the creature portrait fills the entire card interior edge-to-edge inside a rounded rectangle clip. Text fields are overlaid on the artwork at the bottom of the card, reading as field-operative annotations written directly on the portrait. There are no discrete zones (name bar, art box, text box, stats bar) — the artwork is continuous and the text floats over it.
+
+**Design rationale:** Each card is a faction-issued field dossier. The portrait was painted first by a field artist. Text was written over it afterward by an operative — labels, stats, assessment notes. The card reads as a military intelligence document, not a product.
+
+The base card size at "selected" state (the design reference size) is **210pt × 294pt** (5:7 ratio). All other sizes scale from this ratio.
 
 ```
-┌─────────────────────────────────┐  ← Total card (W × H)
-│ [outer border: 3pt all sides]   │
-│ ┌─────────────────────────────┐ │
-│ │ NAME BAR          N ⊕       │ │  H: 8.5% of card height (~25pt at ref)
-│ ├─────────────────────────────┤ │
-│ │                             │ │
-│ │        ART BOX              │ │  H: 45% of card height (~132pt at ref)
-│ │                             │ │  W: fills inner width (100% - 6pt border)
-│ ├─────────────────────────────┤ │
-│ │ TYPE LINE      [SET SYMBOL] │ │  H: 6% of card height (~18pt at ref)
-│ ├─────────────────────────────┤ │
-│ │                             │ │
-│ │        TEXT BOX             │ │  H: 30% of card height (~88pt at ref)
-│ │  [ability text]             │ │
-│ │  ─────────────────          │ │  Divider line between ability & flavor
-│ │  [flavor text italic]       │ │
-│ ├─────────────────────────────┤ │
-│ │ [collector #] [SET] [ATK/HP │ │  H: 5% of card height (~15pt at ref)
-│ │  rarity bar (colored line)  │ │  H: 1.5% (~4pt)
-│ └─────────────────────────────┘ │
-│ [outer border: 3pt bottom]      │
-└─────────────────────────────────┘
+┌───────────────────────────────────┐  ← Outer card (210 × 294pt)
+│  AnimatedRarityBorder stroke      │     Corner radius: 12pt
+│  ┌─────────────────────────────┐  │
+│  │                             │  │  ← Inner area (202 × 286pt)
+│  │    Full-art creature        │  │     Corner radius: 9pt
+│  │    portrait fills           │  │     Artwork loaded from artUrl
+│  │    entire inner area        │  │
+│  │                             │  │
+│  │                             │  │
+│  │  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄  │  │  ← Vignette gradient starts (~60% down)
+│  │                             │  │     LinearGradient: clear → black@45%
+│  │  Name: [Card Name]         │  │
+│  │  Type: [CardType] / [Fac]  │  │  ← CardDossierTextView
+│  │  Abilities: [keywords]     │  │     Bottom-anchored, grows upward
+│  │  Modifiers: [mod names]    │  │     Left-aligned, 8pt from inner edge
+│  │  Cost: N  ATK: N  HP: N   │  │
+│  │  Instability: N            │  │
+│  │              [Rank] [SEAL] │  │  ← WaxSealView 34×34pt, bottom-right
+│  └─────────────────────────────┘  │
+│  ParchmentShader ragged edge      │     Applied to card container as a whole
+└───────────────────────────────────┘
 ```
 
-**Zone measurements (at 210×294pt reference size):**
+**ZStack layer order (bottom to top):**
 
-| Zone | X | Y | Width | Height | Notes |
-|------|---|---|-------|--------|-------|
-| Outer border | 0 | 0 | 210 | 294 | Corner radius: 12pt |
-| Inner content area | 4 | 4 | 202 | 286 | Corner radius: 9pt |
-| Name bar | 4 | 4 | 202 | 25 | Includes `N ⊕` cost display right-aligned: single 20×20pt chaos mote icon + Oswald-Bold 13pt numeral, 6pt from inner right edge |
-| Art box | 4 | 29 | 202 | 132 | No corner radius — bleeds to inner edge |
-| Art box vignette | 4 | 29 | 202 | 132 | 20pt feather fade at all 4 edges |
-| Type line | 4 | 161 | 202 | 18 | Faction icon left-aligned 14×14pt; set symbol right-aligned 14×14pt |
-| Text box | 8 | 179 | 194 | 88 | 4pt internal padding all sides |
-| Ability/flavor divider | 12 | varies | 186 | 0.5 | Hairline, parchment-mid color |
-| Stats bar | 4 | 267 | 202 | 15 | ATK/HP right-aligned |
-| Rarity color bar | 4 | 282 | 202 | 4 | Bottom of inner area |
-| Wax seal | 164 | 258 | 34 | 34 | Rarity indicator, overlaps stats bar |
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| 1 | `CardBacklightView` | Rarity glow behind card (see Section 6.6c) |
+| 2 | Full-art artwork image | Fills inner area (202×286pt at reference), corner radius 9pt, loaded from `artUrl` |
+| 3 | Art vignette gradient | `LinearGradient` darkening bottom 40% of artwork for text legibility: `.clear` at top of gradient → `black` at 45% opacity at bottom |
+| 4 | `CardDossierTextView` | All labeled text fields, bottom-anchored (see text field spec below) |
+| 5 | `WaxSealView` | Rank emblem, bottom-right corner, 34×34pt at reference scale |
 
-**Border weight by rarity:**
+**ParchmentShader ragged edge** is applied to the card container as a whole (not a separate layer). See Section 6.2b for ragged edge shader specification.
+
+**Card measurements (at 210×294pt reference size):**
+
+| Element | Value | Notes |
+|---------|-------|-------|
+| Outer card | 210 × 294pt | Corner radius: 12pt |
+| Inner content area | 202 × 286pt (4pt inset) | Corner radius: 9pt |
+| Artwork image | Fills inner area entirely | Aspect fill + clip |
+| Vignette gradient | Bottom 40% of inner area | clear → black at 45% opacity |
+| Text block left margin | 8pt from inner edge | All text fields |
+| Text block bottom margin | 8pt from inner bottom edge | Below last field |
+| WaxSealView | 34 × 34pt | Bottom-right, 8pt from inner edges |
+
+**Front face text fields (CardDossierTextView):**
+
+All text uses **Yeseva One Regular** exclusively. Field labels are smaller and receded. Values are the primary read. The text block is anchored at the bottom of the card and grows upward as fields are added.
+
+| Field | Label | Value format | Label size | Value size | Value opacity |
+|-------|-------|-------------|------------|------------|---------------|
+| Name | — (no label) | `[Card Name]` | — | 13pt | 100% |
+| Type | `Type:` | `[CardType] / [Faction]` | 8pt | 10pt | 90% |
+| Abilities | `Abilities:` | `[keyword list, summary only]` | 8pt | 10pt | 90% |
+| Modifiers | `Modifiers:` | `[modifier names only]` | 8pt | 10pt | 90% |
+| Cost/ATK/HP | — (inline labels) | `Cost: [N]  ATK: [N]  HP: [N]` | 8pt | 11pt | 100% |
+| Instability | `Instability:` | `[N]` | 8pt | 10pt | 90% |
+| Rank Emblem | `Rank:` | label + `WaxSealView` | 8pt | — | — |
+
+- **Label color:** parchment-light at 70% opacity (8pt, recedes visually)
+- **Value color:** parchment-light at the opacity specified per field
+- **Text shadow (heavier for legibility over artwork):** x=0, y=1pt, blur 2pt, black at 80% opacity
+- **Line spacing:** 1.4x
+- **Fields omitted entirely** when not applicable — not shown as "---" or blank
+- **No icons on front face:** no D20 badge, no chaos motes, no faction icon, no set symbol, no rarity color bar. Cost, ATK, HP are plain numbers with spacing labels.
+
+**Border weight by rarity (AnimatedRarityBorder stroke):**
 
 | Rarity | Outer border width | Inner shadow depth | Frame gradient |
 |--------|------------------|-------------------|----------------|
 | Common | 3pt flat | None | Matte parchment-mid |
 | Uncommon | 3.5pt | 1pt inner shadow | Antique-silver gradient |
-| Rare | 4pt | 2pt inner shadow + outer glow (4pt, aged-gold, 40% opacity) | Aged-gold gradient |
-| Epic | 4pt | 2pt inner shadow + outer glow (6pt, epic-amethyst, 50% opacity) | Amethyst-to-deep-purple animated gradient |
-| Legendary | 4pt | 2pt inner shadow + outer glow (8pt, legendary-ember, 60% opacity) | Ember-to-gold animated gradient |
+| Rare | 4pt | 2pt inner shadow | Aged-gold gradient |
+| Epic | 4pt | 2pt inner shadow | Amethyst-to-deep-purple animated gradient |
+| Legendary | 4pt | 2pt inner shadow | Ember-to-gold animated gradient |
 
-### Chaos Mote Cost Display
-
-Format: `N ⊕` — a cost numeral followed by a single chaos mote icon.
-
-Layout:
-- Position: Right-aligned in the Name Bar, 6pt from the inner right edge, vertically centered.
-- Numeral: Oswald-Bold, 13pt, ink-black (light mode) / ink-dark-mode (dark mode).
-- Icon: `Resources/Icons/chaos_mote_symbol.png`, rendered at 20×20pt. One icon always, regardless of cost value.
-- Total footprint: ~35pt wide (numeral + 4pt gap + 20pt icon).
-
-Card type rules:
-- Creature: Shows `N ⊕` where N is the chaos mote cost.
-- Spell: Shows `N ⊕` where N is the chaos mote cost.
-- Planar Ruin: Shows `N ⊕` where N is the chaos mote cost. No "COST:" label.
-- Stabilizer: No cost indicator displayed.
-
-Replaces: the former tiled dot system (●●●●●●● up to 7 + "N+" overflow text) and the ruins "COST: N" label.
-
-**Attack/HP stats (stats bar, right-aligned):**
-
-| Property | Value |
-|----------|-------|
-| Font | Oswald-Bold, 13pt |
-| Format | "ATK / HP" e.g. "4 / 3" — omit both for stabilizers and ruins |
-| Right margin | 8pt |
-| Color | ink-black (light mode), ink-dark-mode (dark mode) |
-
-**Instability display (stats bar, left-aligned):**
-
-| Property | Value |
-|----------|-------|
-| Component | InstabilityBadgeView — D20 base image with number overlaid in code |
-| D20 asset | d20_instability_base.png — full color, swirling cobalt blue (left/chaos) and fiery orange (right/order), cracked face, 22×22pt display size |
-| Number | Oswald-Bold, 9pt, white (#FFFFFF), shadow: black 60% opacity radius 1pt — overlaid at runtime, offset y=-1pt |
-| Color | White only — not faction-tinted. Reads against both blue and orange areas of the D20. |
-| Placement | Left side of stats bar, 4pt from left edge |
-| Note | instability value 0 hides the badge entirely (guard > 0 before rendering) |
-
-**Modifier and triggered ability text (text box, below ability text, above flavor text):**
-
-Each evolution step adds one modifier and one triggered ability. A Common has none; a Legendary has four of each. Display in evolution order, oldest first.
-
-| Element | Font | Size | Color | Format |
-|---------|------|------|-------|--------|
-| Modifier line | EBGaramond-SemiBold | 10pt | ink-black | "[Modifier Name]: [base effect]. [Event] Attunement: [bonus]." |
-| Triggered ability line | EBGaramond-SemiBold | 10pt | ink-black | "ON [TRIGGER]: [effect]." |
-| Modifier/trigger separator | — | — | parchment-mid | Hairline rule (0.5pt) between modifier block and flavor text |
-
-If modifier + trigger text pushes the total text box content beyond the scroll threshold, modifier/trigger text scrolls with ability text as a single region. Do not separate them into different scroll areas.
+**Rarity glow:** The colored light effect behind the card is not a `shadow()` modifier on the border — it is a dedicated `CardBacklightView` layer positioned behind the card in the ZStack. See Section 6.6c. Do not add any `shadow()` outer glow to the card frame itself.
 
 ### 1.5 Typography Specification
 
 **Do not guess font sizes.** Every text element has a specified size. Implement these exactly before any visual styling.
 
-**Fonts (all OFL licensed, commercial use permitted — download from fonts.google.com):**
-- Cinzel-Regular, Cinzel-Bold — headings, name bar, type line
-- EBGaramond-Regular, EBGaramond-Italic, EBGaramond-SemiBold — body text
-- Oswald-Bold — stats, numbers
+The card uses two distinct font families — one for the front face (dossier portrait) and one for the back face (intelligence report). Each has its own shadow treatment tuned for legibility against its background.
+
+**Front face font (CardDossierTextView):**
+- **Primary:** Yeseva One Regular (OFL licensed, Google Fonts) — sole front-face font
+- **Font file:** `YesevaOne-Regular.ttf`
+- **Fallback:** Georgia Bold
+- **Text shadow (heavier — over artwork):** x=0, y=1pt, blur 2pt, black at 80% opacity
+- All front-face text uses Yeseva One exclusively — no other font appears on the front face
+- **Line spacing:** 1.4x
+
+**Back face font (CardIntelligenceReportView):**
+- **Primary:** IM Fell English (OFL licensed, Google Fonts) — Regular and Italic
+- **Font files:** `IMFellEnglish-Regular.ttf`, `IMFellEnglish-Italic.ttf`
+- **Fallback:** Georgia Regular / Georgia Italic
+- **Letterpress shadow (lighter — over parchment):** x=0, y=0.5pt, blur 0.5pt, parchment-dark at 60% opacity
+- Flavor text uses the Italic weight
 
 **Register all fonts in Info.plist under `UIAppFonts` before using them.** Failing to do this is the most common font rendering failure — the app will silently fall back to system font with no error.
 
@@ -250,88 +265,86 @@ If modifier + trigger text pushes the total text box content beyond the scroll t
 <!-- Info.plist -->
 <key>UIAppFonts</key>
 <array>
-    <string>Cinzel-Regular.ttf</string>
-    <string>Cinzel-Bold.ttf</string>
-    <string>EBGaramond-Regular.ttf</string>
-    <string>EBGaramond-Italic.ttf</string>
-    <string>EBGaramond-SemiBold.ttf</string>
-    <string>Oswald-Bold.ttf</string>
+    <string>YesevaOne-Regular.ttf</string>
+    <string>IMFellEnglish-Regular.ttf</string>
+    <string>IMFellEnglish-Italic.ttf</string>
 </array>
 ```
 
+**Note:** Cinzel, EBGaramond, and Oswald remain in the project for SpriteKit battlefield UI and non-card screens. They are no longer part of the card typography spec.
+
 **Text element specifications (at 210×294pt reference card size):**
 
-| Element | Font | Size | Color | Alignment | Max lines | Overflow |
-|---------|------|------|-------|-----------|-----------|----------|
-| Card name | Cinzel-Bold | 13pt | ink-black | Left | 1 | Scale to 10pt min, then truncate |
-| Chaos mote cost numeral | Oswald-Bold | 13pt | ink-black (light) / ink-dark-mode (dark) | Right (in name bar, 6pt from inner right edge) | 1 | Never truncate; paired with 20×20pt chaos mote icon at right |
-| Type line | Cinzel-Regular | 10pt | ink-black | Left | 1 | Scale to 8pt min, then truncate |
-| Ability text | EBGaramond-Regular | 11pt | ink-black | Left | — | Scroll within text box |
-| Flavor text | EBGaramond-Italic | 10pt | parchment-dark | Left | — | Below ability text |
-| Keyword abilities | EBGaramond-SemiBold | 11pt | ink-black | Left | — | Bold the keyword only |
-| Collector number | Cinzel-Regular | 7pt | parchment-mid | Left | 1 | Never truncate |
-| Set code | Cinzel-Regular | 7pt | parchment-mid | Center | 1 | — |
-| ATK/HP | Oswald-Bold | 13pt | ink-black | Right | 1 | Never truncate |
+| Element | Font | Size | Weight | Color |
+|---------|------|------|--------|-------|
+| Card name (front) | Yeseva One | 13pt | Regular | parchment-light |
+| Field labels (front) | Yeseva One | 8pt | Regular | parchment-light 70% |
+| Field values (front) | Yeseva One | 10–11pt | Regular | parchment-light 90–100% |
+| Report body (back) | IM Fell English | 10pt | Regular | ink-black |
+| Report labels (back) | IM Fell English | 9pt | Regular | ink-black |
+| Flavor text (back) | IM Fell English | 10pt | Italic | parchment-dark |
+| Faction header (back) | IM Fell English | 8pt | Regular | parchment-dark 60% |
 
-**Letterpress effect (apply to all text):**
-- Shadow offset: x=0, y=0.5pt
-- Shadow blur: 0.5pt
-- Shadow color: parchment-dark at 60% opacity (light mode), parchment-dark-mode at 60% (dark mode)
-- Do NOT use system drop shadow — implement as a custom `TextRenderer` or render text twice (shadow pass offset 0.5pt down, normal pass on top)
+**Shadow treatments (do NOT use system drop shadow — implement as custom `TextRenderer` or render text twice):**
 
-**Line height:** 1.3× for ability text, 1.2× for all other elements.
+| Face | x | y | blur | color |
+|------|---|---|------|-------|
+| Front (over artwork) | 0 | 1pt | 2pt | black at 80% opacity |
+| Back (over parchment) | 0 | 0.5pt | 0.5pt | parchment-dark at 60% opacity |
 
-**Text box behavior:** If combined ability + flavor text exceeds the text box height, the text box becomes scrollable (UIScrollView embedded, scroll indicators hidden, momentum scrolling enabled). The card frame does not grow — only the text box scrolls.
+### 1.5b Card Type Layout Variants — Dossier Field Visibility
 
-### 1.5b Card Type Layout Variants
+All card types use the same full-art dossier layout (Section 1.4). The difference between types is **which fields appear** in the CardDossierTextView overlay. Fields not listed for a type are omitted entirely — never shown as blank or "---".
 
-The base creature layout (Section 1.4) is the reference. Spells, Stabilizers, and Planar Ruins are distinct card types with different layout rules. Implement these as layout variants on the same `CardView` component, switched by `card.type`.
+**Creature (all fields):**
 
-**Spell layout:**
+| Field | Shown | Notes |
+|-------|-------|-------|
+| Name | Yes | Always |
+| Type / Faction | Yes | e.g. "Creature / Ironwright" |
+| Abilities | Yes | Keyword summary only (e.g. "Shield, Lifesteal") |
+| Modifiers | Conditional | Omitted if Common (no modifiers). Names only, no descriptions. |
+| Cost / ATK / HP | Yes | Single line: `Cost: N  ATK: N  HP: N` |
+| Instability | Conditional | Omitted if 0 |
+| Rank Emblem + WaxSeal | Yes | Bottom-right |
 
-Spells are played and discarded — they never sit on the board. Their layout is simplified:
+**Spell:**
 
-| Zone | Rule |
-|------|------|
-| Name bar | Present. `N ⊕` cost display right-aligned as normal (Oswald-Bold 13pt numeral + 20×20pt chaos mote icon, 6pt from inner right edge). |
-| Art box | Same dimensions. Art depicts the spell's magical effect. |
-| Type line | "Spell — [subtype]" e.g. "Spell — Battlefield". Faction icon left, set symbol right. |
-| Text box | Expands to fill space freed by absent stats bar. Text box height: 88pt + 19pt (stats bar) = 107pt. |
-| Stats bar | **Omit entirely.** |
-| Rarity color bar | Present at bottom, same position. |
-| Wax seal | **Omit.** |
-| Instability display | **Omit** — spells have no instability value. |
+| Field | Shown | Notes |
+|-------|-------|-------|
+| Name | Yes | Always |
+| Type / Faction | Yes | e.g. "Spell / Fey Courts" |
+| Abilities | Yes | One-line effect summary |
+| Cost | Yes | `Cost: N` only — no ATK, no HP |
+| Modifiers | No | — |
+| Instability | No | Spells have no instability |
+| Rank Emblem + WaxSeal | No | — |
 
-**Stabilizer layout:**
+**Stabilizer:**
 
-Stabilizers occupy a dedicated board slot and cannot be targeted or destroyed. They have no mote cost, no HP, no ATK, and no instability. Their layout is purely informational — the effect text is the entire card.
+| Field | Shown | Notes |
+|-------|-------|-------|
+| Name | Yes | Always |
+| Type | Yes | "Stabilizer" (no faction) |
+| Abilities | Yes | Passive summary |
+| Cost | No | Stabilizers have no cost |
+| ATK / HP | No | — |
+| Instability | No | — |
+| Modifiers | No | — |
+| Rank Emblem + WaxSeal | Yes | Stabilizers have rarity |
 
-| Zone | Rule |
-|------|------|
-| Name bar | Present. **No cost symbols** — stabilizers have no chaos mote cost. |
-| Art box | Same dimensions. Art depicts the stabilizer object as a still-life. |
-| Type line | "Stabilizer" (no subtype). Faction icon left, set symbol right. |
-| Text box | Expands to fill space freed by absent stats bar: 107pt (same as Spell). |
-| Stats bar | **Omit entirely.** No HP, no ATK, no instability. |
-| Rarity color bar | Present. |
-| Wax seal | Present — stabilizers have rarity like other cards. |
-| Indestructible indicator | Small lock icon (SF Symbol `lock.fill`) in bottom-right corner of art box, 10pt, parchment-mid at 70% opacity. No tooltip needed — the card type communicates this. |
+**Planar Ruin:**
 
-**Planar Ruin layout:**
-
-Ruins are full-art cards that sit on the board and provide passive benefits. They evolve like creature cards and display modifiers at higher rarities. Their layout mirrors creature cards closely, with two additions: a passive benefit panel and a destruction penalty panel replacing the text box.
-
-| Zone | Rule |
-|------|------|
-| Name bar | Present. Uses the same `N ⊕` format as creature and spell cards — Oswald-Bold 13pt numeral + 20×20pt chaos mote icon, right-aligned, 6pt from inner right edge. No "COST:" label prefix. |
-| Art box | Same dimensions. Ruins are full-art — the art bleeds to all four edges of the art box with no internal framing. Ruins depict the structure in its environment. |
-| Type line | "Planar Ruin" (no subtype). Faction icon left (omit for neutral ruins), set symbol right. |
-| Passive benefit panel | Replaces top portion of text box. Label: "PASSIVE" in Cinzel-Bold 8pt parchment-mid. Effect text in EBGaramond-Regular 10pt. Separated from destruction panel by a 1pt parchment-mid hairline. |
-| Destruction penalty panel | Below passive panel. Label: "IF DESTROYED" in Cinzel-Bold 8pt wax-red. Penalty text in EBGaramond-Regular 10pt, wax-red color. |
-| Modifier/trigger display | Ruins gain modifiers on evolution exactly like creature cards (Section 1.4). Add modifier lines below the destruction penalty panel, in same format. |
-| Stats bar | Show HP only (right-aligned, Oswald-Bold 13pt). No ATK. HP = cost × 3 + 1 — always compute from cost, never hardcode. |
-| Wax seal | Omit on neutral (unevolved) ruins. Show faction wax seal on faction-evolved ruins. |
-| No text scroll | Both panels must be visible simultaneously — do not scroll. If text is long, reduce font to 9pt minimum before allowing scroll. |
+| Field | Shown | Notes |
+|-------|-------|-------|
+| Name | Yes | Always |
+| Type / Faction | Yes | "Planar Ruin / [Faction]" (omit faction for neutral ruins) |
+| Abilities | Yes | Passive summary |
+| Destroyed | Yes | `Destroyed: [penalty summary]` — additional field unique to ruins |
+| Modifiers | Conditional | Only if faction-evolved. Names only. |
+| HP | Yes | `HP: N` (computed: cost x 3 + 1). No ATK. No Cost label on front. |
+| Instability | No | — |
+| Rank Emblem + WaxSeal | Conditional | Only if faction-evolved |
 
 ### 1.6 State Transition Animation Specifications
 
@@ -343,7 +356,7 @@ The guiding physical metaphor: **a heavy card has inertia**. It takes effort to 
 |-----------|---------|-------|---------------|-------|
 | `default` → `focused` | 0.18s | easeOut | Shadow radius 4→12pt, Y offset -2pt, scale 1.0→1.02 | Subtle — card lifts |
 | `focused` → `default` | 0.25s | spring(0.4, 0.7) | Reverse of above | Spring settle |
-| `default` → `selected` | 0.12s | easeIn | Scale 1.0→0.97, frame glow opacity 0→0.8 | Press down |
+| `default` → `selected` | 0.12s | easeIn | Scale 1.0→0.97, CardBacklightView brightens to interaction opacity | Press down |
 | `selected` → `default` | 0.3s | spring(0.35, 0.65) | Reverse + bounce | Release spring |
 | `default` → `tapped` | 0.35s | easeInOut | rotation3D Y-axis 0→90° (phase 1 of flip) | Card rotates |
 | `default` → `previewed` | 0.28s | easeOut | Scale to target preview size, background dim 0→0.7 | Card lifts to center |
@@ -406,17 +419,48 @@ CardView(card: card)
 
 The `minimumDistance: 8` on DragGesture prevents taps from being misinterpreted as drags.
 
-### 1.8 Card Back Design
+### 1.8 Card Back — Intelligence Report
 
-**Every card needs a back.** This is a complete omission in many implementations. The back must also conform to the physical aesthetic and must be designed before the front flip animation is implemented, since both are required for the flip.
+**Every card needs a back.** The back is not decorative — it is a full intelligence report containing the ability details, modifier effects, and flavor text that were removed from the front face. The front is the portrait dossier; the back is the operational briefing.
 
-Card back specification:
-- Same dimensions and corner radius as front
-- Base: canvas texture (woven grid visible, `canvas-warm` color)
-- Center: large wax seal (40pt diameter) with the game's sigil/logo embossed
-- Seal color: deep wax-red, same shader as rarity seals
-- Border: same outer border weight as common card, parchment-mid color
-- No card-specific information on the back
+The back must be designed before the front flip animation is implemented, since both are required for the flip.
+
+**Back face ZStack layers (bottom to top):**
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| 1 | Parchment panel background | `parchment-panel.imageset` — 606×858px @3x, warm cream with fiber grain, alpha-faded edges |
+| 2 | ScrollView with content | Scrollable if content exceeds height, no scroll indicators |
+
+**ParchmentShader ragged edge** applies to the back face container the same as the front face (see Section 6.2b). Same dimensions and corner radius as front.
+
+**Typography:** IM Fell English (Regular + Italic), NOT Yeseva One. See Section 1.5 for font specs.
+
+**Letterpress shadow:** x=0, y=0.5pt, blur 0.5pt, parchment-dark at 60% opacity.
+
+**Content layout (top to bottom, inside ScrollView):**
+
+1. **Faction name header** — 8pt, centered, parchment-dark at 60% opacity (e.g. "IRONWRIGHT COLLECTIVE")
+2. **"Abilities:" section label** — 9pt, ink-black
+   - `[Keyword]: [full mechanical description]` — 10pt, keyword name in italic
+   - One line per keyword ability
+3. **"Modifiers:" section label** — 9pt, ink-black
+   - `[Modifier name]: [full effect + attunement bonus]` — 10pt
+   - `ON [TRIGGER]: [effect]` — triggered abilities
+4. **Hairline divider** — 0.5pt, parchment-mid
+5. **"[Flavor text]"** — italic, 10pt, quoted, parchment-dark color
+6. **Game sigil** — DEFERRED (placeholder: 24pt centered mark at bottom)
+
+**Back face by card type:**
+
+| Card Type | Content Sections |
+|-----------|-----------------|
+| Creature | Faction header → Abilities → Modifiers → Divider → Flavor |
+| Spell | Faction header → Abilities (full mechanic description) → Divider → Flavor |
+| Stabilizer | Faction header → Abilities (passive description) → Divider → Flavor |
+| Planar Ruin | Faction header → Passive → Destroyed penalty → Modifiers (if evolved) → Divider → Flavor |
+
+**Scrolling:** momentum-enabled, no indicators. Content clips to inner area. The card frame does not grow — only the report content scrolls.
 
 ### 1.9 Error & Fallback States
 
@@ -425,7 +469,7 @@ Card back specification:
 | Failure | Fallback Display |
 |---------|-----------------|
 | Artwork image fails to load | Show a canvas-colored rectangle with a subtle ink-wash pattern (procedural, no assets required) and a small quill-pen icon (from game-icons.net) centered |
-| Custom font fails to load | Log the error, fall back to Georgia (closest system match for Cinzel) and Times New Roman (for EB Garamond) — never fall back to San Francisco |
+| Custom font fails to load | Log the error, fall back to Georgia Bold (closest system match for Yeseva One on front face) and Georgia Regular/Italic (for IM Fell English on back face) — never fall back to San Francisco |
 | Metal device unavailable | Use `staticOnly` effect tier (Core Animation only) — card must still look premium |
 | Card JSON parse error | Show a "damaged card" placeholder with torn-edge aesthetic and "???" for all text fields |
 | Shader compilation failure | Log full error to `Logs/shader_errors.log`, fall back to flat parchment-light fill + standard shadow |
@@ -514,7 +558,9 @@ enum CardFaction: String, Codable {
     case demonic      // Bosch
     case celestial    // Doré (Paradise) + Blake
     case endless      // Doré (Inferno) + Goya
-
+    // NOTE: CardFaction has no .color property — faction identity is expressed
+    // through the embossed wax seal symbol, not color tinting.
+    // Wax color is driven by Rarity, not CardFaction.
 }
 
 enum CardSubFaction: String, Codable {
@@ -603,6 +649,9 @@ extension Rarity: Comparable {
 }
 
 extension Rarity {
+    // waxColor: the color of the wax seal for this rarity.
+    // Now drives BOTH the WaxSealView glow shadow AND the asset name lookup —
+    // the seal image itself is pre-generated with this color baked in (see WAX_SEAL_OVERHAUL_BRIEF.md).
     var waxColor: Color {
         switch self {
         case .common:    return Color("parchment-mid")
@@ -638,17 +687,6 @@ extension Rarity {
         case .epic: return 0.75
         case .legendary: return 1.0
     }}
-
-    // Asset name in Assets.xcassets/Icons/ — must match download_icons.sh output names (Section 3.8)
-    var sealIconName: String {
-        switch self {
-        case .common:    return "seal_common"     // circle-sparks
-        case .uncommon:  return "seal_uncommon"   // celtic-knot
-        case .rare:      return "seal_rare"       // crown
-        case .epic:      return "seal_epic"       // all-seeing-eye
-        case .legendary: return "seal_legendary"  // dragon-head
-        }
-    }
 
     var borderWidth: CGFloat {
         switch self {
@@ -1392,12 +1430,14 @@ Store at: `Resources/Icons/set_symbol.png`
 
 **FACTION ICONS — Generation briefs (one per faction)**
 
-Faction icons are embossed into the wax seal for each card — the same five symbols (scroll, tree, sledgehammer, wing, skull) pressed into rarity-colored wax. They are not displayed on the type line. Generate once as white-on-transparent silhouette PNGs per the briefs below. The wax seal generation pipeline (WAX_SEAL_OVERHAUL_BRIEF.md) uses these symbol descriptions directly in its FACTION_SYMBOL prompts.
+Faction icons are embossed into the wax seal for each card — the same five symbols (scroll, tree, sledgehammer, wing, skull) pressed into rarity-colored wax. They are **not** displayed anywhere else on the card face — only in the wax seal. Generate once as white-on-transparent silhouette PNGs per the briefs below. The wax seal generation pipeline (`WAX_SEAL_OVERHAUL_BRIEF.md`) uses these symbol descriptions directly in its `FACTION_SYMBOL` prompts.
 
 All faction icons share these parameters:
 - Style: flat fantasy insignia, bold silhouette, heraldic quality
-- No fine internal detail — must read at the embossed badge scale
+- No fine internal detail — must read at 14pt
 - Pure black on white background (post-processed to white-on-transparent)
+
+> **Color note:** Do not use faction colors in the generation prompt. The asset is a black silhouette on white — color is irrelevant since the silhouette is used as an embossing reference description, not as a tinted runtime overlay.
 
 *Ironwright Collective — Sledgehammer:*
 ```
@@ -1443,7 +1483,7 @@ Store at: `Resources/Icons/faction_endless.png`
 
 **CHAOS MOTE SYMBOL — Generation brief**
 
-The chaos mote symbol is used as a single 20×20pt icon in the name bar cost display (`N ⊕` format). Not tiled. Generate at 256×256px for 1× resolution, scaled down to 20pt in rendering. It must read clearly at 20×20pt.
+**[RETIRED from card face]** The chaos mote symbol was previously used in the name bar. In the dossier layout, cost is displayed as a plain number in CardDossierTextView (`Cost: N`). This asset is retained for possible use in non-card UI (deck builder, collection). It must read clearly at 16×16pt.
 
 ```
 A swirling orb of chaotic magical energy. Circular shape. Interior shows turbulent 
@@ -1453,7 +1493,7 @@ a rough, slightly irregular circle — not a perfect circle. Fantasy magical ene
 Bold and readable at small scale.
 ```
 
-**Post-processing for chaos mote symbol:** Unlike faction icons, this is a full-color asset — do NOT convert to silhouette. Retain full color. Downscale from 256×256px source to 20pt @3× (60×60px) for use in the name bar `N ⊕` display.
+**Post-processing for chaos mote symbol:** Unlike faction icons, this is a full-color asset — do NOT convert to silhouette. Retain full color. Downscale from 1024×1024 source to 48×48pt @3x (144×144px). No longer displayed on card face (cost is now a plain text field); retained for non-card UI contexts.
 
 Store at: `Resources/Icons/chaos_mote_symbol.png`
 
@@ -1461,12 +1501,8 @@ Store at: `Resources/Icons/chaos_mote_symbol.png`
 
 **D20 INSTABILITY ICON — Generation brief**
 
-The D20 is a full-color asset — not a silhouette. It shows swirling cobalt blue (chaos, left side)
-and fiery orange (order, right side) colliding at the center of the die face. The instability
-number is overlaid in code at runtime (see InstabilityBadgeView). Generate once; all instability
-values 0–5 use the same base image.
+**[RETIRED from card face]** The D20 badge and `InstabilityBadgeView` are no longer displayed on the card. In the dossier layout, instability is shown as a plain text field (`Instability: N`). This asset is retained for possible use in non-card UI (battlefield HUD, player stats). The D20 is a **full-color** asset — not a silhouette. It shows swirling cobalt blue (chaos, left side) and fiery orange (order, right side) colliding at the center of the die face.
 
-Prompt:
 ```
 A twenty-sided die (D20), viewed straight-on, face showing. The die face is filled with
 violently swirling magical energy — on the left side, deep electric cobalt blue with turbulent
@@ -1478,11 +1514,10 @@ The crack is significant but the die shape remains clearly readable.
 Fantasy magical artifact. Studio lighting with rim light. Isolated on pure white background.
 ```
 
-Negative prompt: smooth gradient, flat, uniform color, cartoon, plastic, digital, text, numbers,
-letters, blurry, soft, glowing outline, 2D, vector art, coin, circle, sphere, perfect symmetry
+Negative prompt: `smooth gradient, flat, uniform color, cartoon, plastic, digital, text, numbers, letters, blurry, soft, glowing outline, 2D, vector art, coin, circle, sphere, perfect symmetry`
 
-Post-processing: REMBG background removal (alpha_matting=True). Do NOT convert to silhouette —
-retain full color. Downscale from 512×512 source to 144×144px (48pt @3x).
+**Post-processing:** REMBG background removal (`alpha_matting=True`). Do **not** convert to silhouette — retain full color. Downscale from 512×512 source to 144×144px (48pt @3x).
+
 Store at: `Resources/Icons/d20_instability_base.png`
 
 ---
@@ -1580,7 +1615,7 @@ python3 Scripts/verify_asset.py "$OUTPUT" --min-width 512 --min-height 512
 | Celestial | Gold-white radiance | Warm mid-grey | Highlights must feel luminous |
 | Endless | Bone-white | Cold grey-black | No warm tones in shadows |
 
-All factions: artwork highlights must harmonize with `parchment-light` (#F5E6C8) — warm, never cool. Endless is the trickiest: its midtones are cold but the card substrate is warm parchment, so the art box vignette feathering (Section 3.7) does extra work to bridge them.
+All factions: artwork highlights must harmonize with `parchment-light` (#F5E6C8) — warm, never cool. Endless is the trickiest: its midtones are cold but the card substrate is warm parchment, so the bottom vignette gradient (Section 1.4, layer 3) does extra work to bridge them.
 
 ### 3.4b Evolution Artwork Pipeline
 
@@ -1960,23 +1995,23 @@ Image.fromarray(img).save('Resources/Textures/foil_gradient.png')
 print("Foil gradient generated: 512x512")
 ```
 
-### 3.7 Art Box Compositing Specification
+### 3.7 Full-Art Compositing Specification
 
-The artwork image does not simply sit in the art box — it must be composited with parchment in a way that makes it feel embedded in the card rather than pasted on.
+**[Updated for dossier layout]** The artwork fills the entire card interior (see Section 1.4). There is no discrete art box — the artwork is continuous edge-to-edge inside the inner content area (202×286pt at reference size).
 
 Steps (apply in order in the artwork rendering layer):
 
-1. **Clip artwork to art box rectangle** — no corner radius on art box, straight edges
-2. **Apply oil paint shader** (Section 6.1) — brushwork + varnish specular
-3. **Apply edge vignette** — 20pt feather fade at all 4 edges of the art box, fading to parchment-mid color. This blends the artwork into the parchment frame without a hard edge.
-4. **Apply color grade overlay** — multiply blend with a `parchment-light` layer at 8% opacity over the entire art box. This unifies the artwork with the card's warm tone.
-5. **Apply ambient occlusion shadow** — a soft inset shadow (radius 12pt, opacity 40%, color ink-black) around the inner perimeter of the art box to simulate depth and separate the art plane from the frame.
+1. **Fill inner content area** — artwork uses aspect fill + clip to the inner rounded rectangle (corner radius 9pt)
+2. **Apply oil paint shader** (Section 6.1) — brushwork + varnish specular over the full artwork area
+3. **Apply bottom vignette gradient** (Section 1.4, layer 3) — `LinearGradient` darkening the bottom 40% of the artwork for text legibility: `.clear` at top of gradient to `black` at 45% opacity at bottom. This replaces the old 4-edge feather fade.
+4. **Apply color grade overlay** — multiply blend with a `parchment-light` layer at 8% opacity over the entire artwork area. This unifies the artwork with the card's warm tone.
+5. **ParchmentShader ragged edge** (Section 6.2b) is applied to the card container as a whole — not to the artwork layer specifically.
 
-Implement steps 3-5 as a Metal fragment shader or as stacked SwiftUI layers, not as separate draw passes if performance is critical.
+Implement steps 2-4 as a Metal fragment shader or as stacked SwiftUI layers, not as separate draw passes if performance is critical.
 
 ### 3.8 Icons and Symbols — Sourcing and Attribution
 
-**Preferred source: AI-generated (Section 3.3c).** All primary game icons — faction icons, set symbol, chaos mote symbol, D20 instability icon — are generated via fal.ai FLUX.1 Dev per Section 3.3c. These are original works with no attribution requirement.
+**Preferred source: AI-generated (Section 3.3c).** All primary game icons — faction icons (wax seal emboss symbols), set symbol — are generated via fal.ai FLUX.1 Dev per Section 3.3c. These are original works with no attribution requirement. The chaos mote symbol and D20 instability icon are retained for non-card UI but are no longer displayed on the card face (see Section 3.3c notes).
 
 **Secondary source: game-icons.net (CC BY 3.0).** Used only for UI chrome fallbacks (e.g., the error state quill icon). Do not use game-icons.net for any primary card component — its CC BY 3.0 license requires attribution, creating an ongoing maintenance burden. If you use any game-icons.net asset:
 - Add `"game-icons.net"` attribution to every entry in `ASSET_LICENSE_MANIFEST.md`
@@ -2015,32 +2050,11 @@ download_icon() {
 # Error fallback icon (used when artwork fails to load — see Section 2.3)
 download_icon "quill-pen" "icon_quill_fallback"
 
-# Wax seal rarity icons — must match Rarity.sealIconName values in Section 2.2
-# All are CC BY 3.0 from game-icons.net
-download_icon "circle-sparks"   "seal_common"
-download_icon "celtic-knot"     "seal_uncommon"
-download_icon "crown"           "seal_rare"
-download_icon "all-seeing-eye"  "seal_epic"
-download_icon "dragon-head"     "seal_legendary"
-
-# Copy verified seal icons into asset catalog
-for RARITY in common uncommon rare epic legendary; do
-    SRC="Staging/icons/seal_${RARITY}.png"
-    DEST="Assets.xcassets/Icons/seal_${RARITY}.imageset"
-    if [ -s "$SRC" ]; then
-        mkdir -p "$DEST"
-        cp "$SRC" "$DEST/seal_${RARITY}.png"
-        cat > "$DEST/Contents.json" << EOF
-{
-  "images": [{"filename": "seal_${RARITY}.png", "idiom": "universal", "scale": "1x"}],
-  "info": {"author": "xcode", "version": 1}
-}
-EOF
-        echo "OK: seal_${RARITY} added to asset catalog"
-    else
-        echo "WARN: seal_${RARITY}.png not downloaded — check slug at game-icons.net/tags.html"
-    fi
-done
+# NOTE: Wax seal images are no longer downloaded from game-icons.net.
+# They are AI-generated as 25 faction×rarity images via generate_wax_seals.py
+# (see WAX_SEAL_OVERHAUL_BRIEF.md). Naming: seal_[faction]_[rarity].png
+# Asset catalog: Assets.xcassets/Icons/Seals/
+# Run: python3 Scripts/install_wax_seals.py to install all 25 into the catalog.
 ```
 
 ### 3.9 License Manifest and Acknowledgements Screen
@@ -2610,14 +2624,19 @@ mkdir -p Resources/Fonts
 # Tap homebrew cask fonts (one-time, safe to re-run)
 brew tap homebrew/cask-fonts 2>/dev/null || true
 
-# Install all three font families
-brew install --cask font-cinzel font-eb-garamond font-oswald 2>/dev/null || {
+# Install all five font families (card face: Yeseva One, IM Fell English; non-card UI: Cinzel, EB Garamond, Oswald)
+brew install --cask font-yeseva-one font-im-fell-english font-cinzel font-eb-garamond font-oswald 2>/dev/null || {
     echo "brew cask install failed — fonts may already be installed, checking..."
 }
 
 # Copy the specific weights needed into project Resources/Fonts/
 SYSTEM_FONTS="$HOME/Library/Fonts"
 declare -A NEEDED=(
+    # Card face fonts (dossier layout)
+    ["YesevaOne-Regular.ttf"]="YesevaOne-Regular.ttf"
+    ["IMFellEnglish-Regular.ttf"]="IMFellEnglish-Regular.ttf"
+    ["IMFellEnglish-Italic.ttf"]="IMFellEnglish-Italic.ttf"
+    # Non-card UI fonts (SpriteKit battlefield, menus)
     ["Cinzel-Regular.ttf"]="Cinzel-Regular.ttf"
     ["Cinzel-Bold.ttf"]="Cinzel-Bold.ttf"
     ["EBGaramond-Regular.ttf"]="EBGaramond12-Regular.ttf"
@@ -2647,9 +2666,9 @@ done
     echo "Manual download instructions:"
     echo "  1. Go to fonts.google.com and search for each missing font"
     echo "  2. Click 'Download family', unzip, copy the required .ttf file to Resources/Fonts/"
-    echo "  3. Required weights: Cinzel (Regular, Bold), EB Garamond (Regular, Italic, SemiBold), Oswald (Bold)"
+    echo "  3. Required: Yeseva One (Regular), IM Fell English (Regular, Italic), Cinzel (Regular, Bold), EB Garamond (Regular, Italic, SemiBold), Oswald (Bold)"
     exit 1
-} || echo "All 6 font files present in Resources/Fonts/"
+} || echo "All 9 font files present in Resources/Fonts/"
 ```
 
 Run once before the smoke test:
@@ -2663,6 +2682,11 @@ bash Scripts/download_fonts.sh
 # Direct TTF download from Google Fonts GitHub — no auth, no redirects
 mkdir -p Resources/Fonts
 BASE="https://github.com/google/fonts/raw/main/ofl"
+# Card face fonts (dossier layout)
+curl -fsSL "${BASE}/yesevaone/YesevaOne-Regular.ttf"       -o Resources/Fonts/YesevaOne-Regular.ttf
+curl -fsSL "${BASE}/imfellenglish/IMFellEnglish-Regular.ttf" -o Resources/Fonts/IMFellEnglish-Regular.ttf
+curl -fsSL "${BASE}/imfellenglish/IMFellEnglish-Italic.ttf"  -o Resources/Fonts/IMFellEnglish-Italic.ttf
+# Non-card UI fonts (SpriteKit battlefield, menus)
 curl -fsSL "${BASE}/cinzel/Cinzel%5BWght%5D.ttf"           -o Resources/Fonts/Cinzel-Regular.ttf
 curl -fsSL "${BASE}/cinzel/Cinzel%5BWght%5D.ttf"           -o Resources/Fonts/Cinzel-Bold.ttf
 curl -fsSL "${BASE}/ebgaramond/EBGaramond%5Bwght%5D.ttf"   -o Resources/Fonts/EBGaramond-Regular.ttf
@@ -2671,14 +2695,16 @@ curl -fsSL "${BASE}/ebgaramond/EBGaramond%5Bwght%5D.ttf"   -o Resources/Fonts/EB
 curl -fsSL "${BASE}/oswald/Oswald%5Bwght%5D.ttf"           -o Resources/Fonts/Oswald-Bold.ttf
 ```
 
-> **Note:** The Google Fonts GitHub mirrors serve variable-weight (.ttf) fonts. These are valid TTF files but do not have weight-specific PostScript names. If `UIFont(name: "Cinzel-Bold", size: 14)` returns nil with variable fonts, register the variable font filename in Info.plist instead (`Cinzel[wght].ttf`) and use `UIFont(name: "Cinzel", size: 14)` with font descriptors to set weight. The `Scripts/verify_fonts.swift` check below will catch this.
+> **Note:** The Google Fonts GitHub mirrors serve variable-weight (.ttf) fonts for some families (Cinzel, EB Garamond, Oswald). These are valid TTF files but do not have weight-specific PostScript names. If `UIFont(name: "Cinzel-Bold", size: 14)` returns nil with variable fonts, register the variable font filename in Info.plist instead (`Cinzel[wght].ttf`) and use `UIFont(name: "Cinzel", size: 14)` with font descriptors to set weight. Yeseva One and IM Fell English are static fonts and do not have this issue. The `Scripts/verify_fonts.swift` check below will catch loading failures.
 
 **Add all fonts to Info.plist** (see Section 1.5 for the complete list — do not skip this step).
 
 **Verify font loading before the smoke test:**
 ```swift
 // Run this in a test or playground to confirm fonts loaded
-let fonts = ["Cinzel-Regular", "Cinzel-Bold", "EBGaramond-Regular",
+// Card face fonts first, then non-card UI fonts
+let fonts = ["YesevaOne-Regular", "IMFellEnglish-Regular", "IMFellEnglish-Italic",
+             "Cinzel-Regular", "Cinzel-Bold", "EBGaramond-Regular",
              "EBGaramond-Italic", "EBGaramond-SemiBold", "Oswald-Bold"]
 for name in fonts {
     if UIFont(name: name, size: 14) == nil {
@@ -2689,7 +2715,7 @@ for name in fonts {
 }
 ```
 
-This font verification must print "Font OK" for all six fonts before proceeding.
+This font verification must print "Font OK" for all nine fonts before proceeding.
 
 ### 4.8 Pre-Smoke-Test Asset Preparation
 
@@ -2744,8 +2770,8 @@ grep -r "protocol CardRenderer" Sources/ || echo "MISSING: CardRenderer"
 # Confirm EffectTier has Comparable conformance
 grep -r "EffectTier.*Comparable\|Comparable.*EffectTier" Sources/ || echo "MISSING: EffectTier Comparable"
 
-# Confirm sealIconName is in Models (not scattered in views)
-grep -r "sealIconName" Sources/Models/ || echo "MISSING: sealIconName in Sources/Models/"
+# Confirm sealIconName is gone (removed — seals are now named seal_faction_rarity)
+grep -r "sealIconName" Sources/ && echo "BUG: sealIconName still present — remove from Card.swift" || echo "OK: sealIconName removed"
 
 # Confirm cost is not treated as a collection in VoiceOver
 grep -rn "cost\.isEmpty\|cost\.map" Sources/ && echo "BUG: cost treated as collection — fix voiceOverLabel"
@@ -2767,9 +2793,10 @@ done
 count=$(grep -rc "enum CardFaction" Sources/ | awk -F: '$2>0' | wc -l)
 [ "$count" -gt 1 ] && echo "BUG: CardFaction defined $count times — delete duplicates"
 
-# Confirm Rarity extensions are NOT in WaxSealView (should be in Card.swift)
-grep -c "extension Rarity" Sources/Effects/WaxSealView.swift 2>/dev/null | \
-    grep -v "^0$" && echo "WARN: Rarity extension in WaxSealView — move to Sources/Models/Card.swift"
+# Confirm WaxSealView requires both rarity and faction parameters
+grep "let rarity: Rarity" Sources/Effects/WaxSealView.swift && \
+grep "let faction: CardFaction" Sources/Effects/WaxSealView.swift || \
+echo "BUG: WaxSealView missing rarity or faction parameter"
 
 echo "Pre-build verification complete."
 ```
@@ -2783,95 +2810,71 @@ import SwiftUI
 
 struct SmokeTestCardView: View {
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            // Parchment base
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color("parchment-light"))
+        ZStack(alignment: .bottom) {
+            // Full-art placeholder (fills inner area)
+            RoundedRectangle(cornerRadius: 9)
+                .fill(Color("canvas-warm"))
+                .padding(4)  // 4pt inset for border
                 .overlay(
-                    Image("parchment_base")
-                        .resizable(resizingMode: .tile)
-                        .opacity(0.25)
-                        .blendMode(.multiply)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    Text("FULL ART AREA")
+                        .font(.custom("YesevaOne-Regular", size: 12))
+                        .foregroundColor(Color("parchment-mid"))
                 )
 
-            // Outer frame border
+            // Vignette gradient (bottom 40%)
+            VStack {
+                Spacer()
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.45)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 294 * 0.4)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 9))
+            .padding(4)
+
+            // CardDossierTextView — text overlay at bottom
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Dragon Warrior")
+                    .font(.custom("YesevaOne-Regular", size: 13))
+                    .foregroundColor(Color("parchment-light"))
+                HStack(spacing: 4) {
+                    Text("Type:")
+                        .font(.custom("YesevaOne-Regular", size: 8))
+                        .foregroundColor(Color("parchment-light").opacity(0.7))
+                    Text("Creature / Ironwright")
+                        .font(.custom("YesevaOne-Regular", size: 10))
+                        .foregroundColor(Color("parchment-light").opacity(0.9))
+                }
+                HStack(spacing: 4) {
+                    Text("Abilities:")
+                        .font(.custom("YesevaOne-Regular", size: 8))
+                        .foregroundColor(Color("parchment-light").opacity(0.7))
+                    Text("Flying")
+                        .font(.custom("YesevaOne-Regular", size: 10))
+                        .foregroundColor(Color("parchment-light").opacity(0.9))
+                }
+                Text("Cost: 3  ATK: 4  HP: 3")
+                    .font(.custom("YesevaOne-Regular", size: 11))
+                    .foregroundColor(Color("parchment-light"))
+            }
+            .padding(.horizontal, 12)  // 8pt from inner edge + 4pt border inset
+            .padding(.bottom, 12)
+            .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
+
+            // AnimatedRarityBorder stroke
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color("parchment-mid"), lineWidth: 3)
 
-            VStack(alignment: .leading, spacing: 0) {
-                // Name bar
-                HStack {
-                    Text("Dragon Warrior")
-                        .font(.custom("Cinzel-Bold", size: 13))
-                        .foregroundColor(Color("ink-black"))
-                    Spacer()
-                    // N ⊕ cost display: numeral + single chaos mote icon
-                    HStack(spacing: 4) {
-                        Text("3")
-                            .font(.custom("Oswald-Bold", size: 13))
-                            .foregroundColor(Color("ink-black"))
-                        Image("chaos_mote_symbol")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                    }
-                }
-                .frame(height: 25)
-                .padding(.horizontal, 6)
-
-                // Art box placeholder
-                Rectangle()
-                    .fill(Color("canvas-warm"))
-                    .frame(height: 132)
-                    .overlay(
-                        Text("ART BOX")
-                            .font(.custom("Cinzel-Regular", size: 12))
-                            .foregroundColor(Color("parchment-mid"))
-                    )
-
-                // Type line
-                HStack {
-                    Text("Creature — Dragon")
-                        .font(.custom("Cinzel-Regular", size: 10))
-                        .foregroundColor(Color("ink-black"))
-                    Spacer()
-                }
-                .frame(height: 18)
-                .padding(.horizontal, 6)
-
-                // Text box
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Flying. When Dragon Warrior enters, deal 3 damage.")
-                        .font(.custom("EBGaramond-Regular", size: 11))
-                        .foregroundColor(Color("ink-black"))
-                    Divider().background(Color("parchment-mid"))
-                    Text("\"Born of flame and fury.\"")
-                        .font(.custom("EBGaramond-Italic", size: 10))
-                        .foregroundColor(Color("parchment-dark"))
-                }
-                .padding(8)
-                .frame(height: 88, alignment: .top)
-
-                // Stats bar
-                HStack {
-                    Text("001/120 • TST")
-                        .font(.custom("Cinzel-Regular", size: 7))
-                        .foregroundColor(Color("parchment-mid"))
-                    Spacer()
-                    Text("4 / 3")
-                        .font(.custom("Oswald-Bold", size: 13))
-                        .foregroundColor(Color("ink-black"))
-                }
-                .frame(height: 15)
-                .padding(.horizontal, 6)
-
-                // Rarity bar
-                Rectangle()
-                    .fill(Color("aged-gold"))
-                    .frame(height: 4)
-            }
+            // WaxSealView placeholder — bottom-right
+            Circle()
+                .fill(Color("aged-gold").opacity(0.6))
+                .frame(width: 34, height: 34)
+                .position(x: 210 - 4 - 8 - 17, y: 294 - 4 - 8 - 17)
         }
         .frame(width: 210, height: 294)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.4), radius: 8, x: 2, y: 4)
     }
 }
@@ -2903,7 +2906,7 @@ bash Scripts/screenshot_all_devices.sh smoke_test
 echo "Smoke test screenshots saved — review before proceeding"
 ```
 
-**The smoke test passes when:** parchment texture is visible (not a plain flat color), all six fonts render correctly (check name bar, type line, ability text, flavor text, collector number, ATK/HP), the instability badge renders in the stats bar, the rarity color bar appears at the bottom, and all four device screenshots show correct proportional layout. Verify stabilizer and ruin layout variants render without stats bar. Do not proceed if any of these fail.
+**The smoke test passes when:** Yeseva One renders correctly in the dossier text overlay (card name, field labels, stat values all visible), the full-art placeholder fills the inner area edge-to-edge, the vignette gradient darkens the bottom 40% for text legibility, the AnimatedRarityBorder stroke is visible, the WaxSealView placeholder appears at bottom-right, and all four device screenshots show correct proportional layout at 210x294pt. Do not proceed if any of these fail.
 
 ---
 
@@ -3294,6 +3297,64 @@ fragment float4 parchmentFragment(VertexOut in [[stage_in]],
 }
 ```
 
+### 6.2b ParchmentShader — Ragged Edge Pass
+
+The card edge is not a clean rendered line. It is a noise-displaced boundary that reads as the raw material edge of stretched canvas, scraped hide, or cut vellum. The center of the card is fully opaque. The edge irregularity varies per card instance (seeded by card UUID) so no two cards look identical.
+
+This ragged edge pass runs **after** the existing parchment grain and color temperature passes in ParchmentShader. It applies to the card container as a whole — both front face and back face use the same edge treatment.
+
+**Uniforms (add to existing ParchmentShader uniform struct):**
+
+```metal
+// Add to ParchmentUniforms struct
+float edgeRaggedStrength;  // 0.0–1.0, how pronounced the ragged edge is
+float edgeWidth;           // normalized width of edge treatment zone (0.0–1.0)
+float edgeSeed;            // per-card random seed derived from card UUID
+```
+
+**CardCondition → edge uniform values:**
+
+| Condition | edgeRaggedStrength | edgeWidth | Visual description |
+|-----------|-------------------|-----------|--------------------|
+| mint | 0.15 | 0.04 | Barely perceptible irregularity — freshly cut |
+| played | 0.35 | 0.06 | Visible wear, softened corners |
+| worn | 0.60 | 0.08 | Pronounced roughness, material clearly degraded |
+| ancient | 0.85 | 0.12 | Deeply ragged, fragments missing at edges |
+
+**Edge pass logic (runs after existing parchment grain and color temperature passes):**
+
+```metal
+// Ragged edge pass — append to parchmentFragment after existing color processing
+// 1. Compute distance from each edge (normalized 0=at edge, 1=at center)
+float2 edgeDistXY = min(in.texCoord, 1.0 - in.texCoord);
+float distFromEdge = min(edgeDistXY.x, edgeDistXY.y);
+
+// 2. Sample fbm noise (fractal brownian motion, 3-4 octaves) seeded with edgeSeed
+float noise = fbm(in.texCoord * 12.0 + float2(u.edgeSeed, u.edgeSeed * 0.7), 4);
+
+// 3. Displace the edge boundary
+float displacedEdge = u.edgeWidth + (noise * u.edgeRaggedStrength * u.edgeWidth);
+
+// 4. Alpha falloff
+float edgeAlpha = smoothstep(0.0, displacedEdge, distFromEdge);
+
+// 5. Edge darkening — material thinning effect
+float edgeDarkening = mix(0.6, 1.0, smoothstep(0.0, displacedEdge * 1.5, distFromEdge));
+
+// 6. Apply to output: multiply RGB by darkening, multiply alpha by falloff
+color.rgb *= edgeDarkening;
+color.a *= edgeAlpha;
+```
+
+**Clip shape interaction:** The corner radius (12pt) is still enforced by SwiftUI `.clipShape(RoundedRectangle(cornerRadius: 12))`. The shader ragged edge operates **within** that clip shape — it produces irregularity along the boundary, not outside it. The result is that the clean rounded rectangle clips the ragged edge, producing a boundary that is irregular within the geometric constraint.
+
+**Seed derivation:** The `edgeSeed` is derived deterministically from the card's UUID at render time. Same card always produces the same edge pattern. Different cards produce visibly different patterns. Implementation:
+
+```swift
+// In CardView or CardRenderer
+let edgeSeed = Float(card.id.hashValue & 0xFFFF) / Float(0xFFFF)
+```
+
 ### 6.3 Metal Shader: Warm Foil
 
 ```metal
@@ -3419,51 +3480,46 @@ func animateSummon() {
 
 ### 6.6 Wax Seal Rarity Indicator
 
-`WaxSealView` uses `Rarity.waxColor`, `Rarity.sealIconName`, and `Rarity: Comparable` — all defined in `Sources/Models/Card.swift` (Section 2.2). Do not re-declare them here.
+`WaxSealView` loads a pre-generated AI image for the `faction × rarity` combination. Wax color is baked into the image (driven by rarity). The faction symbol is physically embossed into the wax (driven by faction). No programmatic circle, gradient, or symbol overlay. Glow animation stays in code.
+
+Image naming: `seal_[faction.rawValue]_[rarity.rawValue]` — 25 images total in `Assets.xcassets/Icons/Seals/`.
 
 ```swift
 // Sources/Effects/WaxSealView.swift
+// Rarity and CardFaction are defined in Sources/Models/Card.swift.
+// Wax color (rarity-driven) and embossed symbol (faction-driven) are baked into
+// the AI-generated image. See WAX_SEAL_OVERHAUL_BRIEF.md for generation pipeline.
+
+import SwiftUI
+
 struct WaxSealView: View {
     let rarity: Rarity
+    let faction: CardFaction
     @State private var isGlowing = false
 
+    private var imageName: String {
+        "seal_\(faction.rawValue)_\(rarity.rawValue)"
+    }
+
     var body: some View {
-        ZStack {
-            // Outer wax disk
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [rarity.waxColor.opacity(0.7), rarity.waxColor],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 17
-                    )
-                )
-                .frame(width: 34, height: 34)
-                .shadow(color: rarity.waxColor.opacity(0.6),
-                        radius: isGlowing ? 8 : 3, x: 0, y: 0)
-
-            // Embossed symbol — asset name from Rarity.sealIconName (downloaded by Scripts/download_icons.sh)
-            Image(rarity.sealIconName)
-                .resizable()
-                .frame(width: 18, height: 18)
-                .blendMode(.multiply)
-                .opacity(0.55)
-
-            // Specular highlight — directional light from upper-left
-            Ellipse()
-                .fill(
-                    RadialGradient(
-                        colors: [.white.opacity(0.45), .clear],
-                        center: .init(x: 0.35, y: 0.3),
-                        startRadius: 0,
-                        endRadius: 10
-                    )
-                )
-                .frame(width: 22, height: 16)
-                .offset(x: -4, y: -4)
-                .blendMode(.overlay)
+        Group {
+            if UIImage(named: imageName) != nil {
+                Image(imageName)
+                    .resizable()
+                    .interpolation(.high)
+            } else {
+                // Fallback: visible error state — do not ship to App Store
+                Circle()
+                    .fill(rarity.waxColor)
+                    .overlay(Text("!").font(.system(size: 10, weight: .bold)).foregroundColor(.white))
+                    .onAppear { print("⚠️ WAX SEAL MISSING: \(imageName) — run generate_wax_seals.py") }
+            }
         }
+        .frame(width: 34, height: 34)
+        .shadow(
+            color: rarity.waxColor.opacity(isGlowing ? 0.75 : 0.35),
+            radius: isGlowing ? 8 : 3
+        )
         .onAppear {
             guard rarity >= .rare else { return }
             withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
@@ -3474,9 +3530,207 @@ struct WaxSealView: View {
 }
 ```
 
-### 6.6b Card Frame — Animated Borders for Epic and Legendary
+All call sites pass both `rarity` and `faction`:
 
-The border spec in Section 1.4 specifies animated gradients for Epic and Legendary. Create `Sources/Views/CardFrameView.swift`:
+```swift
+WaxSealView(rarity: card.rarity, faction: card.faction)
+```
+
+### 6.6b Instability Badge
+
+**[RETIRED]** `InstabilityBadgeView` and the D20 badge are no longer displayed on card faces. In the dossier layout, instability is shown as a plain text field (`Instability: N`) in CardDossierTextView (see Section 1.4). The D20 base image asset is retained for possible non-card UI use (battlefield HUD, player stats screen). If used outside the card, the `InstabilityBadgeView` code below remains valid:
+
+```swift
+// Sources/Effects/InstabilityBadgeView.swift
+// RETIRED from card face — retained for non-card UI contexts only
+import SwiftUI
+
+struct InstabilityBadgeView: View {
+    let instability: Int  // 0–5
+
+    var body: some View {
+        ZStack {
+            Image("d20_instability_base")
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 22, height: 22)
+
+            Text("\(instability)")
+                .font(.custom("Oswald-Bold", size: 9))
+                .foregroundColor(.white)
+                .shadow(color: .black.opacity(0.6), radius: 1, x: 0, y: 0.5)
+                .offset(y: -1)
+        }
+    }
+}
+```
+
+### 6.6c Rarity Backlight Effect
+
+The rarity glow is not a border shadow — it is colored light appearing to leak out from behind the card. A `CardBacklightView` layer sits **behind the card** in the containing ZStack, bleeds past all four card edges, and uses a large-radius blur to create a soft diffuse halo. This produces the physical illusion that the card body is luminescent and the surface is partly transparent.
+
+**Why this approach and not `shadow()`:** SwiftUI's `.shadow()` renders as a drop shadow on the card silhouette — it's directional and reads as a lighting artifact on the front face, not as light behind. The backlight layer approach places the light source correctly (behind the plane of the card) and the bleed past card edges sells the depth.
+
+**Rarity parameters:**
+
+| Rarity | Color token | Idle opacity | Interaction opacity | Blur radius | Oversize |
+|--------|------------|-------------|-------------------|------------|---------|
+| Common | `parchment-light` | 0.18 | 0.32 | 28pt | 24pt each edge |
+| Uncommon | `antique-silver` | 0.28 | 0.48 | 30pt | 26pt each edge |
+| Rare | `aged-gold` | 0.38 | 0.60 | 34pt | 28pt each edge |
+| Epic | `epic-amethyst` | 0.50 | 0.72 | 38pt | 32pt each edge |
+| Legendary | `legendary-ember` | 0.60 | 0.85 | 42pt | 36pt each edge |
+
+- **Idle:** steady at idle opacity — no pulsing, no animation
+- **On interaction (focused or selected state):** ramps to interaction opacity over 0.18s easeOut
+- **Return to idle:** settles back with `spring(response: 0.4, dampingFraction: 0.7)` over ~0.35s
+- **Oversize:** the backlight frame extends past the card bounds by the oversize value on all four edges — this is what creates the visible bleed and the "from behind" read
+
+```swift
+// Sources/Effects/CardBacklightView.swift
+import SwiftUI
+
+/// Colored light appearing to come from behind the card.
+/// Must be placed BEHIND the card in the parent ZStack — never on top.
+/// Driven by rarity (color + intensity) and card state (idle vs interaction).
+struct CardBacklightView: View {
+    let rarity: Rarity
+    let isInteracting: Bool   // true when card is .focused or .selected
+
+    private var glowColor: Color {
+        switch rarity {
+        case .common:    return Color("parchment-light")
+        case .uncommon:  return Color("antique-silver")
+        case .rare:      return Color("aged-gold")
+        case .epic:      return Color("epic-amethyst")
+        case .legendary: return Color("legendary-ember")
+        }
+    }
+
+    private var idleOpacity: Double {
+        switch rarity {
+        case .common:    return 0.18
+        case .uncommon:  return 0.28
+        case .rare:      return 0.38
+        case .epic:      return 0.50
+        case .legendary: return 0.60
+        }
+    }
+
+    private var interactOpacity: Double {
+        switch rarity {
+        case .common:    return 0.32
+        case .uncommon:  return 0.48
+        case .rare:      return 0.60
+        case .epic:      return 0.72
+        case .legendary: return 0.85
+        }
+    }
+
+    private var blurRadius: CGFloat {
+        switch rarity {
+        case .common:    return 28
+        case .uncommon:  return 30
+        case .rare:      return 34
+        case .epic:      return 38
+        case .legendary: return 42
+        }
+    }
+
+    /// How far the glow layer extends beyond the card frame on each edge.
+    private var oversize: CGFloat {
+        switch rarity {
+        case .common:    return 24
+        case .uncommon:  return 26
+        case .rare:      return 28
+        case .epic:      return 32
+        case .legendary: return 36
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width  + oversize * 2
+            let h = geo.size.height + oversize * 2
+
+            // Radial gradient — dense at center, fades to clear at edges.
+            // The gradient stops are asymmetric: color is strongest at ~40% radius
+            // so the center of the card face doesn't completely wash out.
+            RadialGradient(
+                gradient: Gradient(stops: [
+                    .init(color: glowColor.opacity(0.0), location: 0.0),
+                    .init(color: glowColor.opacity(0.7), location: 0.4),
+                    .init(color: glowColor.opacity(0.5), location: 0.65),
+                    .init(color: glowColor.opacity(0.0), location: 1.0),
+                ]),
+                center: .center,
+                startRadius: 0,
+                endRadius: max(w, h) * 0.6
+            )
+            .frame(width: w, height: h)
+            .offset(x: -oversize, y: -oversize)
+            .blur(radius: blurRadius)
+            .opacity(isInteracting ? interactOpacity : idleOpacity)
+            .animation(
+                isInteracting
+                    ? .easeOut(duration: 0.18)
+                    : .spring(response: 0.4, dampingFraction: 0.7),
+                value: isInteracting
+            )
+            .allowsHitTesting(false)   // never intercepts touches
+            .clipped(antialiased: true)
+        }
+    }
+}
+```
+
+**Integration — add behind card in CardView ZStack:**
+
+```swift
+// In CardView.body — CardBacklightView must be the first (bottom) layer
+ZStack {
+    CardBacklightView(
+        rarity: card.rarity,
+        isInteracting: displayState == .focused || displayState == .selected
+    )
+
+    // Card body layers on top...
+    // Full-art image, vignette gradient, CardDossierTextView, WaxSealView, particles...
+}
+// CRITICAL: the containing ZStack must NOT clip to bounds.
+// CardBacklightView overflows intentionally. Do not apply .clipped() to CardView.
+```
+
+**Reduce Motion:** When `accessibilityReduceMotion` is enabled, the interaction animation is disabled — the backlight stays at idle opacity permanently. The idle glow itself is static and acceptable under Reduce Motion since it does not animate.
+
+```swift
+@Environment(\.accessibilityReduceMotion) var reduceMotion
+
+// In CardBacklightView:
+.animation(
+    reduceMotion ? nil :
+        (isInteracting
+            ? .easeOut(duration: 0.18)
+            : .spring(response: 0.4, dampingFraction: 0.7)),
+    value: isInteracting
+)
+```
+
+**Performance:** The backlight layer is a single blurred gradient — one draw call, no texture, no Metal shader. The `.blur()` modifier uses Core Image under the hood and is GPU-accelerated. Rasterize the backlight layer when not animating to avoid re-compositing every frame:
+
+```swift
+.drawingGroup()   // flatten to a single offscreen texture when idle
+```
+
+Remove `.drawingGroup()` during the interaction animation (it prevents real-time opacity changes from being smooth). Toggle it based on `isInteracting`.
+
+**Smoke test checklist — verify before moving on:**
+- [ ] Common card has a faint warm halo visible against a mid-grey background
+- [ ] Legendary card backlight clearly bleeds past all four card edges
+- [ ] Tapping/focusing a card visibly brightens the backlight within 0.18s
+- [ ] Releasing returns to idle with spring settle (slight overshoot then rest)
+- [ ] Backlight never intercepts touch events (drag still works over the halo area)
+- [ ] CardView ZStack is not clipped — halo visible on all four sides
 
 ```swift
 // Sources/Views/CardFrameView.swift
@@ -3604,7 +3858,7 @@ import UIKit
 enum CardParticleFactory {
 
     /// Returns nil for .common (no particles).
-    static func makeEmitter(for rarity: Rarity, in artBoxSize: CGSize) -> SKEmitterNode? {
+    static func makeEmitter(for rarity: Rarity, in cardArtSize: CGSize) -> SKEmitterNode? {
         switch rarity {
         case .common:
             return nil
@@ -3629,7 +3883,7 @@ enum CardParticleFactory {
             e.particleColor            = UIColor(named: "parchment-light") ?? .systemGray6
             e.particleBlendMode        = .alpha        // not additive — physical, not digital
             e.particleTexture          = makeCircleTexture(diameter: 4)
-            constrainToArtBox(e, size: artBoxSize)
+            constrainToCardArea(e, size: cardArtSize)
             return e
 
         case .rare:
@@ -3653,7 +3907,7 @@ enum CardParticleFactory {
             e.particleColor            = UIColor(named: "aged-gold") ?? .systemYellow
             e.particleBlendMode        = .alpha
             e.particleTexture          = makeLeafTexture()
-            constrainToArtBox(e, size: artBoxSize)
+            constrainToCardArea(e, size: cardArtSize)
             return e
 
         case .epic:
@@ -3677,7 +3931,7 @@ enum CardParticleFactory {
             e.particleColor            = UIColor(named: "epic-amethyst") ?? .purple
             e.particleBlendMode        = .alpha
             e.particleTexture          = makeCircleTexture(diameter: 5)
-            constrainToArtBox(e, size: artBoxSize)
+            constrainToCardArea(e, size: cardArtSize)
             return e
 
         case .legendary:
@@ -3701,7 +3955,7 @@ enum CardParticleFactory {
             e.particleColor            = UIColor(named: "legendary-ember") ?? .orange
             e.particleBlendMode        = .alpha        // still physical — no additive here
             e.particleTexture          = makeSparkTexture()
-            constrainToArtBox(e, size: artBoxSize)
+            constrainToCardArea(e, size: cardArtSize)
             return e
         }
     }
@@ -3745,13 +3999,13 @@ enum CardParticleFactory {
         })
     }
 
-    /// Constrain particle birth position to the art box area (x=4–206, y=29–161 in 210×294pt card).
+    /// Constrain particle birth position to the full card art area (inner content: 202×286pt at reference).
     /// Convert to SpriteKit coordinates (origin at center of SKScene).
-    private static func constrainToArtBox(_ emitter: SKEmitterNode, size artBoxSize: CGSize) {
-        // Birth region covers the full art box width and height
+    private static func constrainToCardArea(_ emitter: SKEmitterNode, size cardArtSize: CGSize) {
+        // Birth region covers the full card art width, concentrated in lower half
         emitter.particlePositionRange = CGVector(
-            dx: artBoxSize.width,
-            dy: artBoxSize.height * 0.5   // concentrate births in lower half of art box
+            dx: cardArtSize.width,
+            dy: cardArtSize.height * 0.5   // concentrate births in lower half of card art
         )
     }
 }
@@ -3760,23 +4014,23 @@ enum CardParticleFactory {
 **Integrate into card view via SpriteKit overlay:**
 
 ```swift
-// In CardView or CardEffectLayer — add SpriteKit scene as overlay on art box
+// In CardView or CardEffectLayer — add SpriteKit scene as overlay on full card art area
 struct CardParticleView: UIViewRepresentable {
     let rarity: Rarity
-    let artBoxSize: CGSize
+    let cardArtSize: CGSize  // inner content area size (202×286pt at reference)
 
     func makeUIView(context: Context) -> SKView {
         let skView = SKView()
         skView.backgroundColor = .clear
         skView.allowsTransparency = true
 
-        let scene = SKScene(size: artBoxSize)
+        let scene = SKScene(size: cardArtSize)
         scene.backgroundColor = .clear
         scene.scaleMode = .resizeFill
 
-        if let emitter = CardParticleFactory.makeEmitter(for: rarity, in: artBoxSize) {
-            // Position at bottom center of art box — particles rise from there
-            emitter.position = CGPoint(x: artBoxSize.width / 2, y: 8)
+        if let emitter = CardParticleFactory.makeEmitter(for: rarity, in: cardArtSize) {
+            // Position at bottom center of card art — particles rise from there
+            emitter.position = CGPoint(x: cardArtSize.width / 2, y: 8)
             scene.addChild(emitter)
         }
 
@@ -3791,7 +4045,7 @@ struct CardParticleView: UIViewRepresentable {
 **Common failure modes:**
 - Particles that glow with additive blending look digital, not physical — always use `.alpha` blend mode, never `.add`
 - Particles that move too fast or too uniformly look like snow, not leaf fragments — ensure `particleSpeedRange` is at least 50% of `particleSpeed`, and set `particleRotationSpeed` > 0
-- Particles born outside the card area look uncontrolled — `constrainToArtBox` handles this; verify the `SKView` frame clips to the art box bounds
+- Particles born outside the card area look uncontrolled — `constrainToCardArea` handles this; verify the `SKView` frame clips to the inner content area bounds
 
 ### 6.9 Graceful Degradation
 
@@ -3849,7 +4103,7 @@ Haptics are not decorative for this aesthetic — they are the primary mechanism
 | Epic reveal | Custom AHAP: deep continuous 0→0.7→0.4 over 0.6s + shimmer 1.2s | Arcane power building |
 | Legendary reveal | Custom AHAP: full burst 1.0 intensity 0.1s + shimmer 1.5s | Powerful emergence |
 | Invalid action | `UINotificationFeedbackGenerator(.error)` | Resistance, won't budge |
-| Scroll text box | `UISelectionFeedbackGenerator` | Paper page turn feel |
+| Scroll back face report | `UISelectionFeedbackGenerator` | Paper page turn feel |
 
 ### 7.2 Required AHAP Files
 
@@ -4176,10 +4430,10 @@ GeometryReader { geometry in
     let availableWidth = geometry.size.width
     let isCompact = hSizeClass == .compact
 
-    // Card width: 55% of available width for iPad, 85% for iPhone
+    // Card width: 40% of available width for iPad, 85% for iPhone
     let cardWidth = isCompact
-        ? min(availableWidth * 0.85, 320)
-        : min(availableWidth * 0.55, 500)
+        ? min(availableWidth * 0.85, 260)
+        : min(availableWidth * 0.40, 350)
     let cardHeight = cardWidth * (294.0 / 210.0)  // always maintain 5:7
 
     CardView(card: card)
@@ -4235,7 +4489,7 @@ extension Card {
     var voiceOverLabel: String {
         var parts = [name]
         // cost is Int? — nil for stabilizers, which have no cost
-        if let c = cost, c > 0 { parts.append("Cost: \(c) chaos mote\(c == 1 ? "" : "s")") }
+        if let c = cost, c > 0 { parts.append("Cost: \(c)") }
         parts.append(type.rawValue.capitalized)
         if let atk = attack, let hp = hp { parts.append("\(atk) attack, \(hp) hit points") }
         if instability > 0 { parts.append("instability \(instability)") }
@@ -4257,7 +4511,7 @@ func scaledFont(name: String, textStyle: UIFont.TextStyle, baseSize: CGFloat) ->
 }
 ```
 
-The text box must accommodate Dynamic Type scaling — at XXL sizes, font will be 2× larger. The text box should expand its scroll region, not truncate text.
+The back face report (CardIntelligenceReportView) must accommodate Dynamic Type scaling — at XXL sizes, font will be 2x larger. The ScrollView should expand its scroll region, not truncate text. The front face dossier text overlay is fixed-size and does not scale with Dynamic Type.
 
 ### 10.3 Reduce Motion
 
@@ -4273,40 +4527,27 @@ withAnimation(reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.
 var parallaxEnabled: Bool { !reduceMotion && effectTier >= .shimmerOnly }
 ```
 
-### 10.3b Stats Bar — Wax Seal Z-ordering and Text Boundary
+### 10.3b Wax Seal and Dossier Text Z-ordering
 
-The wax seal zone is x=164–198, y=258–292. The stats bar ATK/HP text right-aligns within the 202pt bar at y=267–282. Without explicit z-ordering and padding, they overlap with undefined layering.
+**[Updated for dossier layout]** The stats bar is retired. In the dossier layout, ATK/HP/Cost are plain text fields in the CardDossierTextView overlay, left-aligned at the bottom of the card. The WaxSealView sits at the bottom-right corner (8pt from inner edges, 34x34pt). Since the text block is left-aligned and the seal is right-aligned, overlap is minimal. If both occupy the same vertical space at the bottom of the card:
 
-**Rule:** Wax seal always renders on top. ATK/HP text must be right-inset by 52pt to stay clear of the seal zone.
+**Rule:** WaxSealView always renders on top (higher zIndex). The Cost/ATK/HP text line in CardDossierTextView has right padding to stay clear of the seal zone.
 
 ```swift
-// In the ZStack that builds the full card:
-ZStack {
-    // ... art box, type line, text box ...
+// In the card ZStack (Section 1.4 layer order):
+ZStack(alignment: .bottom) {
+    // ... layers 1-3 (backlight, artwork, vignette) ...
 
-    // Stats bar — 52pt right padding keeps text clear of seal zone (x ≤ 158)
-    HStack(spacing: 0) {
-        if card.instability > 0 {
-            InstabilityBadgeView(instability: card.instability)
-        }
-        Text("\(card.collectorNumber) • \(card.setCode)")
-            .font(.custom("Cinzel-Regular", size: 7))
-            .foregroundColor(Color("parchment-mid"))
-        Spacer()
-        if let atk = card.attack, let hp = card.hp {
-            Text("\(atk) / \(hp)")
-                .font(.custom("Oswald-Bold", size: 13))
-                .foregroundColor(Color("ink-black"))
-        }
-    }
-    .frame(height: 15)
-    .padding(.leading, 6)
-    .padding(.trailing, 52)  // 6pt normal + 34pt seal width + 12pt buffer
+    // Layer 4: CardDossierTextView — bottom-anchored, left-aligned
+    CardDossierTextView(card: card)
+        .padding(.horizontal, 12)  // 8pt from inner edge + 4pt border inset
+        .padding(.bottom, 12)
+        .padding(.trailing, 46)    // keep clear of seal zone (34pt seal + 12pt buffer)
 
-    // Wax seal — always on top
-    WaxSealView(rarity: card.rarity)
+    // Layer 5: WaxSealView — bottom-right, always on top
+    WaxSealView(rarity: card.rarity, faction: card.faction)
         .frame(width: 34, height: 34)
-        .position(x: 181, y: 275)  // center of x=164–198, y=258–292 zone
+        .position(x: 210 - 4 - 8 - 17, y: 294 - 4 - 8 - 17)
         .zIndex(1)
 }
 ```
@@ -4435,7 +4676,7 @@ When the custom LoRA produces a poor result, first retry with a refined prompt (
 8. Typography pass — all text elements to spec (Section 1.5), letterpress effect applied, font verification complete
 9. Parchment shader pass — apply to card body, verify against Book of Kells reference
 10. Generate test card artwork — color grade — verify against Rembrandt reference
-11. Art box compositing — oil paint shader + edge vignette + AO shadow
+11. Full-art compositing — oil paint shader + vignette gradient (Section 3.7)
 12. Foil shader + CMMotionManager
 13. Core Animation state transitions (Section 1.6)
 14. SpriteKit particle systems
@@ -4505,6 +4746,8 @@ Run on all four device screenshots after every iteration. If any device fails, t
 
 Use this exact format. No free-form critique.
 
+**Before scoring any axis, read `docs/CRITIQUE_SCORING_GUIDE.md`.** That document defines what each score (1–5) means on each axis in terms specific to this project's shaders, materials, and failure modes. Without it, scores are uncalibrated and meaningless. Score 3 is the most important calibration point — it describes output that looks plausible but has one specific identifiable problem. Most first iterations land at 3. Score 4 is the minimum acceptable for a component to be marked complete.
+
 ```markdown
 ## Iteration [N] — [Component Name] — [Device]
 **Timestamp:** [YYYY-MM-DD HH:MM]
@@ -4520,6 +4763,12 @@ Use this exact format. No free-form critique.
 | Tactile impression | | Overall: does it feel touchable? |
 | iPad vs iPhone | | Any layout differences specific to larger screen? |
 | Dark mode | | Candlelit manuscript feel? Not just inverted? |
+| War camp test | | Imagine you are in a war camp. You have just picked up this card. Does it feel like that card? [YES / NO] — If NO: which element breaks the illusion? |
+
+**War camp test result:** [YES / NO]
+If NO — element breaking illusion: [specific element]
+If NO — planned fix: [one concrete action]
+*This axis is a hard requirement. A phase is not complete until the war camp test returns YES.*
 
 **Regression check:** [PASS/FAIL] — diff score [X.XXXX]
 **Largest gap:** [one sentence — the single most impactful visual problem]
@@ -4540,7 +4789,8 @@ Use this exact format. No free-form critique.
 
 A card component is **complete** when all of the following are true:
 
-- All critique axes score 4+ on all four device targets in both light and dark mode
+- All critique axes 1–8 score 4+ on all four device targets in both light and dark mode
+- Axis 9 (war camp test) returns YES on all four device targets — this is a hard gate, not a score
 - Visual regression diff score < 0.025 on all four device screenshots
 - All nine card states render without error on all four simulators
 - Card back renders correctly and flip animation completes without visual artifacts
@@ -4875,8 +5125,8 @@ If reserve is exhausted, orchestrator writes a human-readable budget status summ
 
 ## Revision Log
 
-| Date | Change |
-|------|--------|
-| 2026-02-21 | N ⊕ unified cost display replaces tiled dot system (owner-approved) |
-| 2026-02-21 | Updated iPad card sizing from 0.40/350pt to 0.55/500pt based on iOS card game UI research. iPhone cap updated from 260pt to 320pt. Collection grid iPad minimum updated to 160pt. Research found original 40% spec produced only 34% effective width on 13" iPad; industry standard is 50-65%. |
+| Date | Sections Changed | Summary |
+|------|-----------------|---------|
+| 2026-02-23 | §1.4, §1.5, §1.5b, §1.8, §6.2b (new) | **Full-art dossier card redesign.** Replaced zone-stack VStack layout with full-art dossier format: artwork fills entire card interior, text fields overlaid at bottom via CardDossierTextView. Replaced typography spec: front face uses Yeseva One exclusively, back face uses IM Fell English; retired Cinzel/EBGaramond/Oswald from card spec (retained for non-card UI). Replaced card type variants with field-visibility tables per type. Replaced card back with full intelligence report (CardIntelligenceReportView) containing ability details, modifier effects, and flavor text on parchment panel. Added §6.2b ParchmentShader ragged edge pass specification (fbm noise-displaced boundary, per-card UUID seed, CardCondition-driven intensity). User-authorized modification. |
+| 2026-02-23 | ToC, §1.1, §1.9, §3.3c, §3.4, §3.7, §3.8, §4.7, §4.9, §6.6b, §6.6c, §6.8, §7.1, §10.2, §10.3b, §10.1, §11 | **Stale reference cleanup.** Updated all remaining references to retired concepts (zone-stack layout, art box, name bar, stats bar, rarity bar, type line, text box, chaos mote symbol on card face, D20 instability badge, InstabilityBadgeView). Updated font scripts to include Yeseva One + IM Fell English alongside retained non-card fonts. Rewrote SmokeTestCardView to dossier layout. Rewrote Section 3.7 for full-art compositing. Retired §6.6b InstabilityBadgeView (retained code for non-card UI). Rewrote §10.3b from stats bar z-ordering to dossier text/seal z-ordering. Updated particle system from artBoxSize to cardArtSize naming. |
 

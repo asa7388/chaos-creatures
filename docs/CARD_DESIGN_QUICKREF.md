@@ -43,146 +43,116 @@ Swift: `Color(UIColor(displayP3Red: r, green: g, blue: b, alpha: 1))`
 
 ### Faction Color Mapping
 
-Wax color is driven by **rarity** (parchment-tan → silver → gold → amethyst → ember-red). Faction color is used for the **wax seal glow only**. The faction **symbol** (scroll / tree / sledgehammer / wing / skull) is embossed into the wax. 25 seal images stored in `Assets.xcassets/Icons/Seals/`.
+Faction token colors are **reserved** — not used for runtime tinting. Faction identity is expressed through the wax seal's embossed symbol.
 
-| Faction | Token | Where used |
-|---------|-------|-----------|
-| Demonic Kingdoms | `wax-red` | Wax seal glow only |
-| Fey Courts | `fey-teal` | Wax seal glow only |
-| Ironwright Collective | `antique-silver` | Wax seal glow only |
-| Celestial Crusade | `aged-gold` | Wax seal glow only |
-| The Endless | `rot-moss` | Wax seal glow only |
+| Faction | Token | Embossed Symbol on Wax Seal |
+|---------|-------|---------------------------|
+| Demonic Kingdoms | `wax-red` | Scroll with curled ends |
+| Fey Courts | `fey-teal` | Gnarled ancient tree |
+| Ironwright Collective | `antique-silver` | Sledgehammer |
+| Celestial Crusade | `aged-gold` | Single angelic wing |
+| The Endless | `rot-moss` | Human skull, front-facing |
+
+Wax color is driven by **rarity** (parchment-tan → silver → gold → amethyst → ember-red), not faction.
 
 ---
 
-## CARD LAYOUT (210 × 294pt reference — always scale proportionally)
+## CARD LAYOUT — Full-Art Dossier (210 × 294pt reference, 5:7 ratio)
 
 ```
-┌─────────────────────────────────┐
-│ [outer border: 3pt all sides]   │
-│ ┌─────────────────────────────┐ │
-│ │ NAME BAR          N ⊕       │ │  25pt tall
-│ ├─────────────────────────────┤ │
-│ │        ART BOX              │ │  132pt tall
-│ ├─────────────────────────────┤ │
-│ │ TYPE LINE      [SET SYMBOL] │ │  18pt tall
-│ ├─────────────────────────────┤ │
-│ │        TEXT BOX             │ │  88pt tall
-│ │  [ability] ──────────────   │ │
-│ │  [flavor italic]            │ │
-│ ├─────────────────────────────┤ │
-│ │ [collector #]  [SET] [STATS]│ │  15pt tall
-│ │ ░░░░ rarity color bar ░░░░  │ │  4pt tall
-│ └─────────────────────────────┘ │
-└─────────────────────────────────┘
+ZStack layers (bottom → top):
+  1. CardBacklightView        rarity glow behind card
+  2. Artwork image             fills inner area (202×286pt), corner radius 9pt
+  3. Art vignette gradient     bottom 40% darkening (clear → black 45%)
+  4. CardDossierTextView       labeled fields, bottom-anchored
+  5. WaxSealView               Rank Emblem, bottom-right, 34×34pt
+
+ParchmentShader ragged edge applies to entire card container.
+No zones. No border overlay. No decorative frame PNG.
 ```
 
-### Zone Measurements
+### Front-Face Text Fields (Yeseva One, all left-aligned, 8pt from inner edge)
 
-| Zone | X | Y | W | H | Notes |
-|------|---|---|---|---|-------|
-| Outer border | 0 | 0 | 210 | 294 | Corner radius: 12pt |
-| Inner content area | 4 | 4 | 202 | 286 | Corner radius: 9pt |
-| Name bar | 4 | 4 | 202 | 25 | `N ⊕` right-aligned, 6pt from inner right edge; Oswald-Bold 13pt numeral + 20×20pt chaos mote icon |
-| Art box | 4 | 29 | 202 | 132 | No corner radius |
-| Art box vignette | 4 | 29 | 202 | 132 | 20pt feather fade all 4 edges |
-| Type line | 4 | 161 | 202 | 18 | Set symbol right-aligned 14×14pt |
-| Text box | 8 | 179 | 194 | 88 | 4pt internal padding (Spell/Stabilizer: 107pt — stats bar absent) |
-| Ability/flavor divider | 12 | varies | 186 | 0.5 | parchment-mid hairline |
-| Stats bar | 4 | 267 | 202 | 15 | ATK/HP right-aligned; InstabilityBadgeView left (D20 full-color + white numeral); absent on Spell/Stabilizer |
-| Rarity color bar | 4 | 282 | 202 | 4 | Bottom of inner area |
-| Wax seal | 164 | 258 | 34 | 34 | Rarity indicator — absent on Spell and neutral Ruins |
+| Field | Size | Opacity | Notes |
+|-------|------|---------|-------|
+| Name | 13pt | 100% | Primary identification |
+| Field labels | 8pt | 70% | Smaller, recedes |
+| Type / Faction | 10pt | 90% | |
+| Abilities | 10pt | 90% | Summary only, no descriptions |
+| Modifiers | 10pt | 90% | Names only, no effects |
+| Cost / ATK / HP | 11pt | 100% | Single line, plain numbers |
+| Instability | 10pt | 90% | Plain number |
 
-### Border Weight by Rarity
+### Rarity Backlight (CardBacklightView — §6.6c)
 
-| Rarity | Border | Inner shadow | Outer glow | Frame |
-|--------|--------|-------------|-----------|-------|
-| Common | 3pt flat | None | None | Matte parchment-mid |
-| Uncommon | 3.5pt | 1pt | None | Antique-silver gradient |
-| Rare | 4pt | 2pt | 4pt, aged-gold, 40% | Aged-gold gradient |
-| Epic | 4pt | 2pt | 6pt, epic-amethyst, 50% | Amethyst→purple animated |
-| Legendary | 4pt | 2pt | 8pt, legendary-ember, 60% | Ember→gold animated |
+Sits **behind** the card in ZStack. A blurred radial gradient that bleeds past the card edges, creating the illusion of colored light from behind the card. Steady at idle, brightens on interaction.
 
-### Chaos Mote Cost Display
+| Rarity | Color token | Idle opacity | Interaction opacity | Blur radius | Edge bleed |
+|--------|------------|-------------|-------------------|------------|-----------|
+| Common | `parchment-light` | 0.18 | 0.32 | 28pt | 24pt |
+| Uncommon | `antique-silver` | 0.28 | 0.48 | 30pt | 26pt |
+| Rare | `aged-gold` | 0.38 | 0.60 | 34pt | 28pt |
+| Epic | `epic-amethyst` | 0.50 | 0.72 | 38pt | 32pt |
+| Legendary | `legendary-ember` | 0.60 | 0.85 | 42pt | 36pt |
 
-Format: `N ⊕` — numeral (Oswald-Bold 13pt) + single chaos mote icon (20×20pt)
-Position: Right-aligned in Name Bar, 6pt from inner right edge, vertically centered
-Icon file: Resources/Icons/chaos_mote_symbol.png
+- **Interaction trigger:** `.focused` or `.selected` card state
+- **Brighten:** 0.18s easeOut
+- **Settle:** spring(response: 0.4, dampingFraction: 0.7)
+- **Reduce Motion:** animation disabled, idle glow stays static
+- **CRITICAL:** CardView ZStack must NOT be clipped — the bleed is intentional
 
-| Card Type    | Cost Display       |
-|--------------|-------------------|
-| Creature     | `N ⊕`             |
-| Spell        | `N ⊕`             |
-| Planar Ruin  | `N ⊕` (no label)  |
-| Stabilizer   | None              |
+### Faction Icons (wax seal embossing only)
 
-### Faction Icons (wax seal embossing only — not on type line)
+Faction icons are embossed into the wax seal. They do **not** appear as standalone elements on the card face.
 
-| Faction | Symbol | Asset |
-|---------|--------|-------|
-| Demonic Kingdoms | Scroll | `faction_demonic.png` |
-| Fey Courts | Tree | `faction_fey.png` |
+| Faction | Icon | Asset |
+|---------|------|-------|
+| Demonic Kingdoms | Scroll with curled ends | `faction_demonic.png` (silhouette, used as embossing reference) |
+| Fey Courts | Gnarled ancient tree | `faction_fey.png` |
 | Ironwright Collective | Sledgehammer | `faction_ironwright.png` |
-| Celestial Crusade | Single wing | `faction_celestial.png` |
-| The Endless | Skull | `faction_endless.png` |
+| Celestial Crusade | Single angelic wing | `faction_celestial.png` |
+| The Endless | Human skull, front-facing | `faction_endless.png` |
 
-White silhouette PNGs, used by wax seal pipeline. Not rendered on type line. All in `Resources/Icons/`.
-
-### Instability Badge (stats bar, left-aligned)
-
-| Property | Value |
-|----------|-------|
-| Component | `InstabilityBadgeView(instability: card.instability)` |
-| Icon | D20 full-color (cobalt blue left / fiery orange right) — `Resources/Icons/d20_instability_base.png` |
-| Number | Oswald-Bold, 9pt, white (#FFFFFF), overlaid in code at runtime, offset y=-1pt |
-| Color | White only — not faction-tinted |
-| Left margin | 4pt |
-| Hidden when | instability == 0 |
+Wax seal assets are pre-generated as 25 faction×rarity PNGs in `Assets.xcassets/Icons/Seals/`. Naming: `seal_[faction]_[rarity]`. See `WAX_SEAL_OVERHAUL_BRIEF.md`.
 
 ---
 
 ## TYPOGRAPHY
 
-### Fonts (OFL licensed, fonts.google.com)
-
-| Font | Used for |
-|------|---------|
-| Cinzel-Bold | Card name |
-| Cinzel-Regular | Type line, collector number, set code, mana cost text |
-| EBGaramond-Regular | Ability text |
-| EBGaramond-Italic | Flavor text |
-| EBGaramond-SemiBold | Keyword abilities |
-| Oswald-Bold | ATK/HP stats, instability badge, chaos mote cost numeral (13pt) |
-
-All 6 must be registered in Info.plist under `UIAppFonts` before use.
-
-### Text Element Specs
-
-| Element | Font | Size | Color | Align | Max lines | Overflow |
-|---------|------|------|-------|-------|-----------|----------|
-| Card name | Cinzel-Bold | 13pt | ink-black | Left | 1 | Scale to 10pt, truncate |
-| Chaos mote cost numeral | Oswald-Bold | 13pt | ink-black | Right | 1 | Never truncate — all card types except stabilizers |
-| Type line | Cinzel-Regular | 10pt | ink-black | Left | 1 | Scale to 8pt, truncate |
-| Ability text | EBGaramond-Regular | 11pt | ink-black | Left | — | Scroll |
-| Flavor text | EBGaramond-Italic | 10pt | parchment-dark | Left | — | Below ability |
-| Keywords | EBGaramond-SemiBold | 11pt | ink-black | Left | — | Bold keyword only |
-| Collector # | Cinzel-Regular | 7pt | parchment-mid | Left | 1 | Never truncate |
-| Set code | Cinzel-Regular | 7pt | parchment-mid | Center | 1 | — |
-| ATK/HP | Oswald-Bold | 13pt | ink-black | Right | 1 | Never truncate |
-| Instability numeral | Oswald-Bold | 9pt | white #FFFFFF | Left (overlaid on D20) | 1 | Never truncate — use InstabilityBadgeView |
-
-### Letterpress Effect (apply to all text)
+### Front Face — Yeseva One (sole card font)
 
 | Property | Value |
 |----------|-------|
-| Shadow offset | x=0, y=0.5pt |
-| Shadow blur | 0.5pt |
-| Shadow color (light) | parchment-dark at 60% opacity |
-| Shadow color (dark) | parchment-dark-mode at 60% opacity |
-| Line height (ability) | 1.3× |
-| Line height (all other) | 1.2× |
+| File | YesevaOne-Regular.ttf (OFL, Google Fonts) |
+| Fallback | Georgia Bold |
+| Shadow | x=0, y=1pt, blur 2pt, black 80% |
+| Line spacing | 1.4× |
 
-Do NOT use system drop shadow. Render text twice: shadow pass +0.5pt down, then normal pass on top.
+### Back Face — IM Fell English
+
+| Property | Value |
+|----------|-------|
+| Files | IMFellEnglish-Regular.ttf, IMFellEnglish-Italic.ttf (OFL) |
+| Fallback | Georgia / Georgia Italic |
+| Shadow | x=0, y=0.5pt, blur 0.5pt, parchment-dark 60% |
+
+### Text Element Specs
+
+| Element           | Font            | Size | Color              |
+|-------------------|-----------------|------|--------------------|
+| Card name (front) | Yeseva One      | 13pt | parchment-light    |
+| Labels (front)    | Yeseva One      | 8pt  | parchment-light 70%|
+| Values (front)    | Yeseva One      | 10pt | parchment-light 90%|
+| Stats (front)     | Yeseva One      | 11pt | parchment-light    |
+| Report body (back)| IM Fell English | 10pt | ink-black          |
+| Report label(back)| IM Fell English | 9pt  | ink-black          |
+| Flavor text (back)| IM Fell Italic  | 10pt | parchment-dark     |
+| Faction hdr (back)| IM Fell English | 8pt  | parchment-dark 60% |
+
+### Retired Fonts
+
+RETIRED from card faces: Cinzel, EBGaramond, Oswald
+(kept for SpriteKit battle scene + non-card UI only)
 
 ---
 
@@ -194,7 +164,7 @@ Physical metaphor: heavy card with inertia. Weighted, not snappy.
 |-----------|---------|-------|---------------|
 | `default` → `focused` | 0.18s | easeOut | Shadow 4→12pt, Y -2pt, scale 1.0→1.02 |
 | `focused` → `default` | 0.25s | spring(0.4, 0.7) | Reverse |
-| `default` → `selected` | 0.12s | easeIn | Scale 1.0→0.97, glow 0→0.8 |
+| `default` → `selected` | 0.12s | easeIn | Scale 1.0→0.97, backlight brightens |
 | `selected` → `default` | 0.3s | spring(0.35, 0.65) | Reverse + bounce |
 | `default` → `tapped` | 0.35s | easeInOut | Y-axis rotate 0→90° (phase 1 of flip) |
 | `default` → `previewed` | 0.28s | easeOut | Scale up, background dim 0→0.7 |
@@ -238,15 +208,36 @@ Physical metaphor: heavy card with inertia. Weighted, not snappy.
 
 ---
 
-## CARD BACK
+## CARD BACK — Intelligence Report
 
-| Property | Value |
-|----------|-------|
-| Base | canvas-warm + canvas texture |
-| Center seal | 40pt diameter, wax-red, game sigil |
-| Border | 3pt, parchment-mid (same as common) |
-| Corner radius | 12pt |
-| Content | None |
+Layers: parchment panel (parchment-panel.imageset) + scrollable content
+Font: IM Fell English (Regular + Italic)
+Shadow: x=0, y=0.5pt, blur 0.5pt, parchment-dark 60%
+
+Content (top → bottom):
+
+| Element | Size | Color | Notes |
+|---------|------|-------|-------|
+| Faction name header | 8pt | 60% opacity | Centered |
+| "Abilities:" label | 9pt | ink-black | |
+| [Keyword]: [desc] | 10pt | ink-black | Keyword in italic |
+| "Modifiers:" label | 9pt | ink-black | |
+| [Name]: [effect] | 10pt | ink-black | |
+| Divider | 0.5pt | parchment-mid | Hairline |
+| "[Flavor text]" | 10pt italic | parchment-dark | Quoted |
+| Game sigil | — | — | DEFERRED |
+
+Scrolling: momentum, no indicators, content clips to inner area
+Ragged edge: same ParchmentShader treatment as front face
+
+### Card Type Back Variants
+
+| Type | Content order |
+|------|--------------|
+| Creature | Abilities → Modifiers → Flavor |
+| Spell | Abilities (full) → Flavor |
+| Stabilizer | Abilities (passive) → Flavor |
+| Planar Ruin | Passive → Destroyed → Modifiers → Flavor |
 
 ---
 
@@ -255,7 +246,7 @@ Physical metaphor: heavy card with inertia. Weighted, not snappy.
 | Failure | Fallback |
 |---------|---------|
 | Artwork load fails | Canvas-warm rect + procedural ink-wash + quill icon (game-icons.net) |
-| Font load fails | Georgia for Cinzel, Times New Roman for EB Garamond. Never SF. |
+| Font load fails | Georgia Bold for Yeseva One, Georgia/Georgia Italic for IM Fell English. Never SF. |
 | Metal unavailable | `staticOnly` effect tier |
 | Card JSON parse error | Torn-edge placeholder, "???" for all text |
 | Shader compile fails | Log to `Logs/shader_errors.log`, flat parchment-light + standard shadow |
@@ -284,6 +275,22 @@ Never show blank white or black rectangle.
 | rare | 0.6 | 0.5 |
 | epic | 0.8 | 0.75 |
 | legendary | 1.0 | 1.0 |
+
+### Ragged Edge Uniforms (ParchmentShader)
+
+| Condition | edgeRaggedStrength | edgeWidth |
+|-----------|-------------------|-----------|
+| mint      | 0.15              | 0.04      |
+| played    | 0.35              | 0.06      |
+| worn      | 0.60              | 0.08      |
+| ancient   | 0.85              | 0.12      |
+
+| Property | Value |
+|----------|-------|
+| edgeSeed | Derived from card UUID (deterministic per card) |
+| fbm noise | 3–4 octaves, uv * 8.0 + edgeSeed |
+| Alpha | smoothstep(0.0, displacedEdge, distFromEdge) |
+| Darkening | 40% at very edge (material thinning) |
 
 ---
 
@@ -466,7 +473,7 @@ Implementation: `AVAudioEngine` + preloaded buffers. Never `AVAudioPlayer`. Sess
 | Epic | Slow amethyst embers | 8/s | 3.5s | 4–8pt | epic-amethyst→clear | .alpha |
 | Legendary | Ember sparks | 14/s | 2s | 3–6pt | legendary-ember→clear | .alpha |
 
-Always `.alpha` blend — additive looks digital. Birth region: art box area only.
+Always `.alpha` blend — additive looks digital. Birth region: full card interior only.
 
 ---
 
@@ -492,8 +499,8 @@ Always `.alpha` blend — additive looks digital. Birth region: art box area onl
 | Previewed | 270 × 378pt | 340 × 476pt | 300 × 420pt |
 
 GeometryReader formula:
-- iPhone: `min(availableWidth * 0.85, 320)`
-- iPad: `min(availableWidth * 0.55, 500)`
+- iPhone: `min(availableWidth * 0.85, 260)`
+- iPad: `min(availableWidth * 0.40, 350)`
 - Height always: `width * (294.0 / 210.0)`
 
 ---
@@ -551,16 +558,16 @@ Instruments order (human runs in Xcode): Core Animation → GPU Frame Capture �
 | 4 | Source + prepare parchment/canvas → asset catalog | — |
 | 5 | Schema + 5 test JSON cards (one per rarity, ≥3 factions) | — |
 | **6** | **Smoke test — all 4 simulators** | **⛔ HARD GATE: user sign-off** |
-| 7 | Static card layout (correct proportions, both size classes) | — |
-| 8 | Typography pass (all text to spec, letterpress) | — |
-| 9 | Parchment shader | — |
+| 7 | Full-art dossier layout (ZStack, vignette, text overlay) | — |
+| 8 | Typography pass (Yeseva One front, IM Fell English back) | — |
+| 9 | ParchmentShader ragged edge (fbm noise, condition-driven) | — |
 | 10 | Generate + color grade test artwork | — |
-| 11 | Art box compositing (oil paint shader + vignette + AO) | — |
+| 11 | Art compositing (full-bleed artwork + vignette gradient) | — |
 | 12 | Foil shader + CMMotionManager | — |
 | 13 | State transition animations | — |
 | 14 | SpriteKit particles | — |
 | 15 | Wax seal component | — |
-| 16 | Card back + flip animation | — |
+| 16 | Card back (intelligence report) + flip animation | — |
 | 17 | Error/fallback states | — |
 | 18 | HapticEngine (log all as pending) | — |
 | 19 | SoundEngine (preload all sounds) | — |
@@ -633,21 +640,27 @@ All axes ≥4 before proceeding. One fix per loop. Three fails on same gap → b
 
 ---
 
----
+## CARD TYPE — DOSSIER FIELD VISIBILITY
 
-## NON-CREATURE CARD LAYOUTS
+| Field        | Creature | Spell | Stabilizer | Planar Ruin |
+|--------------|----------|-------|------------|-------------|
+| Name         | ✓        | ✓     | ✓          | ✓           |
+| Type/Faction | ✓        | ✓     | ✓          | ✓           |
+| Abilities    | ✓        | ✓     | ✓          | ✓           |
+| Modifiers    | ✓*       | —     | —          | ✓**         |
+| Destroyed    | —        | —     | —          | ✓           |
+| Cost         | ✓        | ✓     | —          | ✓           |
+| ATK          | ✓        | —     | —          | —           |
+| HP           | ✓        | —     | —          | ✓***        |
+| Instability  | ✓*       | —     | —          | —           |
+| Rank Emblem  | ✓        | —     | ✓          | ✓**         |
+| Wax Seal     | ✓        | —     | ✓          | ✓**         |
 
-| Zone | Creature | Spell | Stabilizer | Planar Ruin |
-|------|----------|-------|------------|-------------|
-| Name bar | ✓ `N ⊕` right-aligned | ✓ `N ⊕` right-aligned | ✓ **no cost indicator** | ✓ `N ⊕` right-aligned (no label) |
-| Art box | ✓ | ✓ | ✓ still-life | ✓ full-art (bleeds to edges) |
-| Type line | "Creature — [type]" | "Spell — [subtype]" | "Stabilizer" | "Planar Ruin" |
-| Faction icon on type line | **Omit** | **Omit** | **Omit** | **Omit** — faction symbol is on wax seal only |
-| Text box | 88pt | 107pt (expanded) | 107pt (expanded) | Passive + Destroyed panels |
-| Stats bar | ATK / HP + D20 N | **Omit** | **Omit** | HP only (cost×3+1) |
-| Wax seal | ✓ | **Omit** | ✓ | Omit if neutral; faction color if evolved |
-| Instability badge | ✓ | **Omit** | **Omit** | **Omit** |
-| Indestructible icon | **Omit** | **Omit** | `lock.fill` SF Symbol, 10pt, parchment-mid 70%, bottom-right of art box | **Omit** |
+```
+* Omitted if Common (no modifiers) or 0 (instability)
+** Only if faction-evolved
+*** HP = cost × 3 + 1
+```
 
 ---
 
@@ -657,15 +670,16 @@ All axes ≥4 before proceeding. One fix per loop. Three fails on same gap → b
 |------|---------|
 | `docs/CARD_DESIGN_GUIDE.md` | Full guide — authoritative |
 | `docs/CARD_DESIGN_QUICKREF.md` | This file — lookup only |
+| `docs/WAX_SEAL_OVERHAUL_BRIEF.md` | Wax seal + D20 generation pipeline |
 | `Resources/TestCards/test_cards.json` | 5 test cards for pipeline smoke test |
 | `Resources/Icons/set_symbol.png` | Game set symbol |
-| `Resources/Icons/faction_ironwright.png` | Ironwright faction icon |
+| `Resources/Icons/faction_ironwright.png` | Ironwright faction icon (silhouette — used for wax embossing) |
 | `Resources/Icons/faction_fey.png` | Fey Courts faction icon |
 | `Resources/Icons/faction_demonic.png` | Demonic Kingdoms faction icon |
 | `Resources/Icons/faction_celestial.png` | Celestial Crusade faction icon |
 | `Resources/Icons/faction_endless.png` | The Endless faction icon |
-| `Resources/Icons/chaos_mote_symbol.png` | Single 20×20pt chaos mote cost icon used in `N ⊕` name bar display |
-| `Resources/Icons/d20_instability_base.png` | D20 instability badge icon — full color (cobalt blue + fiery orange) |
+| `Sources/Views/CardDossierTextView.swift` | Front-face dossier text overlay |
+| `Assets.xcassets/Icons/Seals/` | 25 wax seal imagesets — `seal_[faction]_[rarity].imageset` |
 | `Logs/MASTER_STATE.json` | Current phase, task queue, budget |
 | `Logs/iteration_log.md` | Per-iteration log + critiques |
 | `Logs/CONFLICTS.md` | Guide conflicts + resolutions |
@@ -674,26 +688,20 @@ All axes ≥4 before proceeding. One fix per loop. Three fails on same gap → b
 | `Resources/Haptics/` | card_flip, card_summon, card_graveyard, foil_shimmer, epic_reveal, legendary_reveal .ahap |
 | `Resources/Sounds/` | All interaction sounds .caf |
 | `Sources/Shaders/OilPaintShader.metal` | Artwork shader |
-| `Sources/Shaders/ParchmentShader.metal` | Card body shader |
+| `Sources/Shaders/ParchmentShader.metal` | Ragged edge + parchment body shader |
 | `Sources/Shaders/WarmFoilShader.metal` | Foil shader |
 | `Sources/Shaders/InkSpreadKernel.metal` | Summon compute shader |
 | `Sources/Haptics/HapticEngine.swift` | Haptic service |
 | `Sources/Audio/SoundEngine.swift` | Audio service |
-| `Sources/Effects/WaxSealView.swift` | Wax seal component |
-| `Sources/Effects/InstabilityBadgeView.swift` | D20 badge with runtime number overlay |
+| `Sources/Effects/WaxSealView.swift` | Wax seal component (AI image + rarity glow) |
 | `Scripts/verify_environment.sh` | Master env check — tools, simulators, API keys, Python libs (§4.1) |
 | `Scripts/download_fonts.sh` | Font acquisition via homebrew-cask-fonts or GitHub mirrors (§4.7) |
 | `Scripts/grade_artwork.sh` | Color grading pipeline |
+| `Scripts/generate_wax_seals.py` | Generate 25 wax seal images via fal.ai |
+| `Scripts/install_wax_seals.py` | Install generated seals into asset catalog |
+| `Scripts/preview_wax_seal.py` | Preview seal at actual 34pt display size |
+| `Scripts/download_wax_references.py` | Download Wikimedia Commons reference images |
 | `Scripts/screenshot_all_devices.sh` | 4-device screenshot capture |
 | `Scripts/compare_screenshots.py` | Visual regression diff |
 | `Scripts/verify_asset.py` | Asset verification — dimensions, warm tone, no error payload (see §5.7) |
 | `Scripts/download_textures.sh` | Polyhaven texture download (see §4.4) |
-
----
-
-## REVISION LOG
-
-| Date | Change |
-|------|--------|
-| 2026-02-21 | `N ⊕` unified cost display replaces tiled dot system (owner-approved) |
-| 2026-02-21 | Updated iPad card sizing from 0.40/350pt to 0.55/500pt based on iOS card game UI research. iPhone cap updated from 260pt to 320pt. Collection grid iPad minimum updated to 160pt. Research found original 40% spec produced only 34% effective width on 13" iPad; industry standard is 50-65%. |

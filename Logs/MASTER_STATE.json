@@ -1,40 +1,8 @@
 {
-  "phase": "phase_5_in_progress",
-  "current_task": "Phase 5 visual polish — 3/4 items done. Remaining: dark mode physical device check (human task). Ready for Phase 6.",
-  "last_updated": "2026-02-22",
-  "phase_3_started": "2026-02-22",
-  "phase_3_complete": "2026-02-22",
-  "phase_4_complete": "2026-02-22",
-  "phase_5_started": "2026-02-22",
-  "phase_2_complete": "2026-02-21",
-  "setup_steps_complete": [
-    "1-verify-guides",
-    "1b-audit-claude-md",
-    "1b-iii-cleanup",
-    "1c-design-authority-block",
-    "2-read-guide",
-    "3a-audit-master-created",
-    "3b-audit-agent-a",
-    "3b-audit-agent-b",
-    "3b-audit-agent-c",
-    "4a-gap-analysis",
-    "4b-implementation-plan",
-    "decision-1-card-layout-RESOLVED",
-    "decision-2-typography-RESOLVED",
-    "commercial-license-gate-REVIEWED"
-  ],
-  "decisions": {
-    "card_layout": "Option A — zone-stack layout per guide Section 1.4. Full CardFrameView rewrite.",
-    "typography": "Option A — EBGaramond + Oswald-Bold per guide Section 1.5. Alegreya/Bebas Neue/Fira Sans retired from card rendering.",
-    "generation_pipeline": "Option 3A — Retrain LoRA on public domain artworks (pre-1953 approved artists) + SDXL base supplementary. New LoRA = chscrt-sdxl-lora-v2. Creatures via Replicate + v2 LoRA. Non-creatures via fal-ai/flux/dev. Existing 35 cards are placeholders, not retired. Old LoRA retired."
-  },
-  "commercial_license_gate": {
-    "model": "EldritchPaletteKnife (civitai.com/models/336656)",
-    "result": "FAILED",
-    "blocking_permission": "Run on services that generate for money — NOT permitted",
-    "consequence": "chscrt-sdxl-lora.safetensors cannot be used on Replicate",
-    "evidence_file": "Resources/LegalEvidence/eldritchpaletteknife_license_REVIEWED.md"
-  },
+  "phase": "phase_2.6_complete",
+  "current_task": "Phase 3: CardFrameView Front Face Rewrite (full-art dossier)",
+  "last_updated": "2026-02-23",
+  "design_direction": "CARD_LAYOUT_SPEC_v2 — Full-Art Dossier Format (zone-stack RETIRED)",
   "audit_status": {
     "Section_1_Visual_Design": "complete",
     "Section_2_Card_Schema": "complete",
@@ -51,62 +19,61 @@
     "Section_13_Performance": "complete",
     "Section_14_Quality_Bar": "complete"
   },
-  "gap_counts": {
-    "CONFLICT": 18,
-    "PARTIAL": 11,
-    "ABSENT": 46,
-    "COMPLIANT": 8,
-    "TOTAL": 83
+  "implementation_plan": {
+    "phases": 10,
+    "current_phase": "2.6 complete, Phase 3 next",
+    "phase_list": [
+      "Phase 1: Environment & Tooling Foundation (COMPLETE)",
+      "Phase 2: Card Layout Corrections (RETIRED — zone-stack replaced by dossier)",
+      "Phase 2.5: Font & Asset Prerequisites (COMPLETE)",
+      "Phase 2.6: Update Source Design Docs (COMPLETE)",
+      "Phase 3: CardFrameView Front Face Rewrite (full-art dossier)",
+      "Phase 4: CardBackView Intelligence Report Rewrite",
+      "Phase 5: Metal Shader Integration + Ragged Edge + SMOKE TEST GATE",
+      "Phase 6: Art Generation Pipeline ($5-7 API cost)",
+      "Phase 7: Sound Design & Audio Pipeline",
+      "Phase 8: Haptic Feedback + HAPTIC HARD GATE",
+      "Phase 9: Accessibility Pass",
+      "Phase 10: Performance + Quality Gate"
+    ],
+    "hard_gates": [
+      "Smoke Test Gate (Phase 5)",
+      "Haptic Hard Gate (Phase 8)"
+    ],
+    "decisions_needed": [],
+    "critical_path": "Phase 2.6 (done) → Phase 3 → Phase 4 → Phase 5 (Smoke Test) → Phase 10",
+    "parallelizable": "Phases 6 (art), 7 (sound) can run alongside Phases 3-5"
+  },
+  "decisions_resolved": {
+    "card_layout": "RETIRED — Full-art dossier format per CARD_LAYOUT_SPEC_v2.md",
+    "typography": "Yeseva One (front face), IM Fell English (back face)",
+    "generation_pipeline": "Option 3A — New LoRA v2 on public domain artworks",
+    "missing_faction_music": "DEFERRED — graceful degradation acceptable",
+    "music_stem_structure": "Single-track per faction, document deviation",
+    "faction_backgrounds": "DELETED — no replacement needed (full-art fills card)",
+    "faction_border_pngs": "RETIRED before generation — replaced by ParchmentShader ragged edge",
+    "old_card_frames": "DELETED — all 26 CardFrames/ imagesets removed",
+    "empty_borders_dir": "DELETED — removed from asset catalog",
+    "game_sigil": "DEFERRED to quality gate polish"
+  },
+  "commercial_license_gate": {
+    "model": "EldritchPaletteKnife",
+    "result": "FAILED — LoRA RETIRED, new v2 LoRA pending"
   },
   "budget": {
     "total_allocated": 10.00,
     "spent": 0.50,
     "remaining": 9.50,
-    "currency": "USD",
-    "notes": "~$0.25 for first 25 FLUX.1 Dev wax seal generations (v1, discarded); ~$0.25 for 25 v2 seals (rarity→color, faction→symbol)"
+    "estimated_plan_spend": "5.10-9.30"
   },
-  "conflicts_pending_user_decision": [],
-  "hard_gates_passed": [
-    "commercial-license-gate-reviewed",
-    "all-decisions-resolved",
-    "phase-2-end-gate-screenshots",
-    "phase-3-end-gate-build-pass",
-    "phase-4-end-gate-screenshots",
-    "landscape-orientation-complete",
-    "phase-5-card-layout-zstack"
-  ],
-  "hard_gates_pending": [
-    "lora-retraining-complete",
-    "haptic-verification-Section-7.3"
-  ],
-  "phase_status": {
-    "phase_0": "complete",
-    "phase_1": "complete",
-    "phase_2": "complete",
-    "phase_3": "complete",
-    "phase_4": "complete",
-    "phase_5": "in_progress",
-    "phase_6": "pending",
-    "phase_7": "pending",
-    "phase_8": "pending"
-  },
-  "completed_tasks": [
-    "Phase 4 validation: 6 PASS / 4 PARTIAL — ATK/HP split, ZStack overlay, texture opacity queued for Phase 5",
-    "Landscape track: orientation lock + MTGA top tab bar (portrait → landscape, top HStack tab bar)",
-    "Phase 5 partial: ATK/HP corner badges, full-bleed ZStack overlay, texture opacity 0.10 — statsBar visibility fixed",
-    "Phase 3 — Wax Seal Overhaul v2: Semantic reversed to rarity→wax color / faction→embossed symbol; 25 seals regenerated via FLUX.1 Dev + REMBG; D20 instability icon added (full-color AI); InstabilityBadgeView.swift created; CardFrameView type-line faction icon removed; CardFaction.color removed; CARD_DESIGN_GUIDE.md + CARD_DESIGN_QUICKREF.md updated; build PASS (commits 2f25eec, f8cf295)",
-    "Phase 3 — Wax Seal Overhaul v1: 25 AI wax seals generated (5 factions × 5 rarities) via FLUX.1 Dev + REMBG; installed to Assets.xcassets/Icons/Seals/; WaxSealView.swift updated with faction parameter + factionSlug/raritySlug bridge; build PASS — SUPERSEDED by v2 (commits 3fd5f95, ccb0b2a)",
-    "Phase 3 — Metal Shader Pipeline (commits bb95584, 2be0803, 5cb4d4b): OilPaintShader, ParchmentShader (closes DEV-13), WarmFoilShader, InkSpreadKernel; WaxSealView replaces C placeholder; animated Epic/Legendary AngularGradient borders; CardParticleFactory, ParallaxCardArtView; compile_shaders.sh; build SUCCEEDED",
-    "Phase 3 — Border fixes: animation choppy (isolated AnimatedRarityBorder struct); border rotating outside frame (removed rotationEffect, animate startAngle/endAngle instead) (commits af7ef7a, f2a6f1f)",
-    "Phase 3 — Dev card rarities: AppState.swift updated with varied rarities across all 5 tiers for visual testing",
-    "Phase 0 — Environment & Toolchain Setup",
-    "Phase 1 — Color Palette & Data Schema",
-    "Phase 2 — Card Layout Rebuild",
-    "Phase 2 fix — EffectTier.swift created with all 4 tiers + resolveEffectTier() (commit 6656c05)",
-    "Phase 2 fix — Dark mode: CardTheme.swift created; @Environment(\\.colorScheme) added to CardFrameView (commit 98be8ac)",
-    "Phase 2 fix — Wax seal position corrected to x=(164/210)*cardWidth, y=(258/294)*cardHeight; 52pt trailing inset on stats bar (commit ab76037)",
-    "Phase 2 fix — Selected state scale corrected to 0.97 (presses DOWN); focused scale=1.02, shadow=12pt (commit 98be8ac)",
-    "Phase 2 fix — N ⊕ cost display implemented: Oswald-Bold 13pt numeral + 20x20pt chaos mote icon; ruins ruinNameBar() uses chaosMoteRow() (commit 95d954d)"
-  ],
-  "pending_design_changes": []
+  "key_files": {
+    "layout_spec_v2": "docs/CARD_LAYOUT_SPEC_v2.md",
+    "revised_plan": ".claude/plans/immutable-swimming-bunny.md",
+    "gap_analysis": "Logs/GAP_ANALYSIS.md",
+    "implementation_plan": "Logs/IMPLEMENTATION_PLAN.md",
+    "design_guide": "docs/CARD_DESIGN_GUIDE.md",
+    "design_quickref": "docs/CARD_DESIGN_QUICKREF.md",
+    "grimdark_directive": "docs/GRIMDARK_AESTHETIC_DIRECTIVE.md",
+    "critique_scoring": "docs/CRITIQUE_SCORING_GUIDE.md"
+  }
 }
