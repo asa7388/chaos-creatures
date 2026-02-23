@@ -2,15 +2,19 @@
 // Chaos Creatures
 //
 // Phase 3 rewrite — Full-Art Dossier layout per CARD_DESIGN_GUIDE.md Section 1.4.
-// Replaces zone-stack with artwork-fill + text overlay architecture:
-//   - Artwork image fills entire card interior (202×286pt inner area)
-//   - Vignette gradient (bottom 40%, transparent → 45% black)
+// Phase 4 addition — Two-phase flip animation (Section 1.8) toggling front/back face.
+//
+// Architecture:
+//   - Artwork image fills entire card interior (202x286pt inner area)
+//   - Vignette gradient (bottom 40%, transparent -> 45% black)
 //   - CardDossierTextView overlay anchored to bottom, growing upward
 //   - AnimatedRarityBorder frame (outer card edge)
-//   - Gesture priority: LongPress > Drag > Tap
+//   - Gesture priority: LongPress > Tap (flip)
+//   - Tap triggers two-phase Y-axis flip: Phase 1 easeIn 0.17s (0->90deg),
+//     Phase 2 easeOut 0.18s (-90->0deg) with content swap at the midpoint.
 //   - CardDisplayState transitions (see CardDisplayState.swift for full state machine)
 //
-// Spec: CARD_DESIGN_GUIDE.md Sections 1.4 (layout), 1.5 (typography), 1.5b (field visibility)
+// Spec: CARD_DESIGN_GUIDE.md Sections 1.4 (layout), 1.5 (typography), 1.5b (field visibility), 1.8 (card back)
 
 import SwiftUI
 import CoreMotion
@@ -175,6 +179,10 @@ struct CardFrameView: View {
     @State var displayState: CardDisplayState = .default
     @State var parallaxOffset: CGSize = .zero
 
+    // MARK: - Flip Animation State (Section 1.8)
+    @State private var isFlipped: Bool = false
+    @State private var flipAngle: Double = 0
+
     let gyroscope: GyroscopeManager
 
     // MARK: - Init
@@ -197,20 +205,25 @@ struct CardFrameView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // Inner content: artwork + vignette + text overlay
-                cardInnerContent
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .clipShape(RoundedRectangle(cornerRadius: 9 * cardScale))
+                if isFlipped {
+                    // Back face: parchment intelligence report
+                    CardBackView(data: data, cardWidth: geo.size.width, cardHeight: geo.size.height)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                } else {
+                    // Front face: artwork + vignette + text overlay
+                    cardInnerContent
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipShape(RoundedRectangle(cornerRadius: 9 * cardScale))
+                }
 
-                // Outer frame: rarity border
+                // Outer frame: rarity border (always visible on both faces)
                 cardFrame
                     .frame(width: geo.size.width, height: geo.size.height)
             }
             .frame(width: geo.size.width, height: geo.size.height)
+            .rotation3DEffect(.degrees(flipAngle), axis: (x: 0, y: 1, z: 0))
             .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    displayState = displayState == .tapped ? .default : .tapped
-                }
+                flipCard()
             }
             .onLongPressGesture(minimumDuration: 0.5) {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -225,7 +238,10 @@ struct CardFrameView: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Card: \(data.name)")
-            .accessibilityValue("\(data.cardType.displayName), Cost: \(data.manaCost)")
+            .accessibilityValue(isFlipped
+                ? "\(data.name), Intelligence Report"
+                : "\(data.cardType.displayName), Cost: \(data.manaCost)")
+            .accessibilityHint("Double-tap to flip card")
             .onAppear {
                 Task { @MainActor in
                     gyroscope.startIfNeeded()
@@ -235,6 +251,26 @@ struct CardFrameView: View {
                 Task { @MainActor in
                     gyroscope.stopIfUnneeded()
                 }
+            }
+        }
+    }
+
+    // MARK: - Flip Animation (Section 1.8)
+
+    /// Two-phase Y-axis card flip animation per CARD_DESIGN_GUIDE.md Section 1.8.
+    /// Phase 1: current face rotates 0 -> 90 deg (0.17s easeIn) -- card turns edge-on.
+    /// Phase 2: new face appears at -90 deg and rotates to 0 deg (0.18s easeOut).
+    private func flipCard() {
+        // Phase 1: rotate current face to edge-on
+        withAnimation(.easeIn(duration: 0.17)) {
+            flipAngle = 90
+        }
+        // Phase 2: swap content and rotate new face into view
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.17) {
+            isFlipped.toggle()
+            flipAngle = -90
+            withAnimation(.easeOut(duration: 0.18)) {
+                flipAngle = 0
             }
         }
     }

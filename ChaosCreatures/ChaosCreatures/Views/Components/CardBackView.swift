@@ -2,147 +2,105 @@
 // Chaos Creatures
 //
 // Card back design per CARD_DESIGN_GUIDE.md Section 1.8.
-// Physical aesthetic: canvas texture base, woven grid pattern, centered wax seal,
-// parchment-mid border.
+// Phase 4 rewrite: parchment panel background + CardIntelligenceReportView overlay.
+// The card back presents an aged-document "intelligence report" for the card,
+// showing stats, keywords, and lore in a dossier format.
 //
-// Also provides a flip-to-back animation bridge used by CardFrameView (.tapped state):
-//   Phase 1: easeIn 0.17s → rotationY 90° (front face disappears)
-//   Phase 2: swap face, easeOut 0.18s from -90° → 0°
+// Flip animation is driven by CardFrameView (two-phase Y-axis rotation):
+//   Phase 1: easeIn 0.17s -> rotationY 90deg (front face disappears)
+//   Phase 2: swap face, easeOut 0.18s from -90deg -> 0deg
 //
-// Task 2.7
+// Task 4.1
 
 import SwiftUI
 
 // MARK: - CardBackView
 
-/// The universal card back. Rendered by CardFrameView when isFlipped = true.
+/// The card back face. Rendered by CardFrameView when isFlipped = true.
 /// Dimensions and corner radius match card front exactly.
 struct CardBackView: View {
+    let data: CardDisplayData
     let cardWidth: CGFloat
     let cardHeight: CGFloat
 
+    private var cardScale: CGFloat {
+        cardWidth / 210.0
+    }
+
     var body: some View {
         ZStack {
-            // Base: canvas-warm fill
-            Color("canvas-warm")
+            // 1. Parchment panel background -- warm cream fill (aged document look)
+            Color(red: 0.953, green: 0.898, blue: 0.780)
 
-            // Woven grid pattern (Canvas API, 8pt grid, ink-black 8% opacity)
-            Canvas { context, size in
-                let gridSpacing: CGFloat = 8
-                let lineColor = Color("ink-black").opacity(0.08)
-
-                // Horizontal lines
-                var y: CGFloat = 0
-                while y <= size.height {
-                    var path = Path()
-                    path.move(to: CGPoint(x: 0, y: y))
-                    path.addLine(to: CGPoint(x: size.width, y: y))
-                    context.stroke(path, with: .color(lineColor), lineWidth: 0.5)
-                    y += gridSpacing
-                }
-
-                // Vertical lines
-                var x: CGFloat = 0
-                while x <= size.width {
-                    var path = Path()
-                    path.move(to: CGPoint(x: x, y: 0))
-                    path.addLine(to: CGPoint(x: x, y: size.height))
-                    context.stroke(path, with: .color(lineColor), lineWidth: 0.5)
-                    x += gridSpacing
-                }
-
-                // Diagonal weave accent (every other intersection)
-                x = 0
-                while x <= size.width {
-                    var yOffset: CGFloat = (x / gridSpacing).truncatingRemainder(dividingBy: 2) == 0 ? 0 : gridSpacing / 2
-                    while yOffset <= size.height {
-                        let dotRect = CGRect(x: x - 0.75, y: yOffset - 0.75, width: 1.5, height: 1.5)
-                        context.fill(
-                            Path(ellipseIn: dotRect),
-                            with: .color(Color("ink-black").opacity(0.06))
-                        )
-                        yOffset += gridSpacing
-                    }
-                    x += gridSpacing
-                }
-            }
-            .frame(width: cardWidth, height: cardHeight)
-            .allowsHitTesting(false)
-
-            // Centered wax seal: 40pt circle in wax-red radial gradient
-            ZStack {
-                // Drop shadow
-                Circle()
-                    .fill(Color.black.opacity(0.45))
-                    .frame(width: 42, height: 42)
-                    .blur(radius: 4)
-                    .offset(y: 3)
-
-                // Seal body
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color("wax-red").opacity(0.8),
-                                Color("wax-red"),
-                                Color.black.opacity(0.85)
-                            ],
-                            center: .init(x: 0.38, y: 0.32),
-                            startRadius: 2,
-                            endRadius: 20
-                        )
-                    )
-                    .frame(width: 40, height: 40)
-
-                // Top-lit specular highlight (wax physics)
-                Ellipse()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.30), Color.clear],
-                            startPoint: .top,
-                            endPoint: .center
-                        )
-                    )
-                    .frame(width: 28, height: 16)
-                    .offset(y: -9)
-                    .blendMode(.screen)
-                    .clipShape(Circle().scale(0.95))
-
-                // "CC" logotype embossed in seal
-                Text("CC")
-                    .font(CardFont.cardName(size: 14))
-                    .foregroundColor(Color("ink-black").opacity(0.85))
-                    .shadow(color: Color("wax-red").opacity(0.3), radius: 1, x: 0, y: 0.5)
-            }
-
-            // Parchment-mid border (common weight 3pt)
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color("parchment-mid"), lineWidth: 3)
-                .frame(width: cardWidth, height: cardHeight)
-                .allowsHitTesting(false)
-
-            // Outer edge (cut card stock)
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color("ink-black").opacity(0.35), lineWidth: 1)
-                .frame(width: cardWidth, height: cardHeight)
-                .allowsHitTesting(false)
+            // 2. CardIntelligenceReportView -- dossier content overlay
+            CardIntelligenceReportView(data: data, cardScale: cardScale)
         }
         .frame(width: cardWidth, height: cardHeight)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.45), radius: 3, x: 0, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 9 * cardScale))
     }
 }
 
 // MARK: - Previews
 
-#Preview("Card Back") {
-    CardBackView(cardWidth: 210, cardHeight: 294)
-        .padding()
-        .background(Color.bgPrimary)
+#Preview("Card Back -- Creature") {
+    CardBackView(
+        data: CardDisplayData(
+            name: "Ironclad Vanguard",
+            artUrl: nil,
+            manaCost: 4,
+            attack: 5,
+            health: 7,
+            instability: 3,
+            tier: .rare,
+            cardType: .creature,
+            faction: .ironwright,
+            keywords: [.shield, .taunt],
+            flavorText: "Through the flames of industry, a new guardian is born."
+        ),
+        cardWidth: 210,
+        cardHeight: 294
+    )
+    .padding()
+    .background(Color.bgPrimary)
 }
 
-#Preview("Card Back — Small") {
-    CardBackView(cardWidth: 90, cardHeight: 126)
-        .padding()
-        .background(Color.bgPrimary)
+#Preview("Card Back -- Spell") {
+    CardBackView(
+        data: CardDisplayData(
+            name: "Verdant Cascade",
+            artUrl: nil,
+            manaCost: 3,
+            tier: .common,
+            cardType: .spell,
+            faction: .fey,
+            keywords: [.lifesteal],
+            flavorText: "The forest remembers what was taken."
+        ),
+        cardWidth: 210,
+        cardHeight: 294
+    )
+    .padding()
+    .background(Color.bgPrimary)
+}
+
+#Preview("Card Back -- Small") {
+    CardBackView(
+        data: CardDisplayData(
+            name: "Shadow Assassin",
+            artUrl: nil,
+            manaCost: 2,
+            attack: 2,
+            health: 1,
+            instability: 2,
+            tier: .uncommon,
+            cardType: .creature,
+            faction: .demonic,
+            keywords: [.haste],
+            flavorText: ""
+        ),
+        cardWidth: 90,
+        cardHeight: 126
+    )
+    .padding()
+    .background(Color.bgPrimary)
 }

@@ -165,6 +165,7 @@
 		EFFTIER0000000000CCCCCC01 /* EffectTier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFFTIER0000000000BBBBBB01 /* EffectTier.swift */; };
 		WAXSEAL000000000001CCCCCC01 /* WaxSealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */; };
 		DOSSIER000000000001CCCCCC01 /* CardDossierTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DOSSIER000000000001BBBBBB01 /* CardDossierTextView.swift */; };
+		INTELRP000000000001CCCCCC01 /* CardIntelligenceReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = INTELRP000000000001BBBBBB01 /* CardIntelligenceReportView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -357,6 +358,7 @@
 		EFFTIER0000000000BBBBBB01 /* EffectTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectTier.swift; sourceTree = "<group>"; };
 		WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaxSealView.swift; sourceTree = "<group>"; };
 		DOSSIER000000000001BBBBBB01 /* CardDossierTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDossierTextView.swift; sourceTree = "<group>"; };
+		INTELRP000000000001BBBBBB01 /* CardIntelligenceReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardIntelligenceReportView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -751,6 +753,7 @@
 			children = (
 				7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */,
 				DOSSIER000000000001BBBBBB01 /* CardDossierTextView.swift */,
+				INTELRP000000000001BBBBBB01 /* CardIntelligenceReportView.swift */,
 				P2AA111111111111BBBBBB01 /* CardBackView.swift */,
 				P2AA111111111111BBBBBB02 /* DraggableCardView.swift */,
 				4B487311E9E0110DA6121F9A /* CardView.swift */,
@@ -1038,6 +1041,7 @@
 				DD11111111111111DDDDDDDD /* CardFont.swift in Sources */,
 				3A1CF2A0B1E7D3F4A9C85E60 /* CardFrameView.swift in Sources */,
 				DOSSIER000000000001CCCCCC01 /* CardDossierTextView.swift in Sources */,
+				INTELRP000000000001CCCCCC01 /* CardIntelligenceReportView.swift in Sources */,
 				P2CC111111111111DDDDDD01 /* CardBackView.swift in Sources */,
 				P2CC111111111111DDDDDD02 /* DraggableCardView.swift in Sources */,
 				3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */,
