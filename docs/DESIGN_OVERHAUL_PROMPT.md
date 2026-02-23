@@ -141,6 +141,36 @@ are unsure whether compaction has occurred (assume it has if uncertain):
   f. Only then resume work
 ```
 
+Also add the following grimdark aesthetic block to CLAUDE.md, immediately after the Design Authority block:
+
+```markdown
+## Grimdark Aesthetic Directive — Active
+
+`docs/GRIMDARK_AESTHETIC_DIRECTIVE.md` defines the emotional register for this project.
+Read it before any visual implementation. It answers: what should this feel like?
+
+THE NORTH STAR: A field document from a two-hundred-year war, made with available
+materials, by people who needed it to last.
+
+NOT: A premium collectible. A museum artifact. A mobile game. A flashy digital product.
+
+COMPETITIVE STRATEGY: While every other mobile card game chases digital spectacle,
+this app pursues physical weight. When in doubt between impressive-looking and
+physically-grounded, always choose physically-grounded.
+
+THE ACCEPTANCE TEST (apply before marking any component complete):
+Imagine you are standing in a war camp at the edge of a contested Planar Ruin site.
+You have just picked up a card from the table.
+Does what you see on screen feel like that card?
+If yes: done. If no: identify what breaks the illusion. Fix that. One thing at a time.
+
+ADDITIONAL DOCS (read alongside CARD_DESIGN_GUIDE.md):
+- docs/GRIMDARK_AESTHETIC_DIRECTIVE.md — emotional register and acceptance test
+- docs/ASSET_CREATION_GUIDE_v1.2.md — asset generation pipeline and commercial licensing
+- docs/VISUAL_REFERENCE_LIBRARY_AND_TOOLS_v3.md — annotated painting references and agent tools
+- docs/CRITIQUE_SCORING_GUIDE.md — what 1–5 means on each critique axis for this project
+```
+
 Also add the following implementation rules block to CLAUDE.md. These are permanent for the duration of the overhaul:
 
 ```markdown
@@ -209,6 +239,44 @@ Deployment parameters confirmed:
 ```
 
 Do not proceed to Step 3 until this log entry is written.
+
+---
+
+## Step 2b — Read the Grimdark Aesthetic Directive and Asset Docs
+
+After reading CARD_DESIGN_GUIDE.md, read these four documents in order:
+
+1. `docs/GRIMDARK_AESTHETIC_DIRECTIVE.md` — the emotional register for all decisions.
+   This document sharpens and overrides the aesthetic framing in §1.1 of the main guide.
+   Read it fully. It is short. It is the most important thing to internalize before any implementation.
+
+2. `docs/ASSET_CREATION_GUIDE_v1.2.md` — asset generation pipeline.
+   Read §1 (Aesthetic System) and §2 (Artwork Production) before any artwork work.
+   Read §4 (Sound) before any audio work.
+
+3. `docs/VISUAL_REFERENCE_LIBRARY_AND_TOOLS_v3.md` — painting references and tools.
+   Do not memorize this. Use it as a lookup: before generating any asset, open this doc,
+   find the relevant faction and component references, fetch them with web_fetch, look at
+   them, then write your iteration log entry, then generate.
+
+4. `docs/CRITIQUE_SCORING_GUIDE.md` — scoring calibration for Section 12.3 critiques.
+   Read this before the first critique, not before every critique. It defines what 1–5 means
+   on each axis in terms specific to this project's shaders and materials. Without it, your
+   critique scores will drift and be meaningless across sessions.
+
+Add to the guide read confirmation log entry:
+
+```
+Additional docs read:
+- docs/GRIMDARK_AESTHETIC_DIRECTIVE.md: read in full
+- docs/ASSET_CREATION_GUIDE_v1.2.md: §1-4 read
+- docs/VISUAL_REFERENCE_LIBRARY_AND_TOOLS_v3.md: structure and faction sections read
+- docs/CRITIQUE_SCORING_GUIDE.md: all 9 axes read and calibrated
+
+The aesthetic north star: a field document from a two-hundred-year war.
+Competitive strategy: physical weight over digital spectacle.
+Score 3 = plausible but one specific problem. Score 4 = minimum acceptable. Score 5 = matches reference painting quality.
+```
 
 ---
 

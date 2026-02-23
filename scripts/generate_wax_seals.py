@@ -4,6 +4,10 @@ Scripts/generate_wax_seals.py
 Generates 25 AI wax seal images (5 factions × 5 rarities) via fal.ai FLUX.1 Dev.
 Then runs REMBG background removal and downscales to 102×102px for asset catalog.
 
+SEMANTIC (v2):
+  Faction → embossed symbol (scroll / tree / sledgehammer / wing / skull)
+  Rarity  → wax color (parchment-tan / pewter-silver / amber-gold / amethyst / ember-red)
+
 Usage:
     python3 Scripts/generate_wax_seals.py [--faction demonic] [--rarity legendary]
     # Without flags: generates all 25. With flags: generates one for iteration.
@@ -17,20 +21,22 @@ import os, sys, argparse
 from pathlib import Path
 from datetime import datetime
 
+# Faction → embossed symbol description (same symbols as Section 3.8 generation briefs)
 FACTIONS = {
-    "demonic":    "deep blood-crimson wax, dark wine red",
-    "fey":        "deep forest verdigris wax, dark teal-green",
-    "ironwright": "dark pewter wax, antique silver-grey",
-    "celestial":  "aged amber-gold wax, warm honey",
-    "endless":    "dark charcoal wax, near-black with cool grey undertone",
+    "demonic":    "an unrolled scroll with curled ends, slightly aged at edges",
+    "fey":        "a gnarled ancient tree, full canopy, roots spreading at base mirroring the branches",
+    "ironwright": "a heavy industrial sledgehammer, head facing left, thick handle angled down-right",
+    "celestial":  "a single large angelic wing, feathers spreading upward, majestic",
+    "endless":    "a clean human skull, front-facing, no jaw",
 }
 
+# Rarity → wax color description
 RARITIES = {
-    "common":    "a circle of small radiating sparks",
-    "uncommon":  "a celtic knot",
-    "rare":      "a crown",
-    "epic":      "an all-seeing eye",
-    "legendary": "a dragon head in profile",
+    "common":    "warm parchment-tan wax, aged linen color",
+    "uncommon":  "pewter-silver wax, antique grey",
+    "rare":      "aged gold wax, warm amber-honey",
+    "epic":      "deep amethyst wax, dark purple",
+    "legendary": "ember-red wax, deep fiery orange-red",
 }
 
 NEGATIVE_PROMPT = (
@@ -39,14 +45,14 @@ NEGATIVE_PROMPT = (
     "frame, border, label, glossy, polished"
 )
 
-STAGING_DIR = Path("/Users/alexali/Projects/chaos-creatures/Staging/wax_seals")
-OUTPUT_DIR  = Path("/Users/alexali/Projects/chaos-creatures/Resources/Icons")
-MANIFEST    = Path("/Users/alexali/Projects/chaos-creatures/Resources/ASSET_LICENSE_MANIFEST.md")
+STAGING_DIR = Path("Staging/wax_seals")
+OUTPUT_DIR  = Path("Resources/Icons")
+MANIFEST    = Path("Resources/ASSET_LICENSE_MANIFEST.md")
 
 
-def build_prompt(wax_color: str, symbol: str) -> str:
+def build_prompt(wax_color: str, faction_symbol: str) -> str:
     return (
-        f"A circular wax seal, {wax_color}, {symbol} embossed and pressed into the center of the wax. "
+        f"A circular wax seal, {wax_color}, {faction_symbol} embossed and pressed into the center of the wax. "
         "Physical wax material — beeswax and resin compound, slightly translucent at the thinning edges, "
         "dense and opaque in the center. Single specular highlight at upper-left quadrant, warm directional "
         "light, no highlight on right side. Visible texture where the stamp pressed into the soft wax — "
@@ -75,10 +81,11 @@ def generate_one(faction: str, rarity: str, dry_run: bool = False) -> Path:
         print(f"SKIP (exists): {name}")
         return final_path
 
-    prompt = build_prompt(FACTIONS[faction], RARITIES[rarity])
+    # Rarity → wax color, Faction → symbol
+    prompt = build_prompt(RARITIES[rarity], FACTIONS[faction])
     print(f"\nGenerating: {name}")
-    print(f"  Wax:    {FACTIONS[faction]}")
-    print(f"  Symbol: {RARITIES[rarity]}")
+    print(f"  Wax:    {RARITIES[rarity]}")
+    print(f"  Symbol: {FACTIONS[faction]}")
 
     if dry_run:
         print(f"  PROMPT: {prompt}")
@@ -163,16 +170,26 @@ def verify_seal(path: Path, faction: str, rarity: str):
             "— REMBG failed. Check staged_rembg file manually."
         )
 
-    # Warm tone check for warm-colored factions
-    if faction in ("demonic", "celestial"):
-        rgb_pixels = [(p[0], p[1], p[2]) for p in pixels if p[3] > 128]
-        if rgb_pixels:
-            avg_r = statistics.mean(p[0] for p in rgb_pixels)
-            avg_b = statistics.mean(p[2] for p in rgb_pixels)
+    # Rarity-based color tone checks (v2: rarity drives wax color)
+    rgb_pixels = [(p[0], p[1], p[2]) for p in pixels if p[3] > 128]
+    if rgb_pixels:
+        avg_r = statistics.mean(p[0] for p in rgb_pixels)
+        avg_g = statistics.mean(p[1] for p in rgb_pixels)
+        avg_b = statistics.mean(p[2] for p in rgb_pixels)
+
+        if rarity in ("rare", "legendary"):
+            # rare=gold/amber (warm), legendary=ember-red — should be red/warm dominant
             if avg_b > avg_r + 20:
                 raise ValueError(
-                    f"VERIFY FAIL [{path.name}]: {faction} seal is blue-dominant "
-                    f"(R={avg_r:.0f}, B={avg_b:.0f}) — wrong color generated. Regenerate."
+                    f"VERIFY FAIL [{path.name}]: {rarity} wax should be warm "
+                    f"(R={avg_r:.0f}, B={avg_b:.0f}) — wrong color. Regenerate."
+                )
+        elif rarity == "epic":
+            # epic=amethyst (deep purple) — should be blue/purple dominant
+            if avg_r > avg_b + 30:
+                raise ValueError(
+                    f"VERIFY FAIL [{path.name}]: epic wax should be purple "
+                    f"(R={avg_r:.0f}, B={avg_b:.0f}) — wrong color. Regenerate."
                 )
 
     transparent_pct = sum(1 for a in alpha_vals if a < 10) / total
@@ -207,7 +224,7 @@ def main():
 
     fal_key = os.environ.get("FAL_KEY", "")
     if not fal_key and not args.dry_run:
-        print("FAL_KEY not set — run: bash Scripts/verify_environment.sh")
+        print("FAL_KEY not set — check .env")
         sys.exit(1)
     os.environ["FAL_KEY"] = fal_key
 
@@ -221,7 +238,7 @@ def main():
         for faction, rarity in combos:
             print(f"\n{'='*60}")
             print(f"seal_{faction}_{rarity}")
-            print(build_prompt(FACTIONS[faction], RARITIES[rarity]))
+            print(build_prompt(RARITIES[rarity], FACTIONS[faction]))
         return
 
     failed = []

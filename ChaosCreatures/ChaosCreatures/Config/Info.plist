@@ -46,18 +46,15 @@
     <false/>
     <key>UIAppFonts</key>
     <array>
-        <string>Cinzel-Variable.ttf</string>
-        <string>Alegreya-Variable.ttf</string>
-        <string>Alegreya-Italic-Variable.ttf</string>
-        <string>BebasNeue-Regular.ttf</string>
-        <string>FiraSans-Regular.ttf</string>
-        <string>FiraSans-SemiBold.ttf</string>
         <string>Cinzel-Regular.ttf</string>
         <string>Cinzel-Bold.ttf</string>
         <string>EBGaramond-Regular.ttf</string>
         <string>EBGaramond-Italic.ttf</string>
         <string>EBGaramond-SemiBold.ttf</string>
         <string>Oswald-Bold.ttf</string>
+        <string>YesevaOne-Regular.ttf</string>
+        <string>IMFellEnglish-Regular.ttf</string>
+        <string>IMFellEnglish-Italic.ttf</string>
     </array>
 </dict>
 </plist>

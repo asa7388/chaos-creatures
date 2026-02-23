@@ -66,6 +66,25 @@ enum CardFont {
         .custom("Oswald-Bold", size: size)
     }
 
+    // --- Yeseva One (Dossier Front Face) ---
+
+    /// Dossier card name, field values, labels. Yeseva One Regular.
+    static func yesevaOne(size: CGFloat) -> Font {
+        .custom("YesevaOne-Regular", size: size)
+    }
+
+    // --- IM Fell English (Intelligence Report Back Face) ---
+
+    /// Report body text. IM Fell English Regular.
+    static func imFellEnglish(size: CGFloat) -> Font {
+        .custom("IMFellEnglish-Regular", size: size)
+    }
+
+    /// Report flavor text (italic). IM Fell English Italic.
+    static func imFellEnglishItalic(size: CGFloat) -> Font {
+        .custom("IMFellEnglish-Italic", size: size)
+    }
+
     // MARK: - Semantic Aliases (Section 1.5 Zone Table)
 
     /// Card name bar — Cinzel-Regular 13pt (spec: Cinzel-Bold 13pt; implemented as
@@ -97,6 +116,26 @@ enum CardFont {
     /// Mana cost numeral — Oswald-Bold 14pt
     static func manaCost(size: CGFloat = 14) -> Font { oswaldBold(size: size) }
 
+    // MARK: — Dossier Front Face (Yeseva One)
+
+    /// Card name on front face — 13pt at reference scale
+    static func dossierName(size: CGFloat) -> Font { yesevaOne(size: size) }
+    /// Field values on front face — 10-11pt
+    static func dossierField(size: CGFloat) -> Font { yesevaOne(size: size) }
+    /// Field labels on front face — 8pt, paired with 70% opacity
+    static func dossierLabel(size: CGFloat) -> Font { yesevaOne(size: size) }
+
+    // MARK: — Intelligence Report Back Face (IM Fell English)
+
+    /// Body text on back face — 10pt
+    static func reportBody(size: CGFloat) -> Font { imFellEnglish(size: size) }
+    /// Flavor text on back face — 10pt italic
+    static func reportItalic(size: CGFloat) -> Font { imFellEnglishItalic(size: size) }
+    /// Section labels on back face — 9pt
+    static func reportSectionLabel(size: CGFloat) -> Font { imFellEnglish(size: size) }
+    /// Faction header on back face — 8pt
+    static func reportFactionHeader(size: CGFloat) -> Font { imFellEnglish(size: size) }
+
     // MARK: - SpriteKit Font Name Strings (PostScript names for SKLabelNode.fontName)
 
     /// Cinzel Bold PostScript name — use for card name labels in SpriteKit.
@@ -119,6 +158,15 @@ enum CardFont {
     /// Oswald-Bold PostScript name for SKLabelNode (stat numerals, mana cost).
     static let spriteKitStatNumber = "Oswald-Bold"
 
+    /// YesevaOne-Regular PostScript name for SKLabelNode (dossier front face).
+    static let spriteKitDossierName = "YesevaOne-Regular"
+
+    /// IMFellEnglish-Regular PostScript name for SKLabelNode (report back face body).
+    static let spriteKitReportBody = "IMFellEnglish-Regular"
+
+    /// IMFellEnglish-Italic PostScript name for SKLabelNode (report back face italic).
+    static let spriteKitReportItalic = "IMFellEnglish-Italic"
+
     // MARK: - UIFont Accessors for SpriteKit / UIKit
 
     /// ATK/HP/CM numerals and chaos roll in SpriteKit. Oswald Bold.
@@ -126,7 +174,8 @@ enum CardFont {
         if let font = UIFont(name: "Oswald-Bold", size: size) { return font }
         // Fallback per Section 1.5: Impact (closest system match to Oswald)
         if let font = UIFont(name: "Impact", size: size) { return font }
-        return .systemFont(ofSize: size, weight: .heavy)
+        // Terminal fallback: serif font to maintain aesthetic — never sans-serif system font
+        return UIFont(name: "Georgia-Bold", size: size) ?? .systemFont(ofSize: size, weight: .heavy)
     }
 
     /// Card name in SpriteKit. Cinzel Bold.
@@ -154,6 +203,30 @@ enum CardFont {
         ebGaramondUIFont(size: size, italic: false, semiBold: true)
     }
 
+    /// Dossier front face in SpriteKit / UIKit. Yeseva One Regular.
+    static func yesevaOneUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "YesevaOne-Regular", size: size) { return font }
+        // Fallback: Georgia Bold — closest serif match for display weight
+        if let fallback = UIFont(name: "Georgia-Bold", size: size) { return fallback }
+        return .systemFont(ofSize: size, weight: .bold)
+    }
+
+    /// Report back face body in SpriteKit / UIKit. IM Fell English Regular.
+    static func imFellEnglishUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "IMFellEnglish-Regular", size: size) { return font }
+        // Fallback: Georgia — closest serif match
+        if let fallback = UIFont(name: "Georgia", size: size) { return fallback }
+        return .systemFont(ofSize: size, weight: .regular)
+    }
+
+    /// Report back face italic in SpriteKit / UIKit. IM Fell English Italic.
+    static func imFellEnglishItalicUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "IMFellEnglish-Italic", size: size) { return font }
+        // Fallback: Georgia Italic — closest serif italic match
+        if let fallback = UIFont(name: "Georgia-Italic", size: size) { return fallback }
+        return .italicSystemFont(ofSize: size)
+    }
+
     // MARK: - Legacy Accessors (Non-Card UI — Retired from Card Rendering)
     // These remain active for non-card screens until those screens are audited in Phase 2.
     // Do not use these for any new card view work.
@@ -165,7 +238,8 @@ enum CardFont {
         let descriptor = UIFontDescriptor(fontAttributes: [.family: "Bebas Neue"])
         let font = UIFont(descriptor: descriptor, size: size)
         if font.familyName.contains("Bebas") { return font }
-        return .systemFont(ofSize: size, weight: .bold)
+        // Terminal fallback: serif font to maintain aesthetic — never sans-serif system font
+        return UIFont(name: "Georgia-Bold", size: size) ?? .systemFont(ofSize: size, weight: .bold)
     }
 
     // Fira Sans — retired from cards, still used in UI chrome
@@ -231,9 +305,11 @@ enum CardFont {
         ])
         let font = UIFont(descriptor: descriptor, size: size)
         if font.familyName.contains("Cinzel") { return font }
-        // Fallback per Section 1.5: Georgia
-        if let fallback = UIFont(name: "Georgia", size: size) { return fallback }
-        return .systemFont(ofSize: size, weight: weight)
+        // Fallback per Section 1.5: Georgia — never fall back to sans-serif system font
+        let georgiaName = weight == .bold ? "Georgia-Bold" : "Georgia"
+        if let fallback = UIFont(name: georgiaName, size: size) { return fallback }
+        // Georgia is built-in on iOS, but guard against the impossible
+        return UIFont(name: "Georgia", size: size) ?? .systemFont(ofSize: size, weight: weight)
     }
 
     private static func ebGaramondUIFont(size: CGFloat, italic: Bool, semiBold: Bool) -> UIFont {
@@ -256,10 +332,12 @@ enum CardFont {
         }
         let font = UIFont(descriptor: descriptor, size: size)
         if font.familyName.contains("Garamond") { return font }
-        // Fallback per Section 1.5: Times New Roman
+        // Fallback per Section 1.5: Times New Roman — never fall back to sans-serif system font
         let fallbackName = italic ? "TimesNewRomanPS-ItalicMT" : "TimesNewRomanPSMT"
         if let fallback = UIFont(name: fallbackName, size: size) { return fallback }
-        return italic ? .italicSystemFont(ofSize: size) : .systemFont(ofSize: size, weight: .regular)
+        // Times New Roman is built-in on iOS, but guard against the impossible
+        return UIFont(name: "TimesNewRomanPSMT", size: size)
+            ?? (italic ? .italicSystemFont(ofSize: size) : .systemFont(ofSize: size, weight: .regular))
     }
 
     private static func firaSansUIFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
@@ -271,7 +349,9 @@ enum CardFont {
         ])
         let font = UIFont(descriptor: descriptor, size: size)
         if font.familyName.contains("Fira") { return font }
-        return .systemFont(ofSize: size, weight: weight)
+        // Terminal fallback: serif font to maintain aesthetic — never sans-serif system font
+        let tnrName = weight == .semibold ? "TimesNewRomanPS-BoldMT" : "TimesNewRomanPSMT"
+        return UIFont(name: tnrName, size: size) ?? .systemFont(ofSize: size, weight: weight)
     }
 
     // MARK: - Debug: Verify Registered Font Names
@@ -287,7 +367,10 @@ enum CardFont {
             "EBGaramond-Regular",
             "EBGaramond-Italic",
             "EBGaramond-SemiBold",
-            "Oswald-Bold"
+            "Oswald-Bold",
+            "YesevaOne-Regular",
+            "IMFellEnglish-Regular",
+            "IMFellEnglish-Italic"
         ]
         print("=== CardFont Phase 0 Verification ===")
         for name in required {
@@ -298,7 +381,7 @@ enum CardFont {
             }
         }
         // Also print all registered families that match our target families
-        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira"]
+        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira", "Yeseva", "Fell"]
         print("--- Registered families ---")
         for family in UIFont.familyNames.sorted() {
             if targetFamilies.contains(where: { family.contains($0) }) {

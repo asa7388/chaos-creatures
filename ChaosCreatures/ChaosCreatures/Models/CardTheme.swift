@@ -22,18 +22,6 @@ struct CardTheme {
     var cardBase: Color {
         colorScheme == .dark ? Color("parchment-dark-mode") : Color("parchment-light")
     }
-    var nameBarBackground: Color {
-        colorScheme == .dark ? Color("parchment-dark-mode").opacity(0.95) : Color("parchment-mid").opacity(0.92)
-    }
-    var typeLineBackground: Color {
-        colorScheme == .dark ? Color("parchment-dark-mode").opacity(0.9) : Color("parchment-mid").opacity(0.85)
-    }
-    var textBoxBackground: Color {
-        colorScheme == .dark ? Color("parchment-dark-mode").opacity(0.88) : Color("canvas-warm").opacity(0.90)
-    }
-    var statsBarBackground: Color {
-        colorScheme == .dark ? Color("parchment-dark-mode").opacity(0.95) : Color("parchment-mid").opacity(0.95)
-    }
 
     // MARK: - Text Colors
 

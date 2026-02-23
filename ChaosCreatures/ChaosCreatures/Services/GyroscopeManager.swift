@@ -17,9 +17,9 @@ final class GyroscopeManager: ObservableObject {
 
     // MARK: - Published State
 
-    /// Horizontal tilt normalized to -1...1
+    /// Horizontal tilt clamped to ±0.6 radians per Section 6 of CARD_DESIGN_GUIDE.md
     @Published private(set) var tiltX: Double = 0
-    /// Vertical tilt normalized to -1...1
+    /// Vertical tilt clamped to ±0.6 radians per Section 6 of CARD_DESIGN_GUIDE.md
     @Published private(set) var tiltY: Double = 0
 
     // MARK: - Private
@@ -29,8 +29,8 @@ final class GyroscopeManager: ObservableObject {
     private var referenceCount = 0
     private var simulatorTimer: Timer?
 
-    /// Update interval: 30 Hz (lightweight)
-    private let updateInterval: TimeInterval = 1.0 / 30.0
+    /// Update interval: 60 Hz per Section 6 of CARD_DESIGN_GUIDE.md
+    private let updateInterval: TimeInterval = 1.0 / 60.0
 
     // MARK: - Init
 
@@ -82,13 +82,13 @@ final class GyroscopeManager: ObservableObject {
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
             guard let self, let motion else { return }
             // attitude.roll = left/right tilt, attitude.pitch = forward/back tilt
-            // Clamp to -1...1 range (full tilt at ~45 degrees = pi/4)
-            let maxAngle = Double.pi / 4
-            let normalizedX = max(-1, min(1, motion.attitude.roll / maxAngle))
-            let normalizedY = max(-1, min(1, motion.attitude.pitch / maxAngle))
+            // Clamp to ±0.6 radians per Section 6 of CARD_DESIGN_GUIDE.md
+            // Constrained to cardstock-like flex — not full device rotation range
+            let clampedX = max(-0.6, min(0.6, motion.attitude.roll))
+            let clampedY = max(-0.6, min(0.6, motion.attitude.pitch))
             Task { @MainActor in
-                self.tiltX = normalizedX
-                self.tiltY = normalizedY
+                self.tiltX = clampedX
+                self.tiltY = clampedY
             }
         }
     }

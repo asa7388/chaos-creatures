@@ -261,8 +261,51 @@ private enum ZoneHeight {
     static let typeLine: CGFloat = 0.061   // 18pt / 294pt ≈ 6%
     static let textBox: CGFloat  = 0.299   // 88pt / 294pt ≈ 30%
     static let textBoxExpanded: CGFloat = 0.364  // 107pt / 294pt (spell/stabilizer)
-    static let statsBar: CGFloat = 0.070   // ~21pt / 294pt ≈ 7% (increased for badge visibility)
+    static let statsBar: CGFloat = 0.051   // ~15pt / 294pt ≈ 5% per CARD_DESIGN_GUIDE.md Section 1.4
     static let rarityBar: CGFloat = 0.014  // 4pt / 294pt ≈ 1.5%
+}
+
+// MARK: - Zone Boundary Material-Edge Treatment
+//
+// Grimdark zone boundary: replaces clean digital hairlines with material-edge
+// treatments — a subtle inner shadow on the upper zone's bottom edge and a warm
+// highlight on the lower zone's top edge. This creates the illusion of one
+// physical material overlapping another (brass meeting canvas, vellum on parchment).
+// See docs/GRIMDARK_AESTHETIC_DIRECTIVE.md — "field document from a two-hundred-year war."
+
+private struct ZoneBoundaryEdge: View {
+    /// Total height of the boundary treatment.
+    /// Thin bronze/gold ornamental divider — like brass tacks holding parchment layers together.
+    let height: CGFloat
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Dark shadow line (bottom of upper zone)
+            Rectangle()
+                .fill(Color("ink-black").opacity(0.60))
+                .frame(height: 1)
+            // Bronze/gold decorative strip (the physical material edge)
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color("aged-gold").opacity(0.50),
+                            Color("aged-gold").opacity(0.70),
+                            Color("aged-gold").opacity(0.50)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 1.5)
+            // Dark shadow line (top of lower zone)
+            Rectangle()
+                .fill(Color("ink-black").opacity(0.40))
+                .frame(height: 0.5)
+        }
+        .frame(height: height)
+        .allowsHitTesting(false)
+    }
 }
 
 // MARK: - Letterpress Shadow ViewModifier
@@ -540,62 +583,60 @@ struct CardFrameView: View {
         }
     }
 
-    // MARK: - Creature Layout (full-bleed art with ZStack lower-thirds overlay)
+    // MARK: - Creature Layout (VStack zone-stack per CARD_DESIGN_GUIDE.md Section 1.4)
 
     private func creatureLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        return ZStack(alignment: .bottom) {
-            // Art fills full card height
-            artBox(cardWidth: cardWidth, cardHeight: cardHeight)
-                .frame(width: cardWidth, height: cardHeight)
+        let boundaryHeight: CGFloat = 4 * cardScale(cardWidth: cardWidth)
+        return VStack(spacing: 0) {
+            nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
+                .frame(height: cardHeight * ZoneHeight.nameBars)
 
-            // Name bar pinned to the top — uses a full-height VStack with Spacer
-            VStack(spacing: 0) {
-                nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
-                    .frame(height: cardHeight * ZoneHeight.nameBars)
-                Spacer(minLength: 0)
-            }
-            .frame(width: cardWidth, height: cardHeight, alignment: .top)
+            ZoneBoundaryEdge(height: boundaryHeight)
 
-            // Bottom text panel — ZStack(alignment: .bottom) pins this to the card bottom
-            VStack(spacing: 0) {
-                typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
-                    .frame(height: cardHeight * ZoneHeight.typeLine)
+            artBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
+                .frame(height: cardHeight * ZoneHeight.artBox)
 
-                textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
-                    .frame(height: cardHeight * ZoneHeight.textBox)
+            ZoneBoundaryEdge(height: boundaryHeight)
 
-                statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: true)
-                    .frame(height: cardHeight * ZoneHeight.statsBar)
+            typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.typeLine)
 
-                rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
-                    .frame(height: cardHeight * ZoneHeight.rarityBar)
-            }
-            .frame(width: cardWidth)
-            .background(
-                LinearGradient(
-                    colors: [Color.black.opacity(0), Color(red: 0.12, green: 0.08, blue: 0.04).opacity(0.95)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+            ZoneBoundaryEdge(height: boundaryHeight)
+
+            textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
+                .frame(height: cardHeight * ZoneHeight.textBox)
+
+            ZoneBoundaryEdge(height: boundaryHeight)
+
+            statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: true)
+                .frame(height: cardHeight * ZoneHeight.statsBar)
+
+            rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
+                .frame(height: cardHeight * ZoneHeight.rarityBar)
         }
-        .frame(width: cardWidth, height: cardHeight)
-        .background(cardBaseColor)
+        .background(cardBaseBackground)
     }
 
     // MARK: - Spell Layout (no stats bar, expanded text box, no wax seal, no instability)
 
     private func spellLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        VStack(spacing: 0) {
+        let boundaryHeight: CGFloat = 4 * cardScale(cardWidth: cardWidth)
+        return VStack(spacing: 0) {
             nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: true)
                 .frame(height: cardHeight * ZoneHeight.nameBars)
+
+            ZoneBoundaryEdge(height: boundaryHeight)
 
             artBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
                 .frame(height: cardHeight * ZoneHeight.artBox)
 
+            ZoneBoundaryEdge(height: boundaryHeight)
+
             typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.typeLine)
                 .zIndex(10)
+
+            ZoneBoundaryEdge(height: boundaryHeight)
 
             textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBoxExpanded)
                 .frame(height: cardHeight * ZoneHeight.textBoxExpanded)
@@ -603,22 +644,29 @@ struct CardFrameView: View {
             rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.rarityBar)
         }
-        .background(cardBaseColor)
+        .background(cardBaseBackground)
     }
 
     // MARK: - Stabilizer Layout (no cost, no stats, lock icon in art box)
 
     private func stabilizerLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
-        VStack(spacing: 0) {
+        let boundaryHeight: CGFloat = 4 * cardScale(cardWidth: cardWidth)
+        return VStack(spacing: 0) {
             nameBar(cardWidth: cardWidth, cardHeight: cardHeight, showCost: false)
                 .frame(height: cardHeight * ZoneHeight.nameBars)
+
+            ZoneBoundaryEdge(height: boundaryHeight)
 
             artBoxWithLockIcon(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
                 .frame(height: cardHeight * ZoneHeight.artBox)
 
+            ZoneBoundaryEdge(height: boundaryHeight)
+
             typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.typeLine)
                 .zIndex(10)
+
+            ZoneBoundaryEdge(height: boundaryHeight)
 
             textBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBoxExpanded)
                 .frame(height: cardHeight * ZoneHeight.textBoxExpanded)
@@ -626,25 +674,34 @@ struct CardFrameView: View {
             rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.rarityBar)
         }
-        .background(cardBaseColor)
+        .background(cardBaseBackground)
     }
 
     // MARK: - Planar Ruin Layout (HP only, passive + destruction panels)
 
     private func planarRuinLayout(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
+        let boundaryHeight: CGFloat = 4 * cardScale(cardWidth: cardWidth)
         return VStack(spacing: 0) {
             ruinNameBar(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.nameBars)
 
+            ZoneBoundaryEdge(height: boundaryHeight)
+
             artBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.artBox)
                 .frame(height: cardHeight * ZoneHeight.artBox)
+
+            ZoneBoundaryEdge(height: boundaryHeight)
 
             typeLine(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.typeLine)
                 .zIndex(10)
 
+            ZoneBoundaryEdge(height: boundaryHeight)
+
             ruinTextBox(cardWidth: cardWidth, cardHeight: cardHeight * ZoneHeight.textBox)
                 .frame(height: cardHeight * ZoneHeight.textBox)
+
+            ZoneBoundaryEdge(height: boundaryHeight)
 
             statsBar(cardWidth: cardWidth, cardHeight: cardHeight, showAtk: false)
                 .frame(height: cardHeight * ZoneHeight.statsBar)
@@ -652,7 +709,7 @@ struct CardFrameView: View {
             rarityColorBar(cardWidth: cardWidth, cardHeight: cardHeight)
                 .frame(height: cardHeight * ZoneHeight.rarityBar)
         }
-        .background(cardBaseColor)
+        .background(cardBaseBackground)
     }
 
     // MARK: - Name Bar Zone
@@ -668,6 +725,7 @@ struct CardFrameView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .letterpressShadow()
+                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                 Spacer(minLength: 4 * scale)
                 if showCost {
                     chaosMoteRow(cost: data.manaCost, cardWidth: cardWidth)
@@ -689,6 +747,7 @@ struct CardFrameView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .letterpressShadow()
+                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                 Spacer(minLength: 4 * scale)
                 chaosMoteRow(cost: data.manaCost, cardWidth: cardWidth)
             }
@@ -697,14 +756,8 @@ struct CardFrameView: View {
     }
 
     private var nameBarBackground: some View {
-        theme.nameBarBackground
-            .overlay(
-                LinearGradient(
-                    colors: [Color.white.opacity(0.12), Color.clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+        // Faction texture shows through — no zone-specific background
+        Color.clear
     }
 
     // MARK: - 2.3 N ⊕ Unified Chaos Mote Cost Display
@@ -720,12 +773,14 @@ struct CardFrameView: View {
                 .font(CardFont.statNumber(size: 13 * scale))
                 .foregroundColor(theme.primaryText)
                 .letterpressShadow()
+                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
             Image("chaos_mote_symbol")
                 .resizable()
                 .frame(
                     width: 20 * scale,
                     height: 20 * scale
                 )
+                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
         }
         .padding(.trailing, 6 * scale)
     }
@@ -837,20 +892,18 @@ struct CardFrameView: View {
     private func typeLine(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
         let scale = cardScale(cardWidth: cardWidth)
         return ZStack {
-            theme.typeLineBackground
+            // Faction texture shows through — no zone-specific background
+            Color.clear
             HStack(alignment: .center, spacing: 4 * scale) {
-                Text(data.typeLine)
+                Text(effectiveTypeLine)
                     .font(CardFont.cardType(size: 10 * scale))
                     .foregroundColor(theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .letterpressShadow()
+                    .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
 
                 Spacer(minLength: 2 * scale)
-
-                // Wax seal — faction symbol + rarity color
-                WaxSealView(rarity: data.tier, faction: data.faction ?? .ironwright, size: 28 * scale)
-                    .zIndex(10)
             }
             .padding(.horizontal, 6 * scale)
         }
@@ -861,14 +914,8 @@ struct CardFrameView: View {
     private func textBox(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
         let scale = cardScale(cardWidth: cardWidth)
         return ZStack(alignment: .topLeading) {
-            theme.textBoxBackground
-                .overlay(
-                    // Subtle paper texture overlay
-                    Image("CardTextures/paper-texture")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .opacity(0.10)
-                )
+            // Faction texture shows through — no zone-specific background
+            Color.clear
 
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -889,6 +936,7 @@ struct CardFrameView: View {
                             .foregroundColor(theme.primaryText)
                             .lineSpacing(3 * scale)
                             .letterpressShadow()
+                            .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                             .padding(.bottom, 4 * scale)
                     }
 
@@ -907,20 +955,12 @@ struct CardFrameView: View {
                             .foregroundColor(theme.flavorText)
                             .lineSpacing(2 * scale)
                             .letterpressShadow()
+                            .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                     }
                 }
                 .padding(4 * scale)
             }
         }
-        .overlay(
-            // Inner top shadow to suggest recessed panel
-            LinearGradient(
-                colors: [Color.black.opacity(0.08), Color.clear],
-                startPoint: .top,
-                endPoint: .init(x: 0.5, y: 0.25)
-            )
-            .allowsHitTesting(false)
-        )
     }
 
     private func keywordsRow(scale: CGFloat) -> some View {
@@ -931,11 +971,13 @@ struct CardFrameView: View {
                         .font(CardFont.keywordName(size: 11 * scale))
                         .foregroundColor(theme.secondaryText)
                         .letterpressShadow()
+                        .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                 }
                 Text(keyword.displayName)
                     .font(CardFont.keywordName(size: 11 * scale))
                     .foregroundColor(theme.primaryText)
                     .letterpressShadow()
+                    .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                     .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             activeTooltipKeyword = (activeTooltipKeyword == keyword) ? nil : keyword
@@ -951,7 +993,8 @@ struct CardFrameView: View {
     private func ruinTextBox(cardWidth: CGFloat, cardHeight: CGFloat) -> some View {
         let scale = cardScale(cardWidth: cardWidth)
         return ZStack(alignment: .topLeading) {
-            theme.textBoxBackground
+            // Faction texture shows through — no zone-specific background
+            Color.clear
 
             VStack(alignment: .leading, spacing: 0) {
                 // Passive benefit panel
@@ -960,11 +1003,13 @@ struct CardFrameView: View {
                         .font(CardFont.cardName(size: 8 * scale))
                         .foregroundColor(theme.secondaryText)
                         .letterpressShadow()
+                        .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                     Text(data.ruinPassiveText ?? "")
                         .font(CardFont.abilityText(size: 10 * scale))
                         .foregroundColor(theme.primaryText)
                         .lineSpacing(2 * scale)
                         .letterpressShadow()
+                        .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                         .minimumScaleFactor(0.8)
                 }
                 .padding(.horizontal, 4 * scale)
@@ -983,11 +1028,13 @@ struct CardFrameView: View {
                         .font(CardFont.cardName(size: 8 * scale))
                         .foregroundColor(Color("wax-red"))
                         .letterpressShadow()
+                        .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                     Text(data.ruinDestructionPenaltyText ?? "")
                         .font(CardFont.abilityText(size: 10 * scale))
                         .foregroundColor(Color("wax-red"))
                         .lineSpacing(2 * scale)
                         .letterpressShadow()
+                        .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
                         .minimumScaleFactor(0.8)
                 }
                 .padding(.horizontal, 4 * scale)
@@ -1003,83 +1050,106 @@ struct CardFrameView: View {
 
     private func statsBar(cardWidth: CGFloat, cardHeight: CGFloat, showAtk: Bool) -> some View {
         let scale = cardScale(cardWidth: cardWidth)
-        return ZStack {
-            theme.statsBarBackground
-            HStack(alignment: .center) {
-                if data.cardType == .planarRuin {
-                    // Planar Ruin: HP only — bottom right, no ATK
-                    Spacer()
-                    if let hp = data.health {
+        // Wax seal size: 34pt at 210pt reference, scales proportionally
+        let sealSize: CGFloat = 34 * scale
+        return ZStack(alignment: .trailing) {
+            // Faction texture shows through — no zone-specific background
+            ZStack {
+                Color.clear
+                HStack(alignment: .center) {
+                    if data.cardType == .planarRuin {
+                        // Planar Ruin: HP only — bottom right, no ATK
+                        Spacer()
+                        if let hp = data.health {
+                            HStack(spacing: 4 * scale) {
+                                Image(systemName: "heart.fill")
+                                    .resizable()
+                                    .frame(width: 12 * scale, height: 12 * scale)
+                                    .foregroundColor(Color("wax-red"))
+                                    .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
+                                Text("\(hp)")
+                                    .font(CardFont.statNumber(size: 13 * scale))
+                                    .foregroundColor(theme.primaryText)
+                                    .letterpressShadow()
+                                    .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
+                            }
+                            .padding(.horizontal, 8 * scale)
+                            .padding(.vertical, 3 * scale)
+                            .background(Capsule().fill(Color.black.opacity(0.6)))
+                        }
+                    } else if showAtk, let atk = data.attack, let hp = data.health {
+                        // Creature: ATK badge bottom-left, HP badge bottom-right
+                        HStack(spacing: 4 * scale) {
+                            Image(systemName: "crossed.swords")
+                                .resizable()
+                                .frame(width: 12 * scale, height: 12 * scale)
+                                .foregroundColor(Color("aged-gold"))
+                                .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
+                            Text("\(atk)")
+                                .font(CardFont.statNumber(size: 13 * scale))
+                                .foregroundColor(theme.primaryText)
+                                .letterpressShadow()
+                                .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
+                        }
+                        .padding(.horizontal, 8 * scale)
+                        .padding(.vertical, 3 * scale)
+                        .background(Capsule().fill(Color("aged-gold").opacity(0.25)).overlay(Capsule().stroke(Color("aged-gold").opacity(0.6), lineWidth: 0.5 * scale)))
+
+                        Spacer()
+
                         HStack(spacing: 4 * scale) {
                             Image(systemName: "heart.fill")
                                 .resizable()
                                 .frame(width: 12 * scale, height: 12 * scale)
-                                .foregroundColor(Color(hex: "#E53935"))
+                                .foregroundColor(Color("wax-red"))
+                                .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
                             Text("\(hp)")
                                 .font(CardFont.statNumber(size: 13 * scale))
                                 .foregroundColor(theme.primaryText)
                                 .letterpressShadow()
+                                .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
                         }
                         .padding(.horizontal, 8 * scale)
                         .padding(.vertical, 3 * scale)
-                        .background(Capsule().fill(Color.black.opacity(0.6)))
+                        .background(Capsule().fill(Color("wax-red").opacity(0.25)).overlay(Capsule().stroke(Color("wax-red").opacity(0.6), lineWidth: 0.5 * scale)))
+                    } else {
+                        // No stats to show — instability and collector info only
+                        if data.cardType == .creature, let instability = data.instability, instability > 0 {
+                            InstabilityBadgeView(instability: instability)
+                                .padding(.leading, 4 * scale)
+                                .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
+                        }
+                        if let cn = data.collectorNumber {
+                            Text(cn)
+                                .font(CardFont.collectorNumber(size: 7 * scale))
+                                .foregroundColor(theme.secondaryText)
+                                .letterpressShadow()
+                                .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
+                                .padding(.leading, 4 * scale)
+                        }
+                        Spacer(minLength: 0)
+                        if let setCode = data.setCode {
+                            Text(setCode)
+                                .font(CardFont.collectorNumber(size: 7 * scale))
+                                .foregroundColor(theme.secondaryText)
+                                .letterpressShadow()
+                                .shadow(color: Color.black.opacity(0.4), radius: 2, x: 0, y: 1)
+                        }
+                        Spacer(minLength: 0)
                     }
-                } else if showAtk, let atk = data.attack, let hp = data.health {
-                    // Creature: ATK badge bottom-left, HP badge bottom-right
-                    HStack(spacing: 4 * scale) {
-                        Image(systemName: "crossed.swords")
-                            .resizable()
-                            .frame(width: 12 * scale, height: 12 * scale)
-                            .foregroundColor(Color(hex: "#FF8F00"))
-                        Text("\(atk)")
-                            .font(CardFont.statNumber(size: 13 * scale))
-                            .foregroundColor(theme.primaryText)
-                            .letterpressShadow()
-                    }
-                    .padding(.horizontal, 8 * scale)
-                    .padding(.vertical, 3 * scale)
-                    .background(Capsule().fill(Color(hex: "#FF8F00").opacity(0.25)).overlay(Capsule().stroke(Color(hex: "#FF8F00").opacity(0.6), lineWidth: 0.5 * scale)))
-
-                    Spacer()
-
-                    HStack(spacing: 4 * scale) {
-                        Image(systemName: "heart.fill")
-                            .resizable()
-                            .frame(width: 12 * scale, height: 12 * scale)
-                            .foregroundColor(Color(hex: "#E53935"))
-                        Text("\(hp)")
-                            .font(CardFont.statNumber(size: 13 * scale))
-                            .foregroundColor(theme.primaryText)
-                            .letterpressShadow()
-                    }
-                    .padding(.horizontal, 8 * scale)
-                    .padding(.vertical, 3 * scale)
-                    .background(Capsule().fill(Color(hex: "#E53935").opacity(0.25)).overlay(Capsule().stroke(Color(hex: "#E53935").opacity(0.6), lineWidth: 0.5 * scale)))
-                } else {
-                    // No stats to show — instability and collector info only
-                    if data.cardType == .creature, let instability = data.instability, instability > 0 {
-                        InstabilityBadgeView(instability: instability)
-                            .padding(.leading, 4 * scale)
-                    }
-                    if let cn = data.collectorNumber {
-                        Text(cn)
-                            .font(CardFont.collectorNumber(size: 7 * scale))
-                            .foregroundColor(theme.secondaryText)
-                            .letterpressShadow()
-                            .padding(.leading, 4 * scale)
-                    }
-                    Spacer(minLength: 0)
-                    if let setCode = data.setCode {
-                        Text(setCode)
-                            .font(CardFont.collectorNumber(size: 7 * scale))
-                            .foregroundColor(theme.secondaryText)
-                            .letterpressShadow()
-                    }
-                    Spacer(minLength: 0)
                 }
+                .padding(.horizontal, 6 * scale)
             }
-            .padding(.horizontal, 6 * scale)
+            .clipped()
+
+            // Wax seal — overlaps stats bar, right-aligned
+            // Guide ref: x=164, y=258 at 210x294pt; size=34pt. Positioned to overlap
+            // upward from the stats bar zone.
+            WaxSealView(rarity: data.tier, faction: effectiveFaction ?? .ironwright, size: sealSize)
+                .offset(x: -6 * scale, y: -sealSize * 0.35)
+                .zIndex(10)
         }
+        .zIndex(5)
     }
 
     // MARK: - Rarity Color Bar Zone
@@ -1135,6 +1205,71 @@ struct CardFrameView: View {
         theme.cardBase
     }
 
+    // MARK: - Faction Background Texture
+
+    /// Maps a faction to its card body background texture asset name.
+    /// Returns nil for factions that don't have a custom background yet,
+    /// which causes the layout to fall back to the solid cardBaseColor.
+    private var factionBackgroundImage: String? {
+        guard let faction = effectiveFaction else { return nil }
+        switch faction {
+        case .celestial: return "CardTextures/bg-celestial"
+        case .fey:       return "CardTextures/bg-fey"
+        // Other factions will be added later — return nil for now
+        case .ironwright, .demonic, .endless: return nil
+        }
+    }
+
+    /// Fallback faction detection when `data.faction` is nil.
+    /// Scans the art URL filename and card name for faction identifiers.
+    /// This handles cases where the CollectionView template→faction lookup
+    /// chain fails to populate the faction field.
+    private var inferredFaction: CardFaction? {
+        let sources = [
+            data.artUrl?.lowercased() ?? "",
+            data.name.lowercased()
+        ]
+        for text in sources {
+            if text.contains("ironwright") { return .ironwright }
+            if text.contains("fey") { return .fey }
+            if text.contains("demonic") { return .demonic }
+            if text.contains("celestial") { return .celestial }
+            if text.contains("endless") { return .endless }
+        }
+        return nil
+    }
+
+    /// The effective faction for rendering, using inferredFaction as fallback.
+    private var effectiveFaction: CardFaction? {
+        data.faction ?? inferredFaction
+    }
+
+    /// Type line text with faction fallback. Uses inferredFaction when
+    /// data.faction is nil so the type line still shows "Creature — Ironwright" etc.
+    private var effectiveTypeLine: String {
+        if data.faction != nil {
+            return data.typeLine
+        }
+        if let inferred = inferredFaction {
+            return "\(data.cardType.displayName) \u{2014} \(inferred.shortDisplayName)"
+        }
+        return data.typeLine
+    }
+
+    /// The card body base layer: faction texture if available, solid color fallback otherwise.
+    /// Placed as the .background() of each card type layout's VStack.
+    @ViewBuilder
+    private var cardBaseBackground: some View {
+        if let bgImage = factionBackgroundImage {
+            Image(bgImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .allowsHitTesting(false)
+        } else {
+            cardBaseColor
+        }
+    }
+
 
 }
 
@@ -1151,10 +1286,10 @@ private struct AnimatedRarityBorder: View {
 
     private var colors: [Color] {
         isLegendary
-            ? [Color(hex: "#FFD700"), Color(hex: "#FFC820"), Color(hex: "#FF8C00"),
-               Color(hex: "#FFD700"), Color(hex: "#FFE860"), Color(hex: "#FFD700")]
-            : [Color(hex: "#9B59B6"), Color(hex: "#7D3C98"), Color(hex: "#D98EE5"),
-               Color(hex: "#9B59B6"), Color(hex: "#A569BD"), Color(hex: "#9B59B6")]
+            ? [Color("aged-gold"), Color("aged-gold").opacity(0.85), Color("legendary-ember"),
+               Color("aged-gold"), Color("aged-gold").opacity(0.9), Color("aged-gold")]
+            : [Color("epic-amethyst"), Color("epic-amethyst").opacity(0.8), Color("epic-amethyst").opacity(0.6),
+               Color("epic-amethyst"), Color("epic-amethyst").opacity(0.85), Color("epic-amethyst")]
     }
 
     private var duration: Double { isLegendary ? 3.0 : 4.5 }

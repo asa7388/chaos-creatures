@@ -1,707 +1,682 @@
 # Implementation Plan — Chaos Creatures Design Overhaul
-Date: 2026-02-21
+## Date: 2026-02-22 (supersedes 2026-02-21)
+## Authority: CARD_DESIGN_GUIDE.md + GRIMDARK_AESTHETIC_DIRECTIVE.md
+## Source: Logs/GAP_ANALYSIS.md (consolidated from 3 audit agents)
 
 ---
 
-## Decisions Required Before Starting
+## Decisions Required (Resolve Before Phase 1)
 
-These items must be resolved by the owner before any agent can begin Phase 2 and beyond. No implementation work should start on the blocked areas until each decision is recorded in `Logs/DEPENDENCY_DECISIONS.md`.
+These items require owner input. Record each resolution in `Logs/DEPENDENCY_DECISIONS.md`.
 
----
+### Decision 1: Creature Full-Bleed ZStack vs Zone-Stack VStack
+**Conflict:** Creature cards currently use full-bleed art ZStack with overlaid text panel. Guide Section 1.4 specifies VStack zone-stack where art is confined to 45% Art Box zone. Previous round resolved as "Option A — zone-stack per guide."
+- **Option A (guide):** Convert creature layout to VStack zone-stack matching spell/stabilizer/ruin. Art confined to Art Box zone.
+- **Option B (current):** Keep full-bleed ZStack for creatures. Document as intentional deviation. All other card types remain zone-stack.
+**Impact:** If Option A, creature layout conversion is a Phase 2 task (~M effort). If Option B, log deviation and no code change needed.
 
-**DECISION 1 — CardFrameView Architecture (HIGHEST PRIORITY BLOCKER)**
+### Decision 2: Stats Bar Height — 7% or 5%?
+**Conflict:** Current is 7% "for badge visibility." Guide says 5%.
+- **Option A (guide):** Reduce to 5%. Resize badges if needed.
+- **Option B (current):** Keep 7%. Document deviation.
+**Impact:** One line change either way.
 
-The existing `CardFrameView.swift` (1,986 lines) uses a full-art-bleed design with overlaid stat badges. The `docs/CARD_DESIGN_GUIDE.md` Section 1.4 mandates a zone-stack layout (Name Bar → Art Box → Type Line → Text Box → Stats Bar → Rarity Color Bar). These two designs are architecturally incompatible. It is not possible to migrate one to the other incrementally.
-
-Option A — Adopt the guide's zone-stack layout. CardFrameView requires a complete rewrite (~1,000+ lines replaced). All downstream views that depend on `CardDisplaySize`, `ATKBadgeView`, `HPBadgeView`, and `CMBadgeView` must be updated.
-
-Option B — Retain the existing full-art-bleed design as the canonical card face. The guide's Section 1.4 zone measurements and Sections 1.5b card-type variant specs are superseded. The guide must be updated to reflect the existing implementation. Agents will work on other gaps (Metal shaders, color palette, state machine, accessibility) while keeping the current layout structure.
-
-⛔ DECISION GATE — Owner must approve Option A or Option B before Phase 2 begins. Record the decision in `Logs/DEPENDENCY_DECISIONS.md`.
-
----
-
-**DECISION 2 — Typography Font Set**
-
-`CLAUDE.md` specifies Cinzel + Alegreya as the decided fonts. The `docs/CARD_DESIGN_GUIDE.md` Section 1.5 mandates Cinzel + EBGaramond + Oswald. The implemented codebase uses Cinzel + Alegreya + Bebas Neue + Fira Sans, which aligns with CLAUDE.md. These font families are different at a functional level — no bridge is possible.
-
-Option A — Adopt the guide's font set (EBGaramond + Oswald). Download and register 6 new font files. Rewrite `CardFont.swift`. Update `Info.plist`. Update all card views. The smoke test (Section 4.9) uses EBGaramond and Oswald — it will render incorrectly until this is done.
-
-Option B — Retain Alegreya + Bebas Neue as the canonical fonts. The guide's Sections 1.5 and 4.7 font requirements are superseded. Update the smoke test view to use the approved fonts. The smoke test confirms the retained font set loads and renders correctly.
-
-⛔ DECISION GATE — Owner must approve Option A or Option B before Phase 0 (font download) can complete. Record decision in `Logs/DEPENDENCY_DECISIONS.md`.
+### Decision 3: Stats Bar Ad-Hoc Colors
+**Conflict:** ATK badge uses `#FF8F00`, HP badge uses `#E53935` — not palette tokens.
+- **Option A:** Replace with palette-derived colors (e.g., `aged-gold` tinted for ATK, `wax-red` for HP).
+- **Option B:** Keep current colors. Document as intentional UI accent outside palette.
+**Impact:** Cosmetic, ~2 lines.
 
 ---
 
-**DECISION 3 — Generation Pipeline Architecture**
+## Previously Resolved Decisions (Carry Forward — Do NOT Re-Ask)
 
-The existing scripts (`generate-base-pool.mjs`, etc.) use `fal-ai/fast-sdxl` via JavaScript. The guide requires Python scripts using Replicate (for creatures with the LoRA) and `fal-ai/flux/dev` (for non-creatures). The LoRA weight file `chscrt-sdxl-lora.safetensors` must also be confirmed at the R2 URL before creature generation can run.
-
-Option A — Adopt the guide's pipeline. Create `Scripts/generate_creature.py` (Replicate + LoRA) and `Scripts/generate_noncreature.py` (fal.ai FLUX.1 Dev). Retire the existing `.mjs` scripts for new production generation.
-
-Option B — Retain the existing `.mjs` scripts as the primary pipeline. Document the deviation in `Logs/DEPENDENCY_DECISIONS.md` as an authorized variant. The guide's Python scripts are created as supplementary tools for LoRA-specific generation only.
-
-⛔ DECISION GATE — Owner must approve Option A or Option B before Phase 5 (Asset Generation Pipeline) begins. Additionally, before any creature artwork generation runs under any option, the owner must visit `civitai.com/models/336656` and take the screenshot described in the Commercial License Gate below.
-
----
-
-**COMMERCIAL LICENSE GATE — EldritchPaletteKnife (must complete before Phase 5)**
-
-Before any creature artwork is generated using the `chscrt-sdxl-lora.safetensors` LoRA (which was trained on EldritchPaletteKnife outputs):
-
-1. Visit `civitai.com/models/336656`
-2. Click the "License" link on the model page
-3. Confirm the "Allow commercial use" permission checkbox state
-4. Screenshot the page showing the checkbox state
-5. Save to `Resources/LegalEvidence/eldritchpaletteknife_license_screenshot.png`
-
-If commercial use is not permitted: retrain the LoRA using SDXL base outputs only (Apache 2.0, unambiguously commercial-safe) and delete all existing LoRA-generated assets.
-
-⛔ COMMERCIAL PIPELINE GATE — Do not proceed to Phase 5 without this file existing at the path above.
+- **Card layout:** Option A — zone-stack layout per guide Section 1.4
+- **Typography:** Option A — EBGaramond + Oswald-Bold per guide Section 1.5
+- **Generation pipeline:** Option 3A — New LoRA v2 on public domain artworks
+- **Missing faction music:** DEFERRED — graceful degradation acceptable
+- **Music stem structure:** Single-track per faction, document deviation
+- **Commercial license gate:** EldritchPaletteKnife LoRA RETIRED, new v2 pending
 
 ---
 
-## Phase Overview
+## Budget Constraint
 
-| Phase | Name | Depends On | Parallel With | Effort |
-|-------|------|------------|---------------|--------|
-| 0 | Environment & Toolchain Setup | Decisions 2, 3 | — | Medium |
-| 1 | Color Palette & Data Schema | Phase 0 | — | Medium |
-| DECISION GATE | CardFrameView Architecture | Decision 1 | — | — |
-| SMOKE TEST GATE | Smoke Test Build | Phase 1 | — | Small |
-| 2 | Card Layout Rebuild | Decision 1, Phase 1 | — | XL |
-| 3 | Metal Shader Pipeline | Smoke Test Gate | Phase 5 | XL |
-| 4 | Rarity & Particle Effects | Phase 3 | Phase 6 | Large |
-| 5 | Asset Generation Pipeline | Decision 3, Phase 0, Commercial Gate | Phase 3 | Large |
-| 6 | Sound & Haptics | Phase 0 | Phase 3, Phase 5 | Large |
-| 7 | Accessibility & iPad | Phase 2 | Phase 4 | Medium |
-| 8 | Performance & Final Polish | Phase 4, Phase 6, Phase 7 | — | Medium |
+**Remaining asset generation budget: $9.50**
+
+| Phase | Estimated API Cost | Notes |
+|-------|-------------------|-------|
+| Phase 1 (Environment/Tooling) | $0 | Scripts only |
+| Phase 2 (Card Layout Fixes) | $0 | Code changes only |
+| Phase 3 (Texture Assets) | $0 | CC0 downloads + ImageMagick |
+| Phase 4 (Metal Bridge) | $0 | Code only |
+| Phase 5 (Sound) | $0-2 | Freesound CC0, optional itch.io packs |
+| Phase 6 (Art Generation) | $5-7 | fal.ai calls for test cards |
+| Phase 7 (Haptics) | $0 | Code only |
+| Phase 8 (Accessibility) | $0 | Code only |
+| Phase 9 (Performance) | $0 | Profiling only |
+| **Total estimated** | **$5-9** | Within $9.50 budget |
 
 ---
 
-## Phase 0: Environment & Toolchain Setup
+## Grimdark Priority Order
 
-**Depends on:** Decision 2 (font set), Decision 3 (pipeline architecture)
-**Must be sequential first** — everything depends on this environment being stable.
-**Effort:** Medium (100–400 lines total across shell scripts and config files)
+The implementation sequence front-loads work that makes the app feel like a physical wartime field document. The acceptance test for every phase: *"Imagine you are standing in a war camp at the edge of a contested Planar Ruin site. You have just picked up a card from the table. Does what you see on screen feel like that card?"*
+
+Physical-material work (texture assets, Metal shaders, zone boundary character, sound materials) takes priority over technically-correct-but-invisible work (ASTC compression, performance profiling, accessibility). Both must be done, but the order matters for grimdark identity.
+
+---
+
+## Phase 1: Environment & Tooling Foundation
+**Depends on:** Nothing
+**Can parallel with:** Nothing (this is the foundation)
+**Effort:** M
+
+All scripts and verification tools that gate subsequent phases. No visual work.
 
 ### Tasks
 
-**0.1 — Project-root `Resources/` directory structure**
-Create directories: `Resources/CardArt/`, `Resources/Fonts/`, `Resources/Icons/`, `Resources/Textures/`, `Resources/Sounds/`, `Resources/Haptics/`, `Resources/Cards/`, `Resources/LegalEvidence/`, `Staging/`.
-Also create: `Logs/Performance/`.
-Effort: Small (directory creation, no code).
+1.1 — Create `Scripts/verify_environment.sh`
+  Files: `Scripts/verify_environment.sh` (new)
+  Action: Implement from Section 4.1 spec. Checks Xcode, simulators, CLI tools, Python libs, API keys, connectivity.
+  Effort: S
 
-**0.2 — `Logs/BUDGET_LEDGER.md` and `Logs/DEPENDENCY_DECISIONS.md`**
-Create both files. Populate `BUDGET_LEDGER.md` with the budget allocation table from Section 11.1 (creatures 35%, non-creature 25%, iterations 15%, parallax 15%, textures 5%, reserve 5%). Record Decisions 1–3 and the Commercial License Gate decision in `DEPENDENCY_DECISIONS.md`.
-Effort: Small.
+1.2 — Create `Scripts/load_env.sh`
+  Files: `Scripts/load_env.sh` (new)
+  Action: Implement from Section 4.5 spec. Sources `.env`, reports key count.
+  Effort: S
 
-**0.3 — `.env` additions**
-Add `REPLICATE_API_TOKEN=`, `LORA_URL=https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/training/chscrt-sdxl-lora.safetensors`, `FREESOUND_API_KEY=` to the root `.env` file.
-Effort: Small.
+1.3 — Create `Scripts/verify_asset.py`
+  Files: `Scripts/verify_asset.py` (new)
+  Action: Implement from Section 5.7 spec. `--min-width`, `--min-height`, `--no-error-payload`, `--warm-tone-check` flags.
+  Effort: S
 
-**0.4 — Python library installation**
-Run: `pip3 install Pillow numpy requests replicate fal-client --break-system-packages`
-Verify: `python3 -c "import PIL, numpy, requests, replicate, fal_client; print('OK')"`
-Effort: Small.
+1.4 — Create `Scripts/verify_contrast.py`
+  Files: `Scripts/verify_contrast.py` (new)
+  Action: Implement from Section 10.4 spec. Check 5 required WCAG AA color contrast pairs.
+  Effort: S
 
-**0.5 — Missing CLI tools**
-`brew install pngquant`
-`npm install -g svgexport`
-`brew install mono0926/license-plist/license-plist`
-Audit all existing `.sh` scripts for bare `convert` usage and replace with `magick` (ImageMagick 7).
-Effort: Small.
+1.5 — Create `Scripts/compare_screenshots.py`
+  Files: `Scripts/compare_screenshots.py` (new)
+  Action: Implement from Section 12.2 spec. PIL ImageChops.difference, 0.025 threshold.
+  Effort: S
 
-**0.6 — Font files** (contingent on Decision 2)
-If Option A (guide fonts): Download `Cinzel-Regular.ttf`, `Cinzel-Bold.ttf`, `EBGaramond-Regular.ttf`, `EBGaramond-Italic.ttf`, `EBGaramond-SemiBold.ttf`, `Oswald-Bold.ttf` from fonts.google.com. Add to `ChaosCreatures/ChaosCreatures/Resources/Fonts/` and to Xcode project. Update `Info.plist` `UIAppFonts` array.
-If Option B (retain fonts): Verify the 6 existing font files load correctly in Simulator. No Info.plist change needed.
-Effort: Small.
+1.6 — Create `Scripts/set_astc_compression.py`
+  Files: `Scripts/set_astc_compression.py` (new)
+  Action: Implement from Section 4.6 spec. Walk all `.imageset` directories under Textures, inject `"properties": {"compression-type": "automatic"}` into Contents.json.
+  Effort: S
 
-**0.7 — `Scripts/load_env.sh`**
-Create shared environment loader that sources root `.env` and prints loaded/total key count. Used at the start of all generation scripts.
-Effort: Small.
+1.7 — Create `Scripts/download_textures.sh`
+  Files: `Scripts/download_textures.sh` (new)
+  Action: Implement from Section 4.4 spec. Downloads CC0 PBR textures from Poly Haven (parchment diffuse, parchment normal, canvas diffuse, canvas normal).
+  Effort: S
 
-**0.8 — `Scripts/verify_environment.sh` (master gate)**
-Create the full environment check script from Section 4.1: Xcode version check, simulator device targets check, all CLI tools check, Python library import check, API key presence check, R2 LoRA URL reachability check, legal gate file check.
-Exits 0 on pass, 1 on fail. `✓`/`✗`/`⚠` output format.
-Effort: Medium.
+1.8 — Create `Scripts/generate_normal_map.sh`
+  Files: `Scripts/generate_normal_map.sh` (new)
+  Action: Implement from Section 3.5 spec. ImageMagick heightmap-to-normal-map for parchment, brush, wax seal.
+  Effort: S
 
-**0.9 — `Scripts/cleanup_staging.sh` and `Makefile`**
-Create `Scripts/cleanup_staging.sh` deleting Staging files older than 24h. Create `Makefile` at project root with `clean-staging` and `clean-all` targets.
-Effort: Small.
+1.9 — Create `Scripts/generate_foil_gradient.py`
+  Files: `Scripts/generate_foil_gradient.py` (new)
+  Action: Implement from Section 3.6 spec. Generate foil gradient texture for WarmFoilShader.
+  Effort: S
 
-**0.10 — SPM dependency verification**
-Check `ChaosCreatures.xcodeproj` for `lottie-ios` and `Nuke`. Add missing packages. Add `swift-collections` if absent.
-Effort: Small.
+1.10 — Update `Scripts/screenshot_all_devices.sh` device list
+  Files: `Scripts/screenshot_all_devices.sh` (modify)
+  Action: Change DEVICES array to: "iPhone 15 Pro", "iPhone 12", "iPad Pro 12.9-inch (6th generation)", "iPad Air (5th generation)". Add PIL dimension verification. Add iteration numbering.
+  Effort: S
 
-### Phase 0 Exit Criteria
-- `Scripts/verify_environment.sh` exits 0
-- All 6 required font files load in Simulator without crash (verify via Xcode console — no "failed to find font" warnings)
-- `python3 -c "import PIL, numpy, requests, replicate, fal_client"` exits 0
-- `Resources/LegalEvidence/` and `Resources/Haptics/` directories exist
-- `Logs/BUDGET_LEDGER.md` and `Logs/DEPENDENCY_DECISIONS.md` exist with content
+1.11 — Update `Scripts/requirements.txt`
+  Files: `Scripts/requirements.txt` (modify)
+  Action: Add `fal-client` and `rembg`.
+  Effort: S
+
+1.12 — Update `.env.example`
+  Files: `.env.example` (modify)
+  Action: Add `REPLICATE_API_TOKEN`, `LORA_URL`, `FREESOUND_API_KEY`.
+  Effort: S
+
+1.13 — Run `verify_environment.sh` and fix any failures
+  Action: Execute the script, resolve missing dependencies.
+  Effort: S
+
+### Exit Criteria
+- [ ] `Scripts/verify_environment.sh` runs and reports all-green (or documents known-missing items)
+- [ ] `Scripts/verify_asset.py --help` runs without error
+- [ ] `Scripts/verify_contrast.py` runs and outputs pass/fail for 5 color pairs
+- [ ] `Scripts/compare_screenshots.py` runs with no-op (no baseline yet)
+- [ ] `Scripts/set_astc_compression.py` runs dry (reports imagesets it would modify)
+- [ ] All new scripts committed to git
 
 ---
 
-## Phase 1: Color Palette & Data Schema
+## Phase 2: Card Layout Corrections & Zone Boundary Character
+**Depends on:** Phase 1 (scripts exist for verification)
+**Can parallel with:** Nothing (modifies core CardFrameView)
+**Effort:** M
 
-**Depends on:** Phase 0 complete
-**Sequential after Phase 0.** Must complete before any card rendering code is written or any color token is referenced.
-**Effort:** Medium (100–400 lines)
+Fix card layout deviations from guide. Most critically: zone boundary character must read as physical material edges, not digital lines.
 
 ### Tasks
 
-**1.1 — 16 P3 named color assets in `Assets.xcassets`**
-Create 16 `.colorset` directories under `Assets.xcassets/Colors/` (or root level):
-`parchment-light`, `parchment-mid`, `parchment-dark`, `ink-black`, `wax-red`, `wax-blue`, `wax-green`, `fey-teal`, `rot-moss`, `aged-gold`, `antique-silver`, `epic-amethyst`, `legendary-ember`, `canvas-warm`, `parchment-dark-mode`, `ink-dark-mode`.
-Each `Contents.json` must specify Display P3 color space with the exact P3 values from Section 1.2 table. Include dark mode variants where applicable.
-Effort: Small (repetitive JSON creation).
+2.1 — Resolve creature layout (pending Decision 1)
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`
+  Action: If Option A: convert creature `creatureLayout` from ZStack full-bleed to VStack zone-stack matching other card types. If Option B: add comment documenting deviation.
+  Effort: M (if converting) / S (if documenting)
 
-**1.2 — Replace all `Color(hex:)` references in card rendering code**
-Search for all `Color(hex:)` usages in `CardFrameView.swift` and replace with `Color("token-name")` lookups. Verify the replaced values match the guide's intended P3 tokens (several existing hex values differ from guide spec).
-Effort: Small.
+2.2 — Resolve stats bar height (pending Decision 2)
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift` (line 264)
+  Action: Set `ZoneHeight.statsBar` to 0.051 (Option A) or document (Option B).
+  Effort: S
 
-**1.3 — `CardDisplayState` enum**
-Create `ChaosCreatures/ChaosCreatures/Models/CardDisplayState.swift`:
-`enum CardDisplayState: Equatable { case default, focused, selected, tapped, previewed, inGraveyard, summoning(progress: Float), foilActive(tiltX: Float, tiltY: Float), damaged(severity: Float) }`
-Effort: Small.
+2.3 — Move wax seal from type line to stats bar
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift` (line 852)
+  Action: Reposition WaxSealView to stats bar zone at guide coordinates (x=164, y=258 at 210x294pt). Increase size to 34pt at reference scale.
+  Effort: S
 
-**1.4 — Guide-spec `Card` struct and `CardFaction` enum**
-Create (or extend) `ChaosCreatures/ChaosCreatures/Models/Card.swift` containing:
-- The full `Card: Codable, Identifiable` struct from Section 2.1 (all required fields including `ruinPassiveText`, `ruinDestructionPenaltyText`, `artworkLineage`, etc.)
-- `enum CardFaction: String, Codable` with `var color: Color` extension using named color assets
-- `enum CardSubFaction`, `enum CardType`, `enum Rarity`, `enum FrameStyle`, `enum CardCondition`, `enum InkColor`
-Note: `CardFaction` must unify or replace the existing `FactionShortName` enum. Confirm there is no duplicate declaration.
-Effort: Medium.
+2.4 — Zone boundary character treatment
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`
+  Action: Replace clean hairline dividers between zones (name bar/art box boundary, art box/type line boundary, type line/text box boundary) with textured material-edge treatments. Options: (a) subtle shadow + highlight pair simulating material overlap, (b) thin gradient from one zone's material color into the next, (c) micro-texture strip. The edge should look like where canvas meets vellum — two materials touching, not a CSS border. Do NOT just make the line thicker; make it look like a material junction.
+  Effort: M
 
-**1.5 — `CardShaderUniforms` struct and all `Rarity` extensions**
-In `Sources/Models/Card.swift` (or equivalent), add per Section 2.2:
-- `struct CardShaderUniforms` with all 6 fields
-- `extension Card { var shaderUniforms: CardShaderUniforms }`
-- `extension CardCondition { var brushRoughness, varnishGloss, parchmentAge }`
-- `extension Rarity { var waxColor, glowSIMD, foilIntensity, glowIntensity, sealIconName, borderWidth, borderGradient }`
-- `extension Rarity: Comparable`
-All Rarity extensions must be in Card.swift, not scattered in view files.
-Effort: Medium.
+2.5 — Fix AnimatedRarityBorder hex colors to palette tokens
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift` (lines 1146-1190)
+  Action: Replace `Color(hex: "#FFD700")` etc. with `Color("aged-gold")`, `Color("epic-amethyst")`, `Color("legendary-ember")`.
+  Effort: S
 
-**1.6 — `EffectTier` enum**
-Create `ChaosCreatures/ChaosCreatures/Effects/EffectTier.swift`:
-`enum EffectTier: Int, Comparable { case minimal, staticOnly, shimmerOnly, full }`
-`func resolveEffectTier() -> EffectTier` checking `isReduceMotionEnabled`, `MTLCreateSystemDefaultDevice()`, `CMMotionManager().isDeviceMotionAvailable`.
-Must be created before `WaxSealView` and `MetalCardEffectView` to avoid compilation order issues.
-Effort: Small.
+2.6 — Fix stats bar ad-hoc colors (pending Decision 3)
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`, `ChaosCreatures/Extensions/Color+Theme.swift`
+  Action: Replace `Color(hex: "#FF8F00")` and `Color(hex: "#E53935")` with palette tokens or document.
+  Effort: S
 
-**1.7 — `CardTheme` object for dark mode**
-Create `ChaosCreatures/ChaosCreatures/Models/CardTheme.swift`:
-Observes `@Environment(\.colorScheme)`. Switches the entire palette in one place. CardFrameView adopts `@Environment(\.colorScheme)` and routes all color lookups through `CardTheme`.
-Effort: Small.
+2.7 — Fix font fallback terminal path
+  Files: `ChaosCreatures/Config/CardFont.swift` (lines 223-263)
+  Action: Change `.systemFont()` terminal fallbacks to `UIFont(name: "Georgia", size:)` and `UIFont(name: "TimesNewRoman", size:)`.
+  Effort: S
 
-**1.8 — `CardRepository` and 5 test card JSON files**
-Create `ChaosCreatures/ChaosCreatures/Models/CardRepository.swift` per Section 2.4 implementation.
-Create `Resources/Cards/` with 5 test JSON files: one per rarity, spanning all 4 card types, at least 3 factions. These exercise all schema fields.
-Effort: Medium.
+2.8 — Remove retired fonts from Info.plist
+  Files: `ChaosCreatures/Config/Info.plist`
+  Action: Remove Cinzel-Variable.ttf, Alegreya-Variable.ttf, Alegreya-Italic-Variable.ttf, BebasNeue-Regular.ttf, FiraSans-Regular.ttf, FiraSans-SemiBold.ttf from UIAppFonts. Verify non-card screens compile without these fonts first.
+  Effort: S
 
-**1.9 — `ASTC compression script and Textures/ group`**
-Create `Scripts/set_astc_compression.py`. Run on all texture imagesets in `Assets.xcassets`.
-Create `Assets.xcassets/Textures/` group with 6 imageset placeholders: `parchment_base`, `parchment_normal`, `brush_normal`, `foil_gradient`, `wax_seal_normal`, `canvas_base`. (Assets populated in Phase 5.)
-Effort: Small.
+2.9 — Fix GyroscopeManager parameters
+  Files: `ChaosCreatures/Services/GyroscopeManager.swift`
+  Action: Change updateInterval to `1.0/60.0`. Change tilt normalization to clamp at `±0.6`.
+  Effort: S
 
-### Phase 1 Exit Criteria
-- All 16 color tokens resolve in Simulator without "Unable to find color named" errors
-- `CardDisplayState` compiles: `swift -e "let s: CardDisplayState = .default"` style check via xcodebuild
-- `CardShaderUniforms` struct defined (smoke test verification from Section 4.9 grep checks)
-- `EffectTier` has Comparable conformance (smoke test check)
-- `Rarity.sealIconName` defined in `Sources/Models/Card.swift` (smoke test check)
-- No duplicate `CardFaction` declarations (smoke test check)
-- `CardRepository` loads all 5 test JSON files without error in Simulator
+### Exit Criteria
+- [ ] All zone proportions match Section 1.4 measurements
+- [ ] Wax seal positioned per guide coordinates at 34pt
+- [ ] Zone boundaries visually read as material junctions, not digital lines
+- [ ] **ZONE BOUNDARY CHARACTER GATE:** Owner confirms zone edges read as physical material edges (screenshot required)
+- [ ] AnimatedRarityBorder uses only palette token colors
+- [ ] GyroscopeManager at 60Hz with ±0.6 tilt range
+- [ ] App builds and runs in Simulator without crashes
+- [ ] Simulator screenshots captured on all 4 devices (light + dark mode)
+- [ ] Structured critique (8 axes + War Camp Test) written to iteration_log.md
 
 ---
 
-## ⛔ DECISION GATE: CardFrameView Architecture
+## Phase 3: Texture Asset Generation & Normal Maps
+**Depends on:** Phase 1 (scripts exist)
+**Can parallel with:** Phase 2 (different files, but Phase 2 should ideally be done first for screenshot baseline)
+**Effort:** M
 
-Owner must review the gap analysis finding for Section 1.4 (full-art-bleed vs. zone-stack conflict) and record a decision in `Logs/DEPENDENCY_DECISIONS.md` before Phase 2 begins.
-
-Record exactly: "Decision 1 — CardFrameView: Option A (zone-stack rewrite)" or "Decision 1 — CardFrameView: Option B (retain full-art-bleed)".
-
-No agent should proceed to Phase 2 until this decision is recorded.
-
----
-
-## ⛔ HARD GATE — SMOKE TEST (Section 4.9)
-
-Before Phase 3 begins, all of the following must pass:
-
-1. Run the Section 4.9 pre-build verification bash block (grep checks for CardShaderUniforms, CardRenderer, EffectTier, sealIconName, no duplicate CardFaction)
-2. All checks in that block must print no "MISSING" or "BUG" lines
-3. `Sources/Views/SmokeTestCardView.swift` created and compiles
-4. Build succeeds for all 4 simulators: iPhone 15 Pro, iPhone 12, iPad Pro 12.9 6th gen, iPad Air 5th gen
-5. `Scripts/screenshot_all_devices.sh smoke_test` runs and produces 4 non-zero screenshot files
-6. **User must view all four simulator screenshots and confirm:**
-   - Parchment texture visible (not a flat color)
-   - All six fonts render correctly (name bar: Cinzel-Bold, type line: Cinzel-Regular, ability text: EBGaramond-Regular or approved equivalent, flavor text: EBGaramond-Italic or approved equivalent, collector number: Cinzel-Regular 7pt, ATK/HP: Oswald-Bold or approved equivalent)
-   - Rarity color bar visible at bottom
-   - All four device screenshots show correct proportional layout
-
-⛔ HARD GATE — User must see and approve all four simulator screenshots before Phase 3 begins.
-
----
-
-## Phase 2: Card Layout Rebuild
-
-**Depends on:** Decision 1 (CardFrameView architecture) approved, Phase 1 complete
-**Sequential after Decision Gate.** Cannot run in parallel with any phase that touches CardFrameView.
-**Effort:** XL (major architectural component — 400+ lines if zone-stack, 200+ lines if full-art-bleed option with corrections)
-
-### Tasks (assuming Option A — zone-stack rewrite; adjust if Option B)
-
-**2.1 — Zone-stack layout implementation**
-Rewrite CardFrameView body with the exact zone measurements from Section 1.4:
-Outer border (corner radius 12pt), Name Bar (25pt), Art Box (132pt), Type Line (18pt), Text Box (88pt, scrollable), Stats Bar (15pt), Rarity Color Bar (4pt).
-Width 210pt reference size. Height = width × (294/210). All font sizes per Section 1.5 table.
-Effort: XL.
-
-**2.2 — Card type layout variants**
-Add `switch card.type` logic per Section 1.5b:
-- Spell: omit stats bar, text box 107pt, omit wax seal, omit instability
-- Stabilizer: no cost symbols, no ATK/HP/instability, lock icon SF Symbol in art box bottom-right
-- Planar Ruin: HP-only stats bar, passive benefit panel + destruction penalty panel, faction wax seal only on faction-evolved ruins
-Effort: Large.
-
-**2.3 — Chaos Mote symbol system**
-Updated 2026-02-21: N ⊕ format approved, replaces tiled dot system.
-AI-generate chaos mote symbol once as 32×32pt PNG at 3×. Add to asset catalog as `chaos_mote_symbol`. Render HStack with Oswald-Bold numeral + 20×20pt chaos_mote_symbol.png, right-aligned in name bar (6pt from inner right edge). All card types (creature, spell, planar ruin) use identical format. Stabilizers: no cost indicator.
-Effort: Medium.
-
-**2.4 — Font migrations**
-Apply the approved font set to all zones: card name (Cinzel-Bold 13pt), type line (Cinzel-Regular 10pt), ability text (EBGaramond-Regular 11pt or approved equiv), flavor text (EBGaramond-Italic 10pt or approved equiv), keywords (EBGaramond-SemiBold 11pt or approved equiv), collector number (Cinzel-Regular 7pt), ATK/HP (Oswald-Bold 13pt or approved equiv).
-Letterpress shadow on all text: x=0, y=0.5pt, blur 0.5pt, parchment-dark 60% opacity.
-Effort: Medium.
-
-**2.5 — Gesture priority stack on CardFrameView**
-Add three-tier gesture stack directly to CardFrameView:
-`.highPriorityGesture(LongPressGesture(minimumDuration: 0.35))` → previewed state
-`.gesture(DragGesture(minimumDistance: 8))` → drag handler
-`.simultaneousGesture(TapGesture())` → selected state
-Wire to `@State private var cardState: CardDisplayState = .default`.
-Effort: Small.
-
-**2.6 — CardDisplayState transitions wired to CardFrameView**
-Implement all 11 state transitions from Section 1.6 table with precise durations and curves:
-focused (0.18s easeOut), focused→default (0.25s spring), selected (0.12s easeIn), selected→default (0.3s spring), tapped two-phase flip, previewed (0.28s easeOut), previewed→default (0.22s easeIn), inGraveyard (0.6s easeIn), summoning (0.4s easeOut), damaged shake (CAKeyframeAnimation 0.4s).
-Effort: Large.
-
-**2.7 — CardBackView and flip animation**
-Create `ChaosCreatures/ChaosCreatures/Views/Components/CardBackView.swift`:
-Canvas texture base (woven grid, canvas-warm color), centered 40pt wax seal with game sigil (deep wax-red), parchment-mid border at Common border weight.
-Wire two-phase flip animation to `tapped` state: Phase 1 easeIn 0.17s → 90°, Phase 2 swap faces, easeOut 0.18s from -90° to 0°.
-Effort: Medium.
-
-**2.8 — Error and fallback states**
-Expand `artPlaceholder` to match Section 1.9: canvas-colored rectangle + procedural ink-wash + quill icon on artwork load failure.
-Add font fallback to Georgia/Times New Roman (not San Francisco) in CardFont.swift.
-Add shader error log path `Logs/shader_errors.log`.
-Add Metal-unavailable check routing to `staticOnly` EffectTier.
-Add torn-edge "???" placeholder for JSON parse errors.
-Effort: Medium.
-
-**2.9 — GeometryReader relative sizing**
-Replace `CardDisplaySize` enum absolute values with GeometryReader-relative sizing per Section 9.2:
-Card width = `isCompact ? min(availableWidth * 0.85, 260) : min(availableWidth * 0.40, 350)`.
-Height = `cardWidth * (294.0 / 210.0)` always.
-Effort: Medium.
-
-**2.10 — `voiceOverLabel` computed property on card model**
-Add `var voiceOverLabel: String` to `CardDisplayData` (or the Card struct) concatenating name, cost, type, ATK/HP, instability, abilityText, flavorText per Section 10.1 implementation.
-Effort: Small.
-
-**2.11 — Accessibility modifiers on CardFrameView**
-Add to CardFrameView body: `.accessibilityElement(children: .ignore)`, `.accessibilityLabel(card.voiceOverLabel)`, `.accessibilityHint("Double-tap to select. Long-press to preview.")`, `.accessibilityAddTraits(.isButton)`, `.accessibilityCustomActions` with "Preview card" and "Show card details". Add `.accessibilityIdentifier("CardView")` for UITest lookup.
-Effort: Small.
-
-**2.12 — `DraggableCardView`**
-Create `ChaosCreatures/ChaosCreatures/Views/Components/DraggableCardView.swift` with resistance 0.72, rotation `width * 0.025`, scale 1.05 while dragging, shadow radius 16 while dragging, spring `response: 0.38, dampingFraction: 0.62` on release.
-Effort: Small.
-
-### Phase 2 Exit Criteria
-- Card renders in Simulator matching Section 1.4 zone measurements (verify with Xcode view hierarchy inspector)
-- All four card type variants render correctly without a stats bar on spells/stabilizers
-- Flip animation completes without visual artifacts on iPhone 15 Pro simulator
-- Font letterpress shadow visible on all text zones
-- VoiceOver reads card name, cost, and type correctly when run in Simulator
-
----
-
-## Phase 3: Metal Shader Pipeline
-
-**Depends on:** Smoke Test Gate passed
-**Can run in parallel with Phase 5** (asset generation pipeline does not require Metal shaders)
-**Cannot run until smoke test gate passes** — font and color foundations must be confirmed working first.
-**Effort:** XL (500+ lines Metal + 200+ lines Swift bridge)
+Generate all texture assets the Metal shaders need. No code changes — only asset production.
 
 ### Tasks
 
-**3.1 — `Sources/Effects/CardRenderer.swift`**
-Create `CardRenderer` protocol: `func resize(to size: CGSize)`, `func render(to view: MTKView, uniforms: CardShaderUniforms)`.
-Create `NullCardRenderer: CardRenderer` as safe no-op placeholder.
-Effort: Small.
+3.1 — Download CC0 PBR textures
+  Files: `Scripts/download_textures.sh` (run)
+  Action: Run script to download parchment and canvas textures from Poly Haven.
+  Effort: S
 
-**3.2 — `Sources/Effects/MetalCardEffectView.swift`**
-Create `MetalCardEffectView: UIViewRepresentable` wrapping `MTKView` with `Coordinator` conforming to `MTKViewDelegate`. `NullCardRenderer` as default renderer. `OilPaintCardRenderer` wired in Phase 3.4.
-Effort: Small.
+3.2 — Generate normal maps
+  Files: `Scripts/generate_normal_map.sh` (run)
+  Action: Generate `parchment_normal`, `brush_normal`, `wax_seal_normal` from downloaded heightmaps.
+  Effort: S
 
-**3.3 — Shader directory and Xcode target membership**
-Create `ChaosCreatures/ChaosCreatures/Shaders/` directory. Add all `.metal` files to Xcode target. Run `Scripts/compile_shaders.sh` (create if absent) after each shader addition to verify no compile errors.
-Effort: Small.
+3.3 — Generate foil gradient texture
+  Files: `Scripts/generate_foil_gradient.py` (run)
+  Action: Generate `foil_gradient` texture for WarmFoilShader.
+  Effort: S
 
-**3.4 — `OilPaintShader.metal`**
-Fragment shader applying brushwork normal mapping, warm shadow lift, parchment age desaturation, oil varnish specular. Driven by `brushRoughness`, `varnishGloss`, `parchmentAge`, `lightDirection` uniforms from `CardShaderUniforms`.
-Requires: `brush_normal.imageset` texture (generated in Phase 5.3 or Staging).
-Effort: Large.
+3.4 — Install textures to asset catalog
+  Files: `ChaosCreatures/Resources/Assets.xcassets/` (new imagesets: `parchment_normal`, `brush_normal`, `wax_seal_normal`, `foil_gradient`, `canvas_base`, `parchment_base`)
+  Action: Create imageset directories with proper Contents.json including `@1x/@2x/@3x` and ASTC compression property.
+  Effort: S
 
-**3.5 — `ParchmentShader.metal`**
-Fragment shader with physical paper UV tiling (256pt per tile), fiber normal mapping from `parchment_normal.imageset`, edge vignette with age darkening, warm tint, dark mode branching via `colorScheme` uniform.
-Effort: Large.
+3.5 — Apply ASTC compression to ALL texture imagesets
+  Files: `Scripts/set_astc_compression.py` (run), all `*.imageset/Contents.json` under Textures
+  Action: Run ASTC script across all texture imagesets (existing + new).
+  Effort: S
 
-**3.6 — `WarmFoilShader.metal`**
-Fragment shader with `tiltX`/`tiltY` uniforms, organic sine UV distortion, luminance-based foil mask, warm iridescent additive blend. Driven by `CardShaderUniforms.foilIntensity`. Note: `GyroscopeManager` already provides tilt data — wire to Metal uniform instead of SwiftUI offset. Existing SwiftUI holographic overlay remains as `staticOnly`-tier fallback.
-Effort: Large.
+3.6 — Verify all texture assets with verify_asset.py
+  Files: `Scripts/verify_asset.py` (run)
+  Action: Check dimensions and warm tone on all new texture assets.
+  Effort: S
 
-**3.7 — `InkSpreadKernel.metal`**
-Compute kernel with organic noise at spread edge, progress-driven reveal 0.0 to 1.0 over 0.8s via `CADisplayLink`. Triggered by `CardDisplayState.summoning(progress:)` transition.
-Effort: Large.
-
-**3.8 — `WaxSealView.swift`**
-Create `ChaosCreatures/ChaosCreatures/Views/Components/WaxSealView.swift` for rarity indication (separate from existing `WaxSealBadge` stat component):
-`rarity.waxColor` RadialGradient outer disk, `rarity.sealIconName` embossed symbol, specular highlight Ellipse, pulsing glow animation for rare+. Positioned at x=164, y=258 per Section 1.4 table.
-Pulsing glow must respect `@Environment(\.accessibilityReduceMotion)`.
-Effort: Medium.
-
-**3.9 — `TextureCache.swift`**
-Create `ChaosCreatures/ChaosCreatures/Services/TextureCache.swift` per Section 13.4: `final class TextureCache` with `MTLTexture` LRU eviction (20 textures, explicit `accessOrder` array, `evictAll()` method). Add `NotificationCenter` observer for `UIApplication.didReceiveMemoryWarningNotification` calling both `TextureCache.shared.evictAll()` and `ImageCacheService.shared.clearMemoryCache()`.
-Effort: Small.
-
-**3.10 — `OilPaintCardRenderer`**
-Implement full `OilPaintCardRenderer: CardRenderer` using the OilPaintShader. Wire to `MetalCardEffectView`. Add Metal shader compile warning check to build scripts (xcodebuild piped through grep for metal/shader warnings).
-Effort: Large.
-
-### Phase 3 Exit Criteria
-- All four `.metal` files compile without errors (xcodebuild + metal grep filter)
-- Oil paint effect visually detectable on card art in iPhone 15 Pro Simulator (visible brushwork, not flat)
-- Foil effect responds to gyroscope tilt in Simulator (use motion simulation in Simulator hardware menu)
-- Parchment grain visible at native @3x resolution in fullscreen card preview
-- Shader compilation failure falls back gracefully to flat parchment-light fill (test by deliberately corrupting a shader, verify no crash)
-- Add human profiling checklist entry to `Logs/iteration_log.md` per Section 13.1 template
+### Exit Criteria
+- [ ] `parchment_normal.imageset/`, `brush_normal.imageset/`, `wax_seal_normal.imageset/` exist in asset catalog
+- [ ] `foil_gradient.imageset/` exists in asset catalog
+- [ ] All texture imagesets have `"compression-type": "automatic"` in Contents.json
+- [ ] `verify_asset.py` passes on all new textures
+- [ ] All assets committed to git
 
 ---
 
-## Phase 4: Rarity & Particle Effects
+## Phase 4: Metal Rendering Bridge — CRITICAL
+**Depends on:** Phase 3 (texture assets must exist for shaders to load)
+**Can parallel with:** Nothing (this gates all visual quality)
+**Effort:** L
 
-**Depends on:** Phase 3 complete (WaxSealView and MetalCardEffectView must exist)
-**Can run in parallel with Phase 6** (sound and haptics have no dependency on Phase 4)
-**Effort:** Large (400+ lines)
+Connect the four existing Metal shaders to actual card rendering. This is the #1 critical gap. Without this, the card looks flat and digital.
 
 ### Tasks
 
-**4.1 — `CardParticleFactory`**
-Create `ChaosCreatures/ChaosCreatures/Effects/CardParticleFactory.swift`:
-`enum CardParticleFactory` with `static func makeEmitter(for rarity: Rarity, in artBoxSize: CGSize) -> SKEmitterNode?`.
-All emitters use `.alpha` blend mode (NOT `.add`).
-Birth rates per Section 6.8: uncommon 2/s lifetime 4s, rare 5/s lifetime 3s, epic 8/s lifetime 3.5s, legendary 14/s lifetime 2s.
-Common has no emitter (returns nil).
-Note: SpriteKit particle work is compatible with the guide's SpriteKit-for-particles approach — no conflict.
-Effort: Medium.
+4.1 — Create `CardRenderer` protocol and `NullCardRenderer`
+  Files: `ChaosCreatures/Effects/CardRenderer.swift` (new)
+  Action: Implement per Section 5.5/6.5. Protocol with `func render(card: Card, to: MTLTexture)`. NullCardRenderer that returns a flat parchment fill for graceful degradation.
+  Effort: S
 
-**4.2 — Rarity border treatments with Reduce Motion compliance**
-Verify `RarityBorderModifier` uses correct color tokens (`aged-gold` for Rare, `epic-amethyst` for Epic, `legendary-ember` for Legendary).
-Extract `AnimatedGradientBorder` and `StaticBorder` as standalone components.
-Add `@Environment(\.accessibilityReduceMotion) var reduceMotion` to all animated border components. Guard all `.repeatForever()` animations: `guard !reduceMotion else { return }`.
-Effort: Medium.
+4.2 — Create `MetalCardEffectView` (UIViewRepresentable + MTKView)
+  Files: `ChaosCreatures/Effects/MetalCardEffectView.swift` (new)
+  Action: Implement per Section 6.5. UIViewRepresentable wrapping MTKView. Coordinator implements MTKViewDelegate. Loads shader library, creates pipeline states for OilPaintShader, ParchmentShader, WarmFoilShader, InkSpreadKernel. Passes card shader uniforms + gyroscope tilt data. Falls back to NullCardRenderer if Metal unavailable.
+  Effort: L
 
-**4.3 — Rarity color bar and border weight corrections**
-Add 4pt rarity color bar at bottom of inner content area. Verify border widths match Section 1.4 table: Common 3pt, Uncommon 3.5pt, Rare/Epic/Legendary 4pt with correct outer glow values.
-Effort: Small.
+4.3 — Create `TextureCache` singleton
+  Files: `ChaosCreatures/Services/TextureCache.swift` (new)
+  Action: Implement per Section 13.4. Wraps `MTLTextureLoader`, LRU with max 20 textures, `evictAll()` on memory warning.
+  Effort: M
 
-**4.4 — Wax seal icon assets**
-Download seal icon assets (`seal_common`, `seal_uncommon`, `seal_rare`, `seal_epic`, `seal_legendary`) via `Scripts/download_icons.sh` (create script if not present). Add to `Assets.xcassets/Icons/`. Wire to `Rarity.sealIconName` in `WaxSealView`.
-Effort: Small.
+4.4 — Wire MetalCardEffectView to CardFrameView art box
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`
+  Action: Replace the current `AsyncImage`/`CachedCardArt` art loading in the art box zone with MetalCardEffectView. The MetalCardEffectView takes the card's artwork + shader uniforms and renders through the OilPaintShader and ParchmentShader pipelines. EffectTier check: if `.staticOnly` or lower, fall back to current AsyncImage path.
+  Effort: M
 
-**4.5 — `preferredFramesPerSecond` on SKView**
-Set `skView.preferredFramesPerSecond = 60` in `BattleScene`. Add `drawsAsynchronously = true` on SpriteKit ambient particle scene. Add `shouldRasterize = true` on card composite layer when animations are idle.
-Effort: Small.
+4.5 — Wire WarmFoilShader to foil rendering
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift` or `ChaosCreatures/Effects/MetalCardEffectView.swift`
+  Action: For foil cards (uncommon+), apply WarmFoilShader pass using GyroscopeManager tilt data + foil_gradient texture. Gate on EffectTier >= `.shimmerOnly`.
+  Effort: M
 
-**4.6 — SKTextureAtlas for small SpriteKit assets**
-Create texture atlas for SpriteKit-rendered small assets (keyword badges, stat icons, mana symbols used on battlefield). One draw call per atlas.
-Effort: Small.
+4.6 — Wire InkSpreadKernel to summoning animation
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`
+  Action: On `CardDisplayState.summoning(progress:)`, run InkSpreadKernel compute shader with progress parameter. The ink spreads from center outward, revealing the card art.
+  Effort: M
 
-### Phase 4 Exit Criteria
-- All 5 rarity tiers visually distinct in iPhone 15 Pro Simulator
-- Epic and Legendary animated borders pause when Reduce Motion is enabled in Simulator accessibility settings
-- Rarity color bar visible at bottom of card inner area
-- Particle emitters use `.alpha` blend mode (verify in Xcode SpriteKit inspector — additive blend will look digital/glowing vs. physical)
-- Add human profiling checklist entry to `Logs/iteration_log.md`
+4.7 — Create CardBacklightView
+  Files: `ChaosCreatures/Effects/CardBacklightView.swift` (new)
+  Action: Implement per Section 6.6. Separate view behind card in ZStack. Radial gradient or blurred shape matching rarity glow color. Replace current `.shadow()` approach.
+  Effort: S
+
+4.8 — Add memory warning observer
+  Files: `ChaosCreatures/ChaosCreaturesApp.swift` or `ChaosCreatures/AppDelegate.swift`
+  Action: Add `NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification)` that calls `TextureCache.shared.evictAll()` and `ImageCacheService.shared.clearMemoryCache()`.
+  Effort: S
+
+### Exit Criteria
+- [ ] ParchmentShader renders visible fiber grain on card body
+- [ ] OilPaintShader renders warm shadow lift and impasto texture on card art
+- [ ] WarmFoilShader produces tilt-responsive warm shimmer on foil cards
+- [ ] InkSpreadKernel renders organic ink-spread summoning animation
+- [ ] CardBacklightView provides behind-card rarity glow (replacing .shadow())
+- [ ] EffectTier graceful degradation: `.minimal` = no shaders, `.staticOnly` = flat parchment, `.shimmerOnly` = no gyro, `.full` = all effects
+- [ ] App runs at 60fps on iPhone 12 Simulator (test with Instruments)
+- [ ] **SMOKE TEST GATE:** Owner must see 4 simulator screenshots (2 devices x 2 color schemes) showing Material Believability and confirm the parchment reads as scraped hide, the art reads as oil paint, and the foil catches rather than glows. NO further visual work proceeds until this gate passes.
+- [ ] Structured critique (8 axes + War Camp Test) written to iteration_log.md
 
 ---
 
-## Phase 5: Asset Generation Pipeline
+## Phase 5: Art Generation Pipeline
+**Depends on:** Phase 1 (verify_asset.py), Phase 3 (texture assets). Can start before Phase 4 completes.
+**Can parallel with:** Phase 4 (different files)
+**Effort:** M
+**API Cost:** $5-7 (fal.ai calls)
 
-**Depends on:** Phase 0 complete, Decision 3 (pipeline architecture), Commercial License Gate
-**Can run in parallel with Phase 3** (Metal shaders do not depend on generated art)
-**Effort:** Large (400+ lines across Python scripts)
-
-⚠️ Before starting this phase, confirm:
-- `Resources/LegalEvidence/eldritchpaletteknife_license_screenshot.png` exists
-- `REPLICATE_API_TOKEN` and `LORA_URL` are set in `.env`
-- `Scripts/verify_environment.sh` exits 0
+Build the Python generation scripts with corrected faction style strings.
 
 ### Tasks
 
-**5.1 — `Scripts/prompt_utils.py`**
-Create shared Python module with `FACTION_CREATURE_STYLE`, `SUBFACTION_CREATURE_STYLE`, `FACTION_NONCREATURE_STYLE`, `build_creature_prompt()`, `build_noncreature_prompt()` per Sections 3.2–3.3.
-Effort: Medium.
+5.1 — Create `Scripts/prompt_utils.py` with CORRECTED style strings
+  Files: `Scripts/prompt_utils.py` (new)
+  Action: Implement `FACTION_CREATURE_STYLE`, `SUBFACTION_CREATURE_STYLE`, `FACTION_NONCREATURE_STYLE`, `build_creature_prompt()`, `build_noncreature_prompt()`. CRITICAL: Use ASSET_CREATION_GUIDE Section 6 strings, NOT Card Design Guide Section 3.2. Specifically:
+  - Fey Verdant: `English Pre-Raphaelite oil painting, dense inhabited undergrowth, warm earth tones, ancient canopy light, figures integrated with not posed against environment`
+  - Fey Hollow: `19th century Scandinavian Romantic oil painting, cold Nordic forest, muted greys, winter stripped bare, patient predatory stillness`
+  - Celestial: `18th century Visionary oil painting, prophetic divine geometry, burning cold gold, biblical scale, terrifying geometric radiance, multiple wings and eyes, James Barry RA style`
+  - All other factions per ASSET_CREATION_GUIDE Section 6.
+  Effort: M
 
-**5.2 — `Scripts/verify_asset.py`**
-Create dimension verification script: validates file exists, is nonzero, is not a JSON error payload, meets minimum dimensions. Optional warm-tone check (fail if blue-dominant). Exit 0 pass, exit 1 fail.
-Effort: Small.
+5.2 — Create `Scripts/generate_creature.py`
+  Files: `Scripts/generate_creature.py` (new)
+  Action: Implement from Section 3.2. Python script using fal.ai FLUX as default (LoRA v2 not yet trained). Import from prompt_utils. Calls verify_asset.py after generation.
+  Effort: M
 
-**5.3 — Procedural texture generation scripts**
-- `Scripts/generate_normal_map.sh` — ImageMagick clone/roll/fx technique for RGB normal maps
-- `Scripts/generate_wax_normal.py` — Pillow + numpy dome normal map 256×256 → `Resources/Textures/wax_seal_normal.png`
-- `Scripts/generate_foil_gradient.py` — Pillow + numpy 512×512 warm iridescent gradient → `Resources/Textures/foil_gradient.png`
-Run all three scripts. Move outputs to `ChaosCreatures/ChaosCreatures/Resources/Assets.xcassets/Textures/` imagesets.
-Effort: Medium.
+5.3 — Create `Scripts/generate_noncreature.py`
+  Files: `Scripts/generate_noncreature.py` (new)
+  Action: Implement from Section 3.3. fal.ai FLUX.1 Dev for spells, stabilizers, ruins. Import from prompt_utils.
+  Effort: M
 
-**5.4 — `Scripts/download_textures.sh`**
-Download Poly Haven CC0 PBR textures (parchment_paper, canvas_1 diffuse + normal maps) from `dl.polyhaven.org`. Save to `Staging/textures/`. Append license entries to `Resources/ASSET_LICENSE_MANIFEST.md`. Move usable textures to Textures/ imageset group.
-Effort: Small.
+5.4 — Create `Scripts/grade_artwork.sh`
+  Files: `Scripts/grade_artwork.sh` (new)
+  Action: Implement from Section 3.4. ImageMagick warm shift + per-faction color grading passes.
+  Effort: S
 
-**5.5 — `Scripts/generate_creature.py`** (if Decision 3 Option A)
-Create Replicate-based creature generation script using `chscrt-sdxl-lora.safetensors` at R2 URL. Include R2 reachability check, `extra_lora_scale: 0.85`, 35 steps, verify_asset.py call after each generation, cost logging to `Logs/BUDGET_LEDGER.md`.
-Effort: Medium.
+5.5 — Generate 5 test card artworks (1 per faction)
+  Files: Generated artwork files
+  Action: Run generation + grading pipeline on 5 test cards. Verify each with verify_asset.py. Log costs in BUDGET_LEDGER.md.
+  Effort: M (includes iteration)
+  API Cost: ~$1.25 (5 images at ~$0.25 each, assuming 1-2 retries)
 
-**5.6 — `Scripts/generate_noncreature.py`** (if Decision 3 Option A)
-Create fal.ai FLUX.1 Dev script for spells, stabilizers, planar ruins. Uses `prompt_utils.py` faction-aware templates. Verify_asset.py call after each generation.
-Effort: Medium.
+5.6 — Update BUDGET_LEDGER.md
+  Files: `Logs/BUDGET_LEDGER.md`
+  Action: Correct total to $9.50. Log wax seal costs (~$0.63) and test artwork costs.
+  Effort: S
 
-**5.7 — `Scripts/grade_artwork.sh`**
-Create 5-pass ImageMagick color grading script: base warm-shift + vignette pass, then faction-specific passes (ironwright shadow deepening, fey blue/green lift, demonic red push, celestial highlight lift, endless desaturation). Outputs to `Resources/CardArt/{card_uuid}_{tier}.png`.
-Effort: Medium.
-
-**5.8 — `Resources/ASSET_LICENSE_MANIFEST.md` and `Logs/DEPENDENCY_DECISIONS.md` population**
-Populate the license manifest with all existing card art assets (9 test cards + 3 evolution variants). Document the fal.ai FLUX.1 Dev commercial license decision (BFL partnership confirmation, model choice) in `DEPENDENCY_DECISIONS.md`.
-Effort: Small.
-
-**5.9 — `Scripts/screenshot_all_devices.sh` and `Scripts/compare_screenshots.py`**
-Create multi-device screenshot script per Section 5.3: boot 4 simulators, capture screenshots, verify nonzero, print dimensions.
-Create pixel diff regression script per Section 12.2: Pillow-based, resize to 400×560, normalized diff, pass if < 0.025, output JSON.
-After first "good" iteration passes the smoke test gate, establish baseline reference screenshots in `Tests/ReferenceScreenshots/`.
-Effort: Medium.
-
-### Phase 5 Exit Criteria
-- `Scripts/verify_asset.py` passes on 5 sample generation outputs
-- `Scripts/grade_artwork.sh` produces visually warm-shifted outputs (compare against parchment-light swatch)
-- Foil gradient texture and wax seal normal map present in asset catalog Textures/ group
-- Parchment and canvas PBR textures present in Staging/textures/
-- License manifest populated with all generated assets
-- Cost log entries in `Logs/BUDGET_LEDGER.md` for all API calls in this phase
+### Exit Criteria
+- [ ] `Scripts/prompt_utils.py` exists with ALL corrected faction style strings (NO "enchanted forest," NO "radiant divine light," NO "warm gold")
+- [ ] `Scripts/generate_creature.py` runs and produces output
+- [ ] `Scripts/generate_noncreature.py` runs and produces output
+- [ ] `Scripts/grade_artwork.sh` processes generated artwork
+- [ ] 5 test artworks pass `verify_asset.py` warm-tone check
+- [ ] Budget ledger updated with actual costs
 
 ---
 
-## Phase 6: Sound & Haptics
+## Phase 6: Sound Design & Audio Pipeline
+**Depends on:** Phase 1 (load_env.sh)
+**Can parallel with:** Phase 4, Phase 5 (independent domain)
+**Effort:** L
+**API Cost:** $0-2 (Freesound CC0 or optional itch.io packs)
 
-**Depends on:** Phase 0 complete (font + environment ready)
-**Can run in parallel with Phase 3 and Phase 5**
-**Effort:** Large (400+ lines Swift + AHAP JSON files)
-
-⚠️ ALL haptic items in this phase carry "⚠️ PENDING PHYSICAL DEVICE VERIFICATION" status. Mark them in `Logs/iteration_log.md`. Do not mark Phase 6 complete without physical device verification of haptics.
+Fix all audio conflicts. Source physical-material sounds per Grimdark Directive.
 
 ### Tasks
 
-**6.1 — `Resources/Haptics/` directory and all 6 AHAP files**
-Create `ChaosCreatures/ChaosCreatures/Resources/Haptics/`.
-Create (or generate) AHAP files using exact JSON from Section 7.2:
-- `card_flip.ahap` — transient at 0.0s (0.4, 0.6), transient at 0.35s (0.8, 0.75)
-- `card_summon.ahap` — HapticContinuous 0→0.8→0.3 over 0.4s with ParameterCurve
-- `card_graveyard.ahap` — HapticContinuous fade-out 0.6→0 over 0.7s
-- `epic_reveal.ahap` — two-phase: continuous 0→0.7→0.4 over 0.6s, then shimmer 0.2 over 1.2s starting at 0.65s
-- `legendary_reveal.ahap` — burst 1.0 at 0.0s, 0.85 at 0.1s, shimmer 0.25 over 1.5s starting at 0.25s
-Create `Scripts/generate_foil_shimmer_ahap.py` (Python using random.seed(42) per Section 7.2) and run it to produce `foil_shimmer.ahap`.
-Add all 6 AHAP files to Xcode project.
-Effort: Medium.
-⚠️ PENDING PHYSICAL DEVICE VERIFICATION on all 6 files.
+6.1 — Create `Scripts/download_sounds.sh`
+  Files: `Scripts/download_sounds.sh` (new)
+  Action: Implement from Section 8.2. Freesound API download with CC0 filter.
+  Effort: S
 
-**6.2 — `HapticEngine.swift`**
-Create `ChaosCreatures/ChaosCreatures/Services/HapticEngine.swift`:
-`final class HapticEngine` singleton with `CHHapticEngine`, `func prepare()`, `func play(ahapNamed:)`, `func impact(_ style:)`.
-`prepare()` initializes and starts CHHapticEngine, sets stoppedHandler and resetHandler.
-`play(ahapNamed:)` uses `engine.playPattern(from:)`.
-`impact(_ style:)` uses `UIImpactFeedbackGenerator` for simple patterns (card pick up, card set down, wax seal tap, invalid action, scroll text box).
-Log all 11 haptic interactions in `Logs/iteration_log.md` as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-Effort: Medium.
+6.2 — Create `Scripts/process_sounds.sh`
+  Files: `Scripts/process_sounds.sh` (new)
+  Action: ffmpeg pipeline: normalize -12 LUFS, trim silence, warmth EQ, convert to `.caf`.
+  Effort: S
 
-**6.3 — Audio format conversion: WAV to CAF**
-Convert all 19 existing SFX `.wav` files to `.caf` using `afconvert -f caff -d LEI16@44100` per Section 8.2.
-Update `BattleAudioManager.playSFX()` to look for `.caf` extension.
-Effort: Small.
+6.3 — Source 7 missing physical-material SFX
+  Files: `ChaosCreatures/Resources/Sounds/SFX/` (new files)
+  Action: Download CC0 sounds from Freesound.org for: card_pickup (cardstock flex), card_setdown (cardstock on wood), card_flip (paper whoosh + thud), card_graveyard (slow paper crumple), card_summon (ink brush stroke to resonant thrum), wax_seal_tap (dampened thud), foil_shimmer (delicate shimmer). Process through Section 8.2 pipeline.
+  Effort: M
 
-**6.4 — Missing SFX sourcing**
-Source CC0 sounds from freesound.org for: `card_draw.caf`, `card_flip.caf`, `card_summon.caf`, `card_graveyard.caf`, `wax_seal_tap.caf`, `foil_shimmer.caf`. Process through ffmpeg pipeline from Section 8.2.
-Update `Resources/ASSET_LICENSE_MANIFEST.md` with all sourced sounds.
-Effort: Medium.
+6.4 — Replace 16 silent SFX placeholders
+  Files: `ChaosCreatures/Resources/Sounds/SFX/` (replace files)
+  Action: Source real CC0 sounds for all 16 silent placeholders. Use physical-material search terms per Grimdark Directive — NOT digital game terms.
+  Effort: M
 
-**6.5 — Missing faction music tracks**
-Source or generate `battle-celestial` and `battle-endless` tracks. Fix stem naming convention to match `BattleAudioManager`'s lookup pattern (`{faction.rawValue.lowercased()}_{stem}`).
-Effort: Medium.
+6.5 — Convert all audio to .caf format
+  Files: All files in `Resources/Sounds/SFX/` and `Resources/Sounds/Music/`
+  Action: `afconvert -f caff -d LEI16@44100 input.wav output.caf` for all files. Delete `.wav` originals after conversion.
+  Effort: S
 
-**6.6 — `Scripts/download_sounds.sh`**
-Create automated CC0 sound download script using Freesound API with `FREESOUND_API_KEY`. Logs downloads to `Resources/ASSET_LICENSE_MANIFEST.md`.
-Effort: Small.
+6.6 — Create `SoundEngine.swift`
+  Files: `ChaosCreatures/Services/SoundEngine.swift` (new)
+  Action: Implement per Section 8.3. `AVAudioEngine` + `AVAudioPlayerNode` per sound, preloaded buffers, `.caf` extension. Handles: card_pickup, card_setdown, card_flip, wax_seal_tap, card_summon, card_graveyard, foil_shimmer, epic_reveal, legendary_reveal, card_drag.
+  Effort: M
 
-**6.7 — BattleAudioManager / SoundEngine naming**
-Either rename `BattleAudioManager` to `SoundEngine` and update all references (Option A), or document the name deviation in `Logs/DEPENDENCY_DECISIONS.md` as an authorized variant (Option B). The music stem/adaptive system is a superset of the guide's spec — the functional behavior is compliant.
-Effort: Small.
+6.7 — Update BattleAudioManager
+  Files: `ChaosCreatures/Services/BattleAudioManager.swift`
+  Action: Change hardcoded `.wav` to `.caf` (line 232). Fix music stem naming to match actual file names. Update to use `AVAudioEngine` for SFX playback (replace `SKAction.playSoundFileNamed`). Fix music file lookup to match actual files on disk.
+  Effort: M
 
-### Phase 6 Exit Criteria
-- All 6 AHAP files present in `Resources/Haptics/` and added to Xcode project
-- `HapticEngine.shared.prepare()` called at app startup without crash in Simulator
-- `HapticEngine.shared.play(ahapNamed: "card_flip")` called without crash (no sound in Simulator — file load is the verification)
-- All 11 haptic interactions logged in `Logs/iteration_log.md` as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION
-- All SFX files in `.caf` format
-- 5 faction battle tracks present (all 5 factions)
+6.8 — Update AUDIO-SOURCING-GUIDE.md search terms
+  Files: `Scripts/AUDIO-SOURCING-GUIDE.md`
+  Action: Rewrite search terms from digital game SFX to physical material sounds per Grimdark Directive.
+  Effort: S
 
-⛔ HAPTIC HARD GATE — User must verify all haptic interactions on a physical iOS device (A14 or later, iPhone 12 minimum) before Phase 6 is marked complete. Log device model and iOS version in `Logs/iteration_log.md`.
+6.9 — Update license manifest with audio entries
+  Files: `Resources/ASSET_LICENSE_MANIFEST.md`
+  Action: Add all audio files with CC0 source attribution. De-duplicate wax seal entries.
+  Effort: S
+
+### Exit Criteria
+- [ ] All 26+ SFX files are real audio (no silent placeholders), `.caf` format
+- [ ] 7 physical-material SFX play correctly: card_pickup, card_setdown, card_flip, card_graveyard, card_summon, wax_seal_tap, foil_shimmer
+- [ ] `SoundEngine.swift` loads and plays material sounds via `AVAudioEngine`
+- [ ] BattleAudioManager loads music files without filename mismatch
+- [ ] All audio files are `.caf` format — zero `.wav` files remain
+- [ ] License manifest updated with all audio sources
 
 ---
 
-## Phase 7: Accessibility & iPad
+## Phase 7: Haptic Feedback — HARD GATE
+**Depends on:** Phase 4 (Metal bridge, so haptics can be synced with visual effects)
+**Can parallel with:** Phase 6 (sound can proceed independently)
+**Effort:** M
 
-**Depends on:** Phase 2 complete (card layout must exist before accessibility modifiers are verified)
-**Can run in parallel with Phase 4**
-**Effort:** Medium (100–400 lines)
-
-Note: Some Phase 7 tasks (VoiceOver label and accessibility modifiers) are already assigned to Phase 2 steps 2.10–2.11. Phase 7 adds the remaining accessibility and iPad work.
+Implement all haptic interactions. Physical device testing REQUIRED.
 
 ### Tasks
 
-**7.1 — Reduce Motion: audit and add guards to all animation sites**
-Add `@Environment(\.accessibilityReduceMotion) var reduceMotion` to `CardFrameView`.
-Guard all animation sites in CardFrameView: rarity pulse, shimmer phase, gyroscope foil parallax offset.
-Update `GyroscopeManager` to disable tilt tracking when reduce motion is enabled.
-Pattern: `withAnimation(reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.65)) { ... }`
-Effort: Small.
+7.1 — Create `Resources/Haptics/` directory and 6 AHAP files
+  Files: `Resources/Haptics/card_flip.ahap`, `card_summon.ahap`, `card_graveyard.ahap`, `foil_shimmer.ahap`, `epic_reveal.ahap`, `legendary_reveal.ahap` (all new)
+  Action: Create from Section 7.2 JSON specs. Create `Scripts/generate_foil_shimmer_ahap.py` per Section 7.2.
+  Effort: M
 
-**7.2 — Dynamic Type: UIFontMetrics for text box content**
-Add `scaledFont(name:textStyle:baseSize:)` to `CardFont.swift` using `UIFontMetrics(forTextStyle:).scaledFont(for:)`.
-Apply to text box content (ability text, flavor text). Text box scroll region must expand at XXL sizes.
-Effort: Small.
+7.2 — Create `HapticEngine.swift`
+  Files: `ChaosCreatures/Services/HapticEngine.swift` (new)
+  Action: Implement per Section 7.2. Singleton with `prepare()`, `play(ahapNamed:)`, `impact(_:)`. Initialize at app startup.
+  Effort: M
 
-**7.3 — `CardAccessibilityTests.swift`**
-Create `ChaosCreaturesUITests/CardAccessibilityTests.swift` with `testCardViewHasAccessibilityLabel()`.
-The test finds all elements with `accessibilityIdentifier("CardView")`, asserts count > 0, asserts each has non-empty accessibility label.
-Effort: Small.
+7.3 — Wire haptic calls to all 11 interaction sites
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`, `ChaosCreatures/Views/Components/DraggableCardView.swift`, `ChaosCreatures/Effects/WaxSealView.swift`, battle scene files
+  Action: Add haptic calls per Section 7.1 table: card pick up (light impact), card set down (medium impact), card flip (AHAP), wax seal tap (heavy impact), card summon (AHAP), card to graveyard (AHAP), foil shimmer (AHAP), epic reveal (AHAP), legendary reveal (AHAP), invalid action (notification error), scroll text box (selection feedback).
+  Effort: M
 
-**7.4 — `Scripts/verify_contrast.py`**
-Create WCAG AA contrast verification script checking 5 pairs from Section 10.4. Run as part of every QA pass.
-Effort: Small.
+7.4 — Log all haptic interactions as PENDING PHYSICAL VERIFICATION
+  Files: `Logs/iteration_log.md`
+  Action: Log each of 11 interactions with "PENDING PHYSICAL DEVICE VERIFICATION" per Section 7.3.
+  Effort: S
 
-**7.5 — iPad size class branching**
-Implement `CardHandArcView` (iPad portrait) and `CardHandSpreadView` (iPad landscape).
-Add `@Environment(\.horizontalSizeClass)` and `@Environment(\.verticalSizeClass)` to BattleContainerView and CollectionView.
-Branch: compact → SingleCardFocusView, regular portrait → CardHandArcView, landscape → CardHandSpreadView.
-Effort: Medium.
-
-**7.6 — iPad landscape orientation support**
-Add `UIInterfaceOrientationLandscapeLeft` and `UIInterfaceOrientationLandscapeRight` to `UISupportedInterfaceOrientations` in Info.plist (iPad only, not iPhone).
-Effort: Small.
-
-**7.7 — Stage Manager / multiple scenes** (optional, flag for owner review)
-Enable `UIApplicationSupportsMultipleScenes` in Info.plist. Add `UIScene.didActivateNotification` observer to re-compute layout from current window bounds. Test in 1/3, 1/2, 2/3 split view widths.
-Note: This is a significant architectural change — flag for owner approval before implementing.
-Effort: Medium (if approved).
-
-### Phase 7 Exit Criteria
-- VoiceOver reads card name, cost, type, ATK/HP, and ability text correctly in Simulator VoiceOver test
-- `Scripts/verify_contrast.py` exits 0 on all 5 required pairs
-- Epic and Legendary animations are static when Reduce Motion is enabled (Simulator accessibility settings)
-- `CardAccessibilityTests` passes in UITest run
-- Card layout meaningfully differs between iPhone portrait and iPad portrait in Simulator
+### Exit Criteria
+- [ ] 6 AHAP files exist in Resources/Haptics/
+- [ ] HapticEngine.swift compiles and initializes at startup
+- [ ] All 11 haptic interaction sites wired
+- [ ] All 11 interactions logged as "PENDING PHYSICAL DEVICE VERIFICATION"
+- [ ] **HAPTIC HARD GATE:** Owner must verify all 11 haptic interactions on physical device. Haptics CANNOT be tested in Simulator. NO haptic work is marked complete until physical device confirmation.
 
 ---
 
-## Phase 8: Performance & Final Polish
+## Phase 8: Accessibility Pass
+**Depends on:** Phase 4 (core card rendering stable), Phase 2 (layout finalized)
+**Can parallel with:** Phase 6, Phase 7
+**Effort:** L
 
-**Depends on:** Phase 4 (particles), Phase 6 (haptics, audio), Phase 7 (accessibility) complete
-**Sequential — must be last.** This phase validates and polishes everything built in prior phases.
-**Effort:** Medium (100–400 lines + testing)
+Comprehensive accessibility pass across entire codebase.
 
 ### Tasks
 
-**8.1 — Memory warning handler wired**
-(Covered in Phase 3.9 — verify it was implemented correctly.)
-Run `xcrun simctl send_notification booted com.apple.UIKit.memory-pressure` and confirm app does not crash, card art reloads correctly after memory warning.
+8.1 — Add VoiceOver labels to all interactive views
+  Files: `ChaosCreatures/Views/` (15+ view files)
+  Action: Add `.accessibilityLabel()`, `.accessibilityHint()`, `.accessibilityAddTraits()`, `.accessibilityIdentifier()` to: OnboardingView, CollectionView, CardDetailView, DeckBuilderView, DeckListView, ShopView, SubscriptionView, SettingsView, HomeView, ProfileView, MatchmakingView, BattleContainerView, PostMatchView, EvolutionFlowView, EvolutionRevealView.
+  Effort: L
 
-**8.2 — `Logs/Performance/` trace runs**
-Run `xcrun xctrace record --template "Time Profiler" --device "iPhone 12" ...` per Section 13.1.
-Save to `Logs/Performance/launch_trace.xctrace`.
-Write human profiling checklist to `Logs/iteration_log.md` — GPU Frame Capture, Metal System Trace, Core Animation Color Offscreen-Rendered. Await human confirmation before marking exit criteria complete.
+8.2 — Add VoiceOver to SpriteKit scenes
+  Files: `ChaosCreatures/Battle/` (BattleScene, CreatureNode, HandCardNode, etc.)
+  Action: Implement `UIAccessibilityElement` approach for SKNode accessibility.
+  Effort: M
 
-**8.3 — Visual regression baseline and first full pass**
-Run `Scripts/screenshot_all_devices.sh` on all 4 simulators in light mode and dark mode.
-Commit baseline reference screenshots to `Tests/ReferenceScreenshots/`.
-Run `Scripts/compare_screenshots.py` on all four screenshots.
-Log structured critique per Section 12.3 8-axis template in `Logs/iteration_log.md`.
+8.3 — Create Dynamic Type `scaledFont()` helper
+  Files: `ChaosCreatures/Config/CardFont.swift` (modify)
+  Action: Implement `scaledFont(name:textStyle:baseSize:)` per Section 10.2 using `UIFontMetrics`. Add to CardFont alongside existing fixed-size accessors.
+  Effort: S
 
-**8.4 — `Logs/iteration_log.md` structured critique pass**
-Run a full critique of the rendered card against Section 12.3 axes: Material believability, Color temperature, Texture grain, Typography letterpress, Lighting consistency, Tactile impression, iPad vs iPhone, Dark mode.
-Score each axis 1–5 on all four devices in both light and dark mode.
-All axes must score 4+ on all four device targets.
+8.4 — Apply Dynamic Type to CardFrameView text
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`
+  Action: Replace fixed-size font calls with `scaledFont()` equivalents. Ensure text box scroll region expands at larger sizes.
+  Effort: M
 
-**8.5 — Section 12.5 exit criteria checklist**
-Evaluate all 13 exit criteria per Section 12.5:
-- Critique axes all 4+ (verified in 8.4)
-- Regression diff < 0.025 on all four screenshots
-- All 9 card states render without error on all four simulators
-- Card back flip animation clean
-- Error fallback states display correctly
-- GPU frame time < 8ms on iPhone 12 [HUMAN GATE]
-- No off-screen rendering [HUMAN or debug log]
-- All haptic interactions logged as PENDING PHYSICAL DEVICE VERIFICATION [Phase 6]
-- VoiceOver gaps confirmed none, all contrast passes WCAG AA [Phase 7]
-- Dynamic Type usable at all sizes
-- Reduce Motion: static card looks premium
-- License manifest entry for every asset
-- Artwork color grading verified against parchment-light swatch
+8.5 — Add Reduce Motion guards to all 30+ animation sites
+  Files: 24+ files with animations
+  Action: Add `@Environment(\.accessibilityReduceMotion)` or `UIAccessibility.isReduceMotionEnabled` check to every `withAnimation`, `.animation`, and `.repeatForever` site. For SpriteKit: check before starting `.repeatForever` actions.
+  Key files: OnboardingView, EvolutionRevealView, WaxSealView, CardDetailView, MatchmakingView, LoadingView, FullscreenCardView, DraggableCardView, ChaosCreaturesApp, CollectionView, BattleContainerView, PostMatchView, plus all SpriteKit nodes with `SKAction.repeatForever`.
+  Effort: L
 
-**8.6 — Final `Scripts/verify_environment.sh` run**
-Run `Scripts/verify_environment.sh` one final time. All checks must pass.
-Document final pass in `Logs/iteration_log.md`.
+8.6 — Create Accessibility UITest
+  Files: `ChaosCreaturesUITests/AccessibilityTests.swift` (new)
+  Action: Implement `CardAccessibilityTests` per Section 10.4.
+  Effort: S
 
-### Phase 8 Exit Criteria
-- Section 12.5 checklist: all 13 criteria confirmed pass
-- `Scripts/compare_screenshots.py` scores < 0.025 on all four device screenshots (light and dark mode)
-- `Scripts/verify_contrast.py` exits 0
-- `Scripts/verify_environment.sh` exits 0
-- Human profiling checklist in `Logs/iteration_log.md`: GPU frame time confirmed < 8ms on iPhone 12 by owner
-- ⚠️ Haptic hard gate confirmed by owner on physical device (carry-over from Phase 6)
-- `Logs/BUDGET_LEDGER.md` reflects actual spend vs. budget allocation
+### Exit Criteria
+- [ ] All interactive views have VoiceOver labels, hints, and traits
+- [ ] SpriteKit scenes accessible via UIAccessibilityElement
+- [ ] Dynamic Type scaling works at XXL size
+- [ ] ALL .repeatForever animations guarded by Reduce Motion check
+- [ ] `verify_contrast.py` passes for all 5 color pairs
+- [ ] AccessibilityTests.swift passes
+- [ ] Accessibility Inspector reports no VoiceOver gaps on CardFrameView
 
 ---
 
-## Phases Summary Table
+## Phase 9: Performance Profiling & Optimization
+**Depends on:** Phase 4 (Metal rendering must be active to profile)
+**Can parallel with:** Phase 8 (different concerns)
+**Effort:** M
 
-| Phase | Can Start When | Blocked Until | Parallel With |
-|-------|---------------|---------------|---------------|
-| 0 | Decisions 2 & 3 recorded | — | — |
-| 1 | Phase 0 exit criteria pass | — | — |
-| DECISION GATE | Phase 1 complete | Decision 1 recorded | — |
-| SMOKE TEST GATE | Phase 1 complete, decision gate done | User approves 4 screenshots | — |
-| 2 | Decision Gate + Smoke Test Gate | Both gates cleared | — |
-| 3 | Smoke Test Gate | — | Phase 5 |
-| 4 | Phase 3 complete | — | Phase 6 |
-| 5 | Phase 0 + Commercial Gate | Owner confirms license | Phase 3 |
-| 6 | Phase 0 | — | Phase 3, 5 |
-| 7 | Phase 2 complete | — | Phase 4 |
-| 8 | Phase 4 + 6 + 7 | All prior phases done | — |
+Profile, measure, optimize. Last phase before final quality gate.
+
+### Tasks
+
+9.1 — Create `Logs/Performance/` directory
+  Files: `Logs/Performance/` (new directory)
+  Action: Create directory for profiling artifacts.
+  Effort: S
+
+9.2 — Run Instruments profiling
+  Files: `Logs/Performance/` (profiling results)
+  Action: Run `xctrace` for: Core Animation Commits, GPU Frame Capture, Metal System Trace. Record GPU frame time, draw calls, texture memory, app launch time.
+  Effort: M
+
+9.3 — Create SpriteKit texture atlases
+  Files: `ChaosCreatures/Resources/Assets.xcassets/` (new atlas groups)
+  Action: Create texture atlases for icons, mana symbols, wax seals. Update SpriteKit nodes to load from atlases.
+  Effort: M
+
+9.4 — Set drawsAsynchronously on particle nodes
+  Files: `ChaosCreatures/Effects/CardParticleFactory.swift`, `ChaosCreatures/Battle/BattleScene.swift`
+  Action: Set `drawsAsynchronously = true` on emitter nodes and ambient background.
+  Effort: S
+
+9.5 — Implement shouldRasterize on idle card layers
+  Files: `ChaosCreatures/Views/Components/CardFrameView.swift`
+  Action: Set `shouldRasterize = true` + `rasterizationScale = UIScreen.main.scale` when card is in `.default` state. Disable when animating.
+  Effort: S
+
+9.6 — Set preferredFramesPerSecond
+  Files: `ChaosCreatures/Battle/BattleContainerView.swift`, `ChaosCreatures/Effects/CardParticleFactory.swift`
+  Action: Battle SKView = 60fps. Particle overlay SKView = 30fps.
+  Effort: S
+
+9.7 — Create off-screen rendering audit extension
+  Files: `ChaosCreatures/Debug/OffScreenRenderingAudit.swift` (new, DEBUG only)
+  Action: Implement `CALayer.auditOffscreenRendering()` per Section 13.1.
+  Effort: S
+
+9.8 — Add "HUMAN PROFILING REQUIRED" flags
+  Files: `Logs/iteration_log.md`
+  Action: Add profiling flags for GPU Frame Capture, Metal System Trace, Core Animation Color Offscreen-Rendered.
+  Effort: S
+
+### Exit Criteria
+- [ ] GPU frame time < 8ms on iPhone 12 Simulator
+- [ ] Texture memory < 120MB with 7 cards in hand
+- [ ] App launch to first card visible < 2.5s
+- [ ] All SpriteKit particle nodes have drawsAsynchronously = true
+- [ ] Idle cards rasterize; animating cards do not
+- [ ] "HUMAN PROFILING REQUIRED" flags logged for GPU Frame Capture
+- [ ] Performance measurements recorded in `Logs/Performance/`
 
 ---
 
-*Implementation plan complete. 8 phases, 3 owner decision gates, 2 hard gates (smoke test, haptic physical device). Total gap items addressed: 83 (18 CONFLICT, 11 PARTIAL, 46 ABSENT). Compliant items require no action.*
+## Phase 10: Quality Gate & Final Polish
+**Depends on:** All previous phases
+**Can parallel with:** Nothing (final gate)
+**Effort:** M
+
+Reference screenshots, regression framework, final structured critique.
+
+### Tasks
+
+10.1 — Capture reference screenshot baseline
+  Files: `Tests/ReferenceScreenshots/` (new directory + images)
+  Action: Run screenshot script on all 4 devices x 2 color schemes = 8 baseline images. Commit as reference.
+  Effort: S
+
+10.2 — Run compare_screenshots.py against baseline
+  Files: `Scripts/compare_screenshots.py` (run)
+  Action: Verify diff < 0.025 threshold.
+  Effort: S
+
+10.3 — Full structured critique (9 axes)
+  Files: `Logs/iteration_log.md`
+  Action: Score all 8 axes per CRITIQUE_SCORING_GUIDE.md plus War Camp Test (Axis 9). All axes must score 4+. War Camp Test must return YES.
+  Effort: M
+
+10.4 — Create pre-submission compliance script
+  Files: `Scripts/pre_submission_check.sh` (new)
+  Action: Implement Section 13.5 3-step compliance check: license plist, asset manifest verification, LoRA license gate status.
+  Effort: S
+
+10.5 — Fix any issues identified in critique
+  Action: ONE FIX PER LOOP per Section 12.4. Iterate until all axes score 4+ and War Camp Test = YES.
+  Effort: Variable
+
+### Exit Criteria
+- [ ] Reference screenshots captured for all 4 devices x 2 color schemes
+- [ ] Visual regression diff < 0.025 on all screenshots
+- [ ] Structured critique: ALL 8 axes score 4+ per CRITIQUE_SCORING_GUIDE.md
+- [ ] War Camp Test: YES — "Imagine you are standing in a war camp. Does what you see feel like that card?"
+- [ ] **Section 14 physical quality test:** A screenshot makes an observer want to reach out and touch the card
+- [ ] One-fix-per-loop discipline followed for all corrections
+- [ ] All HUMAN PROFILING REQUIRED flags resolved
+- [ ] All PENDING PHYSICAL DEVICE VERIFICATION flags resolved
+
+---
+
+## Deferred Items (Not In This Plan)
+
+These items are acknowledged but deferred beyond this implementation cycle:
+
+- **iPad hand layout views** (CardHandArcView, CardHandSpreadView) — Section 9.1, Phase 8+ work
+- **Stage Manager / Multiple Scenes** — Section 9.3, significant architecture
+- **LoRA v2 training** — Blocked on budget/timing decision
+- **Missing faction music** (celestial, endless) — Graceful degradation acceptable
+- **4 stems per faction music structure** — Single-track, document deviation
+- **CardRepository + test card JSON fixtures** — Nice-to-have for Previews
+- **App Store submission assets** — Screenshots, legal pages, metadata
+- **Stale scripts cleanup** — ~37 superseded files in Scripts/
+
+---
+
+## Dependency Graph
+
+```
+Phase 1 (Environment/Tooling)
+   |
+   +---> Phase 2 (Card Layout Fixes)
+   |        |
+   |        +---> Phase 10 (Quality Gate)
+   |
+   +---> Phase 3 (Texture Assets)
+   |        |
+   |        +---> Phase 4 (Metal Bridge) -----> Phase 7 (Haptics) --+
+   |                |                                                |
+   |                +---> Phase 9 (Performance) --------------------+---> Phase 10
+   |
+   +---> Phase 5 (Art Generation Pipeline)
+   |
+   +---> Phase 6 (Sound) ----------------------------------------+---> Phase 10
+   |
+   +---> Phase 8 (Accessibility) ---------------------------------+---> Phase 10
+```
+
+**Critical path:** Phase 1 -> Phase 3 -> Phase 4 (Metal Bridge) -> Phase 9/10
+**Parallelizable:** Phase 5, Phase 6, Phase 8 can all run alongside Phase 4.

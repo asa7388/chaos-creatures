@@ -602,3 +602,95 @@ Commits: 3fd5f95 (scripts), ccb0b2a (generated + installed + WaxSealView update)
 - Metal System Trace (SpriteKit battlefield with multiple CreatureNodes + canvas weave multiply blend)
 - Core Animation: Color Offscreen-Rendered (check animated border and rarity glow layers)
 Target: all pass performance thresholds from Section 13.2 before Phase 4 is marked complete.
+
+---
+
+## Session Start — 2026-02-22 — Fresh Audit Restart from Step 3
+MASTER_STATE.json written fresh with full plan (compaction resilience).
+Old audit/gap/plan archived to docs/archive/*_20260222.*.
+Restarting from Step 3 of overhaul brief: 3-agent audit of CURRENT codebase.
+Required reads for all agents: CARD_DESIGN_GUIDE.md + GRIMDARK_AESTHETIC_DIRECTIVE.md + CRITIQUE_SCORING_GUIDE.md.
+Known conflict pre-seeded: Scripts/prompt_utils.py FACTION_CREATURE_STYLE fey/celestial strings wrong per GRIMDARK_AESTHETIC_DIRECTIVE (correct in ASSET_CREATION_GUIDE_v1.2.md §6).
+
+## Phase 1 Complete — 2026-02-22 — Environment & Tooling Foundation
+All 13 tasks done. Commit b202508.
+Scripts created: verify_environment.sh, load_env.sh, verify_asset.py, verify_contrast.py, compare_screenshots.py, set_astc_compression.py, download_textures.sh, generate_normal_map.sh, generate_foil_gradient.py.
+Configs updated: screenshot_all_devices.sh, requirements.txt, .env.example.
+Environment verification: 29 pass, 3 deferred failures (pngquant, svgexport, replicate — Phase 5+).
+Contrast check: 9 palette pairs all pass WCAG AA.
+ASTC dry-run: 44 imagesets to compress.
+No visual changes — screenshot/critique protocol not applicable.
+Decisions resolved this session: creature layout → VStack zone-stack, stats bar → 5%, stats colors → palette tokens.
+Next: Phase 2 — Card Layout Corrections & Zone Boundary Character.
+
+## Phase 2 Structured Critique — 2026-02-22 — Card Layout Corrections & Zone Boundary Character
+
+### Changes Made (9 tasks)
+2.1 Creature layout converted from ZStack full-bleed to VStack zone-stack (guide Section 1.4)
+2.2 Stats bar height reduced from 7% to 5% (0.051)
+2.3 Wax seal moved from type line to stats bar zone, 34pt at reference scale
+2.4 Zone boundary character: shadow+highlight material-edge treatment (ink-black shadow 0.30, aged-gold highlight 0.10/parchment-light 0.15, 3pt height)
+2.5 AnimatedRarityBorder hex colors replaced with aged-gold, epic-amethyst, legendary-ember palette tokens
+2.6 Stats bar ATK/HP: #FF8F00→aged-gold, #E53935→wax-red
+2.7 Font fallback terminal: systemFont→Georgia-Bold/TimesNewRomanPSMT
+2.8 Info.plist: removed 6 retired fonts (Cinzel-Variable, Alegreya, BebasNeue, FiraSans)
+2.9 GyroscopeManager: 30Hz→60Hz, tilt clamp ±0.6 radians
+
+### Section 12.3 Structured Critique (8 axes)
+
+1. **Zone Proportions** (Guide 1.4): PARTIAL — Zone-stack VStack is in place. Art box confined to ~45% zone. Stats bar at 5%. Name bar, type line, text box visible. Proportions appear correct but exact pixel measurements not verified with Instruments.
+
+2. **Zone Boundary Character** (Grimdark Directive): NEEDS REVIEW — Shadow+highlight material-edge treatment implemented (ink-black shadow 0.30 opacity, aged-gold/parchment-light highlight 0.10-0.15 opacity, 3pt height at reference scale). In screenshots, boundaries are visible between zones. Assessment: the treatment is subtle — whether it reads as "two materials touching" vs "a soft digital divider" requires owner judgment on physical device or zoomed screenshot.
+
+3. **Color Palette Compliance** (Guide 1.2): PASS — All ad-hoc hex colors replaced. ATK→aged-gold, HP→wax-red, rarity borders→palette tokens. No remaining hardcoded hex values outside the palette system.
+
+4. **Typography** (Guide 1.5): PASS — EBGaramond + Oswald-Bold in use. Fallback chain now ends at Georgia/TimesNewRoman (serif) instead of system sans-serif. Retired fonts removed from bundle.
+
+5. **Wax Seal Position** (Guide 1.4): PARTIAL — Moved to stats bar zone with 34pt size. Visible in screenshots. Exact coordinate match to guide spec (x=164, y=258 at 210x294) not pixel-verified.
+
+6. **Stats Bar** (Guide 1.4): PASS — Height reduced to 5%. ATK/HP badges use palette tokens. Wax seal overlaps from stats bar.
+
+7. **Gyroscope/Parallax** (Guide 6): PASS — 60Hz update interval, ±0.6 radian clamp. Cannot verify visually in screenshots (requires motion).
+
+8. **War Camp Test**: "Imagine standing in a war camp, picking up a card." The card reads as a physical object with distinct material zones — dark wood name bar, oil-paint art box, vellum text panel. The zone boundaries are the weakest link: they suggest material overlap but may need stronger shadow or a micro-texture strip to fully sell the physical illusion. The art confinement to the zone-stack (not full-bleed) makes the card feel more like a structured field document. Overall direction is correct.
+
+### ZONE BOUNDARY CHARACTER GATE — AWAITING OWNER REVIEW
+Screenshots at: Staging/phase2_screenshots/
+- iphone17pro_collection.png (grid view, multiple cards)
+- card_detail_current.png (Rebar Golem close-up)
+Question: Do zone boundaries read as physical material edges or digital dividers?
+
+---
+
+## Session Start — 2026-02-23 — Phase 3 CardFrameView Front Face Rewrite
+MASTER_STATE.json read: phase_2.6_complete, next task Phase 3.
+Guide sections re-read: §1.4 (full-art dossier layout), §1.5 (typography — Yeseva One front, IM Fell English back), §1.5b (card type variants), §1.8 (card back intelligence report).
+Phase 2.6 committed: 7d1baa9 (doc updates for dossier format + stale ref cleanup).
+CardFrameView audit: 1,544 lines, zone-stack layout, 16 call sites, CardDisplayData embedded in file.
+Beginning Phase 3: Create CardDossierTextView, rewrite CardFrameView ZStack dossier layout, simplify CardTheme, delete retired zone code + assets.
+
+---
+
+## Session Start — 2026-02-23 — COMPACTION RECOVERY — Phase 3 Rewrite
+MASTER_STATE.json re-read: phase_2.6_complete, Phase 3 next (CardFrameView front-face dossier rewrite).
+CARD_DESIGN_GUIDE.md Section 1.4 re-read: full-art dossier layout (artwork fills inner area, vignette 40% bottom, text overlay anchored bottom).
+Section 1.5 re-read: Yeseva One (front), IM Fell English (back), shadow specs.
+Section 1.5b re-read: field visibility by card type (creature shows all, spell/stabilizer/ruin have subsets).
+
+**Current State Audit:**
+- CardDossierTextView.swift exists (339 lines, untracked) — created in prior work but incomplete
+- CardFrameView.swift still has 1,544 lines of zone-stack code — NOT rewritten to dossier
+- Fonts added (YesevaOne, IMFellEnglish) — in untracked resources
+- CardTheme.swift and CardFont.swift modified — not yet committed
+- Git status shows 65 commits ahead of remote, many staged + unstaged changes
+
+**Task Scope (Phase 3):**
+1. Verify CardDossierTextView is complete per Section 1.4 & 1.5 spec
+2. Rewrite CardFrameView to ZStack(art + CardDossierTextView overlay) dossier layout
+3. Update CardTheme/CardFont as needed
+4. Delete retired zone-stack code (nameBar, artBox, typeLine, textBox, statsBar methods)
+5. Test in simulator iPhone + iPad, light + dark modes
+6. Screenshot and critique per Section 12.3 template
+7. Commit when ready for smoke test
+
+**Recovery Status:** Ready to resume Phase 3 implementation.

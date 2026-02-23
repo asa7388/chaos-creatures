@@ -135,6 +135,9 @@
 		EE44444444444444EEEEEEEE /* EBGaramond-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF44444444444444FFFFFFFF /* EBGaramond-Italic.ttf */; };
 		EE55555555555555EEEEEEEE /* EBGaramond-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF55555555555555FFFFFFFF /* EBGaramond-SemiBold.ttf */; };
 		EE66666666666666EEEEEEEE /* Oswald-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */; };
+		EE77777777777777EEEEEEEE /* YesevaOne-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF77777777777777FFFFFFFF /* YesevaOne-Regular.ttf */; };
+		EE88888888888888EEEEEEEE /* IMFellEnglish-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */; };
+		EE99999999999999EEEEEEEE /* IMFellEnglish-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */; };
 		DD11111111111111DDDDDDDD /* CardFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11111111111111CCCCCCCC /* CardFont.swift */; };
 		SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */; };
 		SFX00002BBBBBBBBBBBBBB02 /* sfx_attack.wav in Resources */ = {isa = PBXBuildFile; fileRef = SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */; };
@@ -161,7 +164,7 @@
 		SMOKE0AA111111111111BBBBBB01 /* SmokeTestCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SMOKE0CC111111111111DDDDDD01 /* SmokeTestCardView.swift */; };
 		EFFTIER0000000000CCCCCC01 /* EffectTier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFFTIER0000000000BBBBBB01 /* EffectTier.swift */; };
 		WAXSEAL000000000001CCCCCC01 /* WaxSealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */; };
-		INSTBDG000000000001CCCCCC01 /* InstabilityBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = INSTBDG000000000001BBBBBB01 /* InstabilityBadgeView.swift */; };
+		DOSSIER000000000001CCCCCC01 /* CardDossierTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DOSSIER000000000001BBBBBB01 /* CardDossierTextView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -212,6 +215,9 @@
 		FF44444444444444FFFFFFFF /* EBGaramond-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-Italic.ttf"; sourceTree = "<group>"; };
 		FF55555555555555FFFFFFFF /* EBGaramond-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-SemiBold.ttf"; sourceTree = "<group>"; };
 		FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Oswald-Bold.ttf"; sourceTree = "<group>"; };
+		FF77777777777777FFFFFFFF /* YesevaOne-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "YesevaOne-Regular.ttf"; sourceTree = "<group>"; };
+		FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IMFellEnglish-Regular.ttf"; sourceTree = "<group>"; };
+		FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IMFellEnglish-Italic.ttf"; sourceTree = "<group>"; };
 		CC11111111111111CCCCCCCC /* CardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFont.swift; sourceTree = "<group>"; };
 		SFX00001AAAAAAAAAAAAAAA01 /* sfx_card_play.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_card_play.wav; sourceTree = "<group>"; };
 		SFX00002AAAAAAAAAAAAAAA02 /* sfx_attack.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sfx_attack.wav; sourceTree = "<group>"; };
@@ -350,7 +356,7 @@
 		SMOKE0CC111111111111DDDDDD01 /* SmokeTestCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTestCardView.swift; sourceTree = "<group>"; };
 		EFFTIER0000000000BBBBBB01 /* EffectTier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectTier.swift; sourceTree = "<group>"; };
 		WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaxSealView.swift; sourceTree = "<group>"; };
-		INSTBDG000000000001BBBBBB01 /* InstabilityBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstabilityBadgeView.swift; sourceTree = "<group>"; };
+		DOSSIER000000000001BBBBBB01 /* CardDossierTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDossierTextView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -442,6 +448,9 @@
 				FF66666666666666FFFFFFFF /* Oswald-Bold.ttf */,
 				AA55555555555555AAAAAAAA /* FiraSans-Regular.ttf */,
 				AA66666666666666AAAAAAAA /* FiraSans-SemiBold.ttf */,
+				FF77777777777777FFFFFFFF /* YesevaOne-Regular.ttf */,
+				FF88888888888888FFFFFFFF /* IMFellEnglish-Regular.ttf */,
+				FF99999999999999FFFFFFFF /* IMFellEnglish-Italic.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -741,6 +750,7 @@
 			isa = PBXGroup;
 			children = (
 				7E2AD4B1C3F8E5A6D0B94F71 /* CardFrameView.swift */,
+				DOSSIER000000000001BBBBBB01 /* CardDossierTextView.swift */,
 				P2AA111111111111BBBBBB01 /* CardBackView.swift */,
 				P2AA111111111111BBBBBB02 /* DraggableCardView.swift */,
 				4B487311E9E0110DA6121F9A /* CardView.swift */,
@@ -812,7 +822,6 @@
 			children = (
 				EFFTIER0000000000BBBBBB01 /* EffectTier.swift */,
 				WAXSEAL000000000001BBBBBB01 /* WaxSealView.swift */,
-				INSTBDG000000000001BBBBBB01 /* InstabilityBadgeView.swift */,
 			);
 			path = Effects;
 			sourceTree = "<group>";
@@ -948,6 +957,9 @@
 				EE66666666666666EEEEEEEE /* Oswald-Bold.ttf in Resources */,
 				BB55555555555555BBBBBBBB /* FiraSans-Regular.ttf in Resources */,
 				BB66666666666666BBBBBBBB /* FiraSans-SemiBold.ttf in Resources */,
+				EE77777777777777EEEEEEEE /* YesevaOne-Regular.ttf in Resources */,
+				EE88888888888888EEEEEEEE /* IMFellEnglish-Regular.ttf in Resources */,
+				EE99999999999999EEEEEEEE /* IMFellEnglish-Italic.ttf in Resources */,
 				SFX00001BBBBBBBBBBBBBB01 /* sfx_card_play.wav in Resources */,
 				SFX00002BBBBBBBBBBBBBB02 /* sfx_attack.wav in Resources */,
 				SFX00003BBBBBBBBBBBBBB03 /* sfx_damage.wav in Resources */,
@@ -1025,6 +1037,7 @@
 				D4DAB6A87FEDA69762F7CE31 /* CardTemplate.swift in Sources */,
 				DD11111111111111DDDDDDDD /* CardFont.swift in Sources */,
 				3A1CF2A0B1E7D3F4A9C85E60 /* CardFrameView.swift in Sources */,
+				DOSSIER000000000001CCCCCC01 /* CardDossierTextView.swift in Sources */,
 				P2CC111111111111DDDDDD01 /* CardBackView.swift in Sources */,
 				P2CC111111111111DDDDDD02 /* DraggableCardView.swift in Sources */,
 				3ABFCD070277397CE06C4D24 /* CardView.swift in Sources */,
@@ -1101,7 +1114,6 @@
 				2D420C70835D5AA68DE2D07E /* View+Loading.swift in Sources */,
 				EFFTIER0000000000CCCCCC01 /* EffectTier.swift in Sources */,
 				WAXSEAL000000000001CCCCCC01 /* WaxSealView.swift in Sources */,
-					INSTBDG000000000001CCCCCC01 /* InstabilityBadgeView.swift in Sources */,
 				SH0000000000001CCCCDDDD01 /* OilPaintShader.metal in Sources */,
 				SH0000000000002CCCCDDDD02 /* ParchmentShader.metal in Sources */,
 				SH0000000000003CCCCDDDD03 /* WarmFoilShader.metal in Sources */,

@@ -1,447 +1,418 @@
-# Audit: Systems & Quality — Sections 5, 7, 10, 12, 13
-**Agent:** Audit Agent C
-**Date:** 2026-02-21
-**Guide:** docs/CARD_DESIGN_GUIDE.md
-**Codebase root:** /Users/alexali/Projects/chaos-creatures
+# Audit C — Systems & Quality
+## Sections 5, 7, 10, 12, 13 of CARD_DESIGN_GUIDE.md
+**Date:** 2026-02-22
+**Auditor:** Audit Agent C
+**Scope:** Agent Tool-Use (S5), Haptics (S7), Accessibility (S10), Iterative Testing (S12), Performance Profiling (S13)
+**Documents read before audit:**
+- `docs/CARD_DESIGN_GUIDE.md` Sections 5, 7, 10, 12, 13 (in full)
+- `docs/GRIMDARK_AESTHETIC_DIRECTIVE.md` (in full)
+- `docs/CRITIQUE_SCORING_GUIDE.md` (in full)
+
+---
+
+## Section 5: Agent Tool-Use Techniques
+
+### [ABSENT] S5.1 — Vision Tool Reference Comparison Workflow
+**File:** No implementation found
+**Current:** No automated reference comparison tooling exists. No `Scripts/verify_asset.py` script. No reference image download tooling.
+**Required:** Section 5.1 specifies: render output to PNG via simulator screenshot, load alongside reference from Section 1.10, compare across 6 axes, write structured critique before any fix. Section 5.7 specifies `Scripts/verify_asset.py` must exist before any generation call.
+**Recommended action:** Create `Scripts/verify_asset.py` with the exact implementation from Section 5.7 (warm-tone check, min dimensions, JSON error payload detection). This is a prerequisite for any asset generation work.
+
+---
+
+### [PARTIAL] S5.2 — Bash Tool Discipline (Exit Code Checking)
+**File:** `scripts/screenshot_all_devices.sh` (line 46)
+**Current:** The screenshot script checks for file existence after `xcrun simctl io` but does not check exit codes with `${PIPESTATUS[0]}`. Other scripts (`.mjs` generation scripts) do not follow the bash discipline pattern from Section 5.2.
+**Required:** Section 5.2 specifies: "Always check exit codes explicitly" with `${PIPESTATUS[0]}` pattern. After every Metal shader file change, check for compile warnings.
+**Recommended action:** Update `scripts/screenshot_all_devices.sh` to check exit codes. Add post-Metal-build grep check per Section 5.2 to the shader compilation script (`scripts/compile_shaders.sh`).
+
+---
+
+### [PARTIAL] S5.3 — Multi-Device Screenshot Script
+**File:** `/Users/alexali/Projects/chaos-creatures/scripts/screenshot_all_devices.sh`
+**Current:** Script exists but with deviations from guide spec:
+  - Device list uses iPhone 17 Pro, iPhone 17 Pro Max, iPhone 16e, iPad Pro 13-inch (4 devices)
+  - Guide specifies iPhone 15 Pro, iPhone 12, iPad Pro 12.9-inch 6th gen, iPad Air 5th gen (4 devices)
+  - Output goes to `Tests/SmokeTest/` not `Logs/Iterations/iter_${ITER}_${SAFE}.png`
+  - Does not use `ITER` parameter format from guide
+  - Does not use PIL Image.open to verify image dimensions
+  - Missing the iteration numbering system required by Section 5.3
+**Required:** Section 5.3 specifies exact device list (iPhone 15 Pro, iPhone 12, iPad Pro 12.9" 6th gen, iPad Air 5th gen), output path `Logs/Iterations/iter_${ITER}_${SAFE}.png`, and PIL size verification.
+**Recommended action:** Update device list to include at least one older device (iPhone 12 equivalent). Add PIL dimension verification. Add iteration numbering parameter. The device name updates are acceptable since the project targets newer simulators, but the output path and verification should match the guide.
+
+---
+
+### [ABSENT] S5.4 — Refinement Loop Procedure
+**File:** No implementation found
+**Current:** The 9-step refinement loop procedure is not implemented as a runnable script or enforced workflow. The iteration log shows structured critiques (Section 12.3 format) but does not follow the exact 9-step loop: (1) xcodebuild all four targets, (2) screenshot script, (3) vision compare iPhone, (4) vision compare iPad, (5) write critique, (6) run compare_screenshots.py, (7) identify ONE gap, (8) ONE fix, (9) increment N.
+**Required:** Section 5.4 specifies "Execute in exact order -- no steps may be skipped or reordered."
+**Recommended action:** Document the refinement loop as a runnable checklist or shell script. Enforce the one-fix-per-loop rule. This is a workflow discipline item, not a code item.
+
+---
+
+### [ABSENT] S5.5 — SwiftUI-MTKView Bridge Pattern
+**File:** No `Sources/Effects/CardRenderer.swift` found
+**Current:** No `CardRenderer` protocol, no `NullCardRenderer`, no `MetalCardEffectView` UIViewRepresentable with MTKView. The Metal shaders exist as `.metal` files but have no Swift-side MTKView bridge. `CardParticleFactory.swift` uses `SKView` (SpriteKit) not `MTKView` (Metal).
+**Required:** Section 5.5 specifies complete `CardRenderer` protocol + `NullCardRenderer` + `MetalCardEffectView` with `MTKView` delegate pattern.
+**Recommended action:** Create `CardRenderer.swift` and `MetalCardEffectView.swift` per Section 5.5 to wire the four Metal shaders (OilPaintShader, ParchmentShader, WarmFoilShader, InkSpreadKernel) to actual rendering views.
+
+---
+
+### [PARTIAL] S5.6 — Context Management (Iteration Log)
+**File:** `/Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md`
+**Current:** Iteration log exists and is actively maintained. Contains session start confirmations, phase completion records, structured critiques, deviation registers. However, no `Logs/RECOVERY_CHECKPOINT_[timestamp].md` files exist. Recovery checkpoints are written inline to the iteration log rather than as separate timestamped files.
+**Required:** Section 5.6 specifies: "Approaching context limit: write `Logs/RECOVERY_CHECKPOINT_[timestamp].md` immediately."
+**Recommended action:** Minor. The iteration log is sufficient for recovery. Creating separate checkpoint files would be additive improvement.
+
+---
+
+### [ABSENT] S5.7 — Silent Failure Prevention Scripts
+**File:** No `Scripts/verify_asset.py` found. No `Scripts/load_env.sh` found. No `Scripts/verify_environment.sh` found.
+**Current:** None of the three guard scripts specified in Sections 5.7 and 4 exist:
+  - `Scripts/verify_asset.py` — image dimension + warm-tone + error-payload check
+  - `Scripts/load_env.sh` — environment variable loader
+  - `Scripts/verify_environment.sh` — master environment check (tools, simulators, API keys, Python libs)
+**Required:** Section 5.7 provides the complete implementation of `verify_asset.py`. Section 4 specifies `verify_environment.sh` and `load_env.sh` as prerequisites.
+**Recommended action:** Create all three scripts. `verify_asset.py` is the highest priority as it gates all asset generation work.
+
+---
+
+## Section 7: Haptic Feedback
+
+### [ABSENT] S7.1 — Haptic Vocabulary Implementation
+**File:** No haptic implementation found anywhere in the codebase
+**Current:** Zero references to `CHHapticEngine`, `CoreHaptics`, `UIImpactFeedbackGenerator`, `UINotificationFeedbackGenerator`, or `UISelectionFeedbackGenerator` in any Swift file in the entire `ChaosCreatures/` directory. No file named `HapticEngine.swift` exists. No haptic call sites in any view or scene.
+**Required:** Section 7.1 specifies 11 haptic interactions: card pick up (impact light), card set down (impact medium), card flip (custom AHAP), wax seal tap (impact heavy), card summon (custom AHAP), card to graveyard (custom AHAP), rare foil reveal (custom AHAP), epic reveal (custom AHAP), legendary reveal (custom AHAP), invalid action (notification error), scroll text box (selection feedback).
+**Recommended action:** Create `HapticEngine.swift` per Section 7.2 implementation. Wire haptic calls to all 11 interaction sites across CardFrameView, BattleScene, and other views. This is entirely unimplemented — expected per task description.
+
+---
+
+### [ABSENT] S7.2 — Required AHAP Files
+**File:** No `Resources/Haptics/` directory exists. No `.ahap` files anywhere in the project.
+**Current:** Zero AHAP files. The six required files do not exist:
+  - `card_flip.ahap` — ABSENT
+  - `card_summon.ahap` — ABSENT
+  - `card_graveyard.ahap` — ABSENT
+  - `foil_shimmer.ahap` — ABSENT
+  - `epic_reveal.ahap` — ABSENT
+  - `legendary_reveal.ahap` — ABSENT
+**Required:** Section 7.2 provides complete JSON implementations for all six AHAP files plus a Python generator script for `foil_shimmer.ahap`.
+**Recommended action:** Create `Resources/Haptics/` directory and all six AHAP files using the exact JSON from Section 7.2. Create `Scripts/generate_foil_shimmer_ahap.py` per Section 7.2.
+
+---
+
+### [ABSENT] S7.2 — HapticEngine.swift Singleton
+**File:** No `HapticEngine.swift` or equivalent found
+**Current:** No `HapticEngine` class exists. No `CHHapticEngine` initialization at app startup. `ChaosCreaturesApp.swift` does not reference haptics. `AppDelegate.swift` contains only orientation lock (6 lines total).
+**Required:** Section 7.2 provides complete `HapticEngine` singleton implementation with `prepare()`, `play(ahapNamed:)`, and `impact(_:)` methods. Must be initialized at app startup.
+**Recommended action:** Create `HapticEngine.swift` per Section 7.2. Call `HapticEngine.shared.prepare()` in `ChaosCreaturesApp.init()` or `AppDelegate.application(_:didFinishLaunchingWithOptions:)`.
+
+---
+
+### [ABSENT] S7.3 — Physical Device Testing Gate Logging
+**File:** No haptic-related entries in iteration log
+**Current:** No haptic interactions are logged as "PENDING PHYSICAL DEVICE VERIFICATION" in `Logs/iteration_log.md` because no haptic work has been done.
+**Required:** Section 7.3 specifies: "Log every haptic interaction in `Logs/iteration_log.md` as 'PENDING PHYSICAL DEVICE VERIFICATION.' Do not mark any haptic work as complete without physical device confirmation."
+**Recommended action:** When haptics are implemented, each of the 11 interactions must be logged as pending physical verification. This is a hard gate per Section 12.5 exit criteria.
+
+---
+
+## Section 10: Accessibility
+
+### [PARTIAL] S10.1 — VoiceOver Labels on Card Components
+**File:** `/Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreatures/Views/Components/CardFrameView.swift` (lines 325-331)
+**Current:** CardFrameView has correct VoiceOver implementation:
+  - `.accessibilityElement(children: .ignore)` — correct
+  - `.accessibilityLabel(data.voiceOverLabel)` — correct, computed property exists on both `CardDisplayData` (line 240) and `Card` struct (CardGuideEnums.swift line 441)
+  - `.accessibilityHint("Double-tap to select. Long-press to preview.")` — correct
+  - `.accessibilityAddTraits(.isButton)` — correct
+  - `.accessibilityIdentifier("CardView")` — correct
+  - `.accessibilityAction(named: "Preview card")` — correct
+  - `.accessibilityAction(named: "Show card details")` — correct (placeholder handler)
+
+However, **NO OTHER VIEW in the entire app has any accessibility annotations.** Grep for `.accessibilityLabel`, `.accessibilityHint`, `.accessibilityIdentifier`, and `.accessibilityElement` returns results ONLY from `CardFrameView.swift`. The following views have NO accessibility support:
+  - `OnboardingView.swift` — multiple interactive buttons, no labels
+  - `CollectionView.swift` — grid of cards, no collection-level accessibility
+  - `CardDetailView.swift` — detail view, no labels
+  - `DeckBuilderView.swift` — drag targets, no labels
+  - `DeckListView.swift` — list items, no labels
+  - `ShopView.swift` — purchase buttons, no labels
+  - `SubscriptionView.swift` — subscription buttons, no labels
+  - `SettingsView.swift` — settings toggles, no labels
+  - `HomeView.swift` — navigation buttons, no labels
+  - `ProfileView.swift` — profile info, no labels
+  - `MatchmakingView.swift` — matchmaking state, no labels
+  - `BattleContainerView.swift` — battle controls, no labels
+  - `PostMatchView.swift` — result display, no labels
+  - `EvolutionFlowView.swift` — evolution controls, no labels
+  - `EvolutionRevealView.swift` — reveal animation, no labels
+  - All SpriteKit nodes (BattleScene, CreatureNode, HandCardNode, etc.) — no accessibility
+
+**Required:** Section 10.1 specifies VoiceOver on ALL card components. Section 12.5 exit criteria requires "Accessibility Inspector: no VoiceOver gaps."
+**Recommended action:** Add VoiceOver labels, hints, traits, and identifiers to ALL interactive views listed above. SpriteKit scenes require `UIAccessibilityElement` approach since SwiftUI accessibility modifiers do not apply to SKNode. This is a significant body of work.
+
+---
+
+### [ABSENT] S10.2 — Dynamic Type Scaling
+**File:** No implementation found
+**Current:** Zero references to `UIFontMetrics`, `scaledFont`, or `DynamicType` anywhere in the codebase. All fonts use fixed sizes via `CardFont` accessors (e.g., `CardFont.cinzelBold(size: 13)`). Text sizes do not scale with user accessibility settings.
+**Required:** Section 10.2 specifies a `scaledFont(name:textStyle:baseSize:)` helper function using `UIFontMetrics(forTextStyle:).scaledFont(for:)`. The text box must accommodate Dynamic Type scaling at XXL sizes via expanded scroll region.
+**Recommended action:** Create `scaledFont()` helper per Section 10.2. Replace all fixed-size font accessors in CardFrameView and other views with UIFontMetrics-scaled variants. Ensure the text box scroll region expands at larger sizes.
+
+---
+
+### [PARTIAL] S10.3 — Reduce Motion Handling
+**File:** `/Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreatures/Views/Components/CardFrameView.swift` (line 1178), `/Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreatures/Effects/EffectTier.swift` (line 23)
+**Current:** Two Reduce Motion check sites exist:
+  1. `CardFrameView.swift` line 1178: `if UIAccessibility.isReduceMotionEnabled` — guards the Epic/Legendary animated border rotation, falling back to a static 45-degree gradient. Correct.
+  2. `EffectTier.swift` line 23: `if UIAccessibility.isReduceMotionEnabled { return .minimal }` — correctly returns `.minimal` tier which disables all animation. Correct.
+
+However, **24 files use `withAnimation` or `.animation` and 30+ `.repeatForever` animation sites exist with NO Reduce Motion guard.** Key unguarded animation sites:
+  - `OnboardingView.swift` (9 animation calls, including `.repeatForever`) — NO reduceMotion check
+  - `EvolutionRevealView.swift` (`.repeatForever`) — NO reduceMotion check
+  - `WaxSealView.swift` (`.repeatForever` breathing animation) — NO reduceMotion check
+  - `CardDetailView.swift` (`.repeatForever` rotation) — NO reduceMotion check
+  - `MatchmakingView.swift` (2 `.repeatForever` animations) — NO reduceMotion check
+  - `LoadingView.swift` (2 `.repeatForever` animations) — NO reduceMotion check
+  - `FullscreenCardView.swift` (`.repeatForever`) — NO reduceMotion check
+  - `DraggableCardView.swift` (drag animations) — NO reduceMotion check
+  - `ChaosCreaturesApp.swift` (root view transition `.animation`) — NO reduceMotion check
+  - `CollectionView.swift` (animations) — NO reduceMotion check
+  - `BattleContainerView.swift` (animations) — NO reduceMotion check
+  - `PostMatchView.swift` (animations) — NO reduceMotion check
+  - All SpriteKit nodes with `SKAction.repeatForever` (CreatureNode 12+ instances, HandCardNode 4+ instances, TimerNode 2 instances) — NO reduceMotion check
+
+**Required:** Section 10.3 specifies: "In any animation site: `withAnimation(reduceMotion ? .none : .spring(...))`. Disable parallax entirely." The guide also requires `@Environment(\.accessibilityReduceMotion)` to be checked at EVERY animation site.
+**Recommended action:** Add `@Environment(\.accessibilityReduceMotion)` or `UIAccessibility.isReduceMotionEnabled` guard to ALL animation sites (30+ locations). For SpriteKit: check `UIAccessibility.isReduceMotionEnabled` before starting any `.repeatForever` actions. This is a substantial pass across the entire codebase.
+
+---
+
+### [ABSENT] S10.4 — Color Contrast Compliance Verification
+**File:** No `Scripts/verify_contrast.py` found
+**Current:** No contrast verification script exists. The five required color contrast pairs from Section 10.4 have not been programmatically verified:
+  1. `ink-black` on `parchment-light` (need 4.5:1) — UNVERIFIED
+  2. `parchment-dark` on `parchment-light` (need 3.0:1 large text) — UNVERIFIED
+  3. `ink-black` on `parchment-mid` (need 4.5:1) — UNVERIFIED
+  4. `ink-dark-mode` on `parchment-dark-mode` (need 4.5:1) — UNVERIFIED
+  5. `ink-black` on `canvas-warm` (need 4.5:1) — UNVERIFIED
+**Required:** Section 10.4 provides complete `Scripts/verify_contrast.py` implementation. Must be run as part of every QA pass.
+**Recommended action:** Create `Scripts/verify_contrast.py` per Section 10.4 and run it. The palette was designed to pass WCAG AA but this has never been verified.
+
+---
+
+### [ABSENT] S10.4 — Accessibility UITest
+**File:** `/Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreaturesUITests/` directory exists but contains no accessibility test
+**Current:** UITest directory contains `BattleFlowUITests.swift`, `OnboardingUITests.swift`, and `ScreenshotTests.swift`. None of these test accessibility. No `AccessibilityTests.swift` file exists.
+**Required:** Section 10.4 provides a complete `CardAccessibilityTests` test class that verifies cards have non-empty accessibility labels.
+**Recommended action:** Create `Tests/AccessibilityTests.swift` per Section 10.4 with `testCardViewHasAccessibilityLabel()`.
+
+---
+
+## Section 12: Iterative Testing & Refinement
+
+### [ABSENT] S12.2 — Visual Regression Script (compare_screenshots.py)
+**File:** No `Scripts/compare_screenshots.py` found
+**Current:** The visual regression comparison script does not exist. No automated pixel-diff comparison is available. The iteration log notes "Regression check: NOT RUN" multiple times.
+**Required:** Section 12.2 provides complete `Scripts/compare_screenshots.py` implementation using PIL ImageChops.difference with a 0.025 threshold. Must be run on all four device screenshots after every iteration.
+**Recommended action:** Create `Scripts/compare_screenshots.py` per Section 12.2.
+
+---
+
+### [PARTIAL] S12.3 — Structured Critique Template Usage
+**File:** `/Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md`
+**Current:** The iteration log contains multiple structured critiques using the Section 12.3 template format:
+  - Phase 2 Structured Critique (line 178) — 8 axes scored, largest gap identified, root cause, next action, blocked items
+  - Phase 2 End Gate Critique (line 314) — same format
+  - Wax Seal Iteration 1 Critique (line 469) — custom 8-axis wax seal scoring
+  - Phase 3 End Gate Critique (line 381) — PASS/WARN/FAIL assessment
+
+However, deviations from the exact template:
+  - War Camp Test (Axis 9) is missing from all critiques — the binary YES/NO axis is never scored
+  - The Phase 3 critique uses a PASS/WARN/FAIL format instead of the 8+1 axis scoring template
+  - Regression diff scores are always "N/A" because `compare_screenshots.py` does not exist
+  - Some critiques lack the "War camp test result: [YES/NO]" section entirely
+**Required:** Section 12.3 specifies the exact 9-axis template with War Camp Test as a mandatory binary check. "A phase is not complete until the war camp test returns YES."
+**Recommended action:** Ensure all future critiques include all 9 axes, especially the War Camp Test. The existing critiques are structurally sound but incomplete. Add War Camp Test to Phase 2 and Phase 3 end gate critiques retroactively.
+
+---
+
+### [PARTIAL] S12.1 — Reference Anchoring Protocol
+**File:** `/Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md`
+**Current:** Some reference anchoring is present (e.g., "Reference: CARD_DESIGN_GUIDE.md Sections 1.3-1.9" in the Phase 2 end gate critique; wax seal iteration references specific JPG files). However, the protocol is not consistently followed:
+  - No exact reference URL or filename is written BEFORE implementation begins (they appear in post-hoc critiques)
+  - No "measurable success criteria in concrete terms" are recorded before implementation
+  - The guide says "Do not generate or code until this is written" — this is not consistently observed
+**Required:** Section 12.1: Before implementing each component, write to iteration_log.md: exact reference, specific quality being extracted, measurable success criteria.
+**Recommended action:** Enforce the pre-implementation reference anchoring protocol in future phases. Minor process improvement.
+
+---
+
+### [ABSENT] S12.5 — Reference Screenshot Baseline
+**File:** No `Tests/ReferenceScreenshots/` directory found
+**Current:** No reference screenshot baseline exists. The iteration log notes this repeatedly ("No reference screenshots exist for diff scoring"). Without a baseline, visual regression comparison (Section 12.2) cannot function.
+**Required:** Section 12.5 exit criteria: "Visual regression diff score < 0.025 on all four device screenshots." This requires a baseline in `Tests/ReferenceScreenshots/`.
+**Recommended action:** After the next visual milestone, capture screenshots on all four target devices and commit them as `Tests/ReferenceScreenshots/` baseline. This unblocks the compare_screenshots.py workflow.
+
+---
+
+### [CONFLICT] S12.4 — Refinement Rules (One-Fix-Per-Loop)
+**File:** `/Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md` (line 298)
+**Current:** The Phase 2 deviation fix batch shows multiple deviations fixed in a single pass (dark mode, wax seal position, selected scale, focused scale/shadow, chaos mote, EffectTier — 6 fixes in one batch). This violates the "one fix per loop" rule.
+**Required:** Section 12.4: "One fix per loop -- no exceptions. Multiple simultaneous changes make regressions undiagnosable."
+**Recommended action:** Enforce one-fix-per-loop discipline in future phases. The Phase 2 batch fix was pre-shader work where regression risk was low, but the protocol should be followed strictly going forward.
+
+---
+
+## Section 13: Performance Profiling
+
+### [ABSENT] S13.1 — Instruments Profiling History
+**File:** No `Logs/Performance/` directory found
+**Current:** No Instruments profiling has been performed. No `.xctrace` files exist. No launch traces. No performance data recorded. The iteration log contains no "HUMAN PROFILING REQUIRED" flags (required by Section 13.1) despite Phase 3 being complete.
+**Required:** Section 13.1 specifies: "At the end of every implementation phase, write to `Logs/iteration_log.md`: 'HUMAN PROFILING REQUIRED: GPU Frame Capture, Metal System Trace, Core Animation Color Offscreen-Rendered.' Do not mark a phase complete without a human confirming GPU frame times."
+**Recommended action:** Create `Logs/Performance/` directory. Add "HUMAN PROFILING REQUIRED" entries to iteration_log.md for Phases 2 and 3 retroactively. Run `xctrace` CLI profiling per Section 13.1. Flag GPU Frame Capture and Metal System Trace for human execution.
+
+---
+
+### [ABSENT] S13.2 — Performance Targets Tracking
+**File:** No performance measurements recorded anywhere
+**Current:** No performance targets have been measured or tracked:
+  - GPU frame time: UNMEASURED
+  - Draw calls per card frame: UNMEASURED
+  - Texture memory (7 cards in hand): UNMEASURED
+  - App launch to first card visible: UNMEASURED
+  - Card state transition time: UNMEASURED
+  - SpriteKit frame time: UNMEASURED
+**Required:** Section 13.2 specifies hard limits (e.g., GPU frame time < 8ms on iPhone 12, texture memory < 120MB, app launch < 2.5s).
+**Recommended action:** Measure all performance targets from Section 13.2 and record in `Logs/Performance/`. Agent can run `xctrace` for launch time and CPU profiling; GPU frame times require human Instruments session.
+
+---
+
+### [ABSENT] S13.3 — Texture Atlas Usage
+**File:** No `SKTextureAtlas` usage found in any Swift file
+**Current:** Zero references to `SKTextureAtlas` or `textureAtlas` in the entire codebase. All SpriteKit nodes use individual texture loads. There is no texture atlasing for small assets (icons, mana symbols, wax seals).
+**Required:** Section 13.3: "Texture atlases for all small assets (icons, mana symbols, wax seals) -- one draw call per atlas."
+**Recommended action:** Create texture atlases for icon sets, mana symbols, and wax seal images. Update SpriteKit nodes to load textures from atlases instead of individual files.
+
+---
+
+### [PARTIAL] S13.4 — Texture Cache Implementation
+**File:** `/Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreatures/Services/ImageCacheService.swift`
+**Current:** An `ImageCacheService` exists with:
+  - `NSCache<NSString, UIImage>` for in-memory caching (50 MB, 200 item limit)
+  - `URLCache` for disk caching (200 MB)
+  - Batch preloading (`preloadBatch`, `preloadCardArt`)
+  - `clearMemoryCache()` and `clearAllCaches()` methods
+  - SwiftUI `CachedCardArt` view for async image loading
+
+However, this is a **UIImage/URLCache** service for card art from the R2 CDN. It is NOT the `TextureCache` specified in Section 13.4, which is a **Metal `MTLTexture`** LRU cache wrapping `MTLTextureLoader` with max 20 textures and `evictAll()` on memory warning. The existing ImageCacheService serves a different purpose (HTTP image caching) from the guide's TextureCache (GPU texture memory management).
+**Required:** Section 13.4: `TextureCache` singleton wrapping `MTLTextureLoader` with LRU eviction (max 20 textures). Call `TextureCache.shared.evictAll()` on memory warning.
+**Recommended action:** Create `TextureCache.swift` per Section 13.4 for Metal textures, separate from the existing `ImageCacheService`. The ImageCacheService is fine for its purpose but does not fulfill the Metal texture caching requirement.
+
+---
+
+### [ABSENT] S13.5 — Memory Warning Handling
+**File:** No memory warning handling found
+**Current:** Zero references to `didReceiveMemoryWarning`, `UIApplication.didReceiveMemoryWarningNotification`, or `memoryWarning` in any Swift file. The `AppDelegate.swift` contains only an orientation lock method (6 lines). `ChaosCreaturesApp.swift` does not observe memory warnings. `ImageCacheService` has a `clearMemoryCache()` method but it is never called in response to a memory warning.
+**Required:** Section 13.3: "Flush non-visible card texture caches on `didReceiveMemoryWarning`." Section 13.4: "Call `TextureCache.shared.evictAll()` when the app receives a memory warning." Section 13.5: "Test memory warning response: verify app recovers gracefully."
+**Recommended action:** Add memory warning observer in `AppDelegate` or `ChaosCreaturesApp`:
+```swift
+NotificationCenter.default.addObserver(
+    forName: UIApplication.didReceiveMemoryWarningNotification,
+    object: nil, queue: .main
+) { _ in
+    Task { await ImageCacheService.shared.clearMemoryCache() }
+    // TextureCache.shared.evictAll() — when TextureCache is created
+}
+```
+
+---
+
+### [ABSENT] S13.3 — preferredFramesPerSecond Setting
+**File:** No `preferredFramesPerSecond` found in any file
+**Current:** Neither `BattleScene.swift` nor `BattleContainerView.swift` (which creates the `SpriteView`) nor `CardParticleFactory.swift` (which creates an `SKView`) sets `preferredFramesPerSecond`. SpriteKit defaults to 60fps, which is correct for gameplay but the guide implies intentional frame rate management.
+**Required:** Section 13.3 does not specify an exact fps value but lists `preferredFramesPerSecond` as a performance setting to configure.
+**Recommended action:** Set `preferredFramesPerSecond = 60` on the battle SKView. For the particle overlay SKView in `CardParticleFactory`, consider setting 30fps since particles do not require 60fps update rate. This reduces GPU load for idle card views.
+
+---
+
+### [ABSENT] S13.3 — drawsAsynchronously on SpriteKit Nodes
+**File:** No `drawsAsynchronously` found in any file
+**Current:** Zero references to `drawsAsynchronously` in the entire codebase. No SpriteKit nodes have async drawing enabled.
+**Required:** Section 13.3: "`drawsAsynchronously = true` on SpriteKit ambient particle scene."
+**Recommended action:** Set `drawsAsynchronously = true` on particle emitter nodes in `CardParticleFactory.swift` and on the ambient battlefield background in `BattleScene.swift`.
+
+---
+
+### [ABSENT] S13.3 — shouldRasterize on Idle Card Layers
+**File:** No `shouldRasterize` found in any file
+**Current:** Zero references to `shouldRasterize` in the entire codebase. No card layers are rasterized when idle.
+**Required:** Section 13.3: "`shouldRasterize = true` on the card composite layer when animations are idle -- caches parchment + frame + text as a single cached bitmap."
+**Recommended action:** Set `shouldRasterize = true` and `rasterizationScale = UIScreen.main.scale` on card layers when in `.default` (idle) state. Disable rasterization when animating (to avoid off-screen rendering during animation). Add the debug `CALayer.auditOffscreenRendering()` extension from Section 13.1.
+
+---
+
+### [ABSENT] S13.1 — Off-Screen Rendering Audit
+**File:** No off-screen rendering audit code found
+**Current:** The `CALayer.auditOffscreenRendering()` debug extension from Section 13.1 does not exist. No `OFFSCREEN_CHECK` compilation condition is defined.
+**Required:** Section 13.1 provides a debug-only `CALayer` extension that logs any layer with `shouldRasterize = true` while animating.
+**Recommended action:** Add the debug audit extension per Section 13.1. Use it during development to detect off-screen rendering hits.
+
+---
+
+### [ABSENT] S13.5 — App Store Compliance Checks
+**File:** No pre-submission legal checklist script found
+**Current:** The pre-submission legal checklist from Section 13.5 (license-plist, asset manifest verification, LoRA license gate) is not implemented as a runnable script. No `Settings.bundle` with acknowledgements. No `Resources/LegalEvidence/` directory.
+**Required:** Section 13.5 provides a 3-step bash script for pre-submission compliance.
+**Recommended action:** Create the pre-submission compliance script. This is needed before App Store submission but not blocking current development.
 
 ---
 
 ## Summary
 
-| Section | Items Audited | COMPLIANT | PARTIAL | CONFLICT | ABSENT |
-|---------|--------------|-----------|---------|----------|--------|
-| §5 Agent Techniques | 7 | 2 | 1 | 0 | 4 |
-| §7 Haptics | 9 | 0 | 0 | 1 | 8 |
-| §10 Accessibility | 7 | 0 | 1 | 0 | 6 |
-| §12 Iterative Testing | 5 | 0 | 1 | 0 | 4 |
-| §13 Performance | 7 | 1 | 1 | 0 | 5 |
-| **TOTAL** | **35** | **3** | **4** | **1** | **27** |
+| Status | Count |
+|--------|-------|
+| **COMPLIANT** | 0 |
+| **PARTIAL** | 7 |
+| **ABSENT** | 19 |
+| **CONFLICT** | 1 |
+| **Total findings** | 27 |
+
+### Breakdown by Section
+
+| Section | COMPLIANT | PARTIAL | ABSENT | CONFLICT |
+|---------|-----------|---------|--------|----------|
+| S5 Agent Tool-Use | 0 | 3 | 4 | 0 |
+| S7 Haptics | 0 | 0 | 4 | 0 |
+| S10 Accessibility | 0 | 2 | 3 | 0 |
+| S12 Testing | 0 | 2 | 2 | 1 |
+| S13 Performance | 0 | 1 | 8 | 0 |
 
 ---
 
-## Section 5 — Agent Tool-Use Techniques
-
-Section 5 describes agent workflow patterns and tooling discipline. The guide specifies several concrete artifacts (scripts, log files, code patterns) that should exist in the project.
-
----
-
-### [COMPLIANT] Section 5.6 — Context management: iteration log exists
-
-**File:** /Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md (line 1)
-**Current:** File exists. Contains a guide-read confirmation entry dated 2026-02-21 with guide sections 1–14 read, locked deployment parameters, and three top-priority sections identified.
-**Required:** Guide §5.6 requires writing to `Logs/iteration_log.md` at end of every loop: iteration number, completed components, known issues ranked by priority, next single action. Also requires re-reading at the start of every session.
-**Recommended action:** None — the file exists and is in use. Its single entry reflects the beginning of the first implementation session. Verify future sessions continue to append entries per the guide's format.
-
----
-
-### [COMPLIANT] Section 5.6 — Context resilience: CHECKPOINT.md files exist
-
-**File:** /Users/alexali/Projects/chaos-creatures/ChaosCreatures/CHECKPOINT.md (and 5 other module checkpoints)
-**Current:** Six CHECKPOINT.md files exist across modules:
-- `/Users/alexali/Projects/chaos-creatures/ChaosCreatures/CHECKPOINT.md`
-- `/Users/alexali/Projects/chaos-creatures/supabase/CHECKPOINT.md`
-- `/Users/alexali/Projects/chaos-creatures/supabase/functions/CHECKPOINT.md`
-- `/Users/alexali/Projects/chaos-creatures/packages/admin-dashboard/CHECKPOINT.md`
-- `/Users/alexali/Projects/chaos-creatures/packages/game-server/CHECKPOINT.md`
-- `/Users/alexali/Projects/chaos-creatures/CHECKPOINT.md`
-
-The iOS CHECKPOINT.md is detailed (144 lines), covers files created, build results, architecture decisions, and known issues — consistent with the guide's checkpoint format.
-**Required:** Guide §5.6 and CLAUDE.md Build Phase Protocol both require per-module CHECKPOINT.md files with status, files created, current task, test results, decisions, and next steps.
-**Recommended action:** None — checkpoint infrastructure is in place. The CLAUDE.md-specified format (§Build Phase Protocol) is being followed.
-
----
-
-### [ABSENT] Section 5.3 — Multi-device screenshot script
-
-**File:** Not found
-**Current:** No `Scripts/screenshot_all_devices.sh` file exists anywhere in the project. The `scripts/` directory contains 60+ art generation and texture scripts but no simulator screenshot automation.
-**Required:** Guide §5.3 specifies `Scripts/screenshot_all_devices.sh` — a bash script that boots 4 simulator targets (iPhone 15 Pro, iPhone 12, iPad Pro 12.9-inch 6th gen, iPad Air 5th gen), captures a screenshot from each, verifies each output is nonzero, and prints dimensions. This script is invoked as step 2 of the §5.4 Refinement Loop.
-**Recommended action:** Create `Scripts/screenshot_all_devices.sh` using the exact implementation from guide §5.3 before beginning any visual refinement iterations. The guide marks this as a required step — refinement loops that skip it cannot be considered complete.
-
----
-
-### [ABSENT] Section 5.7 — `Scripts/verify_asset.py`
-
-**File:** Not found
-**Current:** No `Scripts/verify_asset.py` or any Python verification script exists. The scripts directory contains `.mjs` JavaScript generation scripts and `.sh` shell scripts but no Python asset verification tooling.
-**Required:** Guide §5.7 specifies `Scripts/verify_asset.py` as a hard gate after every AI generation call. Must validate: file exists, file is nonzero, file is not a JSON error payload (optional), image dimensions meet minimums (optional), and warm-tone check — fails if image is blue-dominant (optional). Must exit 0 on pass, exit 1 on fail. The guide states this must exist before any generation call.
-**Recommended action:** Create `Scripts/verify_asset.py` using the exact implementation from guide §5.7. This is marked as a hard gate — generation pipelines that do not call it risk silently consuming failed generations against the budget.
-
----
-
-### [ABSENT] Section 5.2 — Metal shader build check in Bash discipline
-
-**File:** Not found
-**Current:** No CI or build script checks for Metal shader compile warnings after changes. No `Makefile`, `build.sh`, or CI configuration contains `xcodebuild ... 2>&1 | grep -E "warning:|error:" | grep -i "metal\|shader"`.
-**Required:** Guide §5.2 states: "After every Metal shader file change, check for compile warnings" using xcodebuild piped through grep for metal/shader warnings.
-**Recommended action:** Add Metal shader warning check to any build validation script. Since no Metal shaders exist yet (they are absent — see Section 6 audit), this will become critical once shaders are implemented.
-
----
-
-### [ABSENT] Section 5.5 — SwiftUI ↔ MTKView bridge: MetalCardEffectView
-
-**File:** Not found
-**Current:** No `MetalCardEffectView`, `CardRenderer`, `NullCardRenderer`, or `OilPaintCardRenderer` exists in the codebase. The `ChaosCreatures/ChaosCreatures/` directory has no Metal-related Swift files. Card rendering uses pure SwiftUI (`CardFrameView.swift`) with Core Animation for rarity effects.
-**Required:** Guide §5.5 requires `Sources/Effects/CardRenderer.swift` (a `CardRenderer` protocol plus `NullCardRenderer`) and `MetalCardEffectView` (a `UIViewRepresentable` wrapping `MTKView` with a `Coordinator` conforming to `MTKViewDelegate`). The `NullCardRenderer` must be the default until `OilPaintCardRenderer` is built.
-**Recommended action:** This is a foundational architecture piece required before implementing any Metal shaders. Create `CardRenderer.swift` and `MetalCardEffectView.swift` using the guide §5.5 implementations before beginning Section 6 effects work.
-
----
-
-### [PARTIAL] Section 5.4 — Refinement loop procedure: exists in guide, no evidence of execution
-
-**File:** /Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md (single entry)
-**Current:** The iteration log contains one entry confirming guide was read and deployment parameters were written. It does not contain any completed refinement loop entries (no structured critique, no regression diff scores, no "ONE primary gap" identifications).
-**Required:** Guide §5.4 specifies a 9-step refinement loop (build → 4-device screenshots → 2 vision comparisons → structured critique to log → compare_screenshots.py on 4 screenshots → identify ONE gap → ONE fix → increment N → repeat). Guide §5.1 states this loop must be executed for every major visual component.
-**Recommended action:** No refinement loops have been executed yet — this is appropriate since the guide was read but implementation has not begun. As implementation starts, every visual component must go through the full 9-step loop. The missing scripts (§5.3 screenshot script, §5.7 verify_asset.py, §12.2 compare_screenshots.py) must be created first since they are dependencies of step 2 and step 6.
-
----
-
-## Section 7 — Haptic Feedback
-
-Section 7 specifies CoreHaptics-based haptic feedback with AHAP pattern files and a `HapticEngine` class. All haptic findings carry the physical device verification flag per guide §7.3.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7 entire: HapticEngine class
-
-**File:** Not found
-**Current:** No `HapticEngine.swift`, no `HapticEngine` class, no `CoreHaptics` import, no `CHHapticEngine` usage, no `UIImpactFeedbackGenerator` call anywhere in the iOS Swift source files (`ChaosCreatures/ChaosCreatures/**/*.swift`). Haptics are completely absent from the codebase.
-**Required:** Guide §7 (Swift code block) specifies a `final class HapticEngine` singleton with:
-- `static let shared = HapticEngine()`
-- `private var engine: CHHapticEngine?`
-- `private let supportsHaptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics`
-- `func prepare()` — initializes and starts CHHapticEngine, sets stoppedHandler and resetHandler
-- `func play(ahapNamed:)` — plays AHAP file from bundle using `engine.playPattern(from:)`
-- `func impact(_ style:)` — fallback to `UIImpactFeedbackGenerator` for simple patterns
-**Recommended action:** Create `ChaosCreatures/ChaosCreatures/Services/HapticEngine.swift` using the exact implementation from guide §7. Flag as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION in iteration log.
-
----
-
-### [CONFLICT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.1: Simple interactions use UIImpactFeedbackGenerator (not CHHapticEngine)
-
-**File:** Not found (neither implementation exists)
-**Current:** Neither `CHHapticEngine` nor `UIImpactFeedbackGenerator` exists in the codebase.
-**Required:** Guide §7.1 specifies that "card pick up", "card set down", "wax seal tap", "invalid action", and "scroll text box" use `UIImpactFeedbackGenerator` or `UINotificationFeedbackGenerator` — not custom AHAP patterns. The guide's HapticEngine class (`func impact(_ style:)`) routes these through UIImpactFeedbackGenerator even when CHHapticEngine is available. This is intentional — AHAP patterns are reserved for complex multi-event haptics (card flip, summon, graveyard, foil reveals).
-**Recommended action:** The conflict is theoretical since no haptic code exists. When implementing, correctly separate: simple interactions (UIImpactFeedbackGenerator via `impact()` method) from complex interactions (CHHapticEngine via `play(ahapNamed:)` method). The guide's own HapticEngine class already resolves this with two separate methods.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.2: card_flip.ahap
-
-**File:** Not found
-**Current:** No `Resources/Haptics/` directory exists. The Resources directory contains `Assets.xcassets/`, `Fonts/`, `Particles/`, and `Sounds/` but no `Haptics/` subdirectory.
-**Required:** Guide §7.2 specifies `card_flip.ahap` — CoreHaptics JSON pattern: transient at 0.0s (intensity 0.4, sharpness 0.6), transient at 0.35s (intensity 0.8, sharpness 0.75). Must be in `Resources/Haptics/`.
-**Recommended action:** Create `Resources/Haptics/` directory and create `card_flip.ahap` using the exact JSON from guide §7.2. Add the directory to Xcode project. Flag as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.2: card_summon.ahap
-
-**File:** Not found
-**Current:** No `Resources/Haptics/` directory or AHAP files exist.
-**Required:** Guide §7.2 specifies `card_summon.ahap` — HapticContinuous 0→0.8→0.3 over 0.4s with ParameterCurve for HapticIntensityControl. Complete JSON provided in guide.
-**Recommended action:** Create `card_summon.ahap` using the exact JSON from guide §7.2. Flag as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.2: card_graveyard.ahap
-
-**File:** Not found
-**Current:** No `Resources/Haptics/` directory or AHAP files exist.
-**Required:** Guide §7.2 specifies `card_graveyard.ahap` — HapticContinuous fade-out 0.6→0 over 0.7s. Complete JSON provided in guide.
-**Recommended action:** Create `card_graveyard.ahap` using the exact JSON from guide §7.2. Flag as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.2: foil_shimmer.ahap
-
-**File:** Not found
-**Current:** No `Resources/Haptics/` directory or AHAP files exist. No `Scripts/generate_foil_shimmer_ahap.py` script exists.
-**Required:** Guide §7.2 specifies `foil_shimmer.ahap` — programmatically generated via `Scripts/generate_foil_shimmer_ahap.py` (provided in guide). Produces irregular transients at 20–80ms random intervals over 1.5s. Uses `random.seed(42)` for reproducibility.
-**Recommended action:** Create `Scripts/generate_foil_shimmer_ahap.py` using the guide's Python implementation, run it to generate `Resources/Haptics/foil_shimmer.ahap`, and add the output file to the Xcode project. Flag as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.2: epic_reveal.ahap
-
-**File:** Not found
-**Current:** No `Resources/Haptics/` directory or AHAP files exist.
-**Required:** Guide §7.2 specifies `epic_reveal.ahap` — two-phase pattern: continuous 0→0.7→0.4 over 0.6s followed by shimmer continuous 0.2 intensity over 1.2s starting at 0.65s. Complete JSON provided in guide.
-**Recommended action:** Create `epic_reveal.ahap` using the exact JSON from guide §7.2. Flag as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.2: legendary_reveal.ahap
-
-**File:** Not found
-**Current:** No `Resources/Haptics/` directory or AHAP files exist.
-**Required:** Guide §7.2 specifies `legendary_reveal.ahap` — burst 1.0 transient at 0.0s, 0.85 transient at 0.1s, then continuous shimmer 0.25 intensity over 1.5s starting at 0.25s. Complete JSON provided in guide.
-**Recommended action:** Create `legendary_reveal.ahap` using the exact JSON from guide §7.2. Flag as ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-
----
-
-### [ABSENT] ⚠️ PENDING PHYSICAL DEVICE VERIFICATION — Section 7.3: Haptic interactions logged in iteration log
-
-**File:** Not found
-**Current:** The `Logs/iteration_log.md` does not contain any haptic interaction entries logged as "⚠️ PENDING PHYSICAL DEVICE VERIFICATION." The log has one entry (guide read confirmation) with no haptic tracking.
-**Required:** Guide §7.3 states: "Log every haptic interaction in `Logs/iteration_log.md` as '⚠️ PENDING PHYSICAL DEVICE VERIFICATION.' Do not mark any haptic work as complete without physical device confirmation."
-**Recommended action:** When HapticEngine and AHAP files are created, immediately add entries to `Logs/iteration_log.md` for all 11 haptic interactions from §7.1 table (card pick up, card set down, card flip, wax seal tap, card summon, card to graveyard, rare foil reveal, epic reveal, legendary reveal, invalid action, scroll text box) each marked ⚠️ PENDING PHYSICAL DEVICE VERIFICATION.
-
----
-
-## Section 10 — Accessibility
-
-Section 10 specifies VoiceOver labels, Dynamic Type scaling, Reduce Motion compliance, and WCAG AA color contrast verification.
-
----
-
-### [ABSENT] Section 10.1 — accessibilityLabel on CardView (CardFrameView)
-
-**File:** /Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreatures/Views/Components/CardFrameView.swift
-**Current:** `CardFrameView` (1,986 lines) has no `.accessibilityLabel()`, `.accessibilityElement()`, `.accessibilityHint()`, `.accessibilityAddTraits()`, or `.accessibilityCustomActions()` modifiers anywhere in the file. The card renders visual elements only — it is invisible to VoiceOver.
-**Required:** Guide §10.1 specifies:
-- `.accessibilityElement(children: .ignore)` on `CardView`
-- `.accessibilityLabel(card.voiceOverLabel)` — a computed property on `Card` (or equivalent) that concatenates name, cost, type, ATK/HP, instability, ability text, and flavor text
-- `.accessibilityHint("Double-tap to select. Long-press to preview.")`
-- `.accessibilityAddTraits(.isButton)`
-- `.accessibilityCustomActions` with "Preview card" and "Show card details" actions
-**Recommended action:** Add accessibility modifiers to `CardFrameView.body`. Add a `voiceOverLabel` computed property to `CardDisplayData` (the struct already has all required fields). This is a critical accessibility gap that would prevent App Store approval in some markets.
-
----
-
-### [ABSENT] Section 10.1 — Card.voiceOverLabel computed property
-
-**File:** Not found in CardFrameView.swift, CardDisplayData, or any model file
-**Current:** No `voiceOverLabel` property exists on `CardDisplayData`, `CardInstance`, or `CardTemplate`. Searched all Swift files in `ChaosCreatures/ChaosCreatures/` — no `voiceOverLabel` definition found.
-**Required:** Guide §10.1 provides the exact `voiceOverLabel` implementation on `Card`:
-```swift
-var voiceOverLabel: String {
-    var parts = [name]
-    if let c = cost, c > 0 { parts.append("Cost: \(c) chaos mote\(c == 1 ? "" : "s")") }
-    parts.append(type.rawValue.capitalized)
-    if let atk = attack, let hp = hp { parts.append("\(atk) attack, \(hp) hit points") }
-    if instability > 0 { parts.append("instability \(instability)") }
-    parts.append(abilityText)
-    if let flavor = flavorText { parts.append("Flavor: \(flavor)") }
-    return parts.joined(separator: ". ")
-}
-```
-**Recommended action:** Add `voiceOverLabel` as a computed property on `CardDisplayData` (adapting the guide's `Card` extension). `CardDisplayData` already has `name`, `manaCost`, `cardType`, `attack`, `health`, `instability`, `keywords` (for ability text), and `flavorText` — all fields are available.
-
----
-
-### [ABSENT] Section 10.2 — Dynamic Type: fonts are hardcoded sizes, no UIFontMetrics scaling
-
-**File:** /Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreatures/Config/CardFont.swift
-**Current:** All `CardFont` functions take a `size: CGFloat` parameter and return `.custom(family, size: size)` without any `UIFontMetrics` scaling. Example: `static func cardName(size: CGFloat) -> Font { .custom(cinzelFamily, size: size).weight(.bold) }`. The size value is fixed at the call site (e.g., `namePlateFontSize` computed from `CardDisplaySize` enum). There is no Dynamic Type scaling anywhere in the font system.
-**Required:** Guide §10.2 specifies: "Never hardcode UIFont sizes — scale with UIFontMetrics." Provides `scaledFont(name:textStyle:baseSize:)` using `UIFontMetrics(forTextStyle:).scaledFont(for:)`. The text box must expand its scroll region at XXL sizes rather than truncating.
-**Recommended action:** Add a `scaledFont()` function to `CardFont` using `UIFontMetrics` for text box content (ability text, flavor text — the variable-length text elements). Note: card frame zones are proportional to card dimensions, so card name and stat numbers in fixed-size frames may be exempt. However, the detail/fullscreen text box content must scale. Consult owner on scope: full Dynamic Type compliance requires the text box to grow, which conflicts with the fixed card proportions in §1.4.
-
----
-
-### [ABSENT] Section 10.3 — Reduce Motion: no `accessibilityReduceMotion` environment checks
-
-**File:** Not found
-**Current:** No `.environment(\.accessibilityReduceMotion)` or `UIAccessibility.isReduceMotionEnabled` check exists anywhere in the iOS Swift source. Animations run unconditionally: the `RarityBorderModifier` in `CardFrameView.swift` (lines 1698–1826) starts pulsing/shimmer animations in `.onAppear {}` without checking reduce motion. `ParticleEffects.swift` starts particle animations without reduce motion checks.
-**Required:** Guide §10.3 specifies: use `@Environment(\.accessibilityReduceMotion) var reduceMotion` and wrap all animation calls:
-```swift
-withAnimation(reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.65)) { ... }
-```
-Also: `var parallaxEnabled: Bool { !reduceMotion && effectTier >= .shimmerOnly }`.
-**Recommended action:** Add reduce motion checks to all animation sites in `CardFrameView.swift` (rarity pulse animations, shimmer phase animations, gyroscope-driven foil parallax) and to `GyroscopeManager` (disable tilt tracking when reduce motion is enabled). This is an Apple accessibility requirement that affects App Store review.
-
----
-
-### [PARTIAL] Section 10.4 — Color contrast: palette exists but no verification script
-
-**File:** Not found (`Scripts/verify_contrast.py`)
-**Current:** Color palette is defined in `Color+Theme.swift` using hex values (e.g., `Color(hex: "#F0EAD6")` for parchment text, `Color(hex: "#1A1408")` for dark backgrounds). Card text uses `parchmentTextColor = Color(hex: "#F0EAD6")` on dark panel backgrounds. No WCAG contrast verification script exists. No contrast ratio has been calculated or documented.
-**Required:** Guide §10.4 provides a complete `Scripts/verify_contrast.py` that calculates WCAG AA contrast ratios for 5 required text/background pairs and exits 1 on any failure. Required checks: ink-black on parchment-light (4.5:1), parchment-dark on parchment-light (3:1 large text), ink-black on parchment-mid (4.5:1), ink-dark-mode on parchment-dark-mode (4.5:1), ink-black on canvas-warm (4.5:1). The guide states this must run as part of every QA pass.
-**Recommended action:** Create `Scripts/verify_contrast.py` using the guide's implementation. Note: the codebase uses `#F0EAD6` for card text against dark panels (`Color.black.opacity(0.80)`) — this combination likely passes, but the five guide-specified pairs use different colors (`#F5E6C8` parchment-light, `#D4B896` parchment-mid) that may not match the current implementation. Run the script to confirm.
-
----
-
-### [ABSENT] Section 10.4 — Accessibility XCTest: CardAccessibilityTests
-
-**File:** Not found
-**Current:** The test target `ChaosCreaturesUITests` exists and contains `ScreenshotTests.swift` (stub, TODO only) and `BattleFlowUITests.swift` (stub, TODO only). No `AccessibilityTests.swift` exists. The unit test target `ChaosCreaturesTests` contains model and service tests but no accessibility tests.
-**Required:** Guide §10.4 specifies `Tests/AccessibilityTests.swift` containing `CardAccessibilityTests: XCTestCase` with `testCardViewHasAccessibilityLabel()` — launches the app, finds all `buttons` with identifier "CardView", asserts count > 0, asserts each has a non-empty accessibility label. The guide provides the exact xcodebuild test command.
-**Recommended action:** Create `ChaosCreaturesUITests/CardAccessibilityTests.swift` using the guide's implementation. This requires `accessibilityIdentifier("CardView")` to also be added to `CardFrameView` (currently absent) so the test can find card elements.
-
----
-
-### [ABSENT] Section 10.1 — accessibilityActivate() for card selection gesture
-
-**File:** Not found
-**Current:** Card selection in `CardFrameView` uses `.onTapGesture {}` on keyword names (line 1150) and tooltip dismissal (line 1230). No `accessibilityActivate()` override or `accessibilityCustomAction` for gesture replication exists.
-**Required:** Guide §10.1 specifies `.accessibilityCustomActions` including "Preview card" and "Show card details" custom actions with `UIAccessibilityCustomAction` handlers. These allow VoiceOver users to trigger the same interactions as sighted users performing long-press and double-tap.
-**Recommended action:** Implement alongside the primary `accessibilityLabel` work. Both are part of the same guide §10.1 implementation block.
-
----
-
-## Section 12 — Iterative Testing & Refinement
-
-Section 12 specifies a visual regression script, structured critique template, one-fix-per-loop rules, and exit criteria checklist.
-
----
-
-### [ABSENT] Section 12.2 — Visual regression script: compare_screenshots.py
-
-**File:** Not found
-**Current:** No `Scripts/compare_screenshots.py` exists anywhere in the project. The `scripts/` directory contains art generation scripts (`generate-card-textures.mjs`, etc.) and validation scripts (`validate-art-quality.mjs`, `validate-evolution-quality.mjs`) but no screenshot comparison tooling.
-**Required:** Guide §12.2 provides `Scripts/compare_screenshots.py` — a Python script using Pillow that: loads reference and current screenshots, resizes both to 400×560, computes per-pixel difference using `ImageChops.difference()`, calculates a normalized score (0.0–1.0), passes if score < 0.025, outputs JSON with score, threshold, pass/fail, and file paths. Must run on all four device screenshots after every iteration.
-**Recommended action:** Create `Scripts/compare_screenshots.py` using the exact guide implementation. Install Pillow dependency (`pip3 install Pillow --break-system-packages`). Establish reference screenshot set when a first "good" iteration is achieved — without reference screenshots, the comparison script cannot function.
-
----
-
-### [ABSENT] Section 12.3 — Structured critique log: no entries in required format
-
-**File:** /Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md
-**Current:** The iteration log exists but contains only one entry (guide read confirmation + deployment parameters). It does not contain any structured critique entries in the guide's format. The required 8-axis table (Material believability, Color temperature, Texture grain, Typography letterpress, Lighting consistency, Tactile impression, iPad vs iPhone, Dark mode) has never been used.
-**Required:** Guide §12.3 requires this exact format for every iteration:
-```markdown
-## Iteration [N] — [Component Name] — [Device]
-**Timestamp:** [YYYY-MM-DD HH:MM]
-**Reference:** [URL or filename]
-| Axis | Score (1-5) | Observation |
-...
-**Regression check:** [PASS/FAIL] — diff score [X.XXXX]
-**Largest gap:** [one sentence]
-**Root cause:** [why]
-**Next action:** [one specific action]
-**Blocked items:** [dependencies]
-```
-**Recommended action:** Use the guide's exact template for every visual iteration starting with the first rendered card component. Free-form critique is explicitly prohibited by the guide ("No free-form critique").
-
----
-
-### [ABSENT] Section 12.5 — Exit criteria checklist: not implemented
-
-**File:** Not found
-**Current:** No exit criteria checklist has been applied to any card component. The guide's §12.5 lists 13 specific exit criteria that must all pass before a component is declared complete. None of these have been evaluated.
-**Required:** Guide §12.5 requires all of the following before any card component is marked complete:
-1. All critique axes score 4+ on all four device targets in both light and dark mode
-2. Visual regression diff score < 0.025 on all four device screenshots
-3. All nine card states render without error on all four simulators
-4. Card back renders correctly and flip animation completes without visual artifacts
-5. Error fallback states display correctly
-6. GPU frame time < 8ms on iPhone 12 [HUMAN gate]
-7. No off-screen rendering layers [HUMAN or debug logging]
-8. All haptic interactions logged as PENDING PHYSICAL DEVICE VERIFICATION
-9. No VoiceOver gaps, all text contrast passes WCAG AA
-10. Dynamic Type: card usable at all accessibility text size settings
-11. Reduce Motion: static card looks premium without motion effects
-12. License manifest entry for every asset used
-13. Artwork color grading verified against parchment-light swatch
-**Recommended action:** Keep this checklist visible in the iteration log for each component. Mark each item as the implementation progresses.
-
----
-
-### [PARTIAL] Section 12.4 — Refinement rules: one-fix-per-loop and four-device requirement
-
-**File:** /Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md
-**Current:** The iteration log exists but contains no refinement loop entries. No evidence that the one-fix-per-loop rule or four-device requirement has been followed or violated — implementation has not begun. The ScreenshotTests.swift file is a stub (`// TODO: Implement for App Store submission`), suggesting screenshot automation was planned but not implemented.
-**Required:** Guide §12.4 states: one fix per loop (no exceptions), run full four-device build after any fix, three failures on same gap means blocked (document and move on), never declare complete on iPhone alone, never declare complete without dark mode screenshot for every state.
-**Recommended action:** The rules are not yet applicable since no iterations have been run. Flag for enforcement once visual implementation begins. The critical blocker is the missing four-device screenshot infrastructure (§5.3 script absent).
-
----
-
-### [ABSENT] Section 12 — Reference anchoring: no pre-implementation anchor entries
-
-**File:** /Users/alexali/Projects/chaos-creatures/Logs/iteration_log.md
-**Current:** The iteration log does not contain any reference anchoring entries per guide §12.1 format. No "exact reference URL or filename," "specific quality you are extracting," or "measurable success criteria" have been written before any component implementation.
-**Required:** Guide §12.1 states: "Before implementing each component, write to `Logs/iteration_log.md`: exact reference URL or filename, what specific quality you are extracting from it, measurable success criteria in concrete terms. Do not generate or code until this is written."
-**Recommended action:** Before beginning any card rendering implementation, write reference anchors for each major component (card frame, text panel, wax seal badges, rarity treatments). Reference §1.10 vision reference images. "Looks good" is explicitly prohibited as a success criterion by the guide.
-
----
-
-## Section 13 — Performance Profiling
-
-Section 13 specifies texture caching, memory warning handling, Instruments profiling gates, frame rate targets, and GPU performance.
-
----
-
-### [PARTIAL] Section 13.4 — Image caching exists but is UIImage-based, not MTLTexture LRU
-
-**File:** /Users/alexali/Projects/chaos-creatures/ChaosCreatures/ChaosCreatures/Services/ImageCacheService.swift (line 9)
-**Current:** `ImageCacheService` is a well-implemented two-tier image cache: `NSCache<NSString, UIImage>` (50MB in-memory) + `URLCache` (200MB disk). It has LRU eviction via `NSCache`'s built-in behavior (count limit 200, cost limit 50MB), `clearMemoryCache()`, and `clearAllCaches()`. This is a solid implementation for card art loaded as `UIImage` via `AsyncImage`.
-**Required:** Guide §13.4 specifies `TextureCache` — a `final class` managing `MTLTexture` objects (not `UIImage`) with explicit LRU eviction using an `accessOrder: [String]` array, `maxTextures = 20`, `MTLTextureLoader`, and an `evictAll()` method called on memory warning. This is for Metal GPU textures used by `OilPaintCardRenderer`, not for the card art `UIImage` cache.
-**Recommended action:** The existing `ImageCacheService` is appropriate and should be kept for card art loaded into SwiftUI views. The guide's `TextureCache` is a separate concern — it caches Metal GPU textures for the shader pipeline (which does not exist yet). Create `TextureCache.swift` when implementing the Metal shader pipeline (Section 6). Do not replace `ImageCacheService`.
-
----
-
-### [ABSENT] Section 13.3 — Memory warning handler: no didReceiveMemoryWarning notification observer
-
-**File:** Not found
-**Current:** No `UIApplication.didReceiveMemoryWarningNotification` observer exists in `ImageCacheService.swift`, `AppState.swift`, or any other Swift file. The `ImageCacheService` has `clearMemoryCache()` and `clearAllCaches()` methods but nothing calls them on a memory warning. The app does not respond to iOS memory pressure events.
-**Required:** Guide §13.3 states: "Flush non-visible card texture caches on `didReceiveMemoryWarning` — implement in the texture manager." Guide §13.4 states: "Call `TextureCache.shared.evictAll()` when the app receives a memory warning." Guide §13.5 states: "Verify app recovers gracefully from memory warning and continues functioning — do not crash."
-**Recommended action:** Add a `NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification ...)` observer to `ImageCacheService` (or wherever image/texture caching is managed) that calls `clearMemoryCache()`. This is a stability requirement — unhandled memory pressure can cause app termination.
-
----
-
-### [ABSENT] Section 13.1 — Instruments profiling history: no trace files or profiling notes
-
-**File:** Not found
-**Current:** No `.xctrace` files, no `Logs/Performance/` directory, and no profiling notes exist anywhere in the project. The guide's `Logs/Performance/launch_trace.xctrace` output path does not exist.
-**Required:** Guide §13.1 states: at the end of every implementation phase, write to `Logs/iteration_log.md`:
-```
-⚠️ HUMAN PROFILING REQUIRED:
-- GPU Frame Capture in Xcode Instruments
-- Metal System Trace
-- Core Animation: Color Offscreen-Rendered
-Target: all pass performance thresholds in Section 13.2 before this phase is complete.
-```
-The agent can run `xcrun xctrace record` for Time Profiler and memory pressure simulation (`xcrun simctl send_notification`). GPU frame time must be confirmed by a human.
-**Recommended action:** Create `Logs/Performance/` directory. After each implementation phase, run `xcrun xctrace record` with the Time Profiler template and add the human profiling flag to the iteration log. The human profiling checklist from §13.1 must be completed before any phase exit.
-
----
-
-### [ABSENT] Section 13.2 — Target frame rate enforcement: no preferredFramesPerSecond or CADisplayLink
-
-**File:** Not found
-**Current:** No `preferredFramesPerSecond`, `CADisplayLink`, or explicit 60fps enforcement exists in the codebase. Comments in `CreatureNode.swift` (line 619) and `HandCardNode.swift` (line 728) reference "lightweight 60fps performance" in the context of using `SKShapeNode` circles instead of `SKEmitterNode`, but no actual frame rate setting or measurement is implemented.
-**Required:** Guide §13.2 performance targets: GPU frame time < 8ms (hard limit) on iPhone 12 for all effects active; < 5ms target. Card state transitions < 200ms (hard limit). SpriteKit frame time with particles active < 5ms hard limit. These require both enforcement (e.g., `skView.preferredFramesPerSecond = 60`) and measurement.
-**Recommended action:** Set `preferredFramesPerSecond = 60` on the `SKView` in `BattleScene`. Add the human profiling checklist to the iteration log after each phase. The frame time targets cannot be agent-verified (require Instruments GUI) — flag them as human gates per guide §13.1.
-
----
-
-### [ABSENT] Section 13.3 — Texture atlases: no SKTextureAtlas usage
-
-**File:** Not found
-**Current:** No `SKTextureAtlas` usage exists in any Swift file. The SpriteKit nodes (`CreatureNode`, `HandCardNode`, `BoardNode`, etc.) load textures individually. No `.atlas` bundle exists in the Resources directory.
-**Required:** Guide §13.3 optimization technique: "Texture atlases for all small assets (icons, mana symbols, wax seals) — one draw call per atlas." `SKTextureAtlas` groups related sprites, reducing draw calls.
-**Recommended action:** Create a texture atlas for SpriteKit-rendered small assets (UI icons, mana symbols, keyword badges used on the battlefield). The card art assets are too large for atlas grouping. This is an optimization — implement after baseline performance is measured.
-
----
-
-### [COMPLIANT] Section 13.5 — App Store compliance: download size and on-demand resources not yet applicable
-
-**File:** /Users/alexali/Projects/chaos-creatures/ChaosCreatures (project)
-**Current:** The app has not been submitted to App Store Connect. No large asset bundles have been compiled. The codebase uses `AsyncImage` for card art loaded from R2 CDN (not bundled), which is the correct pattern for keeping initial download size small. No `.xctrace` exists to measure current binary size.
-**Required:** Guide §13.5 requires: initial download < 200MB, use on-demand resources for expansion card sets, peak memory < 800MB on iPhone 12, verify memory warning recovery.
-**Recommended action:** This is not yet applicable (pre-submission). Run `xcodebuild archive` when approaching App Store submission and check the IPA size. The CDN-based art loading approach correctly avoids bundling card art in the initial download.
-
----
-
-## Top 5 Most Critical Gaps
-
-Ranked by impact on App Store submission, user experience, and implementation completeness:
-
-### 1. Haptics: Entire system absent (Section 7)
-The HapticEngine class, all 6 AHAP files, and the `Resources/Haptics/` directory do not exist. Haptics are described in the guide as "the primary mechanism for delivering physical material texture through the screen" — a core aesthetic requirement. Without haptics, the "tangible physical materials" aesthetic is incomplete. All 9 items are ABSENT. The physical device verification gate means this cannot be marked complete without device testing. Priority: HIGH for pre-submission implementation.
-
-### 2. Accessibility: No VoiceOver support on any card (Section 10)
-`CardFrameView` — the primary card rendering component used everywhere in the app — has zero accessibility modifiers. No `accessibilityLabel`, no `accessibilityHint`, no `accessibilityAddTraits`. VoiceOver users cannot identify any card by name, cost, type, or stats. This is a critical gap for App Store approval in accessibility-compliant markets and for WCAG compliance. Priority: HIGH — must be implemented before App Store submission.
-
-### 3. Reduce Motion: Animations run unconditionally (Section 10)
-Rarity pulse animations and gyroscope-driven foil parallax in `CardFrameView` start unconditionally in `.onAppear`. Apple's App Store review includes accessibility checks, and failing to respect `isReduceMotionEnabled` is grounds for rejection. Priority: HIGH — required fix before App Store submission.
-
-### 4. Visual regression infrastructure missing (Sections 5, 12)
-Three scripts required by the guide's refinement loop do not exist: `Scripts/screenshot_all_devices.sh`, `Scripts/compare_screenshots.py`, and `Scripts/verify_asset.py`. Without these, the guide's 9-step refinement loop (§5.4) cannot be executed, the exit criteria checklist (§12.5) cannot be verified, and visual regressions cannot be caught automatically. Every visual implementation session is operating without a QA safety net. Priority: HIGH — create before beginning any card rendering implementation.
-
-### 5. Memory warning handler absent (Section 13)
-The app does not respond to iOS memory pressure notifications. `ImageCacheService` has cache-clearing methods but nothing triggers them. On low-memory devices (iPhone 12 with 4GB RAM), accumulated card art cache could trigger iOS to terminate the app. The guide explicitly states "verify app recovers gracefully from memory warning and continues functioning — do not crash." Priority: MEDIUM — should be fixed before TestFlight distribution.
-
----
-
-*End of audit. 35 items assessed. 3 COMPLIANT, 4 PARTIAL, 1 CONFLICT, 27 ABSENT.*
+## Priority Recommendations
+
+### Immediate (before next phase)
+1. **Create `Scripts/verify_asset.py`** — gates all asset generation (S5.7)
+2. **Create `Scripts/verify_contrast.py`** — gates accessibility sign-off (S10.4)
+3. **Create `Scripts/compare_screenshots.py`** — gates visual regression (S12.2)
+4. **Add memory warning observer** — prevents memory-related crashes (S13.5)
+5. **Add "HUMAN PROFILING REQUIRED" to iteration log** for Phases 2 and 3 (S13.1)
+
+### Before next major visual phase
+6. **Add Reduce Motion guards** to all 30+ animation sites (S10.3)
+7. **Add VoiceOver labels** to all interactive views beyond CardFrameView (S10.1)
+8. **Create Dynamic Type `scaledFont()` helper** and apply to card text (S10.2)
+9. **Set `drawsAsynchronously` and `shouldRasterize`** on SpriteKit nodes (S13.3)
+
+### Before haptic/audio phase
+10. **Create `Resources/Haptics/` and all 6 AHAP files** (S7.2)
+11. **Create `HapticEngine.swift`** (S7.2)
+12. **Wire haptic calls** to all 11 interaction sites (S7.1)
+
+### Before App Store submission
+13. **Create Metal TextureCache** per Section 13.4 (S13.4)
+14. **Create texture atlases** for small assets (S13.3)
+15. **Run full Instruments profiling** and record results (S13.1, S13.2)
+16. **Create pre-submission compliance script** (S13.5)
+17. **Create `AccessibilityTests.swift`** UITest (S10.4)
+18. **Create reference screenshot baseline** (S12.5)
