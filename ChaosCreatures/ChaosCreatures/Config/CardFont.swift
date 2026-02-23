@@ -90,14 +90,21 @@ enum CardFont {
         .custom("LoversQuarrel-Regular", size: size)
     }
 
-    /// Rammetto One — The Endless front face font.
+    /// Rammetto One — The Endless front face font (legacy, kept for reference).
     static func rammettoOne(size: CGFloat) -> Font {
         .custom("RammettoOne-Regular", size: size)
+    }
+
+    /// UnifrakturCook — The Endless front face font.
+    static func unifrakturCook(size: CGFloat) -> Font {
+        .custom("UnifrakturCook-Bold", size: size)
     }
 
     /// Returns the faction-specific front face font at the given size.
     /// Ironwright and Celestial share Fredericka the Great; other factions
     /// use their own display fonts. Neutral/nil defaults to Fredericka.
+    /// Note: Lovers Quarrel (Fey) is scaled 1.5x because script fonts render
+    /// visually smaller than block fonts at the same point size.
     static func factionFont(for faction: CardFaction?, size: CGFloat) -> Font {
         switch faction {
         case .ironwright:
@@ -107,9 +114,9 @@ enum CardFont {
         case .celestial:
             return frederickaTheGreat(size: size)
         case .fey:
-            return loversQuarrel(size: size)
+            return loversQuarrel(size: size * 1.5)
         case .endless:
-            return rammettoOne(size: size)
+            return unifrakturCook(size: size)
         case nil:
             return frederickaTheGreat(size: size)
         }
@@ -209,8 +216,11 @@ enum CardFont {
     /// LoversQuarrel-Regular PostScript name for SKLabelNode (Fey Courts front face).
     static let spriteKitLoversQuarrel = "LoversQuarrel-Regular"
 
-    /// RammettoOne-Regular PostScript name for SKLabelNode (The Endless front face).
+    /// RammettoOne-Regular PostScript name for SKLabelNode (The Endless front face — legacy).
     static let spriteKitRammettoOne = "RammettoOne-Regular"
+
+    /// UnifrakturCook-Bold PostScript name for SKLabelNode (The Endless front face).
+    static let spriteKitUnifrakturCook = "UnifrakturCook-Bold"
 
     /// IMFellEnglish-Regular PostScript name for SKLabelNode (report back face body).
     static let spriteKitReportBody = "IMFellEnglish-Regular"
@@ -290,14 +300,23 @@ enum CardFont {
         return .systemFont(ofSize: size, weight: .bold)
     }
 
-    /// Rammetto One in SpriteKit / UIKit. The Endless front face.
+    /// Rammetto One in SpriteKit / UIKit. The Endless front face (legacy, kept for reference).
     static func rammettoOneUI(size: CGFloat) -> UIFont {
         if let font = UIFont(name: "RammettoOne-Regular", size: size) { return font }
         if let fallback = UIFont(name: "Georgia-Bold", size: size) { return fallback }
         return .systemFont(ofSize: size, weight: .bold)
     }
 
+    /// UnifrakturCook in SpriteKit / UIKit. The Endless front face.
+    static func unifrakturCookUI(size: CGFloat) -> UIFont {
+        if let font = UIFont(name: "UnifrakturCook-Bold", size: size) { return font }
+        if let fallback = UIFont(name: "Georgia-Bold", size: size) { return fallback }
+        return .systemFont(ofSize: size, weight: .bold)
+    }
+
     /// Returns the faction-specific front face UIFont at the given size.
+    /// Note: Lovers Quarrel (Fey) is scaled 1.5x because script fonts render
+    /// visually smaller than block fonts at the same point size.
     static func factionFontUI(for faction: CardFaction?, size: CGFloat) -> UIFont {
         switch faction {
         case .ironwright:
@@ -307,9 +326,9 @@ enum CardFont {
         case .celestial:
             return frederickaTheGreatUI(size: size)
         case .fey:
-            return loversQuarrelUI(size: size)
+            return loversQuarrelUI(size: size * 1.5)
         case .endless:
-            return rammettoOneUI(size: size)
+            return unifrakturCookUI(size: size)
         case nil:
             return frederickaTheGreatUI(size: size)
         }
@@ -469,7 +488,8 @@ enum CardFont {
             "IMFellEnglish-Italic",
             "PassionsConflict-Regular",
             "LoversQuarrel-Regular",
-            "RammettoOne-Regular"
+            "RammettoOne-Regular",
+            "UnifrakturCook-Bold"
         ]
         print("=== CardFont Phase 0 Verification ===")
         for name in required {
@@ -480,7 +500,7 @@ enum CardFont {
             }
         }
         // Also print all registered families that match our target families
-        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira", "Fredericka", "Fell", "Passions", "Lovers", "Rammetto"]
+        let targetFamilies = ["Cinzel", "Garamond", "Oswald", "Alegreya", "Bebas", "Fira", "Fredericka", "Fell", "Passions", "Lovers", "Rammetto", "Unifraktur"]
         print("--- Registered families ---")
         for family in UIFont.familyNames.sorted() {
             if targetFamilies.contains(where: { family.contains($0) }) {

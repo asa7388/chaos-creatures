@@ -224,7 +224,10 @@ struct CardFrameView: View {
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 12 * cardScale))
+            // Ragged edge shader MUST run before clipShape so it can
+            // displace the card boundary against opaque content.
+            // If clipShape runs first, the edge pixels are already
+            // transparent and the shader's alpha falloff is invisible.
             .layerEffect(
                 ShaderLibrary.raggedEdge(
                     .float2(Float(geo.size.width), Float(geo.size.height)),
@@ -234,6 +237,7 @@ struct CardFrameView: View {
                 ),
                 maxSampleOffset: .zero
             )
+            .clipShape(RoundedRectangle(cornerRadius: 12 * cardScale))
             // Rarity glow — colored outer shadow for rare+ cards
             .shadow(
                 color: rarityGlowColor.opacity(Double(data.tier.glowIntensity) * 0.6),
