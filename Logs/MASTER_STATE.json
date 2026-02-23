@@ -1,79 +1,40 @@
 {
-  "phase": "phase_2.6_complete",
-  "current_task": "Phase 3: CardFrameView Front Face Rewrite (full-art dossier)",
+  "phase": "phase_3_code_complete",
+  "current_task": "Phase 3: Testing & Screenshots (before Phase 4)",
   "last_updated": "2026-02-23",
-  "design_direction": "CARD_LAYOUT_SPEC_v2 — Full-Art Dossier Format (zone-stack RETIRED)",
-  "audit_status": {
-    "Section_1_Visual_Design": "complete",
-    "Section_2_Card_Schema": "complete",
-    "Section_3_Asset_Strategy": "complete",
-    "Section_4_Environment": "complete",
-    "Section_5_Agent_Tools": "complete",
-    "Section_6_Effects_Animations": "complete",
-    "Section_7_Haptics": "complete",
-    "Section_8_Sound": "complete",
-    "Section_9_iPad": "complete",
-    "Section_10_Accessibility": "complete",
-    "Section_11_Production_Workflow": "complete",
-    "Section_12_Iterative_Testing": "complete",
-    "Section_13_Performance": "complete",
-    "Section_14_Quality_Bar": "complete"
+  "design_direction": "CARD_LAYOUT_SPEC_v2 — Full-Art Dossier Format (IMPLEMENTED)",
+  "implementation_status": {
+    "CardFrameView_rewrite": "complete (375 lines, dossier ZStack)",
+    "CardDossierTextView": "complete (339 lines, all field visibility)",
+    "Call_sites_updated": "complete (8 files)",
+    "Build_status": "PASS (iOS Simulator)",
+    "Zone_stack_removed": "complete"
   },
-  "implementation_plan": {
-    "phases": 10,
-    "current_phase": "2.6 complete, Phase 3 next",
-    "phase_list": [
-      "Phase 1: Environment & Tooling Foundation (COMPLETE)",
-      "Phase 2: Card Layout Corrections (RETIRED — zone-stack replaced by dossier)",
-      "Phase 2.5: Font & Asset Prerequisites (COMPLETE)",
-      "Phase 2.6: Update Source Design Docs (COMPLETE)",
-      "Phase 3: CardFrameView Front Face Rewrite (full-art dossier)",
-      "Phase 4: CardBackView Intelligence Report Rewrite",
-      "Phase 5: Metal Shader Integration + Ragged Edge + SMOKE TEST GATE",
-      "Phase 6: Art Generation Pipeline ($5-7 API cost)",
-      "Phase 7: Sound Design & Audio Pipeline",
-      "Phase 8: Haptic Feedback + HAPTIC HARD GATE",
-      "Phase 9: Accessibility Pass",
-      "Phase 10: Performance + Quality Gate"
-    ],
-    "hard_gates": [
-      "Smoke Test Gate (Phase 5)",
-      "Haptic Hard Gate (Phase 8)"
-    ],
-    "decisions_needed": [],
-    "critical_path": "Phase 2.6 (done) → Phase 3 → Phase 4 → Phase 5 (Smoke Test) → Phase 10",
-    "parallelizable": "Phases 6 (art), 7 (sound) can run alongside Phases 3-5"
-  },
+  "phase_list": [
+    "Phase 1: Environment & Tooling Foundation (COMPLETE)",
+    "Phase 2: Card Layout Corrections (RETIRED — zone-stack replaced by dossier)",
+    "Phase 2.5: Font & Asset Prerequisites (COMPLETE)",
+    "Phase 2.6: Update Source Design Docs (COMPLETE)",
+    "Phase 3: CardFrameView Front Face Rewrite (CODE COMPLETE — TESTING NEXT)",
+    "Phase 4: CardBackView Intelligence Report Rewrite",
+    "Phase 5: Metal Shader Integration + Ragged Edge + SMOKE TEST GATE",
+    "Phase 6: Art Generation Pipeline ($5-7 API cost)",
+    "Phase 7: Sound Design & Audio Pipeline",
+    "Phase 8: Haptic Feedback + HAPTIC HARD GATE",
+    "Phase 9: Accessibility Pass",
+    "Phase 10: Performance + Quality Gate"
+  ],
+  "hard_gates": [
+    "Smoke Test Gate (Phase 5)",
+    "Haptic Hard Gate (Phase 8)"
+  ],
+  "decisions_needed": [],
+  "critical_path": "Phase 3 (testing) → Phase 4 → Phase 5 (Smoke Test) → Phase 10",
+  "parallelizable": "Phases 6 (art), 7 (sound) can run alongside Phases 3-5",
   "decisions_resolved": {
-    "card_layout": "RETIRED — Full-art dossier format per CARD_LAYOUT_SPEC_v2.md",
-    "typography": "Yeseva One (front face), IM Fell English (back face)",
-    "generation_pipeline": "Option 3A — New LoRA v2 on public domain artworks",
-    "missing_faction_music": "DEFERRED — graceful degradation acceptable",
-    "music_stem_structure": "Single-track per faction, document deviation",
-    "faction_backgrounds": "DELETED — no replacement needed (full-art fills card)",
-    "faction_border_pngs": "RETIRED before generation — replaced by ParchmentShader ragged edge",
-    "old_card_frames": "DELETED — all 26 CardFrames/ imagesets removed",
-    "empty_borders_dir": "DELETED — removed from asset catalog",
-    "game_sigil": "DEFERRED to quality gate polish"
-  },
-  "commercial_license_gate": {
-    "model": "EldritchPaletteKnife",
-    "result": "FAILED — LoRA RETIRED, new v2 LoRA pending"
-  },
-  "budget": {
-    "total_allocated": 10.00,
-    "spent": 0.50,
-    "remaining": 9.50,
-    "estimated_plan_spend": "5.10-9.30"
-  },
-  "key_files": {
-    "layout_spec_v2": "docs/CARD_LAYOUT_SPEC_v2.md",
-    "revised_plan": ".claude/plans/immutable-swimming-bunny.md",
-    "gap_analysis": "Logs/GAP_ANALYSIS.md",
-    "implementation_plan": "Logs/IMPLEMENTATION_PLAN.md",
-    "design_guide": "docs/CARD_DESIGN_GUIDE.md",
-    "design_quickref": "docs/CARD_DESIGN_QUICKREF.md",
-    "grimdark_directive": "docs/GRIMDARK_AESTHETIC_DIRECTIVE.md",
-    "critique_scoring": "docs/CRITIQUE_SCORING_GUIDE.md"
+    "card_layout": "IMPLEMENTED — Full-art dossier format per CARD_LAYOUT_SPEC_v2.md",
+    "typography": "Yeseva One (front face), IM Fell English (back face) — REGISTERED",
+    "generation_pipeline": "Option 3A — New LoRA v2 on public domain artworks (pending)",
+    "fonts_registered": "YesevaOne-Regular.ttf, IMFellEnglish-Regular.ttf, IMFellEnglish-Italic.ttf"
   }
 }

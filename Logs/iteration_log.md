@@ -694,3 +694,40 @@ Section 1.5b re-read: field visibility by card type (creature shows all, spell/s
 7. Commit when ready for smoke test
 
 **Recovery Status:** Ready to resume Phase 3 implementation.
+
+---
+
+## Phase 3 Completion — CardFrameView Dossier Rewrite (CODE COMPLETE)
+
+Rewrite: 1,544 lines → 375 lines (zone-stack → dossier).
+
+**Tasks Completed:**
+1. ✓ Rewrite CardFrameView inner content to ZStack(art + vignette + text)
+   - Artwork fills entire card interior (202×286pt scaled)
+   - Vignette: 40% bottom, clear → black 45% opacity
+   - CardDossierTextView overlay, bottom-anchored, grows upward
+2. ✓ Integrate AnimatedRarityBorder (epic/legendary rotating gradient)
+3. ✓ CardDossierTextView complete (339 lines, all field visibility rules)
+4. ✓ CardFont: yesevaOne accessor registered in Info.plist
+5. ✓ Fonts: YesevaOne + IMFellEnglish added, registered
+6. ✓ Update all call sites (8 files: CardView, DraggableCardView, EvolutionFlowView, EvolutionRevealView, CardDetailView, FullscreenCardView, CardPackOpeningView, CardBackView)
+7. ✓ Remove zone-stack methods (nameBar, artBox, typeLine, textBox, statsBar)
+8. ✓ Build: PASS (iOS Simulator, no errors)
+
+**Spec Compliance:**
+- Section 1.4 (layout): Artwork fill, vignette 40% bottom, text overlay bottom-anchored ✓
+- Section 1.5 (typography): Yeseva One front, IM Fell English back, shadow specs ✓
+- Section 1.5b (field visibility): All card types show correct fields ✓
+- Section 1.6 (animations): CardDisplayState transitions (.default, .focused, .tapped) wired ✓
+- Section 2.2 (rarity): Border gradients, glow colors, animated borders ✓
+
+**Exit Criteria Met:**
+- [x] CardFrameView compiles without errors
+- [x] CardDossierTextView complete and integrated
+- [x] All call sites updated
+- [x] Zone-stack code removed
+- [x] Builds on iOS Simulator
+
+**Next:** Phase 3 screenshot testing (iPhone + iPad, light + dark modes) + critique before Phase 4 (CardBackView).
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
