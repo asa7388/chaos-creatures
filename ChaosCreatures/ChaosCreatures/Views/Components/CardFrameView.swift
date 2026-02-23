@@ -213,30 +213,43 @@ struct CardFrameView: View {
         GeometryReader { geo in
             ZStack {
                 if isFlipped {
-                    // Back face: parchment intelligence report
+                    // Back face: parchment intelligence report — shader applies here
                     CardBackView(data: data, cardWidth: geo.size.width, cardHeight: geo.size.height)
                         .frame(width: geo.size.width, height: geo.size.height)
+                        .layerEffect(
+                            ShaderLibrary.raggedEdge(
+                                .float2(Float(geo.size.width), Float(geo.size.height)),
+                                .float(edgeRaggedStrength),
+                                .float(edgeWidth),
+                                .float(edgeSeed)
+                            ),
+                            maxSampleOffset: .zero
+                        )
                 } else {
-                    // Front face: artwork + vignette + text overlay
-                    cardInnerContent
+                    // Front face: art + vignette grouped with shader,
+                    // text overlay on top WITHOUT shader so text stays crisp.
+
+                    // Layer 1: Art + vignette with ragged edge shader
+                    cardArtWithVignette
                         .frame(width: geo.size.width, height: geo.size.height)
                         .clipShape(RoundedRectangle(cornerRadius: 9 * cardScale))
+                        .layerEffect(
+                            ShaderLibrary.raggedEdge(
+                                .float2(Float(geo.size.width), Float(geo.size.height)),
+                                .float(edgeRaggedStrength),
+                                .float(edgeWidth),
+                                .float(edgeSeed)
+                            ),
+                            maxSampleOffset: .zero
+                        )
+
+                    // Layer 2: Text overlay — NO shader, crisp and unaffected
+                    CardDossierTextView(data: data, faction: data.faction, cardScale: cardScale)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                        .padding(0)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
-            // Ragged edge shader MUST run before clipShape so it can
-            // displace the card boundary against opaque content.
-            // If clipShape runs first, the edge pixels are already
-            // transparent and the shader's alpha falloff is invisible.
-            .layerEffect(
-                ShaderLibrary.raggedEdge(
-                    .float2(Float(geo.size.width), Float(geo.size.height)),
-                    .float(edgeRaggedStrength),
-                    .float(edgeWidth),
-                    .float(edgeSeed)
-                ),
-                maxSampleOffset: .zero
-            )
             .clipShape(RoundedRectangle(cornerRadius: 12 * cardScale))
             // Rarity glow — colored outer shadow for rare+ cards
             .shadow(
@@ -299,8 +312,27 @@ struct CardFrameView: View {
         }
     }
 
-    // MARK: - Card Inner Content (Art + Vignette + Text)
+    // MARK: - Card Art + Vignette (shader target, no text)
 
+    /// Art and vignette layers only — ragged edge shader applies to this group.
+    /// Text overlay is composited separately above the shader to stay crisp.
+    @ViewBuilder
+    private var cardArtWithVignette: some View {
+        ZStack(alignment: .bottomLeading) {
+            // 1. Artwork fills entire inner area
+            artworkLayer
+                .ignoresSafeArea()
+
+            // 2. Vignette gradient (bottom 40%)
+            vignetteGradient
+                .ignoresSafeArea()
+        }
+    }
+
+    // MARK: - Card Inner Content (Art + Vignette + Text) — legacy composite
+
+    /// Full front face composite. Retained for backward compatibility with
+    /// any callers that need the complete front face in a single view.
     @ViewBuilder
     private var cardInnerContent: some View {
         ZStack(alignment: .bottomLeading) {
