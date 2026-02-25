@@ -5,8 +5,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import CardGrid from '@/components/CardGrid';
+import CardCountTracker from '@/components/CardCountTracker';
 import GenerateBatchModal from '@/components/GenerateBatchModal';
 import type { GenerationJob, ProcessQueueState } from '@/components/CardGrid';
+import { getReviewStatus } from '@/components/CardGrid';
+import { factionNameToKey, CREATURE_SUBTYPES } from '@/lib/prompts';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'failed';
 
@@ -20,8 +23,11 @@ export default function CardsPage() {
   const [jobs, setJobs] = useState<GenerationJob[]>([]);
   const [factions, setFactions] = useState<Faction[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [factionFilter, setFactionFilter] = useState<string>('all');
+  const [subtypeFilter, setSubtypeFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [showTracker, setShowTracker] = useState(false);
   const [processQueueState, setProcessQueueState] = useState<ProcessQueueState | null>(null);
   const stopProcessingRef = useRef(false);
 
@@ -70,34 +76,54 @@ export default function CardsPage() {
     return () => clearInterval(interval);
   }, [jobs, fetchJobs]);
 
-  // Filter jobs based on status tab
+  // Derive available subtypes based on selected faction
+  const availableSubtypes = (() => {
+    if (factionFilter === 'all') return [];
+    const faction = factions.find((f) => f.id === factionFilter);
+    if (!faction) return [];
+    const key = factionNameToKey(faction.name);
+    return CREATURE_SUBTYPES[key] || [];
+  })();
+
+  // Filter jobs based on status tab, faction, and subtype
   const filteredJobs = jobs.filter((job) => {
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'pending') {
-      return (
-        job.status === 'COMPLETED' &&
-        job.output_data?.approved === undefined
-      );
+    // Status filter
+    if (statusFilter !== 'all') {
+      const reviewStatus = getReviewStatus(job);
+      if (statusFilter === 'pending') {
+        // "Pending Review" = completed but not approved/rejected
+        if (job.status !== 'COMPLETED') return false;
+        if (reviewStatus === 'APPROVED' || reviewStatus === 'REJECTED') return false;
+      } else if (statusFilter === 'approved') {
+        if (reviewStatus !== 'APPROVED') return false;
+      } else if (statusFilter === 'rejected') {
+        if (reviewStatus !== 'REJECTED') return false;
+      } else if (statusFilter === 'failed') {
+        if (job.status !== 'FAILED') return false;
+      }
     }
-    if (statusFilter === 'approved') {
-      return job.output_data?.approved === true;
+    // Faction filter
+    if (factionFilter !== 'all') {
+      if (job.input_data?.faction_id !== factionFilter) return false;
     }
-    if (statusFilter === 'rejected') {
-      return job.output_data?.approved === false;
-    }
-    if (statusFilter === 'failed') {
-      return job.status === 'FAILED';
+    // Subtype filter
+    if (subtypeFilter !== 'all') {
+      const hint = (job.input_data?.creature_type_hint || '').toLowerCase();
+      const storedSubtype = (job.input_data?.creature_subtype || '').toLowerCase();
+      const filterLower = subtypeFilter.toLowerCase();
+      if (storedSubtype !== filterLower && !hint.includes(filterLower)) return false;
     }
     return true;
   });
 
   const statusCounts = {
     all: jobs.length,
-    pending: jobs.filter(
-      (j) => j.status === 'COMPLETED' && j.output_data?.approved === undefined
-    ).length,
-    approved: jobs.filter((j) => j.output_data?.approved === true).length,
-    rejected: jobs.filter((j) => j.output_data?.approved === false).length,
+    pending: jobs.filter((j) => {
+      const rs = getReviewStatus(j);
+      return j.status === 'COMPLETED' && rs !== 'APPROVED' && rs !== 'REJECTED';
+    }).length,
+    approved: jobs.filter((j) => getReviewStatus(j) === 'APPROVED').length,
+    rejected: jobs.filter((j) => getReviewStatus(j) === 'REJECTED').length,
     failed: jobs.filter((j) => j.status === 'FAILED').length,
   };
 
@@ -208,6 +234,95 @@ export default function CardsPage() {
         ))}
       </div>
 
+      {/* Card Count Tracker Toggle + Panel */}
+      <div>
+        <button
+          onClick={() => setShowTracker((prev) => !prev)}
+          className="text-sm text-gray-400 hover:text-white px-3 py-1.5 rounded-md bg-gray-800 border border-gray-700 hover:border-gray-500 transition-colors flex items-center gap-1.5"
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform ${showTracker ? 'rotate-90' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          {showTracker ? 'Hide Tracker' : 'Show Tracker'}
+        </button>
+        {showTracker && (
+          <div className="mt-3">
+            <CardCountTracker jobs={jobs} factions={factions} />
+          </div>
+        )}
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Faction Filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-400 whitespace-nowrap">Faction:</label>
+          <select
+            value={factionFilter}
+            onChange={(e) => {
+              setFactionFilter(e.target.value);
+              setSubtypeFilter('all');
+            }}
+            className="bg-gray-800 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-1.5 focus:ring-accent focus:border-accent"
+          >
+            <option value="all">All Factions</option>
+            {factions.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Subtype Filter — only visible when a faction is selected */}
+        {factionFilter !== 'all' && availableSubtypes.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-400 whitespace-nowrap">Subtype:</label>
+            <select
+              value={subtypeFilter}
+              onChange={(e) => setSubtypeFilter(e.target.value)}
+              className="bg-gray-800 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-1.5 focus:ring-accent focus:border-accent"
+            >
+              <option value="all">All Subtypes</option>
+              {availableSubtypes.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.name} (T{s.tier})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Active filter count */}
+        {(factionFilter !== 'all' || subtypeFilter !== 'all') && (
+          <button
+            onClick={() => {
+              setFactionFilter('all');
+              setSubtypeFilter('all');
+            }}
+            className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 border border-gray-700 hover:border-gray-500 transition-colors"
+          >
+            Clear filters
+          </button>
+        )}
+
+        {/* Result count */}
+        <span className="text-xs text-gray-500 ml-auto">
+          {filteredJobs.length} of {jobs.length} cards
+        </span>
+      </div>
+
+
       {/* Card Grid */}
       {loading ? (
         <div className="card-panel text-center py-12">
@@ -217,6 +332,7 @@ export default function CardsPage() {
       ) : (
         <CardGrid
           jobs={filteredJobs}
+          factions={factions}
           onRefresh={fetchJobs}
           queuedJobCount={queuedJobCount}
           processQueueState={processQueueState}

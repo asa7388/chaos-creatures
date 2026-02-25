@@ -98,10 +98,11 @@ export const CREATURE_SUBTYPES: Record<string, { name: string; tier: number; cmR
   ],
 };
 
-export function buildCreaturePrompt(factionKey: string, creatureDescription: string, subtype?: string): string {
+export function buildCreaturePrompt(factionKey: string, creatureDescription: string, subtype?: string, compositionModifiers?: string[]): string {
   const faction = FACTION_PROMPTS[factionKey];
   if (!faction) {
-    return `impasto oil painting, ${creatureDescription}, thick paint texture, paint ridges visible`;
+    const modifierStr = compositionModifiers?.length ? `, ${compositionModifiers.join(', ')}` : '';
+    return `impasto oil painting, ${creatureDescription}${modifierStr}, thick paint texture, paint ridges visible`;
   }
 
   // If subtype provided, prepend its description to the creature description
@@ -113,7 +114,8 @@ export function buildCreaturePrompt(factionKey: string, creatureDescription: str
     }
   }
 
-  return `impasto oil painting, ${fullDescription}, thick paint texture, paint ridges visible, ${faction.materialSuffix}`;
+  const modifierStr = compositionModifiers?.length ? `, ${compositionModifiers.join(', ')}` : '';
+  return `impasto oil painting, ${fullDescription}${modifierStr}, thick paint texture, paint ridges visible, ${faction.materialSuffix}`;
 }
 
 export function getSubtypesForFaction(factionKey: string): typeof CREATURE_SUBTYPES[string] {

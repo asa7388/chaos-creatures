@@ -119,7 +119,8 @@ export async function POST(request: NextRequest) {
 
     // 4. Build prompt
     const creatureDescription = inputData.creature_type_hint || 'a powerful creature';
-    const prompt = buildCreaturePrompt(factionKey, creatureDescription);
+    const compositionModifiers: string[] | undefined = Array.isArray(inputData.composition_modifiers) ? inputData.composition_modifiers : undefined;
+    const prompt = buildCreaturePrompt(factionKey, creatureDescription, inputData.creature_subtype, compositionModifiers);
     const negativePrompt = getFactionNegativePrompt(factionKey);
 
     // 5. Get the latest model version from Replicate

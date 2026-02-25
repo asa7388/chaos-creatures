@@ -9,7 +9,7 @@ import { startBatch } from '@/lib/game-server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { faction_id, count, card_type, creature_type_hint, creature_descriptions } = body;
+    const { faction_id, count, card_type, creature_type_hint, creature_descriptions, composition_modifiers } = body;
 
     if (!faction_id || !card_type) {
       return NextResponse.json(
@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
           faction_id,
           card_type,
           creature_type_hint: description,
+          composition_modifiers: Array.isArray(composition_modifiers) && composition_modifiers.length > 0 ? composition_modifiers : undefined,
           batch_id,
           batch_index: i,
         },
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
         card_type,
         creature_type_hint,
         creature_descriptions: hasDescriptions ? creature_descriptions : undefined,
+        composition_modifiers: Array.isArray(composition_modifiers) && composition_modifiers.length > 0 ? composition_modifiers : undefined,
         jobs_created: jobData?.length || 0,
         server_notified: serverNotified,
         server_error: serverError,

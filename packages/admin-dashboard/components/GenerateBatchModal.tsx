@@ -6,6 +6,13 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { CREATURE_SUBTYPES, getSubtypesForFaction, factionNameToKey } from '@/lib/prompts';
 
+
+const COMPOSITION_MODIFIERS: Record<string, string[]> = {
+  'Pose/Action': ['charging forward', 'coiled to strike', 'looming over viewer', 'emerging from shadows', 'in flight', 'standing guard'],
+  'Composition': ['close-up portrait', 'full body', 'dramatic low angle', "bird's eye view", 'silhouetted against sky'],
+  'Mood': ['menacing', 'serene', 'battle-worn', 'ancient', 'ethereal glow', 'wreathed in flame'],
+  'Environment': ['in a dark forest', 'on a battlefield', 'atop a mountain', 'in a ruined temple', 'underwater depths', 'amid storm clouds'],
+};
 interface Faction {
   id: string;
   name: string;
@@ -34,6 +41,7 @@ export default function GenerateBatchModal({
   const [count, setCount] = useState(5);
   const [creatureTypeHint, setCreatureTypeHint] = useState('');
   const [creatureDescriptions, setCreatureDescriptions] = useState('');
+  const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [batchId, setBatchId] = useState('');
   const [jobsCreated, setJobsCreated] = useState(0);
@@ -45,10 +53,17 @@ export default function GenerateBatchModal({
     .filter((line) => line.length > 0);
   const effectiveCount = parsedDescriptions.length > 0 ? parsedDescriptions.length : count;
 
+  function toggleModifier(mod: string) {
+    setSelectedModifiers((prev) =>
+      prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod]
+    );
+  }
+
   useEffect(() => {
     if (!isOpen) {
       setStep('config');
       setError('');
+      setSelectedModifiers([]);
       setBatchId('');
     }
   }, [isOpen]);
@@ -75,6 +90,7 @@ export default function GenerateBatchModal({
           creature_type_hint: creatureTypeHint || undefined,
           creature_descriptions: parsedDescriptions.length > 0 ? parsedDescriptions : undefined,
           creature_subtype: selectedSubtype || undefined,
+          composition_modifiers: selectedModifiers.length > 0 ? selectedModifiers : undefined,
         }),
       });
 
@@ -171,6 +187,41 @@ export default function GenerateBatchModal({
                 </div>
               );
             })()}
+
+            {/* Composition Modifiers */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Composition Modifiers (optional)
+                {selectedModifiers.length > 0 && (
+                  <span className="ml-2 text-accent">
+                    {selectedModifiers.length} selected
+                  </span>
+                )}
+              </label>
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                {Object.entries(COMPOSITION_MODIFIERS).map(([category, modifiers]) => (
+                  <div key={category}>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{category}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {modifiers.map((mod) => (
+                        <button
+                          key={mod}
+                          type="button"
+                          onClick={() => toggleModifier(mod)}
+                          className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                            selectedModifiers.includes(mod)
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          {mod}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Card Type */}
             <div>

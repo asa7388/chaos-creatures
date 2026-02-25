@@ -22,11 +22,11 @@ DROP POLICY IF EXISTS "Public profile read" ON players;
 -- own-row reads with full column access.
 
 -- Create a public-safe view for leaderboard / opponent display / friend lookup
+-- Note: avatar_id is on decks, not players — omitted from this view
 CREATE OR REPLACE VIEW public_player_profiles AS
 SELECT
   id,
   display_name,
-  avatar_id,
   season_rank,
   season_rank_points,
   showcase_card_ids,
