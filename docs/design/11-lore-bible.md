@@ -558,6 +558,79 @@ USER: Write a discovery story for the ruin "{ruin_name}". Ruin type: {neutral_or
 Output 3-4 sentences. Include who discovered it, what they found, and one unanswered question about its purpose.
 ```
 
+
+## Creature Subtypes
+
+Every creature card belongs to exactly one subtype within its faction. Subtypes determine a creature's Chaos Mote (CM) cost tier and overall stat budget. All creatures start at Common rarity regardless of subtype — rarity increases through evolution, not subtype.
+
+### CM Cost Tiers
+
+| Tier | CM Cost | Stat Budget | Role |
+|------|---------|-------------|------|
+| T1 | 1–2 | Low | Swarm / utility / early game |
+| T2 | 3–4 | Medium | Core fighters |
+| T3 | 5–6 | High | Elites / specialists |
+| T4 | 7+ | Massive | Faction champions |
+
+### Ironwright Collective
+
+| Subtype | Tier | Description |
+|---------|------|-------------|
+| Drone | T1 | Small mechanical scouts and swarm units |
+| Automaton | T2 | Standard infantry constructs |
+| Mech | T2 | Armored bipedal walkers |
+| Tank | T3 | Heavy armored siege engines |
+| Artillery | T3 | Long-range bombardment platforms |
+| Titan | T4 | Massive war machines towering over the battlefield |
+| Colossus | T4 | Faction-defining mega constructs of impossible scale |
+
+### Fey Courts
+
+| Subtype | Tier | Description |
+|---------|------|-------------|
+| Sprite | T1 | Tiny winged tricksters and mischief-makers |
+| Trickster | T2 | Shapeshifting pranksters and illusionists |
+| Beast | T2 | Enchanted woodland animals and mythic fauna |
+| Dryad | T3 | Ancient nature spirits bound to sacred groves |
+| Shapeshifter | T3 | Powerful mimics who assume terrifying forms |
+| Treant | T4 | Towering tree guardians, centuries old |
+| Archfey | T4 | Rulers of the fey courts, reality-bending sovereigns |
+
+### Demonic Kingdoms
+
+| Subtype | Tier | Description |
+|---------|------|-------------|
+| Imp | T1 | Small, cunning lesser demons |
+| Fiend | T2 | Mid-rank demons, foot soldiers of the abyss |
+| Hellhound | T2 | Infernal beasts bred for war |
+| Brute | T3 | Massive muscled demons of raw destruction |
+| Succubus | T3 | Seductive corruptors wielding dark influence |
+| Pit Lord | T4 | Generals of the infernal legions |
+| Archfiend | T4 | Supreme demon lords, kingdom rulers |
+
+### The Celestial Crusade
+
+| Subtype | Tier | Description |
+|---------|------|-------------|
+| Elemental | T1 | Pure energy/light manifestations |
+| Golem | T2 | Crystalline constructs forged from cosmic light |
+| Oracle | T2 | Cosmic seers with eye-covered forms |
+| Sentinel | T3 | Geometric guardian constructs |
+| Archon | T3 | Armored cosmic authority figures |
+| Seraph | T4 | Multi-winged cosmic entities of immense power |
+| Wyrm | T4 | Cosmic dragons and void serpents |
+
+### The Endless
+
+| Subtype | Tier | Description |
+|---------|------|-------------|
+| Wraith | T1 | Spectral, ethereal haunters |
+| Vampire | T2 | Pale, predatory corporeal undead |
+| Shade | T2 | Shadow-dwelling stalkers |
+| Revenant | T3 | Armored undead warriors risen with purpose |
+| Lich | T3 | Undead sorcerers sustained by dark knowledge |
+| Abomination | T4 | Fused masses of corpses and dark energy |
+| Leviathan | T4 | Ancient void-dwelling titans of entropy |
 ---
 
 *End of Lore Bible v1.0*

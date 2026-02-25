@@ -4,6 +4,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
+import { CREATURE_SUBTYPES, getSubtypesForFaction, factionNameToKey } from '@/lib/prompts';
 
 interface Faction {
   id: string;
@@ -28,6 +29,7 @@ export default function GenerateBatchModal({
 }: GenerateBatchModalProps) {
   const [step, setStep] = useState<Step>('config');
   const [factionId, setFactionId] = useState('');
+  const [selectedSubtype, setSelectedSubtype] = useState('');
   const [cardType, setCardType] = useState('CREATURE');
   const [count, setCount] = useState(5);
   const [creatureTypeHint, setCreatureTypeHint] = useState('');
@@ -72,6 +74,7 @@ export default function GenerateBatchModal({
           card_type: cardType,
           creature_type_hint: creatureTypeHint || undefined,
           creature_descriptions: parsedDescriptions.length > 0 ? parsedDescriptions : undefined,
+          creature_subtype: selectedSubtype || undefined,
         }),
       });
 
@@ -129,7 +132,7 @@ export default function GenerateBatchModal({
               </label>
               <select
                 value={factionId}
-                onChange={(e) => setFactionId(e.target.value)}
+                onChange={(e) => { setFactionId(e.target.value); setSelectedSubtype(''); }}
                 className="select-field w-full"
                 required
               >
@@ -141,6 +144,33 @@ export default function GenerateBatchModal({
                 ))}
               </select>
             </div>
+
+            {/* Subtype (optional) */}
+            {factionId && (() => {
+              const selectedFaction = factions.find(f => f.id === factionId);
+              const factionKey = selectedFaction ? factionNameToKey(selectedFaction.name) : "";
+              const subtypes = factionKey ? getSubtypesForFaction(factionKey) : [];
+              if (subtypes.length === 0) return null;
+              return (
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    Subtype (optional)
+                  </label>
+                  <select
+                    value={selectedSubtype}
+                    onChange={(e) => setSelectedSubtype(e.target.value)}
+                    className="select-field w-full"
+                  >
+                    <option value="">Any / Mixed</option>
+                    {subtypes.map((s) => (
+                      <option key={s.name} value={s.name}>
+                        {s.name} (T{s.tier}, CM {s.cmRange})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })()}
 
             {/* Card Type */}
             <div>

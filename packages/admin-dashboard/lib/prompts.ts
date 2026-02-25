@@ -50,11 +50,74 @@ export const FACTION_PROMPTS: Record<string, FactionPromptConfig> = {
   },
 };
 
-export function buildCreaturePrompt(factionKey: string, creatureDescription: string): string {
-  const faction = FACTION_PROMPTS[factionKey];
-  if (!faction) throw new Error(`Unknown faction: ${factionKey}`);
+export const CREATURE_SUBTYPES: Record<string, { name: string; tier: number; cmRange: string; description: string }[]> = {
+  ironwright: [
+    { name: 'Drone', tier: 1, cmRange: '1-2', description: 'small mechanical scout' },
+    { name: 'Automaton', tier: 2, cmRange: '3-4', description: 'standard infantry construct' },
+    { name: 'Mech', tier: 2, cmRange: '3-4', description: 'armored bipedal walker' },
+    { name: 'Tank', tier: 3, cmRange: '5-6', description: 'heavy armored siege engine' },
+    { name: 'Artillery', tier: 3, cmRange: '5-6', description: 'long-range bombardment platform' },
+    { name: 'Titan', tier: 4, cmRange: '7+', description: 'massive towering war machine' },
+    { name: 'Colossus', tier: 4, cmRange: '7+', description: 'faction-defining mega construct of impossible scale' },
+  ],
+  fey: [
+    { name: 'Sprite', tier: 1, cmRange: '1-2', description: 'tiny winged trickster' },
+    { name: 'Trickster', tier: 2, cmRange: '3-4', description: 'shapeshifting prankster and illusionist' },
+    { name: 'Beast', tier: 2, cmRange: '3-4', description: 'enchanted woodland animal or mythic fauna' },
+    { name: 'Dryad', tier: 3, cmRange: '5-6', description: 'ancient nature spirit bound to a sacred grove' },
+    { name: 'Shapeshifter', tier: 3, cmRange: '5-6', description: 'powerful mimic assuming terrifying forms' },
+    { name: 'Treant', tier: 4, cmRange: '7+', description: 'towering centuries-old tree guardian' },
+    { name: 'Archfey', tier: 4, cmRange: '7+', description: 'ruler of the fey courts, reality-bending sovereign' },
+  ],
+  demonic: [
+    { name: 'Imp', tier: 1, cmRange: '1-2', description: 'small cunning lesser demon' },
+    { name: 'Fiend', tier: 2, cmRange: '3-4', description: 'mid-rank demon foot soldier' },
+    { name: 'Hellhound', tier: 2, cmRange: '3-4', description: 'infernal beast bred for war' },
+    { name: 'Brute', tier: 3, cmRange: '5-6', description: 'massive muscled demon of raw destruction' },
+    { name: 'Succubus', tier: 3, cmRange: '5-6', description: 'seductive corruptor wielding dark influence' },
+    { name: 'Pit Lord', tier: 4, cmRange: '7+', description: 'general of the infernal legions' },
+    { name: 'Archfiend', tier: 4, cmRange: '7+', description: 'supreme demon lord and kingdom ruler' },
+  ],
+  celestial: [
+    { name: 'Elemental', tier: 1, cmRange: '1-2', description: 'pure energy and light manifestation' },
+    { name: 'Golem', tier: 2, cmRange: '3-4', description: 'crystalline construct forged from cosmic light' },
+    { name: 'Oracle', tier: 2, cmRange: '3-4', description: 'cosmic seer with eye-covered form' },
+    { name: 'Sentinel', tier: 3, cmRange: '5-6', description: 'geometric guardian construct' },
+    { name: 'Archon', tier: 3, cmRange: '5-6', description: 'armored cosmic authority figure' },
+    { name: 'Seraph', tier: 4, cmRange: '7+', description: 'multi-winged cosmic entity of immense power' },
+    { name: 'Wyrm', tier: 4, cmRange: '7+', description: 'cosmic dragon and void serpent' },
+  ],
+  endless: [
+    { name: 'Wraith', tier: 1, cmRange: '1-2', description: 'spectral ethereal haunter' },
+    { name: 'Vampire', tier: 2, cmRange: '3-4', description: 'pale predatory corporeal undead' },
+    { name: 'Shade', tier: 2, cmRange: '3-4', description: 'shadow-dwelling stalker' },
+    { name: 'Revenant', tier: 3, cmRange: '5-6', description: 'armored undead warrior risen with purpose' },
+    { name: 'Lich', tier: 3, cmRange: '5-6', description: 'undead sorcerer sustained by dark knowledge' },
+    { name: 'Abomination', tier: 4, cmRange: '7+', description: 'fused mass of corpses and dark energy' },
+    { name: 'Leviathan', tier: 4, cmRange: '7+', description: 'ancient void-dwelling titan of entropy' },
+  ],
+};
 
-  return `impasto oil painting, ${creatureDescription}, thick paint texture, paint ridges visible, ${faction.materialSuffix}`;
+export function buildCreaturePrompt(factionKey: string, creatureDescription: string, subtype?: string): string {
+  const faction = FACTION_PROMPTS[factionKey];
+  if (!faction) {
+    return `impasto oil painting, ${creatureDescription}, thick paint texture, paint ridges visible`;
+  }
+
+  // If subtype provided, prepend its description to the creature description
+  let fullDescription = creatureDescription;
+  if (subtype) {
+    const subtypeData = CREATURE_SUBTYPES[factionKey]?.find(s => s.name === subtype);
+    if (subtypeData) {
+      fullDescription = `${subtypeData.description}, ${creatureDescription}`;
+    }
+  }
+
+  return `impasto oil painting, ${fullDescription}, thick paint texture, paint ridges visible, ${faction.materialSuffix}`;
+}
+
+export function getSubtypesForFaction(factionKey: string): typeof CREATURE_SUBTYPES[string] {
+  return CREATURE_SUBTYPES[factionKey] || [];
 }
 
 export function getFactionNegativePrompt(factionKey: string): string {

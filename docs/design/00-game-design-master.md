@@ -716,6 +716,29 @@ A tight set of 9 creature keywords. Kept small so that modifier-granted keywords
 
 ---
 
+## 12a. Creature Subtypes
+
+Every creature belongs to one of 7 faction-specific subtypes. Subtypes determine the creature's CM cost tier and stat budget:
+
+- **T1 (CM 1–2)**: Swarm / utility / early game
+- **T2 (CM 3–4)**: Core fighters
+- **T3 (CM 5–6)**: Elites / specialists
+- **T4 (CM 7+)**: Faction champions
+
+All creatures start at Common rarity regardless of subtype. Rarity increases through evolution only.
+
+| Faction | T1 | T2 | T3 | T4 |
+|---------|----|----|----|----|
+| Ironwright | Drone | Automaton, Mech | Tank, Artillery | Titan, Colossus |
+| Fey | Sprite | Trickster, Beast | Dryad, Shapeshifter | Treant, Archfey |
+| Demonic | Imp | Fiend, Hellhound | Brute, Succubus | Pit Lord, Archfiend |
+| Celestial | Elemental | Golem, Oracle | Sentinel, Archon | Seraph, Wyrm |
+| Endless | Wraith | Vampire, Shade | Revenant, Lich | Abomination, Leviathan |
+
+Full subtype lore and descriptions: see `docs/design/11-lore-bible.md` § Creature Subtypes.
+
+---
+
 ## 13. Technical Direction
 
 ### Platform
