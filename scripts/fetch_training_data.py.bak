@@ -1,0 +1,957 @@
+#!/usr/bin/env python3
+"""
+Scripts/fetch_training_data.py
+Fetches public domain oil paintings for LoRA v2 training.
+
+Sources:
+  - Metropolitan Museum of Art (Open Access API, no key required)
+  - Rijksmuseum (optional, requires API key via --rijks-key)
+
+Usage:
+    python3 Scripts/fetch_training_data.py --output Training/raw/ --target 100
+    python3 Scripts/fetch_training_data.py --artist "Goya" --output Training/raw/
+    python3 Scripts/fetch_training_data.py --category landscapes --output Training/raw/
+    python3 Scripts/fetch_training_data.py --dry-run --target 100
+    python3 Scripts/fetch_training_data.py --rijks-key YOUR_KEY --output Training/raw/
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Optional
+
+# ---------------------------------------------------------------------------
+# Category definitions: query strings sent to the Met search endpoint
+# ---------------------------------------------------------------------------
+
+CATEGORY_QUERIES: dict[str, list[str]] = {
+    "creatures": [
+        "animal painting oil",
+        "horse painting",
+        "dog painting oil",
+        "wildlife painting",
+        "Stubbs horse",
+        "Landseer animal",
+        "Agasse animal",
+    ],
+    "landscapes": [
+        "landscape oil painting",
+        "Constable landscape",
+        "Corot landscape",
+        "Turner landscape",
+        "forest painting oil",
+        "seascape painting",
+    ],
+    "still_life": [
+        "still life oil painting",
+        "fruit painting",
+        "flower painting oil",
+        "vanitas painting",
+    ],
+    "battle": [
+        "battle scene painting",
+        "war painting",
+        "Delacroix battle",
+        "crowd scene painting",
+        "Gericault",
+    ],
+    "architecture": [
+        "architecture painting",
+        "ruins painting",
+        "interior painting",
+        "Piranesi",
+        "cathedral painting",
+    ],
+    "grimdark": [
+        "Goya painting",
+        "Goya black",
+        "Fuseli painting",
+        "dark painting oil",
+    ],
+    "portraits": [
+        "Rembrandt portrait",
+        "Frans Hals portrait",
+    ],
+}
+
+# Per-category targets (§3.2c)
+CATEGORY_TARGETS: dict[str, int] = {
+    "creatures": 30,
+    "landscapes": 25,
+    "still_life": 20,
+    "battle": 15,
+    "architecture": 15,
+    "grimdark": 15,
+    "portraits": 10,  # intentionally capped
+}
+
+# Desired artists (public domain, pre-1900)
+DESIRED_ARTISTS: set[str] = {
+    # Impasto texture
+    "Rembrandt",
+    "Frans Hals",
+    "Nicolaes Maes",
+    "Jan Steen",
+    "Courbet",
+    "Corot",
+    "Constable",
+    "Turner",
+    # Grimdark
+    "Goya",
+    "Géricault",
+    "Gericault",
+    "Delacroix",
+    "Fuseli",
+    # Creatures/animals
+    "Stubbs",
+    "Agasse",
+    "Landseer",
+}
+
+# Artists to avoid (smooth academic, Impressionist, etc.)
+AVOID_ARTISTS: set[str] = {
+    "Bouguereau",
+    "Ingres",
+    "Monet",
+    "Renoir",
+    "Pissarro",
+    "Sisley",
+    "Cézanne",
+    "Cezanne",
+    "Degas",
+    "Manet",
+    "Seurat",
+    "Signac",
+}
+
+# Minimum image dimension (either side)
+MIN_IMAGE_DIM = 800
+
+# Rate-limit pause between API calls (seconds)
+API_DELAY = 1.5
+
+# Retry delay on 403 (seconds) — wait once then skip
+RETRY_403_DELAY = 5.0
+
+# Module-level counter for objects skipped due to persistent 403
+skipped_403_count = 0
+
+# Met API base
+MET_SEARCH_URL = "https://collectionapi.metmuseum.org/public/collection/v1/search"
+MET_OBJECT_URL = "https://collectionapi.metmuseum.org/public/collection/v1/objects"
+
+# Rijksmuseum API base
+RIJKS_SEARCH_URL = "https://www.rijksmuseum.nl/api/en/collection"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def slugify(text: str) -> str:
+    """Turn arbitrary text into a filesystem-safe slug."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "_", text)
+    text = re.sub(r"-+", "-", text)
+    return text[:60]
+
+
+def api_get(url: str, delay: float = API_DELAY) -> Optional[dict]:
+    """GET JSON from *url*, returning parsed dict or None on failure.
+
+    On HTTP 403: waits RETRY_403_DELAY seconds and retries once.
+    If the retry also 403s, increments skipped_403_count and returns None.
+    """
+    global skipped_403_count
+    UA = "ChaosCreatures/1.0 (training data collection; github.com/asa7388/chaos-creatures)"
+    for attempt in range(2):  # at most one retry
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode())
+            time.sleep(delay)
+            return data
+        except urllib.error.HTTPError as exc:
+            if exc.code == 403 and attempt == 0:
+                print(f"  [403] Blocked, waiting {RETRY_403_DELAY:.0f}s and retrying: {url}")
+                time.sleep(RETRY_403_DELAY)
+                continue
+            if exc.code == 403:
+                skipped_403_count += 1
+                print(f"  [SKIP-403] Permanently blocked, skipping: {url}")
+            else:
+                print(f"  [WARN] API request failed ({exc.code}): {url}")
+            time.sleep(delay)
+            return None
+        except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as exc:
+            print(f"  [WARN] API request failed: {url}\n         {exc}")
+            time.sleep(delay)
+            return None
+
+
+def download_image(url: str, dest: Path) -> bool:
+    """Download image from *url* to *dest*. Returns True on success."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "ChaosCreatures/1.0 (training data collection; github.com/asa7388/chaos-creatures)"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = resp.read()
+        dest.write_bytes(data)
+        return True
+    except Exception as exc:
+        print(f"  [WARN] Download failed: {url}\n         {exc}")
+        return False
+
+
+def image_large_enough(path: Path) -> bool:
+    """Check image dimensions >= MIN_IMAGE_DIM on both sides.
+
+    Uses the stdlib-only approach of reading JPEG SOF markers to avoid
+    requiring Pillow.  Falls back to accepting the image if parsing fails.
+    """
+    try:
+        with open(path, "rb") as f:
+            # Quick JPEG dimension reader
+            f.seek(0)
+            magic = f.read(2)
+            if magic != b"\xff\xd8":
+                # Not a JPEG — accept it to be safe
+                return True
+            while True:
+                marker = f.read(2)
+                if len(marker) < 2:
+                    return True  # can't determine, accept
+                if marker[0] != 0xFF:
+                    return True
+                mtype = marker[1]
+                # SOF markers: 0xC0-0xCF except 0xC4 (DHT) and 0xCC (DAC)
+                if 0xC0 <= mtype <= 0xCF and mtype not in (0xC4, 0xCC):
+                    length_bytes = f.read(2)
+                    if len(length_bytes) < 2:
+                        return True
+                    _ = f.read(1)  # precision
+                    h_bytes = f.read(2)
+                    w_bytes = f.read(2)
+                    if len(h_bytes) < 2 or len(w_bytes) < 2:
+                        return True
+                    height = int.from_bytes(h_bytes, "big")
+                    width = int.from_bytes(w_bytes, "big")
+                    return width >= MIN_IMAGE_DIM and height >= MIN_IMAGE_DIM
+                else:
+                    # Skip this segment
+                    seg_len_bytes = f.read(2)
+                    if len(seg_len_bytes) < 2:
+                        return True
+                    seg_len = int.from_bytes(seg_len_bytes, "big")
+                    f.seek(seg_len - 2, 1)
+    except Exception:
+        return True  # if we can't read it, let the user decide
+
+
+def extract_year(obj: dict) -> Optional[int]:
+    """Best-effort extraction of the artwork year from Met object data."""
+    # Try objectEndDate first (most reliable numeric field)
+    end_date = obj.get("objectEndDate")
+    if end_date and isinstance(end_date, (int, float)):
+        return int(end_date)
+    begin_date = obj.get("objectBeginDate")
+    if begin_date and isinstance(begin_date, (int, float)):
+        return int(begin_date)
+    # Try to parse from objectDate string
+    date_str = obj.get("objectDate", "")
+    if date_str:
+        match = re.search(r"(\d{4})", str(date_str))
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def artist_is_avoided(artist_name: str) -> bool:
+    """Check if the artist should be skipped."""
+    if not artist_name:
+        return False
+    for avoid in AVOID_ARTISTS:
+        if avoid.lower() in artist_name.lower():
+            return True
+    return False
+
+
+def artist_is_desired(artist_name: str) -> bool:
+    """Check if the artist is in our desired set (for prioritization)."""
+    if not artist_name:
+        return False
+    for desired in DESIRED_ARTISTS:
+        if desired.lower() in artist_name.lower():
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Met Museum fetcher
+# ---------------------------------------------------------------------------
+
+
+def met_search(query: str) -> list[int]:
+    """Search the Met API and return a list of object IDs.
+
+    Note: The Met search endpoint only supports q, hasImages, isPublicDomain,
+    and departmentId. It does NOT support a 'medium' filter parameter (causes
+    403 errors). Oil painting filtering is done in process_met_object instead.
+    """
+    params = urllib.parse.urlencode({
+        "q": query,
+        "hasImages": "true",
+        "isPublicDomain": "true",
+    })
+    url = f"{MET_SEARCH_URL}?{params}"
+    data = api_get(url)
+    if not data or data.get("total", 0) == 0:
+        return []
+    return data.get("objectIDs", []) or []
+
+
+def met_get_object(object_id: int) -> Optional[dict]:
+    """Fetch full object details from the Met API."""
+    url = f"{MET_OBJECT_URL}/{object_id}"
+    return api_get(url)
+
+
+def process_met_object(
+    obj: dict,
+    category: str,
+    output_dir: Path,
+    seen_ids: set[int],
+    dry_run: bool = False,
+) -> Optional[dict]:
+    """Validate and optionally download a Met object. Returns manifest entry or None."""
+
+    object_id = obj.get("objectID")
+    if not object_id or object_id in seen_ids:
+        return None
+
+    # Must be public domain
+    if not obj.get("isPublicDomain", False):
+        return None
+
+    # Must be an oil painting (the Met search endpoint doesn't support
+    # a 'medium' filter, so we check the object detail's medium field)
+    medium = obj.get("medium", "").lower()
+    if "oil" not in medium:
+        return None
+
+    # Must have a large image
+    image_url = obj.get("primaryImageLarge", "")
+    if not image_url:
+        return None
+
+    # Check date — must be before 1900
+    year = extract_year(obj)
+    if year is not None and year >= 1900:
+        return None
+
+    # Check artist not avoided
+    artist = obj.get("artistDisplayName", "Unknown")
+    if artist_is_avoided(artist):
+        return None
+
+    title = obj.get("title", "Untitled")
+    date_str = obj.get("objectDate", "Unknown")
+    object_url = obj.get("objectURL", "")
+
+    artist_slug = slugify(artist) if artist else "unknown"
+    filename = f"{category}_{artist_slug}_{object_id}.jpg"
+    dest = output_dir / filename
+
+    if dry_run:
+        priority = "DESIRED" if artist_is_desired(artist) else "ok"
+        print(f"  [DRY-RUN] Would download: {filename}")
+        print(f"            {artist} — {title} ({date_str}) [{priority}]")
+        seen_ids.add(object_id)
+        return {
+            "filename": filename,
+            "artist": artist,
+            "title": title,
+            "date": date_str,
+            "museum": "Metropolitan Museum of Art",
+            "object_url": object_url,
+            "category": category,
+            "public_domain": True,
+        }
+
+    # Skip if already downloaded (resume-friendly)
+    if dest.exists():
+        print(f"  [SKIP] Already exists: {filename}")
+        seen_ids.add(object_id)
+        return {
+            "filename": filename,
+            "artist": artist,
+            "title": title,
+            "date": date_str,
+            "museum": "Metropolitan Museum of Art",
+            "object_url": object_url,
+            "category": category,
+            "public_domain": True,
+        }
+
+    # Download
+    print(f"  Downloading: {filename}")
+    print(f"    {artist} — {title} ({date_str})")
+    if not download_image(image_url, dest):
+        return None
+
+    # Check dimensions
+    if not image_large_enough(dest):
+        print(f"  [SKIP] Too small (<{MIN_IMAGE_DIM}px): {filename}")
+        dest.unlink(missing_ok=True)
+        return None
+
+    seen_ids.add(object_id)
+    return {
+        "filename": filename,
+        "artist": artist,
+        "title": title,
+        "date": date_str,
+        "museum": "Metropolitan Museum of Art",
+        "object_url": object_url,
+        "category": category,
+        "public_domain": True,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Rijksmuseum fetcher (optional)
+# ---------------------------------------------------------------------------
+
+
+def rijks_search(query: str, api_key: str, page: int = 1, page_size: int = 50) -> list[dict]:
+    """Search the Rijksmuseum API. Returns list of result objects."""
+    params = urllib.parse.urlencode({
+        "key": api_key,
+        "q": query,
+        "type": "painting",
+        "technique": "oil paint (paint)",
+        "imgonly": "true",
+        "ps": str(page_size),
+        "p": str(page),
+        "s": "relevance",
+    })
+    url = f"{RIJKS_SEARCH_URL}?{params}"
+    data = api_get(url)
+    if not data:
+        return []
+    return data.get("artObjects", [])
+
+
+def rijks_get_detail(object_number: str, api_key: str) -> Optional[dict]:
+    """Fetch detailed object info from Rijksmuseum."""
+    url = f"{RIJKS_SEARCH_URL}/{object_number}?key={api_key}"
+    data = api_get(url)
+    if not data:
+        return None
+    return data.get("artObject")
+
+
+def process_rijks_object(
+    art_obj: dict,
+    category: str,
+    output_dir: Path,
+    seen_ids: set,
+    api_key: str,
+    dry_run: bool = False,
+) -> Optional[dict]:
+    """Validate and optionally download a Rijksmuseum object."""
+
+    object_number = art_obj.get("objectNumber", "")
+    if not object_number or object_number in seen_ids:
+        return None
+
+    # Get the web image URL from search results
+    web_image = art_obj.get("webImage")
+    if not web_image or not web_image.get("url"):
+        return None
+
+    image_url = web_image["url"]
+
+    # Check if we need more detail
+    title = art_obj.get("title", "Untitled")
+    artist = art_obj.get("principalOrFirstMaker", "Unknown")
+
+    # Skip avoided artists
+    if artist_is_avoided(artist):
+        return None
+
+    # Try to get the detail page for date checking
+    detail = rijks_get_detail(object_number, api_key)
+    date_str = "Unknown"
+    if detail:
+        dating = detail.get("dating", {})
+        year_early = dating.get("yearEarly")
+        year_late = dating.get("yearLate")
+        if year_late and year_late >= 1900:
+            return None
+        if year_early and year_late:
+            date_str = f"{year_early}-{year_late}"
+        elif year_early:
+            date_str = str(year_early)
+
+        # Double check it has an image at sufficient size
+        if detail.get("hasImage") is False:
+            return None
+
+    artist_slug = slugify(artist) if artist else "unknown"
+    obj_slug = slugify(object_number)
+    filename = f"{category}_{artist_slug}_rijks_{obj_slug}.jpg"
+    dest = output_dir / filename
+
+    object_url = art_obj.get("links", {}).get("web", f"https://www.rijksmuseum.nl/en/collection/{object_number}")
+
+    if dry_run:
+        priority = "DESIRED" if artist_is_desired(artist) else "ok"
+        print(f"  [DRY-RUN] Would download: {filename}")
+        print(f"            {artist} — {title} ({date_str}) [{priority}]")
+        seen_ids.add(object_number)
+        return {
+            "filename": filename,
+            "artist": artist,
+            "title": title,
+            "date": date_str,
+            "museum": "Rijksmuseum",
+            "object_url": object_url,
+            "category": category,
+            "public_domain": True,
+        }
+
+    if dest.exists():
+        print(f"  [SKIP] Already exists: {filename}")
+        seen_ids.add(object_number)
+        return {
+            "filename": filename,
+            "artist": artist,
+            "title": title,
+            "date": date_str,
+            "museum": "Rijksmuseum",
+            "object_url": object_url,
+            "category": category,
+            "public_domain": True,
+        }
+
+    print(f"  Downloading: {filename}")
+    print(f"    {artist} — {title} ({date_str})")
+    if not download_image(image_url, dest):
+        return None
+
+    if not image_large_enough(dest):
+        print(f"  [SKIP] Too small (<{MIN_IMAGE_DIM}px): {filename}")
+        dest.unlink(missing_ok=True)
+        return None
+
+    seen_ids.add(object_number)
+    return {
+        "filename": filename,
+        "artist": artist,
+        "title": title,
+        "date": date_str,
+        "museum": "Rijksmuseum",
+        "object_url": object_url,
+        "category": category,
+        "public_domain": True,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Rijksmuseum category queries
+# ---------------------------------------------------------------------------
+
+RIJKS_CATEGORY_QUERIES: dict[str, list[str]] = {
+    "creatures": ["animal painting", "horse", "dog painting", "wildlife"],
+    "landscapes": ["landscape", "seascape", "forest"],
+    "still_life": ["still life", "vanitas", "fruit"],
+    "battle": ["battle", "war scene"],
+    "architecture": ["architecture", "interior church", "ruins"],
+    "grimdark": ["dark painting", "night scene"],
+    "portraits": ["Rembrandt portrait", "Frans Hals"],
+}
+
+
+# ---------------------------------------------------------------------------
+# Manifest writer
+# ---------------------------------------------------------------------------
+
+
+def write_manifest(manifest: list[dict], manifest_path: Path) -> None:
+    """Write Training/TRAINING_MANIFEST.md."""
+    lines = [
+        "# LoRA v2 Training Data Manifest",
+        "",
+        "Auto-generated by `Scripts/fetch_training_data.py`. Do not edit manually.",
+        "",
+        f"**Total images:** {len(manifest)}",
+        "",
+        "| Filename | Artist | Title | Date | Museum | Object URL | Category | Public Domain |",
+        "|----------|--------|-------|------|--------|------------|----------|---------------|",
+    ]
+    for entry in sorted(manifest, key=lambda e: (e["category"], e["artist"])):
+        # Escape pipes in fields
+        title = entry["title"].replace("|", "/")
+        artist = entry["artist"].replace("|", "/")
+        url = entry["object_url"]
+        lines.append(
+            f"| {entry['filename']} | {artist} | {title} | {entry['date']} "
+            f"| {entry['museum']} | {url} | {entry['category']} | Yes |"
+        )
+    lines.append("")
+    manifest_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"\nManifest written to {manifest_path}")
+
+
+# ---------------------------------------------------------------------------
+# Main orchestration
+# ---------------------------------------------------------------------------
+
+
+def fetch_category_met(
+    category: str,
+    queries: list[str],
+    target: int,
+    output_dir: Path,
+    seen_ids: set[int],
+    dry_run: bool,
+) -> list[dict]:
+    """Fetch images for one category from the Met. Returns manifest entries."""
+    results: list[dict] = []
+    print(f"\n{'='*60}")
+    print(f"Category: {category} (target: {target})")
+    print(f"{'='*60}")
+
+    # Count already-downloaded files for this category
+    existing = list(output_dir.glob(f"{category}_*.jpg"))
+    if existing:
+        print(f"  Found {len(existing)} existing files for this category")
+        # Add existing IDs to seen set
+        for f in existing:
+            # Extract object_id from filename: category_artist_OBJECTID.jpg
+            parts = f.stem.split("_")
+            if parts and parts[-1].isdigit():
+                seen_ids.add(int(parts[-1]))
+            # Build manifest entry for existing files
+            results.append({
+                "filename": f.name,
+                "artist": "existing",
+                "title": "previously downloaded",
+                "date": "Unknown",
+                "museum": "Metropolitan Museum of Art",
+                "object_url": "",
+                "category": category,
+                "public_domain": True,
+            })
+
+    for query in queries:
+        if len(results) >= target:
+            break
+
+        print(f"\n  Searching Met: \"{query}\"")
+        object_ids = met_search(query)
+        if not object_ids:
+            print(f"    No results.")
+            continue
+        print(f"    Found {len(object_ids)} objects")
+
+        # Prioritize desired artists: fetch all details, sort, then download
+        # To keep API calls manageable, cap at 100 per query
+        batch = object_ids[:100]
+        desired_objs: list[dict] = []
+        other_objs: list[dict] = []
+
+        for oid in batch:
+            if len(results) + len(desired_objs) + len(other_objs) >= target * 2:
+                # Fetched enough candidates
+                break
+            if oid in seen_ids:
+                continue
+            obj = met_get_object(oid)
+            if not obj:
+                continue
+            if not obj.get("isPublicDomain", False):
+                continue
+            if "oil" not in obj.get("medium", "").lower():
+                continue
+            if not obj.get("primaryImageLarge"):
+                continue
+            year = extract_year(obj)
+            if year is not None and year >= 1900:
+                continue
+            artist = obj.get("artistDisplayName", "")
+            if artist_is_avoided(artist):
+                continue
+            if artist_is_desired(artist):
+                desired_objs.append(obj)
+            else:
+                other_objs.append(obj)
+
+        # Process desired artists first
+        for obj in desired_objs:
+            if len(results) >= target:
+                break
+            entry = process_met_object(obj, category, output_dir, seen_ids, dry_run)
+            if entry and entry.get("artist") != "existing":
+                results.append(entry)
+
+        for obj in other_objs:
+            if len(results) >= target:
+                break
+            entry = process_met_object(obj, category, output_dir, seen_ids, dry_run)
+            if entry and entry.get("artist") != "existing":
+                results.append(entry)
+
+    return results
+
+
+def fetch_category_rijks(
+    category: str,
+    queries: list[str],
+    target: int,
+    current_count: int,
+    output_dir: Path,
+    seen_ids: set,
+    api_key: str,
+    dry_run: bool,
+) -> list[dict]:
+    """Fetch images for one category from Rijksmuseum. Returns manifest entries."""
+    results: list[dict] = []
+    remaining = target - current_count
+    if remaining <= 0:
+        return results
+
+    print(f"\n  Searching Rijksmuseum for {category} (need {remaining} more)...")
+
+    for query in queries:
+        if len(results) >= remaining:
+            break
+
+        art_objects = rijks_search(query, api_key)
+        if not art_objects:
+            continue
+        print(f"    Rijks \"{query}\": {len(art_objects)} results")
+
+        for art_obj in art_objects:
+            if len(results) >= remaining:
+                break
+            entry = process_rijks_object(art_obj, category, output_dir, seen_ids, api_key, dry_run)
+            if entry:
+                results.append(entry)
+
+    return results
+
+
+def fetch_artist_met(
+    artist: str,
+    output_dir: Path,
+    seen_ids: set[int],
+    dry_run: bool,
+    target: int = 30,
+) -> list[dict]:
+    """Fetch all oil paintings by a specific artist from the Met."""
+    results: list[dict] = []
+    print(f"\n{'='*60}")
+    print(f"Artist search: {artist} (target: {target})")
+    print(f"{'='*60}")
+
+    queries = [
+        f"{artist} oil painting",
+        f"{artist}",
+    ]
+
+    all_ids: list[int] = []
+    for query in queries:
+        print(f"  Searching Met: \"{query}\"")
+        ids = met_search(query)
+        all_ids.extend(ids)
+
+    # Deduplicate
+    unique_ids = list(dict.fromkeys(all_ids))
+    print(f"  Total unique IDs: {len(unique_ids)}")
+
+    for oid in unique_ids[:200]:  # cap at 200
+        if len(results) >= target:
+            break
+        if oid in seen_ids:
+            continue
+
+        obj = met_get_object(oid)
+        if not obj:
+            continue
+
+        # For artist mode, assign a generic "artist_search" category
+        entry = process_met_object(obj, "artist_search", output_dir, seen_ids, dry_run)
+        if entry:
+            results.append(entry)
+
+    return results
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Fetch public domain oil paintings for LoRA v2 training.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python3 Scripts/fetch_training_data.py --output Training/raw/ --target 100
+  python3 Scripts/fetch_training_data.py --artist "Goya" --output Training/raw/
+  python3 Scripts/fetch_training_data.py --category landscapes --output Training/raw/
+  python3 Scripts/fetch_training_data.py --dry-run --target 50
+  python3 Scripts/fetch_training_data.py --rijks-key YOUR_KEY --output Training/raw/
+        """,
+    )
+    parser.add_argument(
+        "--output", "-o",
+        type=Path,
+        default=Path("Training/raw"),
+        help="Output directory for downloaded images (default: Training/raw/)",
+    )
+    parser.add_argument(
+        "--target", "-t",
+        type=int,
+        default=100,
+        help="Total target image count (default: 100)",
+    )
+    parser.add_argument(
+        "--artist", "-a",
+        type=str,
+        default=None,
+        help="Fetch all works by a specific artist",
+    )
+    parser.add_argument(
+        "--category", "-c",
+        type=str,
+        default=None,
+        choices=list(CATEGORY_QUERIES.keys()),
+        help="Fetch only one category",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="List what would be downloaded without downloading",
+    )
+    parser.add_argument(
+        "--rijks-key",
+        type=str,
+        default=None,
+        help="Rijksmuseum API key (optional — supplements Met results)",
+    )
+
+    args = parser.parse_args()
+    output_dir: Path = args.output.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest_path = output_dir.parent / "TRAINING_MANIFEST.md"
+    seen_ids: set = set()
+    all_manifest: list[dict] = []
+
+    print(f"Output directory: {output_dir}")
+    print(f"Target: {args.target} images")
+    if args.dry_run:
+        print("*** DRY RUN — no files will be downloaded ***")
+    if args.rijks_key:
+        print("Rijksmuseum API key provided — will supplement Met results")
+    print()
+
+    # -----------------------------------------------------------------------
+    # Artist mode
+    # -----------------------------------------------------------------------
+    if args.artist:
+        results = fetch_artist_met(args.artist, output_dir, seen_ids, args.dry_run, args.target)
+        all_manifest.extend(results)
+        write_manifest(all_manifest, manifest_path)
+        print(f"\nTotal downloaded: {len(all_manifest)}")
+        if skipped_403_count > 0:
+            print(f"Objects skipped due to persistent 403: {skipped_403_count}")
+        return
+
+    # -----------------------------------------------------------------------
+    # Category mode or full mode
+    # -----------------------------------------------------------------------
+
+    # Scale per-category targets to fit total target
+    total_target_sum = sum(CATEGORY_TARGETS.values())
+    scale = args.target / total_target_sum
+
+    categories_to_fetch = (
+        {args.category: CATEGORY_QUERIES[args.category]}
+        if args.category
+        else CATEGORY_QUERIES
+    )
+
+    category_counts: dict[str, int] = {}
+
+    for category, queries in categories_to_fetch.items():
+        base_target = CATEGORY_TARGETS.get(category, 15)
+        if args.category:
+            # Single-category mode: use full target
+            cat_target = args.target
+        else:
+            cat_target = max(3, int(base_target * scale))
+            # Enforce portrait cap
+            if category == "portraits":
+                cat_target = min(cat_target, 10)
+
+        # Met Museum
+        results = fetch_category_met(category, queries, cat_target, output_dir, seen_ids, args.dry_run)
+        all_manifest.extend(results)
+        met_count = len(results)
+
+        # Rijksmuseum supplement if available and category not yet full
+        if args.rijks_key and met_count < cat_target:
+            rijks_queries = RIJKS_CATEGORY_QUERIES.get(category, [])
+            if rijks_queries:
+                rijks_results = fetch_category_rijks(
+                    category, rijks_queries, cat_target, met_count,
+                    output_dir, seen_ids, args.rijks_key, args.dry_run,
+                )
+                all_manifest.extend(rijks_results)
+                met_count += len(rijks_results)
+
+        category_counts[category] = met_count
+
+        # Check global target
+        if len(all_manifest) >= args.target:
+            print(f"\nReached global target of {args.target}. Stopping.")
+            break
+
+    # -----------------------------------------------------------------------
+    # Write manifest
+    # -----------------------------------------------------------------------
+    write_manifest(all_manifest, manifest_path)
+
+    # -----------------------------------------------------------------------
+    # Summary
+    # -----------------------------------------------------------------------
+    print(f"\n{'='*60}")
+    print("Category breakdown:")
+    print(f"{'='*60}")
+    for category in CATEGORY_QUERIES:
+        count = category_counts.get(category, 0)
+        target = CATEGORY_TARGETS.get(category, 15)
+        if args.category and category != args.category:
+            continue
+        bar = "#" * min(count, 30)
+        status = "OK" if count >= target else "NEEDS MORE"
+        print(f"  {category:15s}: {count:3d}/{target:3d} {bar} {status}")
+
+    print(f"\n  {'Total':15s}: {len(all_manifest):3d}/{args.target}")
+    if skipped_403_count > 0:
+        print(f"\n  Objects skipped due to persistent 403: {skipped_403_count}")
+    if args.dry_run:
+        print("\n*** DRY RUN — no files were downloaded ***")
+    print()
+
+
+if __name__ == "__main__":
+    main()

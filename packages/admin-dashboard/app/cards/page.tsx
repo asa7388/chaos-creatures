@@ -3,10 +3,10 @@
 // REQ-181 (batch trigger), REQ-182 (card review gallery).
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import CardGrid from '@/components/CardGrid';
 import GenerateBatchModal from '@/components/GenerateBatchModal';
-import type { GenerationJob } from '@/components/CardGrid';
+import type { GenerationJob, ProcessQueueState } from '@/components/CardGrid';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'failed';
 
@@ -22,6 +22,8 @@ export default function CardsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [loading, setLoading] = useState(true);
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [processQueueState, setProcessQueueState] = useState<ProcessQueueState | null>(null);
+  const stopProcessingRef = useRef(false);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -99,6 +101,57 @@ export default function CardsPage() {
     failed: jobs.filter((j) => j.status === 'FAILED').length,
   };
 
+  // Count PENDING (not yet processed) jobs for the process queue
+  const queuedJobs = jobs.filter((j) => j.status === 'PENDING');
+  const queuedJobCount = queuedJobs.length;
+
+  async function handleProcessQueue() {
+    const pendingIds = jobs
+      .filter((j) => j.status === 'PENDING')
+      .map((j) => j.id);
+
+    if (pendingIds.length === 0) return;
+
+    stopProcessingRef.current = false;
+    setProcessQueueState({ isProcessing: true, current: 0, total: pendingIds.length });
+
+    for (let i = 0; i < pendingIds.length; i++) {
+      if (stopProcessingRef.current) break;
+
+      setProcessQueueState({ isProcessing: true, current: i + 1, total: pendingIds.length });
+
+      try {
+        const res = await fetch('/api/generate-art', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job_id: pendingIds[i] }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          console.error(`Job ${pendingIds[i]} failed:`, data.error || res.statusText);
+          // Stop on failure
+          break;
+        }
+      } catch (err) {
+        console.error(`Job ${pendingIds[i]} network error:`, err);
+        break;
+      }
+
+      // Refresh jobs list after each completion so UI updates
+      await fetchJobs();
+    }
+
+    setProcessQueueState(null);
+    stopProcessingRef.current = false;
+    // Final refresh
+    await fetchJobs();
+  }
+
+  function handleStopProcessing() {
+    stopProcessingRef.current = true;
+  }
+
   const TABS: { key: StatusFilter; label: string }[] = [
     { key: 'pending', label: 'Pending Review' },
     { key: 'approved', label: 'Approved' },
@@ -162,7 +215,14 @@ export default function CardsPage() {
           <p className="text-gray-400">Loading cards...</p>
         </div>
       ) : (
-        <CardGrid jobs={filteredJobs} onRefresh={fetchJobs} />
+        <CardGrid
+          jobs={filteredJobs}
+          onRefresh={fetchJobs}
+          queuedJobCount={queuedJobCount}
+          processQueueState={processQueueState}
+          onProcessQueue={handleProcessQueue}
+          onStopProcessing={handleStopProcessing}
+        />
       )}
 
       {/* Generate Batch Modal */}

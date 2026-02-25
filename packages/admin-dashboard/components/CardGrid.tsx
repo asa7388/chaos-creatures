@@ -35,9 +35,19 @@ interface GenerationJob {
   completed_at?: string;
 }
 
+interface ProcessQueueState {
+  isProcessing: boolean;
+  current: number;
+  total: number;
+}
+
 interface CardGridProps {
   jobs: GenerationJob[];
   onRefresh: () => void;
+  queuedJobCount: number;
+  processQueueState: ProcessQueueState | null;
+  onProcessQueue: () => void;
+  onStopProcessing: () => void;
 }
 
 const FACTION_NAMES: Record<string, string> = {
@@ -99,7 +109,7 @@ function getStatusBadge(job: GenerationJob) {
   );
 }
 
-export default function CardGrid({ jobs, onRefresh }: CardGridProps) {
+export default function CardGrid({ jobs, onRefresh, queuedJobCount, processQueueState, onProcessQueue, onStopProcessing }: CardGridProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState<string | null>(null);
   const [detailJob, setDetailJob] = useState<GenerationJob | null>(null);
@@ -167,6 +177,35 @@ export default function CardGrid({ jobs, onRefresh }: CardGridProps) {
 
   return (
     <div>
+      {/* Process Queue */}
+      {(queuedJobCount > 0 || processQueueState) && (
+        <div className="flex items-center gap-3 mb-4">
+          {processQueueState ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="animate-spin w-4 h-4 border-2 border-accent border-t-transparent rounded-full" />
+                <span className="text-sm text-gray-300">
+                  Generating {processQueueState.current}/{processQueueState.total}...
+                </span>
+              </div>
+              <button
+                onClick={onStopProcessing}
+                className="btn-danger text-sm"
+              >
+                Stop
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onProcessQueue}
+              className="btn-primary"
+            >
+              Process Queue ({queuedJobCount} pending)
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Bulk Actions */}
       {pendingJobs.length > 0 && (
         <div className="flex items-center gap-3 mb-4">
@@ -463,4 +502,4 @@ export default function CardGrid({ jobs, onRefresh }: CardGridProps) {
 }
 
 export { FACTION_NAMES, FACTION_COLORS };
-export type { GenerationJob };
+export type { GenerationJob, ProcessQueueState };

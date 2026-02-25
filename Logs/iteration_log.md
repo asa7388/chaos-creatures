@@ -784,3 +784,38 @@ Planned fix: Phase 5 shaders will add material textures, ragged edge, directiona
 - [x] bg-celestial, bg-fey deleted
 - [ ] All 4 card types verified in detail (only creatures shown)
 - [ ] Light mode screenshots not captured
+
+---
+
+## 2026-02-23 — Art Pipeline Direction Change: LoRA v2 + Material Background
+
+**Session confirmation:** MASTER_STATE.json read, iteration_log last 10 entries read, guide §3.1-§3.2 read in full.
+
+**Changes to CARD_DESIGN_GUIDE.md:**
+
+| Section | Change | Status |
+|---------|--------|--------|
+| §3.1 | Added material background note to service selection | DONE |
+| §3.1 | Added FACTION_MATERIAL_SUFFIX dict (5 factions) | DONE |
+| §3.1 | Updated build_creature_prompt() to append material suffix | DONE |
+| §3.1 | Updated all 5 example prompts with material suffixes | DONE |
+| §3.1 | Updated negative prompt (added background exclusions) | DONE |
+| §3.2 | Retired v1 LoRA (EldritchPaletteKnife license gate) | DONE |
+| §3.2 | Added v2 pipeline: training data, APIs, captions, training config, generation call | DONE |
+| §3.2 | Added HARD GATE for creature art generation until v2 trained | DONE |
+| §3.7 | Added material background compositing note | DONE |
+| generation | Changed creature dimensions 1024x1024 -> 1024x1432 portrait | DONE |
+
+**Durable plan saved:** Logs/ART_PIPELINE_PLAN.md (survives compaction)
+**MASTER_STATE.json updated:** art_pipeline section added with v1 retired, v2 pipeline status
+
+**Not yet done (scripts/files — blocked on training data collection):**
+- Scripts/fetch_training_data.py
+- Scripts/generate_captions.py
+- Training/TRAINING_MANIFEST.md
+- Resources/LegalEvidence/lora_v2_license_confirmation.md
+
+**Ragged edge fix (same session):**
+- Collection view: RaggedEdgeMask moved from inner layers to outer ZStack, replacing .clipped()
+- Detail view: displacement reduced 50% (played: 0.08->0.04, worn: 0.12->0.06, etc.)
+- Build: PASS

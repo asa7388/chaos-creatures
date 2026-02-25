@@ -213,44 +213,34 @@ struct CardFrameView: View {
         GeometryReader { geo in
             ZStack {
                 if isFlipped {
-                    // Back face: parchment intelligence report — ragged mask applied
+                    // Back face: parchment intelligence report
                     CardBackView(data: data, cardWidth: geo.size.width, cardHeight: geo.size.height)
                         .frame(width: geo.size.width, height: geo.size.height)
-                        .mask(
-                            RaggedEdgeMask(
-                                width: geo.size.width,
-                                height: geo.size.height,
-                                seed: edgeSeed,
-                                strength: CGFloat(edgeWidth) * geo.size.width
-                            )
-                        )
                 } else {
-                    // Front face: art + vignette grouped with shader,
-                    // text overlay on top WITHOUT shader so text stays crisp.
+                    // Front face: art + vignette + text overlay
 
-                    // Layer 1: Art + vignette with ragged edge mask
-                    // NOTE: No inner .clipShape — the mask handles the edge treatment.
+                    // Layer 1: Art + vignette (full bleed)
                     cardArtWithVignette
                         .frame(width: geo.size.width, height: geo.size.height)
-                        .mask(
-                            RaggedEdgeMask(
-                                width: geo.size.width,
-                                height: geo.size.height,
-                                seed: edgeSeed,
-                                strength: CGFloat(edgeWidth) * geo.size.width
-                            )
-                        )
 
-                    // Layer 2: Text overlay — NO shader, crisp and unaffected
+                    // Layer 2: Text overlay
                     CardDossierTextView(data: data, faction: data.faction, cardScale: cardScale)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                         .padding(0)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
-            // Don't clip with rounded rect — the ragged mask IS the edge.
-            // Just clip to prevent any stray rendering artifacts.
-            .clipped()
+            // Ragged edge mask applied to entire card (art + text + back).
+            // Applied at this level so shadows follow the irregular edge shape,
+            // ensuring the ragged edge is visible at ALL card sizes (grid + detail).
+            .mask(
+                RaggedEdgeMask(
+                    width: geo.size.width,
+                    height: geo.size.height,
+                    seed: edgeSeed,
+                    strength: CGFloat(edgeWidth) * geo.size.width
+                )
+            )
             // Rarity glow — colored outer shadow for rare+ cards
             .shadow(
                 color: rarityGlowColor.opacity(Double(data.tier.glowIntensity) * 0.6),
@@ -444,14 +434,14 @@ struct CardFrameView: View {
     }
 
     /// Base inset from edge in UV space — how far the ragged boundary sits inside
-    /// the card rectangle. On a 280pt card: 0.03 = 8pt, 0.08 = 22pt, 0.12 = 34pt, 0.18 = 50pt.
+    /// the card rectangle. On a 280pt card: 0.015 = 4pt, 0.04 = 11pt, 0.06 = 17pt, 0.09 = 25pt.
     /// Must be large enough to be clearly visible at collection grid size (112pt wide).
     private var edgeWidth: Float {
         switch data.condition {
-        case .mint:    return 0.03
-        case .played:  return 0.08
-        case .worn:    return 0.12
-        case .ancient: return 0.18
+        case .mint:    return 0.015
+        case .played:  return 0.04
+        case .worn:    return 0.06
+        case .ancient: return 0.09
         }
     }
 

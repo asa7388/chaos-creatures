@@ -31,9 +31,17 @@ export default function GenerateBatchModal({
   const [cardType, setCardType] = useState('CREATURE');
   const [count, setCount] = useState(5);
   const [creatureTypeHint, setCreatureTypeHint] = useState('');
+  const [creatureDescriptions, setCreatureDescriptions] = useState('');
   const [error, setError] = useState('');
   const [batchId, setBatchId] = useState('');
   const [jobsCreated, setJobsCreated] = useState(0);
+
+  // Parse creature descriptions into non-empty lines
+  const parsedDescriptions = creatureDescriptions
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const effectiveCount = parsedDescriptions.length > 0 ? parsedDescriptions.length : count;
 
   useEffect(() => {
     if (!isOpen) {
@@ -60,9 +68,10 @@ export default function GenerateBatchModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           faction_id: factionId,
-          count,
+          count: effectiveCount,
           card_type: cardType,
           creature_type_hint: creatureTypeHint || undefined,
+          creature_descriptions: parsedDescriptions.length > 0 ? parsedDescriptions : undefined,
         }),
       });
 
@@ -154,6 +163,11 @@ export default function GenerateBatchModal({
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Quantity (1-20)
+                {parsedDescriptions.length > 0 && (
+                  <span className="ml-2 text-accent">
+                    overridden by descriptions ({parsedDescriptions.length})
+                  </span>
+                )}
               </label>
               <input
                 type="number"
@@ -164,6 +178,7 @@ export default function GenerateBatchModal({
                 min={1}
                 max={20}
                 className="input-field w-full"
+                disabled={parsedDescriptions.length > 0}
               />
             </div>
 
@@ -179,6 +194,28 @@ export default function GenerateBatchModal({
                 className="input-field w-full"
                 placeholder="e.g. dragon, golem, spirit..."
               />
+            </div>
+
+            {/* Creature Descriptions */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Creature Descriptions (one per line, optional)
+                {parsedDescriptions.length > 0 && (
+                  <span className="ml-2 text-accent">
+                    {parsedDescriptions.length} creature{parsedDescriptions.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </label>
+              <textarea
+                value={creatureDescriptions}
+                onChange={(e) => setCreatureDescriptions(e.target.value)}
+                className="input-field w-full resize-y"
+                rows={4}
+                placeholder={"a colossal siege automaton with a furnace core\na war-beetle with iron mandibles\na mechanical centaur with smokestacks"}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Each line becomes a separate card. Overrides quantity when filled.
+              </p>
             </div>
 
             {error && (
@@ -203,7 +240,7 @@ export default function GenerateBatchModal({
             <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-gray-300">Starting batch generation...</p>
             <p className="text-gray-500 text-sm mt-1">
-              Creating {count} card generation jobs
+              Creating {effectiveCount} card generation jobs
             </p>
           </div>
         )}

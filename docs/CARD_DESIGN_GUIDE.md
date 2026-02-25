@@ -838,82 +838,251 @@ Every card belongs to a faction. The faction determines the artist reference inj
 
 Neutral planar ruins (pre-evolution) use a neutral environment prompt — no faction style suffix. Faction-evolved ruins use the faction's full style suffix.
 
-### 3.2 Custom LoRA: chscrt-sdxl-lora.safetensors
+**Material background approach (creature art):** Creature artwork is generated with the faction's native material surface baked directly into the image (iron plate for Ironwright, birch bark for Fey, leather for Demonic, vellum for Celestial, bone parchment for Endless). The material shows at the card edges as a natural border when the ragged edge mask is applied in code. No separate border asset is required — the "border" is the faction material surface visible around the creature art.
 
-**What it is:** A custom LoRA trained on creature images generated from SDXL + EldritchPaletteKnife, producing impasto oil-painting brushstroke texture with broader creature variety than EldritchPaletteKnife alone.
+### 3.2 Custom LoRA Pipeline
 
-**⚠️ Commercial License Status — Research findings (verified Feb 2026):**
+#### 3.2a LoRA v1 (RETIRED)
 
-EldritchPaletteKnife (CivitAI model 336656) is an SDXL 1.0 LoRA by creator `eldritchadam`. Its base model is SDXL 1.0, which is licensed under the **CreativeML Open RAIL++ License** — a permissive license that allows commercial use of generated outputs and permits training derivative models from outputs, provided the Open RAIL++ usage restrictions (no harmful content, etc.) are followed.
+**Status: RETIRED — do not use for any new generation.**
 
-CivitAI's permission system lets model authors override the default with checkboxes (e.g. "no commercial use," "no merges"). The EldritchPaletteKnife model page renders in JavaScript and the permission checkboxes could not be machine-read during verification. However:
+The original LoRA (`chscrt-sdxl-lora.safetensors`) was trained on creature images generated from SDXL + EldritchPaletteKnife. The EldritchPaletteKnife model (CivitAI model 336656) has an unresolved commercial license gate — the CivitAI permission checkboxes could not be machine-verified, and no human verification was completed before the license gate deadline.
 
-- The model description contains no explicit commercial restriction
-- The creator has not noted any non-commercial restriction in the model text
-- Multiple third-party archives (CivArchive, SeaArt) mirror the model without flagging commercial restrictions
-- The model is also hosted on Hugging Face at `EldritchAdam/SDXL_Eldritch_LoRAs` with no stated license restrictions
-
-**Likely status: commercially usable.** The SDXL base license permits it and no explicit restriction was found.
-
-**Required action before shipping:** A human must visit `civitai.com/models/336656` directly, click the "License" link on the model page, and confirm the permission checkboxes show "Allow commercial use" is enabled. Screenshot this and store it in `Resources/LegalEvidence/eldritchpaletteknife_license_screenshot.png`. If commercial use is *not* permitted, retrain the LoRA using SDXL base outputs only (Apache 2.0, unambiguously commercial-safe) and delete all assets generated using the original LoRA.
-
-**⛔ COMMERCIAL PIPELINE GATE — do not proceed to artwork generation without completing this step.**
-
-**How to run the LoRA — Replicate (required deployment method):**
-
-The LoRA is stored on Cloudflare R2 and loaded directly from its public URL at generation time via Replicate's `extra_lora` parameter. There is no push step, no custom model to manage, and no version hash to track. The URL is the permanent reference.
-
-**LoRA URL (constant — do not change):**
-
-```javascript
-const CHSCRT_LORA = 'https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/training/chscrt-sdxl-lora.safetensors'
+**R2 URL (archived, do not use):**
+```
+https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/training/chscrt-sdxl-lora.safetensors
 ```
 
-Store this as `LORA_URL` in `.env`. Always reference it from the environment — never hardcode the URL in generation scripts directly, so it can be updated in one place if the R2 location ever changes.
+The v1 file remains on R2 for reference but must not be used in any generation pipeline. All creature artwork generation requires LoRA v2.
 
+#### 3.2b LoRA v2 — Public Domain Training Pipeline
+
+**What it is:** A custom SDXL LoRA trained exclusively on public domain oil paintings (pre-1900, all artists died before 1953). Produces impasto oil-painting brushstroke texture with broad subject diversity. Commercially unambiguous — no third-party LoRA dependencies.
+
+**Commercial License Status: RESOLVED.**
+- Training data: Metropolitan Museum of Art and Rijksmuseum public domain collections (CC0)
+- Base model: SDXL 1.0, licensed under CreativeML Open RAIL++ (commercial use permitted)
+- No EldritchPaletteKnife dependency — license gate from v1 does not apply
+- Confirmation logged to: `Resources/LegalEvidence/lora_v2_license_confirmation.md`
+
+**HARD GATE: No creature artwork generation until LoRA v2 is trained, uploaded to R2, and smoke-tested.** Use fal.ai FLUX.1 Dev as temporary fallback for any creature art needed during development — log all fallback generations in `Logs/BUDGET_LEDGER.md` with note "pre-LoRA-v2 fallback".
+
+**R2 URL (once trained):**
 ```bash
-# .env addition
-LORA_URL=https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/training/chscrt-sdxl-lora.safetensors
+LORA_URL_V2=https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/training/chscrt-sdxl-lora-v2.safetensors
 ```
 
-**One-time setup:**
+Keep `LORA_URL` (v1) in `.env` until v2 is verified. Add `LORA_URL_V2` alongside it. Switch generation scripts to `LORA_URL_V2` only after smoke test confirms quality.
 
-```bash
-# Install Replicate Python client
-pip3 install replicate requests --break-system-packages
+#### 3.2c Training Data Requirements
 
-# Authenticate
-source Scripts/load_env.sh
-python3 -c "import replicate; print('Replicate client OK')"
+**Target: 80–120 high resolution images.**
 
-# Verify the R2 URL is reachable before any generation runs
-python3 -c "
-import requests, os
-url = os.environ.get('LORA_URL')
-r = requests.head(url, timeout=15)
-if r.status_code == 200:
-    print('R2 LoRA URL reachable OK')
-else:
-    print(f'R2 URL UNREACHABLE — HTTP {r.status_code}')
-    exit(1)
-"
+The training set must be intentionally balanced to counteract SDXL's portrait bias. Diffusion models already know how to paint faces and figures. The LoRA needs to teach impasto oil paint texture and physical materiality — not portraiture.
+
+**Composition distribution targets:**
+
+| Category | Target count | Purpose |
+|----------|-------------|---------|
+| Creatures and animals in environments | 25–30 | Primary use case |
+| Landscapes and environments (no figures) | 20–25 | Counteracts portrait bias |
+| Still life and objects | 15–20 | Material texture reference |
+| Battle and crowd scenes | 10–15 | Multiple figures, not portraits |
+| Architecture and ruins | 10–15 | Environmental cards |
+| Single figure portraits | MAX 10 | Intentionally limited |
+
+**Style requirements — all images must have:**
+- Visible impasto brushwork — paint has physical body and ridges
+- Dramatic chiaroscuro — strong light/dark contrast
+- Warm or cold tonal palette — no pastel, no even illumination
+- Oil on canvas medium — no watercolor, no ink, no fresco
+- Pre-1900 — avoids copyright complications from modern artists
+
+**Artists to source from (all public domain, died pre-1953):**
+
+*For impasto texture quality:*
+- Rembrandt van Rijn — figures, anatomy, dramatic light
+- Frans Hals — loose expressive brushwork, figures
+- Nicolaes Maes — domestic scenes, warm light
+- Jan Steen — crowd scenes, environments
+- Gustave Courbet — landscapes, animals, thick impasto
+- Jean-Baptiste-Camille Corot — atmospheric environments
+- John Constable — landscapes, sky, natural environments
+- J.M.W. Turner — atmospheric, non-figurative environments
+
+*For grimdark register specifically:*
+- Francisco Goya — Black Paintings, war scenes, crowds, animals, environments. PRIORITY SOURCE — most images from Goya should be non-portrait (Saturn, Witches Sabbath, The Dog, Pilgrimage, Fight with Cudgels, A Procession of Flagellants)
+- Theodore Gericault — animals, anatomy, dramatic scenes (Raft of the Medusa for crowd)
+- Eugene Delacroix — battle scenes, animals, dramatic environments
+- Henry Fuseli — supernatural creatures, nightmares, non-portrait fantasy
+
+*For creature and animal reference:*
+- George Stubbs — animals in environments, not portraits
+- Jacques-Laurent Agasse — animals, wildlife
+- Edwin Landseer — animals in dramatic environments
+
+**Explicitly avoid for training:**
+- Portraits that fill the frame (face dominant, plain background)
+- Smooth academic painting style (Bouguereau, Ingres) — wrong texture
+- Religious iconography with gold background — wrong material
+- Impressionist works (Monet, Renoir) — wrong brushwork scale
+- Any work post-1900
+
+#### 3.2d Public Domain Source APIs
+
+Use these APIs to programmatically fetch high resolution images with confirmed public domain status. Do not manually download — write a script.
+
+**The Metropolitan Museum of Art (primary source):**
+
+```python
+import requests
+
+MET_SEARCH = "https://collectionapi.metmuseum.org/public/collection/v1/search"
+MET_OBJECT = "https://collectionapi.metmuseum.org/public/collection/v1/objects/{id}"
+
+def search_met(query, has_images=True):
+    params = {
+        "q": query,
+        "hasImages": has_images,
+        "isPublicDomain": True,   # CRITICAL — must be True for commercial use
+        "medium": "Oil on canvas"
+    }
+    response = requests.get(MET_SEARCH, params=params)
+    return response.json()
+
+def get_met_image(object_id):
+    response = requests.get(MET_OBJECT.format(id=object_id))
+    data = response.json()
+    return data.get("primaryImageLarge"), data.get("artistDisplayName"), data.get("title")
 ```
 
-Run the R2 reachability check at the start of every generation session. Do not proceed with creature artwork generation if the URL is unreachable — there is no local fallback for the LoRA.
+Suggested search queries for balanced dataset:
+- `"landscape oil painting"` — environments
+- `"animal painting oil"` — creatures
+- `"battle scene painting"` — crowds, action
+- `"still life oil"` — objects, materials
+- `"Goya"` — grimdark register
+- `"Rembrandt night scene"` — chiaroscuro
+- `"Constable landscape"` — environments
+- `"Delacroix animals"` — creatures in action
 
-**Generation call (Python):**
+**Rijksmuseum (secondary source):**
+
+```python
+RIJKS_API = "https://www.rijksmuseum.nl/api/en/collection"
+RIJKS_KEY = os.environ.get("RIJKS_API_KEY")  # Free key at rijksmuseum.nl/en/api
+
+def search_rijks(query, art_type="painting"):
+    params = {
+        "key": RIJKS_KEY,
+        "q": query,
+        "type": art_type,
+        "imgonly": True,
+        "toppieces": False,
+        "ps": 100
+    }
+    response = requests.get(RIJKS_API, params=params)
+    return response.json()
+```
+
+Add `RIJKS_API_KEY` to `.env` template.
+
+**Wikimedia Commons (tertiary — use for specific known works):**
+
+```python
+WIKIMEDIA_API = "https://commons.wikimedia.org/w/api.php"
+
+def get_wikimedia_image(filename):
+    params = {
+        "action": "query",
+        "titles": f"File:{filename}",
+        "prop": "imageinfo",
+        "iiprop": "url|size|mime",
+        "iiurlwidth": 2000,
+        "format": "json"
+    }
+    response = requests.get(WIKIMEDIA_API, params=params)
+    return response.json()
+```
+
+#### 3.2e Caption Format for Training
+
+Each training image needs a caption file (`filename.txt`) alongside it. Caption format drives what the LoRA learns to associate with trigger words.
+
+```
+impasto oil painting, [subject description], thick brushwork, paint ridges visible,
+dramatic chiaroscuro, [light quality], [palette], oil on canvas, [artist style reference],
+[composition type: landscape/creature/scene/still-life]
+```
+
+Examples:
+
+```
+# For a Goya battle scene:
+impasto oil painting, chaotic battle scene with figures struggling in mud,
+thick brushwork, paint ridges visible, dramatic chiaroscuro, cold grey light,
+dark earth and bone-white palette, oil on canvas, Goya Black Paintings style, scene
+
+# For a Courbet landscape:
+impasto oil painting, dense forest with rocky stream, thick brushwork,
+paint ridges visible, dramatic chiaroscuro, dappled warm light,
+deep green and ochre palette, oil on canvas, Courbet realist style, landscape
+
+# For a Stubbs animal:
+impasto oil painting, horse in dramatic landscape, thick brushwork,
+paint ridges visible, dramatic chiaroscuro, warm directional light,
+warm brown and sky-blue palette, oil on canvas, Stubbs animal painting style, creature
+```
+
+#### 3.2f LoRA Training on Replicate
+
+```python
+import replicate, os
+
+def train_lora_v2(training_zip_url: str, output_name: str = "chscrt-sdxl-lora-v2"):
+    """
+    Train SDXL LoRA v2 on curated public domain impasto oil paintings.
+    training_zip_url: URL to zip of images + caption .txt files (uploaded to R2).
+    """
+    training = replicate.trainings.create(
+        version="stability-ai/sdxl:39ed52f2319f9b723b1b4ed18b9edd6f78c97bcf8d4e2b70e72a3a449673f77",
+        input={
+            "input_images": training_zip_url,
+            "seed": 42,
+            "resolution": 1024,
+            "train_batch_size": 4,
+            "num_train_epochs": 4,
+            "max_train_steps": 2000,
+            "checkpointing_steps": 500,
+            "gradient_accumulation_steps": 4,
+            "learning_rate": 1e-4,
+            "lr_scheduler": "constant",
+            "lr_warmup_steps": 0,
+            "use_8bit_adam": True,
+            "mixed_precision": "fp16",
+            "lora_rank": 32,
+            "caption_column": "text",
+            "trigger_word": "impasto oil painting",
+        },
+        destination=f"asa7388/{output_name}"
+    )
+    return training
+```
+
+**Cost estimate:** LoRA training on Replicate approximately $5–15 depending on GPU time and dataset size. Log actual cost in `Logs/BUDGET_LEDGER.md`.
+
+#### 3.2g Generation Call (v2)
 
 ```python
 import replicate, os, requests
 from pathlib import Path
 
-# The base SDXL model that accepts extra_lora weights
 SDXL_MODEL = "stability-ai/sdxl:39ed52f2319f9b723b1b4ed18b9edd6f78c97bcf8d4e2b70e72a3a449673f77"
 
 def generate_creature_artwork(prompt: str, negative_prompt: str, output_path: str) -> bool:
-    lora_url = os.environ.get("LORA_URL")
+    lora_url = os.environ.get("LORA_URL_V2")  # v2 — public domain trained
     if not lora_url:
-        print("ERROR: LORA_URL not set in environment")
+        print("ERROR: LORA_URL_V2 not set in environment")
         return False
 
     try:
@@ -922,12 +1091,12 @@ def generate_creature_artwork(prompt: str, negative_prompt: str, output_path: st
             input={
                 "prompt": prompt,
                 "negative_prompt": negative_prompt,
-                "extra_lora": lora_url,          # R2 URL loaded directly at inference time
-                "extra_lora_scale": 0.85,         # 0.8–0.9 preserves creature detail without overfit
+                "extra_lora": lora_url,
+                "extra_lora_scale": 0.85,
                 "num_inference_steps": 35,
                 "guidance_scale": 7.5,
                 "width": 1024,
-                "height": 1024,
+                "height": 1432,  # Portrait orientation matching card aspect ratio
                 "scheduler": "DPMSolverMultistep",
             }
         )
@@ -962,13 +1131,31 @@ def generate_creature_artwork(prompt: str, negative_prompt: str, output_path: st
 | 0.8–0.9 | Strong brushwork, recommended for most creatures |
 | 1.0+ | Maximum LoRA influence, may overfit on some subjects |
 
-If a creature subject produces distorted anatomy at 0.85, reduce scale to 0.7 before switching to fal.ai — the LoRA may be over-influencing complex poses.
+**One-time setup:**
+
+```bash
+pip3 install replicate requests --break-system-packages
+source Scripts/load_env.sh
+python3 -c "import replicate; print('Replicate client OK')"
+
+# Verify R2 URL once v2 is uploaded
+python3 -c "
+import requests, os
+url = os.environ.get('LORA_URL_V2')
+r = requests.head(url, timeout=15)
+if r.status_code == 200:
+    print('R2 LoRA v2 URL reachable OK')
+else:
+    print(f'R2 URL UNREACHABLE — HTTP {r.status_code}')
+    exit(1)
+"
+```
 
 **After every generation call, verify before using downstream:**
 
 ```bash
 python3 Scripts/verify_asset.py "$OUTPUT_PATH" \
-  --min-width 1024 --min-height 1024 \
+  --min-width 1024 --min-height 1432 \
   --no-error-payload
 ```
 
@@ -983,169 +1170,28 @@ python3 Scripts/verify_asset.py "$OUTPUT_PATH" \
 | Output URL expired | Replicate output URLs expire after ~1 hour — always download immediately, never store the URL |
 | `extra_lora` fetch error | Replicate logs this as a model error — verify R2 URL is publicly readable with `requests.head()` |
 
-**Cost tracking:** Replicate bills per second of GPU time. Log estimated and actual cost for every call in `Logs/BUDGET_LEDGER.md`. At SDXL scale with LoRA loading, expect approximately $0.04–0.07 per generation at 35 steps (slightly higher than base SDXL due to LoRA fetch overhead). If a run fails after billing has started, log the cost — it still counts against budget.
+**Cost tracking:** Replicate bills per second of GPU time. Log estimated and actual cost for every call in `Logs/BUDGET_LEDGER.md`. At SDXL scale with LoRA loading, expect approximately $0.04–0.07 per generation at 35 steps. The portrait 1024x1432 dimensions will be slightly more expensive than square 1024x1024. If a run fails after billing has started, log the cost — it still counts against budget.
 
-**Faction-aware prompt structure for creature artwork:**
-
-The sub-faction field drives a secondary style suffix that refines the faction-level reference. Always look up both `card.faction` and `card.subFaction` before building the prompt.
-
-```python
-# Scripts/prompt_utils.py
-
-# Primary faction style — defines the artistic lineage
-FACTION_CREATURE_STYLE = {
-    "ironwright": (
-        "Piranesi Carceri prison architecture influence, deep shadow, iron and stone, "
-        "monumental scale, etching quality linework in paint, warm rust and ochre palette, "
-        "NOT steampunk, no brass, no gears, no steam, no clockwork"
-    ),
-    "fey": (
-        "Arthur Rackham and Edmund Dulac style, delicate sinuous linework, jewel-tone color, "
-        "enchanted forest atmosphere, organic forms, moonlit quality"
-    ),
-    "demonic": (
-        "Hieronymus Bosch style, grotesque detail, hellish carnival atmosphere, "
-        "surreal corruption of organic and mechanical forms, dense symbolic horror"
-    ),
-    "celestial": (
-        "Gustave Doré Paradise Lost style, radiant divine light, upward composition, "
-        "monumental figure scale, William Blake prophetic power, warm gold and white"
-    ),
-    "endless": (
-        "Gustave Doré Inferno style, cold light in deep darkness, vast desolate scale, "
-        "figures diminished by environment, Goya Black Paintings raw power, grey and cold"
-    ),
-}
-
-# Sub-faction refinement — appended after faction style to narrow visual character
-SUBFACTION_CREATURE_STYLE = {
-    "foundryDirectorate": (
-        "reactor-blue light from chest cavity, poured concrete surfaces, exposed rebar, "
-        "geometric silhouette, no ornamentation, brutalist industrial"
-    ),
-    "scrapLegions": (
-        "asymmetric mismatched components, warning-orange rust, salvaged alien materials, "
-        "exposed sparking wiring, jury-rigged, patchwork construction"
-    ),
-    "verdantThrone": (
-        "bioluminescent markings pulse green, flowering antlers, bark-skin with visible grain, "
-        "warm sunlit canopy background, symbiotic and nurturing"
-    ),
-    "hollowCourt": (
-        "frost-crown, bare bone visible, solid black eyes with cold starlight pupils, "
-        "midnight winter forest, predatory stillness, moth-wing texture"
-    ),
-    "furnaceLords": (
-        "magma visible through cracked obsidian skin, volcanic glass horns, molten gold eyes, "
-        "volcanic caldera background, everything burns"
-    ),
-    "obsidianBureaucracy": (
-        "formal robes of black silk, ink-stained hands, chains draped as mantle, "
-        "obsidian tower interior with filing cabinets, reddish dim light, too-many-eyes"
-    ),
-    "knightsOfDeliverance": (
-        "gold and ivory plate armor, divine blue tabard, halo of soft golden light, "
-        "formation geometry behind figure, fortress-cathedral above clouds"
-    ),
-    "heavensChosen": (
-        "concentric burning wheels covered in open eyes, six wings of fire, "
-        "geometric and organic simultaneously, reality warping around it, "
-        "cathedral architecture flowing like liquid in background"
-    ),
-    "necromanticCabals": (
-        "tattered scholarly robes, crown of fused finger-bones, eye sockets glow cold teal, "
-        "bone staff with caged phylactery, subterranean cathedral of bones background"
-    ),
-    "lostSpectres": (
-        "translucent ghostly figure flickering between solid and ethereal, "
-        "hair drifting upward as though underwater, broken chain from one wrist, "
-        "fog-choked battlefield background, spectral mist"
-    ),
-}
-
-def build_creature_prompt(description: str, accent_color: str, composition: str,
-                          faction: str, sub_faction: str) -> str:
-    faction_style = FACTION_CREATURE_STYLE.get(faction, FACTION_CREATURE_STYLE["ironwright"])
-    sub_style = SUBFACTION_CREATURE_STYLE.get(sub_faction, "")
-    return (
-        f"{description}, fantasy creature, oil painting, impasto brushwork, "
-        f"thick paint texture, dramatic chiaroscuro, {accent_color} palette, "
-        f"{composition}, detailed, high contrast, {faction_style}"
-        + (f", {sub_style}" if sub_style else "")
-    )
-```
-
-**Example prompts by sub-faction:**
-
-*Foundry Directorate (Ironwright) creature:*
-```
-"armored concrete golem, fantasy creature, oil painting, impasto brushwork,
-thick paint texture, dramatic chiaroscuro, warm ochre and iron-grey palette,
-three-quarter view, detailed, high contrast,
-Piranesi Carceri prison architecture influence, deep shadow, iron and stone,
-monumental scale, etching quality linework in paint,
-NOT steampunk, no brass, no gears, no steam, no clockwork,
-reactor-blue light from chest cavity, poured concrete surfaces, exposed rebar,
-geometric silhouette, no ornamentation, brutalist industrial"
-```
-
-*Scrap Legions (Ironwright) creature:*
-```
-"asymmetric salvage-construct with mismatched limbs, fantasy creature, oil painting,
-impasto brushwork, thick paint texture, dramatic chiaroscuro,
-rust-orange and steel-grey palette, action pose, detailed, high contrast,
-Piranesi Carceri influence, iron and stone, NOT steampunk no brass no gears no clockwork,
-asymmetric mismatched components, warning-orange rust, salvaged alien materials,
-exposed sparking wiring, jury-rigged patchwork construction"
-```
-
-*Verdant Throne (Fey) creature:*
-```
-"tall figure merging with living wood, bark-skin with visible grain, fantasy creature,
-oil painting, impasto brushwork, thick paint texture, dramatic chiaroscuro,
-emerald and gold palette, standing pose in ancient grove, detailed,
-Arthur Rackham and Edmund Dulac style, delicate sinuous linework,
-enchanted forest atmosphere, moonlit quality,
-bioluminescent markings pulse green, flowering antlers,
-warm sunlit canopy background, symbiotic and nurturing"
-```
-
-*Heaven's Chosen (Celestial) creature:*
-```
-"biblically accurate celestial entity, concentric rings of burning wheels, fantasy creature,
-oil painting, impasto brushwork, thick paint texture, dramatic chiaroscuro,
-warm gold and radiant white palette, floating upward composition, detailed,
-Gustave Doré Paradise Lost style, radiant divine light, William Blake prophetic power,
-concentric burning wheels covered in open eyes, six wings of fire,
-geometric and organic simultaneously, reality warping, cathedral architecture flowing like liquid"
-```
-
-*Lost Spectres (Endless) creature:*
-```
-"translucent spectral figure of a woman, features visible but ghostly, fantasy creature,
-oil painting, impasto brushwork, thick paint texture, dramatic chiaroscuro,
-ghostly teal and sickly green palette, ethereal floating composition, detailed,
-Gustave Doré Inferno style, cold light in deep darkness, Goya Black Paintings raw power,
-flickering between solid and ethereal, hair drifting upward as though underwater,
-broken chain from one wrist, fog-choked battlefield background"
-```
-Negative prompt for all creature LoRA calls:
-```
-"MTG, Magic the Gathering, Wizards of the Coast, Pokémon, Yu-Gi-Oh,
-photorealistic, 3D render, digital art, anime, smooth, plastic,
-watermark, signature, text, card frame, border, logo,
-any trademarked character, ugly, deformed, extra limbs"
-```
-
-**Trigger words:** Verify trigger words in your specific LoRA training run. If unknown, test with and without `"oil painting impasto"` — if the LoRA activates, that phrase is likely included in training captions.
+**Trigger words:** The v2 LoRA uses `"impasto oil painting"` as its trigger phrase (set during training). Include this in all creature prompts — it is already present in the `build_creature_prompt()` function.
 
 **When NOT to use the custom LoRA:**
-- Non-creature cards (spells, stabilizers, planar ruins) — use fal.ai FLUX.1 Dev instead
+- Non-creature cards (spells, stabilizers, planar ruins) — use fal.ai FLUX.1 Dev instead (Section 3.3)
 - When the creature subject is highly architectural or mechanical (LoRA's creature bias may distort)
 
-**LoRA fallback (if unavailable or poor result):**
-- SDXL base via Replicate with `"oil painting impasto"` + faction/sub-faction style suffix — less specific but consistent
-- fal.ai FLUX.1 Dev with faction/sub-faction style suffix — strong artistic quality, slightly less impasto
+**LoRA fallback (if v2 unavailable or poor result):**
+- fal.ai FLUX.1 Dev with `"impasto oil painting"` + faction/sub-faction style suffix + material suffix — strong artistic quality, slightly less impasto control
+- Log all fallback generations in `Logs/BUDGET_LEDGER.md` with note "LoRA-v2 fallback"
+
+#### 3.2h Required Scripts and Files
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `Scripts/fetch_training_data.py` | Fetch public domain images from Met/Rijksmuseum APIs | Not yet created |
+| `Scripts/generate_captions.py` | Generate caption .txt files for training images | Not yet created |
+| `Training/TRAINING_MANIFEST.md` | License confirmation for every training image | Not yet created |
+| `Training/raw/` | Downloaded source images | Not yet created |
+| `Training/captions/` | Caption files | Not yet created |
+| `Resources/LegalEvidence/lora_v2_license_confirmation.md` | Commercial license confirmation | Not yet created |
 
 ### 3.3 Non-Creature Artwork: fal.ai FLUX.1 Dev
 
@@ -2006,6 +2052,8 @@ Steps (apply in order in the artwork rendering layer):
 3. **Apply bottom vignette gradient** (Section 1.4, layer 3) — `LinearGradient` darkening the bottom 40% of the artwork for text legibility: `.clear` at top of gradient to `black` at 45% opacity at bottom. This replaces the old 4-edge feather fade.
 4. **Apply color grade overlay** — multiply blend with a `parchment-light` layer at 8% opacity over the entire artwork area. This unifies the artwork with the card's warm tone.
 5. **ParchmentShader ragged edge** (Section 6.2b) is applied to the card container as a whole — not to the artwork layer specifically.
+
+**Material background note:** For creature artwork, the faction's native material surface (iron plate, birch bark, leather, vellum, bone parchment — see Section 3.1) is baked directly into the generated image. When the artwork is placed in the card frame, the material surface is visible at the edges after the ragged edge mask is applied. No separate compositing layer or border asset is needed — the material IS the artwork's background, and the ragged edge mask reveals it organically at the card perimeter.
 
 Implement steps 2-4 as a Metal fragment shader or as stacked SwiftUI layers, not as separate draw passes if performance is critical.
 

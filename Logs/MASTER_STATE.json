@@ -1,11 +1,13 @@
 {
-  "phase": "phase_3_code_complete",
-  "current_task": "Phase 3: Testing & Screenshots (before Phase 4)",
-  "last_updated": "2026-02-23",
+  "phase": "phase_5_next",
+  "current_task": "Phase 5: Metal Shader Integration + Ragged Edge + SMOKE TEST GATE",
+  "last_updated": "2026-02-24",
   "design_direction": "CARD_LAYOUT_SPEC_v2 — Full-Art Dossier Format (IMPLEMENTED)",
   "implementation_status": {
     "CardFrameView_rewrite": "complete (375 lines, dossier ZStack)",
     "CardDossierTextView": "complete (339 lines, all field visibility)",
+    "CardBackView_rewrite": "complete (intelligence report back face + flip animation)",
+    "Per_faction_fonts": "complete (Fredericka/Passions Conflict/Lovers Quarrel/Rammetto One)",
     "Call_sites_updated": "complete (8 files)",
     "Build_status": "PASS (iOS Simulator)",
     "Zone_stack_removed": "complete"
@@ -15,8 +17,9 @@
     "Phase 2: Card Layout Corrections (RETIRED — zone-stack replaced by dossier)",
     "Phase 2.5: Font & Asset Prerequisites (COMPLETE)",
     "Phase 2.6: Update Source Design Docs (COMPLETE)",
-    "Phase 3: CardFrameView Front Face Rewrite (CODE COMPLETE — TESTING NEXT)",
-    "Phase 4: CardBackView Intelligence Report Rewrite",
+    "Phase 3: CardFrameView Front Face Rewrite (COMPLETE)",
+    "Phase 4: CardBackView Intelligence Report Rewrite (COMPLETE)",
+    "Phase 4.5: Per-Faction Fonts (COMPLETE)",
     "Phase 5: Metal Shader Integration + Ragged Edge + SMOKE TEST GATE",
     "Phase 6: Art Generation Pipeline ($5-7 API cost)",
     "Phase 7: Sound Design & Audio Pipeline",
@@ -28,13 +31,37 @@
     "Smoke Test Gate (Phase 5)",
     "Haptic Hard Gate (Phase 8)"
   ],
+  "art_pipeline": {
+    "lora_v1": "RETIRED — EldritchPaletteKnife license gate unresolved",
+    "lora_v2": "RETIRED — FLUX model, replaced by SDXL",
+    "lora_v2_training_zip": "https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/training/lora_v2_training_data.zip",
+    "lora_v2_training_count": "102 images (25 creatures, 20 landscapes, 15 still_life, 12 battle, 12 architecture, 10 grimdark, 8 portraits)",
+    "lora_v2_training_params": "ostris/flux-dev-lora-trainer, 2000 steps, lora_rank 32, trigger 'impasto oil painting'",
+    "lora_v2_blocker": "NONE — training complete",
+    "lora_v2_tested_settings": "resolution 1024x1432 (portrait), prompt_strength 0.8, lora_scale 0.5, simplified prompt (no art-historical style refs, keep material suffix + trigger)",
+    "lora_v2_training_id": "hqpwwvknrhrmy0cwhzft4bsck0",
+    "lora_v2_training_url": "https://replicate.com/p/hqpwwvknrhrmy0cwhzft4bsck0",
+    "lora_v2_destination": "asa7388/chscrt-sdxl-lora-v2",
+    "material_background": "DOCUMENTED — faction material suffixes in guide §3.1",
+    "creature_gen_gate": "UNBLOCKED — SDXL LoRA smoke test passed, all 5 factions approved",
+    "non_creature_gen": "READY — fal.ai FLUX.1 Dev, no LoRA dependency",
+    "training_scripts": "COMPLETE — fetch_training_data.py (CSV-based), generate_captions.py",
+    "generation_dimensions": "1024x1432 portrait (creature), 1024x1024 square (non-creature)",
+    "lora_v2_sdxl": "PRODUCTION — chosen model, all 5 factions smoke-tested and approved",
+    "lora_v2_sdxl_settings": "width 1024, height 1432, lora_scale 0.6, apply_watermark false, disable_safety_checker true, no trigger token needed",
+    "lora_v2_sdxl_negative_prompt": "signature, text, watermark, writing, artist name, letters, words, scribble, caption, label, logo, stamp, copyright, initials",
+    "lora_v2_sdxl_training_id": "055he4488xrmt0cwj7pvjbenkg",
+    "lora_v2_sdxl_training_url": "https://replicate.com/p/055he4488xrmt0cwj7pvjbenkg",
+    "lora_v2_sdxl_destination": "asa7388/chscrt-sdxl-lora-v2-sdxl"
+  },
   "decisions_needed": [],
-  "critical_path": "Phase 3 (testing) → Phase 4 → Phase 5 (Smoke Test) → Phase 10",
-  "parallelizable": "Phases 6 (art), 7 (sound) can run alongside Phases 3-5",
+  "critical_path": "Phase 5 (Smoke Test) → Phase 6 → Phase 10",
+  "parallelizable": "Phases 6 (art), 7 (sound) can run alongside Phase 5",
   "decisions_resolved": {
     "card_layout": "IMPLEMENTED — Full-art dossier format per CARD_LAYOUT_SPEC_v2.md",
-    "typography": "Yeseva One (front face), IM Fell English (back face) — REGISTERED",
-    "generation_pipeline": "Option 3A — New LoRA v2 on public domain artworks (pending)",
-    "fonts_registered": "YesevaOne-Regular.ttf, IMFellEnglish-Regular.ttf, IMFellEnglish-Italic.ttf"
+    "typography": "Fredericka the Great (Ironwright/Celestial front), Passions Conflict (Demonic front), Lovers Quarrel (Fey front), Rammetto One (Endless front), IM Fell English (back face)",
+    "generation_pipeline": "SDXL LoRA (asa7388/chscrt-sdxl-lora-v2-sdxl) + material suffix + negative prompts — smoke test PASSED 2026-02-24",
+    "fonts_registered": "YesevaOne-Regular.ttf, IMFellEnglish-Regular.ttf, IMFellEnglish-Italic.ttf, PassionsConflict-Regular.ttf, LoversQuarrel-Regular.ttf, RammettoOne-Regular.ttf",
+    "per_faction_fonts": "CardFont.factionFont(for:size:) selector — Ironwright/Celestial: Fredericka the Great, Demonic: Passions Conflict, Fey: Lovers Quarrel, Endless: Rammetto One. All OFL-licensed."
   }
 }
