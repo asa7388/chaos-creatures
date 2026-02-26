@@ -208,11 +208,14 @@ function getFactionShortName(fullName: string): string {
 }
 
 /**
- * Match a job to a subtype name for a given faction. Uses explicit creature_subtype,
- * then falls back to fuzzy matching on creature_type_hint and output_data.name.
- * Returns the canonical subtype name or null if no match.
+ * Match a job to a subtype name for a given faction. Only uses the explicit
+ * creature_subtype field — no fuzzy guessing. Returns the canonical subtype
+ * name or null if not explicitly set.
  */
 function matchSubtype(job: GenerationJob, factions: Faction[]): string | null {
+  const storedSubtype = job.input_data?.creature_subtype;
+  if (!storedSubtype) return null;
+
   const factionId = job.input_data?.faction_id;
   if (!factionId) return null;
 
@@ -223,44 +226,10 @@ function matchSubtype(job: GenerationJob, factions: Faction[]): string | null {
   const subtypes = CREATURE_SUBTYPES[factionKey];
   if (!subtypes) return null;
 
-  // Try explicit subtype first
-  const storedSubtype = job.input_data?.creature_subtype;
-  if (storedSubtype) {
-    const match = subtypes.find(
-      (s) => s.name.toLowerCase() === storedSubtype.toLowerCase()
-    );
-    if (match) return match.name;
-  }
-
-  // Build a combined search string from all available text fields
-  const hint = (job.input_data?.creature_type_hint || '').toLowerCase();
-  const cardName = (job.output_data?.name || '').toLowerCase();
-  const flavorText = (job.output_data?.flavor_text || '').toLowerCase();
-  const searchText = `${hint} ${cardName} ${flavorText}`;
-
-  // Try substring match: does any subtype name appear in the search text?
-  // Sort by longest name first to prefer specific matches (e.g. "Pit Lord" before "Imp")
-  const sortedSubtypes = [...subtypes].sort((a, b) => b.name.length - a.name.length);
-  for (const s of sortedSubtypes) {
-    if (searchText.includes(s.name.toLowerCase())) {
-      return s.name;
-    }
-  }
-
-  // Try matching subtype description keywords against card name
-  // e.g. "Brass Piston Sentinel" might match "Automaton" description "standard infantry construct"
-  // This is intentionally loose — better to show a guess than nothing
-  for (const s of sortedSubtypes) {
-    const descWords = s.description.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-    const nameWords = cardName.split(/\s+/);
-    for (const nw of nameWords) {
-      if (descWords.some(dw => nw.includes(dw) || dw.includes(nw))) {
-        return s.name;
-      }
-    }
-  }
-
-  return null;
+  const match = subtypes.find(
+    (s) => s.name.toLowerCase() === storedSubtype.toLowerCase()
+  );
+  return match ? match.name : null;
 }
 
 /**
@@ -294,13 +263,14 @@ function getCreatureTypeLabel(job: GenerationJob, factions: Faction[]): string |
     return `${data.name} (T${data.tier})`;
   }
 
-  // Fall back to creature_type_hint truncated
+  // No explicit subtype — show "Unclassified" with optional hint
   const hint = job.input_data?.creature_type_hint;
   if (hint) {
-    return hint.length > 30 ? hint.slice(0, 30) + '...' : hint;
+    const truncated = hint.length > 20 ? hint.slice(0, 20) + '...' : hint;
+    return `Unclassified — ${truncated}`;
   }
 
-  return null;
+  return 'Unclassified';
 }
 
 /** Get the color class for a count/target ratio */
