@@ -4,7 +4,7 @@
 // REQ-182: Card review gallery with approve/reject.
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { factionNameToKey, CREATURE_SUBTYPES } from '@/lib/prompts';
 
 interface GenerationJob {
@@ -52,6 +52,7 @@ interface ProcessQueueState {
 
 interface CardGridProps {
   jobs: GenerationJob[];
+  allJobs: GenerationJob[];
   factions: Faction[];
   onRefresh: () => void;
   queuedJobCount: number;
@@ -83,6 +84,14 @@ const FACTION_BADGE_BG: Record<string, string> = {
   demonic: 'bg-red-800',
   celestial: 'bg-blue-700',
   endless: 'bg-purple-800',
+};
+
+/** Target card count per tier */
+const SUBTYPE_TARGETS: Record<number, number> = {
+  1: 10,
+  2: 7,
+  3: 5,
+  4: 3,
 };
 
 type ReviewStatus = 'APPROVED' | 'REJECTED' | 'PENDING_REVIEW' | 'NONE';
@@ -159,10 +168,30 @@ function getCardBorderClass(job: GenerationJob): string {
   return '';
 }
 
+/**
+ * Find a faction by ID — handles both UUID and legacy short_name formats
+ * (e.g. "a0000000-..." or "IRONWRIGHT").
+ */
+function findFaction(factionId: string | undefined, factions: Faction[]): Faction | null {
+  if (!factionId) return null;
+  // Try UUID match first
+  const byId = factions.find((f) => f.id === factionId);
+  if (byId) return byId;
+  // Fall back to short_name match (legacy jobs used "IRONWRIGHT", "FEY_COURTS", etc.)
+  const byShortName = factions.find((f) => f.short_name === factionId);
+  if (byShortName) return byShortName;
+  // Last resort: try factionNameToKey on the raw value against faction names
+  const upper = factionId.toUpperCase();
+  const byName = factions.find((f) => {
+    const key = f.short_name || f.name.toUpperCase().replace(/\s+/g, '_').replace(/^THE_/, '');
+    return key === upper;
+  });
+  return byName || null;
+}
+
 /** Look up the faction name from a faction_id using the factions list */
 function getFactionName(factionId: string | undefined, factions: Faction[]): string | null {
-  if (!factionId) return null;
-  const faction = factions.find((f) => f.id === factionId);
+  const faction = findFaction(factionId, factions);
   return faction?.name || null;
 }
 
@@ -172,23 +201,97 @@ function getFactionBadgeBg(factionName: string): string {
   return FACTION_BADGE_BG[key] || 'bg-gray-700';
 }
 
-/** Build a short creature type label for the grid card */
-function getCreatureTypeLabel(job: GenerationJob, factions: Faction[]): string | null {
-  // Prefer stored subtype
-  const subtype = job.input_data?.creature_subtype;
-  if (subtype) {
-    // Try to find the tier for this subtype
-    const factionName = getFactionName(job.input_data?.faction_id, factions);
-    if (factionName) {
-      const key = factionNameToKey(factionName);
-      const subtypeData = CREATURE_SUBTYPES[key]?.find(
-        (s) => s.name.toLowerCase() === subtype.toLowerCase()
-      );
-      if (subtypeData) {
-        return `${subtypeData.name} (T${subtypeData.tier})`;
+/** Get display-friendly short faction name, stripping leading "The " */
+function getFactionShortName(fullName: string): string {
+  const withoutThe = fullName.replace(/^The\s+/i, '');
+  return withoutThe.split(' ')[0];
+}
+
+/**
+ * Match a job to a subtype name for a given faction. Uses explicit creature_subtype,
+ * then falls back to fuzzy matching on creature_type_hint and output_data.name.
+ * Returns the canonical subtype name or null if no match.
+ */
+function matchSubtype(job: GenerationJob, factions: Faction[]): string | null {
+  const factionId = job.input_data?.faction_id;
+  if (!factionId) return null;
+
+  const faction = findFaction(factionId, factions);
+  if (!faction) return null;
+
+  const factionKey = factionNameToKey(faction.name);
+  const subtypes = CREATURE_SUBTYPES[factionKey];
+  if (!subtypes) return null;
+
+  // Try explicit subtype first
+  const storedSubtype = job.input_data?.creature_subtype;
+  if (storedSubtype) {
+    const match = subtypes.find(
+      (s) => s.name.toLowerCase() === storedSubtype.toLowerCase()
+    );
+    if (match) return match.name;
+  }
+
+  // Build a combined search string from all available text fields
+  const hint = (job.input_data?.creature_type_hint || '').toLowerCase();
+  const cardName = (job.output_data?.name || '').toLowerCase();
+  const flavorText = (job.output_data?.flavor_text || '').toLowerCase();
+  const searchText = `${hint} ${cardName} ${flavorText}`;
+
+  // Try substring match: does any subtype name appear in the search text?
+  // Sort by longest name first to prefer specific matches (e.g. "Pit Lord" before "Imp")
+  const sortedSubtypes = [...subtypes].sort((a, b) => b.name.length - a.name.length);
+  for (const s of sortedSubtypes) {
+    if (searchText.includes(s.name.toLowerCase())) {
+      return s.name;
+    }
+  }
+
+  // Try matching subtype description keywords against card name
+  // e.g. "Brass Piston Sentinel" might match "Automaton" description "standard infantry construct"
+  // This is intentionally loose — better to show a guess than nothing
+  for (const s of sortedSubtypes) {
+    const descWords = s.description.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const nameWords = cardName.split(/\s+/);
+    for (const nw of nameWords) {
+      if (descWords.some(dw => nw.includes(dw) || dw.includes(nw))) {
+        return s.name;
       }
     }
-    return subtype;
+  }
+
+  return null;
+}
+
+/**
+ * Get subtype data (name + tier) for a job. Returns null if no subtype matched.
+ */
+function getSubtypeData(job: GenerationJob, factions: Faction[]): { name: string; tier: number } | null {
+  const factionId = job.input_data?.faction_id;
+  if (!factionId) return null;
+
+  const faction = findFaction(factionId, factions);
+  if (!faction) return null;
+
+  const factionKey = factionNameToKey(faction.name);
+  const subtypes = CREATURE_SUBTYPES[factionKey];
+  if (!subtypes) return null;
+
+  // Use matchSubtype to get the name, then look up the full data
+  const matchedName = matchSubtype(job, factions);
+  if (matchedName) {
+    const sub = subtypes.find((s) => s.name === matchedName);
+    if (sub) return { name: sub.name, tier: sub.tier };
+  }
+
+  return null;
+}
+
+/** Build a short creature type label for the grid card (without count) */
+function getCreatureTypeLabel(job: GenerationJob, factions: Faction[]): string | null {
+  const data = getSubtypeData(job, factions);
+  if (data) {
+    return `${data.name} (T${data.tier})`;
   }
 
   // Fall back to creature_type_hint truncated
@@ -200,12 +303,38 @@ function getCreatureTypeLabel(job: GenerationJob, factions: Faction[]): string |
   return null;
 }
 
-export default function CardGrid({ jobs, factions, onRefresh, queuedJobCount, processQueueState, onProcessQueue, onStopProcessing }: CardGridProps) {
+/** Get the color class for a count/target ratio */
+function getCountColorClass(count: number, target: number): string {
+  if (target === 0) return 'text-gray-500';
+  const ratio = count / target;
+  if (ratio >= 1) return 'text-emerald-400';
+  if (ratio >= 0.5) return 'text-amber-400';
+  return 'text-gray-500';
+}
+
+export default function CardGrid({ jobs, allJobs, factions, onRefresh, queuedJobCount, processQueueState, onProcessQueue, onStopProcessing }: CardGridProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState<string | null>(null);
   const [detailJob, setDetailJob] = useState<GenerationJob | null>(null);
   // Optimistic review state: job_id -> review_status
   const [optimisticReviews, setOptimisticReviews] = useState<Record<string, ReviewStatus>>({});
+
+  // Compute approved counts per faction+subtype from the full unfiltered job list
+  const subtypeCounts = useMemo(() => {
+    const counts: Record<string, number> = {}; // key: "factionId:subtypeName"
+    for (const job of allJobs) {
+      const status = getReviewStatus(job);
+      if (status === 'APPROVED') {
+        const fId = job.input_data?.faction_id || '';
+        const subtype = matchSubtype(job, factions);
+        if (subtype && fId) {
+          const key = `${fId}:${subtype}`;
+          counts[key] = (counts[key] || 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }, [allJobs, factions]);
 
   const pendingJobs = jobs.filter(
     (j) =>
@@ -456,6 +585,21 @@ export default function CardGrid({ jobs, factions, onRefresh, queuedJobCount, pr
             const borderClass = getEffectiveBorderClass(job);
             const factionName = getFactionName(job.input_data?.faction_id, factions);
             const creatureTypeLabel = getCreatureTypeLabel(job, factions);
+            const subtypeData = getSubtypeData(job, factions);
+
+            // Compute count/target for this card's subtype
+            let countLabel: React.ReactNode = null;
+            if (subtypeData && job.input_data?.faction_id) {
+              const countKey = `${job.input_data.faction_id}:${subtypeData.name}`;
+              const count = subtypeCounts[countKey] || 0;
+              const target = SUBTYPE_TARGETS[subtypeData.tier] || 0;
+              const colorClass = getCountColorClass(count, target);
+              countLabel = (
+                <span className={`${colorClass} font-semibold`}>
+                  {' '}{count}/{target}
+                </span>
+              );
+            }
 
             return (
               <div
@@ -502,7 +646,7 @@ export default function CardGrid({ jobs, factions, onRefresh, queuedJobCount, pr
                     <span
                       className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 text-[10px] font-semibold rounded text-white/90 shadow-sm ${getFactionBadgeBg(factionName)}`}
                     >
-                      {factionName.split(' ')[0]}
+                      {getFactionShortName(factionName)}
                     </span>
                   )}
                 </div>
@@ -513,10 +657,10 @@ export default function CardGrid({ jobs, factions, onRefresh, queuedJobCount, pr
                     {job.output_data?.name || 'Unnamed'}
                   </p>
 
-                  {/* Creature type label */}
+                  {/* Creature type label with progress count */}
                   {creatureTypeLabel && (
-                    <p className="text-[11px] text-gray-400 truncate">
-                      {creatureTypeLabel}
+                    <p className="text-xs text-gray-300 truncate">
+                      {creatureTypeLabel}{countLabel}
                     </p>
                   )}
 

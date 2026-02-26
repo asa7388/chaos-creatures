@@ -1,5 +1,6 @@
 // Chaos Creatures Admin Dashboard — Generate Batch Modal
 // Wizard: select faction, card type, quantity, creature type hint.
+// Supports AI-generated creature descriptions via GPT-4o Mini.
 // Progress bar polls every 5s for batch status (REQ-181).
 'use client';
 
@@ -27,6 +28,7 @@ interface GenerateBatchModalProps {
 }
 
 type Step = 'config' | 'generating' | 'complete';
+type DescriptionMode = 'manual' | 'ai';
 
 export default function GenerateBatchModal({
   factions,
@@ -46,12 +48,21 @@ export default function GenerateBatchModal({
   const [batchId, setBatchId] = useState('');
   const [jobsCreated, setJobsCreated] = useState(0);
 
+  // AI prompt generation state
+  const [descriptionMode, setDescriptionMode] = useState<DescriptionMode>('manual');
+  const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false);
+  const [promptError, setPromptError] = useState('');
+
   // Parse creature descriptions into non-empty lines
   const parsedDescriptions = creatureDescriptions
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
   const effectiveCount = parsedDescriptions.length > 0 ? parsedDescriptions.length : count;
+
+  // Get current faction key for AI generation
+  const selectedFaction = factions.find(f => f.id === factionId);
+  const factionKey = selectedFaction ? factionNameToKey(selectedFaction.name) : '';
 
   function toggleModifier(mod: string) {
     setSelectedModifiers((prev) =>
@@ -65,8 +76,51 @@ export default function GenerateBatchModal({
       setError('');
       setSelectedModifiers([]);
       setBatchId('');
+      setDescriptionMode('manual');
+      setIsGeneratingPrompts(false);
+      setPromptError('');
     }
   }, [isOpen]);
+
+  async function handleGeneratePrompts() {
+    if (!factionKey) {
+      setPromptError('Please select a faction first');
+      return;
+    }
+
+    setIsGeneratingPrompts(true);
+    setPromptError('');
+
+    try {
+      const res = await fetch('/api/generate-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          faction: factionKey,
+          subtype: selectedSubtype || undefined,
+          count,
+          tier: selectedSubtype && factionKey
+            ? getSubtypesForFaction(factionKey).find(s => s.name === selectedSubtype)?.tier
+            : undefined,
+          composition_modifiers: selectedModifiers.length > 0 ? selectedModifiers : undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPromptError(data.error || 'Failed to generate prompts');
+        return;
+      }
+
+      // Populate the descriptions textarea with generated prompts
+      setCreatureDescriptions(data.descriptions.join('\n'));
+    } catch {
+      setPromptError('Network error generating prompts. Try again.');
+    } finally {
+      setIsGeneratingPrompts(false);
+    }
+  }
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
@@ -124,7 +178,7 @@ export default function GenerateBatchModal({
       onClick={onClose}
     >
       <div
-        className="bg-surface-light rounded-xl border border-gray-700 max-w-md w-full p-6"
+        className="bg-surface-light rounded-xl border border-gray-700 max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
@@ -163,8 +217,6 @@ export default function GenerateBatchModal({
 
             {/* Subtype (optional) */}
             {factionId && (() => {
-              const selectedFaction = factions.find(f => f.id === factionId);
-              const factionKey = selectedFaction ? factionNameToKey(selectedFaction.name) : "";
               const subtypes = factionKey ? getSubtypesForFaction(factionKey) : [];
               if (subtypes.length === 0) return null;
               return (
@@ -277,25 +329,92 @@ export default function GenerateBatchModal({
               />
             </div>
 
-            {/* Creature Descriptions */}
+            {/* Description Mode Toggle */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Creature Descriptions (one per line, optional)
-                {parsedDescriptions.length > 0 && (
-                  <span className="ml-2 text-accent">
-                    {parsedDescriptions.length} creature{parsedDescriptions.length !== 1 ? 's' : ''}
-                  </span>
-                )}
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Creature Descriptions
               </label>
+              <div className="flex gap-1 bg-gray-800 rounded-lg p-1 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setDescriptionMode('manual')}
+                  className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    descriptionMode === 'manual'
+                      ? 'bg-gray-600 text-white font-medium'
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Manual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDescriptionMode('ai')}
+                  className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+                    descriptionMode === 'ai'
+                      ? 'bg-blue-600 text-white font-medium'
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  AI Generate
+                </button>
+              </div>
+
+              {descriptionMode === 'ai' && (
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={handleGeneratePrompts}
+                    disabled={isGeneratingPrompts || !factionKey}
+                    className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                      isGeneratingPrompts || !factionKey
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white'
+                    }`}
+                  >
+                    {isGeneratingPrompts ? (
+                      <>
+                        <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
+                        Generating with GPT-4o Mini...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Generate {count} Prompt{count !== 1 ? 's' : ''} with AI
+                      </>
+                    )}
+                  </button>
+                  {!factionKey && (
+                    <p className="text-xs text-yellow-500 mt-1">Select a faction first</p>
+                  )}
+                  {promptError && (
+                    <p className="text-xs text-red-400 mt-1">{promptError}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Textarea — always shown so user can review/edit AI results */}
               <textarea
                 value={creatureDescriptions}
                 onChange={(e) => setCreatureDescriptions(e.target.value)}
                 className="input-field w-full resize-y"
                 rows={4}
-                placeholder={"a colossal siege automaton with a furnace core\na war-beetle with iron mandibles\na mechanical centaur with smokestacks"}
+                placeholder={descriptionMode === 'ai'
+                  ? 'AI-generated descriptions will appear here. You can edit them before submitting.'
+                  : 'a colossal siege automaton with a furnace core\na war-beetle with iron mandibles\na mechanical centaur with smokestacks'
+                }
               />
               <p className="text-xs text-gray-500 mt-1">
-                Each line becomes a separate card. Overrides quantity when filled.
+                {parsedDescriptions.length > 0
+                  ? `${parsedDescriptions.length} creature${parsedDescriptions.length !== 1 ? 's' : ''} — each line becomes a separate card. Overrides quantity.`
+                  : descriptionMode === 'ai'
+                    ? 'Click the button above to auto-generate descriptions, then review and edit.'
+                    : 'One description per line. Each line becomes a separate card. Overrides quantity when filled.'
+                }
               </p>
             </div>
 

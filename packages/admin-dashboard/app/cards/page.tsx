@@ -332,6 +332,7 @@ export default function CardsPage() {
       ) : (
         <CardGrid
           jobs={filteredJobs}
+          allJobs={jobs}
           factions={factions}
           onRefresh={fetchJobs}
           queuedJobCount={queuedJobCount}
