@@ -40,7 +40,7 @@ final class AppState {
     func initialize() async {
         #if DEBUG
         if CommandLine.arguments.contains("-devMode") {
-            enterDevMode()
+            await enterDevMode()
             if CommandLine.arguments.contains("-startCollection") {
                 selectedTab = .collection
             }
@@ -135,13 +135,16 @@ final class AppState {
     var devCards: [CardInstance] = []
     var devTemplateFactionMap: [UUID: UUID] = [:]
 
-    /// Skip auth and load mock data so all screens are visible in Simulator
-    func enterDevMode() {
-        let ironwrightId = UUID()
-        let feyId = UUID()
-        let demonicId = UUID()
-        let celestialId = UUID()
-        let endlessId = UUID()
+    /// Skip auth and load mock data so all screens are visible in Simulator.
+    /// Attempts to load real card_templates from Supabase first (showing approved art);
+    /// falls back to hardcoded v18 test cards if Supabase is unavailable.
+    func enterDevMode() async {
+        // Use the real faction UUIDs from the DB seed data so Supabase card_templates match
+        let ironwrightId = UUID(uuidString: "a0000000-0000-0000-0000-000000000001")!
+        let feyId = UUID(uuidString: "a0000000-0000-0000-0000-000000000002")!
+        let demonicId = UUID(uuidString: "a0000000-0000-0000-0000-000000000003")!
+        let celestialId = UUID(uuidString: "a0000000-0000-0000-0000-000000000004")!
+        let endlessId = UUID(uuidString: "a0000000-0000-0000-0000-000000000005")!
         let now = Date()
 
         player = Player(
@@ -193,8 +196,68 @@ final class AppState {
             Mission(id: UUID(), playerId: player!.id, missionType: .playCreatures, description: "Play 10 creatures", difficulty: .medium, period: .daily, targetValue: 10, currentValue: 6, isCompleted: false, isClaimed: false, rewardDust: 30, rewardShardTier: .uncommon, rewardShardCount: 1, expiresAt: now.addingTimeInterval(86400), createdAt: now),
         ]
 
-        // Mock v18 test cards with real R2 art URLs
         let devPlayerId = player!.id
+
+        // ── Try loading real card_templates from Supabase ──
+        if SupabaseService.shared.isConfigured {
+            do {
+                let templates: [CardTemplate] = try await SupabaseService.shared.fetchAll(
+                    from: SupabaseService.Table.cardTemplates,
+                    orderBy: "created_at",
+                    ascending: false,
+                    limit: 200
+                )
+
+                if !templates.isEmpty {
+                    print("[DevMode] Loaded \(templates.count) card_templates from Supabase")
+                    var cards: [CardInstance] = []
+                    var factionMap: [UUID: UUID] = [:]
+                    let tiers: [Rarity] = [.common, .uncommon, .rare, .epic, .legendary]
+
+                    for (index, template) in templates.enumerated() {
+                        factionMap[template.id] = template.factionId
+                        // Cycle through rarity tiers for visual variety in dev mode
+                        let tier = tiers[index % tiers.count]
+                        cards.append(CardInstance(
+                            id: UUID(),
+                            templateId: template.id,
+                            ownerId: devPlayerId,
+                            cardType: template.cardType,
+                            tier: tier,
+                            currentName: template.name,
+                            currentAttack: template.baseAttack,
+                            currentHealth: template.baseHealth,
+                            currentManaCost: template.manaCost,
+                            instabilityValue: template.baseInstability,
+                            innateKeywords: template.baseKeywords,
+                            modifierKeywords: [],
+                            evolutionHistory: [],
+                            modifiers: [],
+                            triggeredAbilities: [],
+                            chaosEnergy: 0,
+                            gamesPlayed: 0,
+                            artUrl: template.artUrl,
+                            flavorText: template.flavorText,
+                            artPromptHistory: [],
+                            isFavorite: false,
+                            inDeckIds: [],
+                            createdAt: template.createdAt,
+                            lastEvolvedAt: nil
+                        ))
+                    }
+                    devCards = cards
+                    devTemplateFactionMap = factionMap
+                    isDevMode = true
+                    isInitializing = false
+                    return
+                }
+            } catch {
+                print("[DevMode] Supabase fetch failed, using fallback mock data: \(error)")
+            }
+        }
+
+        // ── Fallback: hardcoded v18 test cards ──
+        print("[DevMode] Using hardcoded v18 mock cards")
         let r2Base = "https://pub-ab96c6d0742748d19e4ad5502f3fea09.r2.dev/cards/v18-test"
 
         struct DevCard {
@@ -209,7 +272,6 @@ final class AppState {
             var tier: Rarity = .common
         }
 
-        // Dev cards assigned across all 5 rarity tiers for visual testing
         let devCardDefs: [DevCard] = [
             DevCard(name: "Rebar Golem", fileName: "V18-ironwright-rebar-golem.png", factionId: ironwrightId, cardType: .creature, atk: 5, hp: 3, cm: 4, keywords: ["HASTE"], tier: .common),
             DevCard(name: "Void Welder", fileName: "V18-ironwright-void-welder.png", factionId: ironwrightId, cardType: .creature, atk: 3, hp: 4, cm: 3, keywords: ["SHIELD"], tier: .uncommon),

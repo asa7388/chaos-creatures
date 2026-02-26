@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { factionNameToKey, CREATURE_SUBTYPES } from '@/lib/prompts';
+import { factionNameToKey, CREATURE_SUBTYPES, getSubtypesForFaction } from '@/lib/prompts';
 
 interface GenerationJob {
   id: string;
@@ -208,14 +208,12 @@ function getFactionShortName(fullName: string): string {
 }
 
 /**
- * Match a job to a subtype name for a given faction. Only uses the explicit
- * creature_subtype field — no fuzzy guessing. Returns the canonical subtype
- * name or null if not explicitly set.
+ * Match a job to a subtype name for a given faction. Uses the explicit
+ * creature_subtype field first, then falls back to fuzzy matching on
+ * creature_type_hint (same logic as CardCountTracker). Returns the
+ * canonical subtype name or null if no match found.
  */
 function matchSubtype(job: GenerationJob, factions: Faction[]): string | null {
-  const storedSubtype = job.input_data?.creature_subtype;
-  if (!storedSubtype) return null;
-
   const factionId = job.input_data?.faction_id;
   if (!factionId) return null;
 
@@ -226,10 +224,23 @@ function matchSubtype(job: GenerationJob, factions: Faction[]): string | null {
   const subtypes = CREATURE_SUBTYPES[factionKey];
   if (!subtypes) return null;
 
-  const match = subtypes.find(
-    (s) => s.name.toLowerCase() === storedSubtype.toLowerCase()
-  );
-  return match ? match.name : null;
+  // 1. Try explicit creature_subtype first
+  const storedSubtype = job.input_data?.creature_subtype;
+  if (storedSubtype) {
+    const match = subtypes.find(
+      (s) => s.name.toLowerCase() === storedSubtype.toLowerCase()
+    );
+    if (match) return match.name;
+  }
+
+  // 2. Fall back to fuzzy matching on creature_type_hint
+  const hint = (job.input_data?.creature_type_hint || '').toLowerCase();
+  if (hint) {
+    const match = subtypes.find((s) => hint.includes(s.name.toLowerCase()));
+    if (match) return match.name;
+  }
+
+  return null;
 }
 
 /**
@@ -706,6 +717,7 @@ export default function CardGrid({ jobs, allJobs, factions, onRefresh, queuedJob
           loading={loading}
           getEffectiveStatusBadge={getEffectiveStatusBadge}
           isCompleted={isCompleted}
+          onRefresh={onRefresh}
         />
       )}
     </div>
@@ -723,6 +735,7 @@ function DetailModal({
   loading,
   getEffectiveStatusBadge,
   isCompleted,
+  onRefresh,
 }: {
   job: GenerationJob;
   factions: Faction[];
@@ -733,8 +746,91 @@ function DetailModal({
   loading: string | null;
   getEffectiveStatusBadge: (job: GenerationJob) => React.ReactNode;
   isCompleted: (job: GenerationJob) => boolean;
+  onRefresh: () => void;
 }) {
   const factionName = getFactionName(job.input_data?.faction_id, factions);
+
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFactionId, setEditFactionId] = useState(job.input_data?.faction_id || '');
+  const [editSubtype, setEditSubtype] = useState(job.input_data?.creature_subtype || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Derive subtypes for the currently selected edit faction
+  const editFaction = factions.find((f) => f.id === editFactionId);
+  const editFactionKey = editFaction ? factionNameToKey(editFaction.name) : '';
+  const editAvailableSubtypes = editFactionKey ? getSubtypesForFaction(editFactionKey) : [];
+
+  // Derive tier from selected subtype
+  const editSubtypeData = editAvailableSubtypes.find((s) => s.name === editSubtype);
+  const editTier = editSubtypeData?.tier ?? null;
+
+  // Reset subtype when faction changes (different faction has different subtypes)
+  function handleEditFactionChange(newFactionId: string) {
+    setEditFactionId(newFactionId);
+    setEditSubtype('');
+    setSaveError('');
+    setSaveSuccess(false);
+  }
+
+  function handleEditSubtypeChange(newSubtype: string) {
+    setEditSubtype(newSubtype);
+    setSaveError('');
+    setSaveSuccess(false);
+  }
+
+  function handleStartEdit() {
+    setEditFactionId(job.input_data?.faction_id || '');
+    setEditSubtype(job.input_data?.creature_subtype || '');
+    setIsEditing(true);
+    setSaveError('');
+    setSaveSuccess(false);
+  }
+
+  function handleCancelEdit() {
+    setIsEditing(false);
+    setSaveError('');
+    setSaveSuccess(false);
+  }
+
+  async function handleSaveEdit() {
+    if (!editFactionId) {
+      setSaveError('Please select a faction');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError('');
+    setSaveSuccess(false);
+
+    try {
+      const res = await fetch('/api/update-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          job_id: job.id,
+          faction_id: editFactionId,
+          creature_subtype: editSubtype || '',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || 'Failed to update card');
+        return;
+      }
+
+      setSaveSuccess(true);
+      setIsEditing(false);
+      onRefresh();
+    } catch {
+      setSaveError('Network error. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
     <div
@@ -822,12 +918,97 @@ function DetailModal({
               </div>
             </div>
 
-            {/* Creature subtype */}
-            {job.input_data?.creature_subtype && (
+            {/* Creature subtype (read-only display when not editing) */}
+            {!isEditing && job.input_data?.creature_subtype && (
               <div>
                 <span className="text-gray-400 text-sm">Subtype:</span>{' '}
                 <span className="text-white text-sm">{job.input_data.creature_subtype}</span>
               </div>
+            )}
+
+            {/* Edit Controls */}
+            {isEditing ? (
+              <div className="space-y-3 bg-gray-800/50 rounded-lg p-3 border border-gray-700">
+                <p className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Edit Card Metadata</p>
+
+                {/* Faction dropdown */}
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Faction</label>
+                  <select
+                    value={editFactionId}
+                    onChange={(e) => handleEditFactionChange(e.target.value)}
+                    className="w-full bg-gray-900 border border-gray-600 text-gray-200 text-sm rounded-md px-2.5 py-1.5 focus:ring-accent focus:border-accent"
+                  >
+                    <option value="">Select faction...</option>
+                    {factions.map((f) => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Subtype dropdown (dynamic based on faction) */}
+                {editAvailableSubtypes.length > 0 && (
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Creature Subtype</label>
+                    <select
+                      value={editSubtype}
+                      onChange={(e) => handleEditSubtypeChange(e.target.value)}
+                      className="w-full bg-gray-900 border border-gray-600 text-gray-200 text-sm rounded-md px-2.5 py-1.5 focus:ring-accent focus:border-accent"
+                    >
+                      <option value="">None / Unclassified</option>
+                      {editAvailableSubtypes.map((s) => (
+                        <option key={s.name} value={s.name}>
+                          {s.name} (T{s.tier}, CM {s.cmRange})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Tier display (derived, read-only) */}
+                {editTier !== null && (
+                  <div className="text-xs text-gray-400">
+                    Tier: <span className="text-white font-medium">T{editTier}</span>
+                    <span className="text-gray-500 ml-1">(auto-derived from subtype)</span>
+                  </div>
+                )}
+
+                {/* Save/Cancel buttons */}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={isSaving}
+                    className="flex-1 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                    className="flex-1 py-1.5 text-sm font-medium rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors border border-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                {saveError && (
+                  <p className="text-xs text-red-400">{saveError}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleStartEdit}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white px-2.5 py-1.5 rounded-md bg-gray-800 border border-gray-700 hover:border-gray-500 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+                Edit Faction / Subtype
+              </button>
+            )}
+
+            {saveSuccess && (
+              <p className="text-xs text-emerald-400">Card metadata updated successfully.</p>
             )}
 
             {/* Full creature_type_hint */}

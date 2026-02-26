@@ -46,3 +46,6 @@ Screenshots/
 .vercel
 .turbo
 *.tsbuildinfo
+
+# Training data (large files)
+Training/

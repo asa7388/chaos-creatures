@@ -187,7 +187,7 @@ struct SignInView: View {
 
             #if DEBUG
             Button(action: {
-                appState.enterDevMode()
+                Task { await appState.enterDevMode() }
             }) {
                 HStack(spacing: 6) {
                     Image("UIIcons/ui-chaos-rift")

@@ -1,7 +1,7 @@
 // Chaos Creatures Admin Dashboard — AI Prompt Generation API
 // POST: Uses GPT-4o Mini to generate creature descriptions for art generation.
 // Accepts faction, subtype, count, tier, and composition modifiers.
-// Enforces scene-first description format and tier-based power scaling.
+// Enforces character-first description format and tier-based power scaling.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { FACTION_PROMPTS, CREATURE_SUBTYPES } from '@/lib/prompts';
@@ -65,17 +65,18 @@ export async function POST(request: NextRequest) {
     const factionSubtypeList = subtypes.map(s => `${s.name} (T${s.tier}): ${s.description}`).join('\n');
 
     const systemPrompt = `You are a creature designer for a dark fantasy card game called Chaos Creatures.
-Generate unique, visually descriptive creature descriptions for AI art generation.
+Generate unique, vivid creature descriptions that serve as mini art briefs for AI image generation.
 
 CRITICAL RULES — follow these exactly:
 
-1. SCENE-FIRST FORMAT: Always describe the environment, setting, or action FIRST, then the creature.
-   Image generation models weight the beginning of the prompt more heavily, so establishing the scene
-   first produces better compositions. The creature emerges FROM the scene, not the other way around.
-   WRONG: "a massive automaton with iron fists standing in a forge"
-   RIGHT: "inside a burning forge with molten rivers, a massive automaton with iron fists raises its hammer"
-   WRONG: "a tiny sprite with dragonfly wings hovering near a mushroom"
-   RIGHT: "beneath a canopy of glowing mushrooms in a moonlit glade, a tiny sprite with dragonfly wings darts between the caps"
+1. CHARACTER-FIRST FORMAT: Start with a 2-3 word creature identifier (type + key trait), THEN the scene/environment/composition.
+   The model needs to know WHAT it's drawing before WHERE. The creature identifier anchors the subject immediately,
+   then the scene and details flesh it out.
+   Format: "[creature type] [key trait], [scene/environment], [action/pose], [details]"
+   WRONG: "inside a burning forge with molten rivers, a massive automaton with iron fists raises its hammer"
+   RIGHT: "iron colossus, inside a collapsing munitions foundry with molten slag rivers, raising a riveted siege hammer overhead, boiler chest venting superheated steam through corroded exhaust pipes"
+   WRONG: "beneath a canopy of glowing mushrooms in a moonlit glade, a tiny sprite with dragonfly wings darts between the caps"
+   RIGHT: "moss-covered stag, in a moonlit birch grove with bioluminescent mushroom rings, rearing up on hind legs, antlers tangled with spider silk and glowing foxfire orbs"
 
 2. TIER-BASED POWER SCALING: The tier determines how powerful, large, and visually imposing the creature looks.
    - T1 (CM 1-2): Small, young, or diminished creatures. Simple forms, limited detail. Should look like minor threats — scouts, pests, runts. The creature is dwarfed by its environment. It should feel expendable, weak, and small.
@@ -83,10 +84,43 @@ CRITICAL RULES — follow these exactly:
    - T3 (CM 5-6): Large, imposing creatures radiating power. Complex forms, elaborate details, scars of battle. Elite warriors, ancient beings. The creature dominates its immediate surroundings and commands attention.
    - T4 (CM 7+): Colossal, terrifying, awe-inspiring. The creature dominates the ENTIRE scene. Reality-warping presence. World-enders, siege-breakers, mythic terrors. Buildings, trees, and mountains should look small next to it. It should feel like the most powerful thing in the image.
 
-3. Each description should be 15-30 words, focusing on visual details (environment, action, form, pose, materials).
-4. Do NOT include art style instructions — only describe the scene and creature.
-5. Do NOT include the faction name or subtype name literally — describe what the creature LOOKS like.
-6. Make each creature distinct — vary the environment, action, scale cues, pose, and distinguishing features.
+3. DESCRIPTION LENGTH AND DETAIL: Each description must be 30-50 words — a proper mini art brief, NOT a vague tagline.
+   Every description MUST include ALL FIVE of these elements:
+   a) ENVIRONMENT/SETTING — where the creature is, what surrounds it, lighting, atmosphere, weather
+   b) PHYSICAL FORM — body shape, number of limbs, proportions, size relative to surroundings
+   c) MATERIALS/TEXTURES — what the creature's body is made of or covered in (corroded iron, crystalline scales, rotting bark, cracked obsidian, fraying cloth, etc.)
+   d) ACTION/POSE — what the creature is doing RIGHT NOW (lunging, coiled, crouching, ascending, devouring, dragging, erupting from, etc.)
+   e) ONE UNIQUE DISTINGUISHING FEATURE — a single memorable visual detail that makes this creature different from every other (a furnace-glow core visible through cracked ribs, chains fused into forearms, a crown of living antlers, a third eye weeping molten gold, etc.)
+
+4. BANNED VAGUE LANGUAGE: Do NOT use these words unless they are paired with a concrete visual detail:
+   "mystical", "magical", "ethereal", "powerful", "ancient", "dark", "mighty", "fearsome", "terrifying", "ominous", "sinister", "glowing", "shadowy"
+   Instead of "a powerful demon", write what MAKES it look powerful — its size relative to surroundings, the specific damage on its body, the way the ground cracks under it.
+   Instead of "a mystical forest creature", describe the exact bark texture of its skin, the specific fungi growing from its joints, the particular insects swarming its hollow eye sockets.
+
+5. FACTION-SPECIFIC MATERIAL VOCABULARY — use these textures and materials for each faction:
+   - Ironwright: riveted iron plate, brass pistons, furnace glow, slag heaps, industrial smoke, welded seams, gear teeth, boiler pipes, corroded steel, copper wiring, exhaust vents, coal dust, forged bolts
+   - Fey: birch bark skin, living moss, bioluminescent fungi, dewdrops, tangled roots, moth wings, spider silk, lichen patches, luminous sap, thorn growths, seed pods, pollen clouds, foxfire
+   - Demonic: cracked obsidian, molten magma veins, sulfur smoke, bone spurs, charred flesh, exposed sinew, volcanic glass, cinder, ash-crusted skin, lava seams, brimstone, tar-slick surfaces
+   - Celestial: prismatic crystal, starlight fractures, geometric halos, void-glass armor, cosmic dust trails, refracted light, tessellated plates, aurora shimmer, nebula veins, opalescent membrane
+   - Endless: corroded bone, fraying burial cloth, cold fog, crumbling stone, hollow eye sockets, dust motes, tarnished silver, cobweb-wrapped limbs, peeling parchment skin, grave dirt, rusted chain
+
+6. Do NOT include art style instructions — only describe the scene and creature.
+7. Do NOT include the faction name or subtype name literally — describe what the creature LOOKS like.
+8. Make each creature DISTINCT — vary environment, action, scale cues, pose, materials, and the unique feature. No two creatures should share the same setting or pose.
+
+QUALITY EXAMPLES — this is the level of detail and specificity expected:
+
+WEAK (too vague, too short — NEVER produce this):
+"a powerful demon warrior in a dark landscape"
+
+STRONG (character-first identifier, specific materials, clear action, unique detail):
+"obsidian brute, amid shattered volcanic pillars leaking sulfur gas, charging forward with jaw unhinged, cracked basalt skin revealing molten magma veins beneath, dragging a serrated bone cleaver that gouges the volcanic ground"
+
+WEAK: "a small mechanical creature in a factory"
+STRONG: "tin-plate drone, on a grease-stained conveyor belt between stamping presses, scurrying through pools of black coolant, rat-sized with a single cracked lens eye, one bent propeller blade spinning uselessly on its back"
+
+WEAK: "a forest spirit standing among trees"
+STRONG: "moss-covered stag, in a moonlit birch grove with bioluminescent mushroom rings, rearing up on hind legs, antlers tangled with spider silk and glowing foxfire orbs, hollow chest cavity filled with a living bee colony"
 
 Return a JSON array of strings. No markdown, no code fences — only the raw JSON array.`;
 
@@ -103,12 +137,17 @@ ${tierHint}
 
 ${modifierHint}
 
-Remember:
-- SCENE/ENVIRONMENT/ACTION first, THEN the creature — this is mandatory for every single description
-- Scale the creature's visual power and size strictly to match its tier
-- T1 creatures must look small and expendable — never impressive
-- T4 creatures must feel like the most powerful, terrifying thing in the image — nothing in the scene rivals them
-- Each description should be a single sentence of 15-30 words
+MANDATORY CHECKLIST — every single description must include ALL of these:
+1. CHARACTER IDENTIFIER FIRST (2-3 word creature type + key trait) — THEN scene/environment/composition
+2. PHYSICAL FORM (body shape, limb count, size relative to surroundings)
+3. MATERIALS/TEXTURES specific to this faction (use the faction material vocabulary from the system prompt)
+4. A SPECIFIC ACTION OR POSE (not "standing" — use lunging, coiling, dragging, erupting, crouching, etc.)
+5. ONE UNIQUE DISTINGUISHING FEATURE that no other creature in this batch shares
+6. Scale the creature's visual power and size strictly to match its tier
+   - T1: creature is dwarfed by environment, simple body, looks expendable
+   - T4: creature dominates the ENTIRE scene, environment is tiny by comparison
+7. Each description must be 30-50 words — a mini art brief, not a tagline
+8. No vague words without concrete visual backup
 
 Return ONLY a JSON array of strings, like: ["description one", "description two", ...]`;
 
@@ -125,7 +164,7 @@ Return ONLY a JSON array of strings, like: ["description one", "description two"
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.9,
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     });
 

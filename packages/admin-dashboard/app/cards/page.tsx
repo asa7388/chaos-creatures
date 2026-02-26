@@ -30,6 +30,11 @@ export default function CardsPage() {
   const [showTracker, setShowTracker] = useState(false);
   const [processQueueState, setProcessQueueState] = useState<ProcessQueueState | null>(null);
   const stopProcessingRef = useRef(false);
+  const [publishState, setPublishState] = useState<{
+    isPublishing: boolean;
+    result: string | null;
+    error: string | null;
+  }>({ isPublishing: false, result: null, error: null });
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -178,6 +183,46 @@ export default function CardsPage() {
     stopProcessingRef.current = true;
   }
 
+  async function handlePublishToGame() {
+    const approvedCount = statusCounts.approved;
+    if (approvedCount === 0) {
+      setPublishState({ isPublishing: false, result: null, error: 'No approved cards to publish.' });
+      return;
+    }
+
+    if (!confirm(`Publish ${approvedCount} approved card(s) to the game as card_templates? This will generate names, stats, and make them available in the iOS app.`)) {
+      return;
+    }
+
+    setPublishState({ isPublishing: true, result: null, error: null });
+
+    try {
+      const res = await fetch('/api/publish-approved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPublishState({ isPublishing: false, result: null, error: data.error || 'Failed to publish.' });
+        return;
+      }
+
+      setPublishState({
+        isPublishing: false,
+        result: data.message || `Published ${data.published} cards.`,
+        error: null,
+      });
+
+      // Refresh jobs list to reflect published status
+      await fetchJobs();
+    } catch (err) {
+      setPublishState({ isPublishing: false, result: null, error: `Network error: ${err}` });
+    }
+  }
+
   const TABS: { key: StatusFilter; label: string }[] = [
     { key: 'pending', label: 'Pending Review' },
     { key: 'approved', label: 'Approved' },
@@ -198,13 +243,55 @@ export default function CardsPage() {
             Generate, review, and approve card art
           </p>
         </div>
-        <button
-          onClick={() => setShowBatchModal(true)}
-          className="btn-primary"
-        >
-          Start Batch
-        </button>
+        <div className="flex gap-3">
+          {statusCounts.approved > 0 && (
+            <button
+              onClick={handlePublishToGame}
+              disabled={publishState.isPublishing}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {publishState.isPublishing ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                  Publishing...
+                </span>
+              ) : (
+                `Publish to Game (${statusCounts.approved})`
+              )}
+            </button>
+          )}
+          <button
+            onClick={() => setShowBatchModal(true)}
+            className="btn-primary"
+          >
+            Start Batch
+          </button>
+        </div>
       </div>
+
+      {/* Publish result/error banner */}
+      {publishState.result && (
+        <div className="bg-green-900/50 border border-green-700 text-green-200 px-4 py-3 rounded-lg flex items-center justify-between">
+          <span>{publishState.result}</span>
+          <button
+            onClick={() => setPublishState(s => ({ ...s, result: null }))}
+            className="text-green-400 hover:text-white ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      {publishState.error && (
+        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg flex items-center justify-between">
+          <span>{publishState.error}</span>
+          <button
+            onClick={() => setPublishState(s => ({ ...s, error: null }))}
+            className="text-red-400 hover:text-white ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Tab Bar */}
       <div className="flex gap-1 bg-surface-light rounded-lg p-1 overflow-x-auto">
